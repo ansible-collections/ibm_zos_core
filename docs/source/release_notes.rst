@@ -6,16 +6,85 @@
 Releases
 ========
 
+Version 1.15.0-beta.1
+==============
+
+Minor Changes
+-------------
+
+- ``zos_archive``
+   - Adds support for encoding before archiving files.
+   - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them.
+   - Adds support for reverting the encoding of a source's files after archiving them.
+
+- ``zos_copy``
+
+   - Adds new option `identical_gdg_copy` in the module. This allows copying GDG generations from a source base to a destination base while preserving generation data set absolute names when the destination base does not exist prior to the copy.
+   - Adds support of using alias names in src and dest parameters for PS, PDS and PDSE data sets.
+   - Added support for british pound character usage in file content and data set names for both source and destination when copying.
+
+- ``zos_fetch`` - Updated the documentation to correctly state what the default behavior of the module is.
+- ``zos_find``
+
+   - Adds functionality to find migrated data sets.
+   - Adds functionality to find different types of data sets at the same time.
+
+- ``zos_job_output`` - Adds new fields cpu_time, origin_node and execution_node to response.
+- ``zos_job_query`` - Adds new fields cpu_time, origin_node and execution_node to response.
+- ``zos_job_submit`` - Adds new fields cpu_time, origin_node and execution_node to response.
+
+- ``zos_mvs_raw``
+
+   - Before this addition, you could not put anything in columns 1 or 2, were reserved for JCL processing. Change now allows add reserved_cols option and validate that the module get access to modify dd_content option base on the value, if not retain the previous behavior or work.
+   - Adds support for volume data definition.
+
+- ``zos_stat``
+
+   - Added support to recall migrated data sets and return its attributes.
+   - Adds new fields that describe the type of the resource that was queried. These new fields are ``isfile``, ``isdataset``, ``isaggregate`` and ``isgdg``.
+   - Adds support to query data sets using their aliases.
+   - Module now returns whether the resource queried exists on the managed node with the `exists` field inside `stat`.
+
+- ``zos_unarchive`` - Added encoding support in the zos_unarchive module. This allows users to encode the files after unarchiving them.
+
+Bugfixes
+--------
+- ``zos_backup_restore`` - Return value ``backup_name`` was empty upon successful result. Fix now returns ``backup_name`` populated.
+- ``zos_data_set`` - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume.
+- ``zos_fetch`` - Previously, the use of `become` would result in a permissions error  while trying to fetch a data set or a member. Fix now allows a user to escalate privileges when fetching resources.
+- ``zos_lineinfile``
+
+   - Return values ``return_content`` and ``backup_name`` were not always being returned. Fix now ensure that these values are always present in the module's response.
+   - The module would report a false negative when certain special characters where present in the `line` option. Fix now reports the successful operation.
+
+- ``zos_mount`` - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored.
+
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
+
+Availability
+------------
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
 Version 1.14.1
 ==============
 
 Bugfixes
 --------
 
-- zos_copy - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
-- zos_job_submit - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
-- zos_script - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
-- zos_unarchive - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
+- zos_copy - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_job_submit - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_script - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_unarchive - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
 
 Availability
 ------------

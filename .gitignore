@@ -256,6 +256,9 @@ venv.bak/
 info.env
 shell_exploits.txt
 importer_result.json
+ac
+scripts/
+ansible.cfg
 
 ################################################################################
 # Debugging .ignore, if you want to know why a particular file is being ignored

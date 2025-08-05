@@ -583,6 +583,13 @@ options:
                 string, list of strings and when using a YAML block indicator.
             required: true
             type: raw
+          reserved_cols:
+            description:
+              - Determines how many columns at the beginning of the content are reserved with
+                empty spaces.
+            type: int
+            required: false
+            default: 2
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -683,6 +690,37 @@ options:
               - The DD name.
             required: true
             type: str
+      dd_volume:
+        description:
+          - Use I(dd_volume) to specify the volume to use in the DD statement.
+        required: false
+        type: dict
+        suboptions:
+          dd_name:
+            description: The DD name.
+            required: true
+            type: str
+          volume_name:
+            description:
+              - The volume serial number.
+            type: str
+            required: true
+          unit:
+            description:
+              - Device type for the volume.
+              - This option is case sensitive.
+            type: str
+            required: true
+          disposition:
+            description:
+              - I(disposition) indicates the status of a data set.
+            type: str
+            required: true
+            choices:
+              - new
+              - shr
+              - mod
+              - old
       dd_concat:
         description:
           - I(dd_concat) is used to specify a data set concatenation.
@@ -1195,6 +1233,13 @@ options:
                         string, list of strings and when using a YAML block indicator.
                     required: true
                     type: raw
+                  reserved_cols:
+                    description:
+                      - Determines how many columns at the beginning of the content are reserved with
+                        empty spaces.
+                    type: int
+                    required: false
+                    default: 2
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1336,6 +1381,37 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: Full volume dump using ADDRDSU.
+  zos_mvs_raw:
+    program_name: adrdssu
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: dumpdd
+          data_set_name: mypgm.output.ds
+          disposition: new
+          disposition_normal: catalog
+          disposition_abnormal: delete
+          space_type: cyl
+          space_primary: 10
+          space_secondary: 10
+          record_format: u
+          record_length: 0
+          block_size: 32760
+          type: seq
+      - dd_volume:
+          dd_name: voldd
+          volume_name: "000000"
+          unit: "3390"
+          disposition: old
+      - dd_input:
+          dd_name: sysin
+          content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
 
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.
@@ -1607,6 +1683,28 @@ EXAMPLES = r"""
                       VOLUMES(222222) -
                       UNIQUE)
 
+- name: Simple FTP connection using frist and second columns.
+  zos_mvs_raw:
+    program_name: AMAPDUPL
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+      - dd_data_set:
+          dd_name: SYSUT1
+          data_set_name: myhlq.ds1.output
+          disposition: shr
+      - dd_input:
+          dd_name: sysin
+          reserved_cols: 0
+          content: |
+            USERID=anonymous
+            PASSWORD=anonymous
+            TARGET_SYS=testcase.boulder.ibm.com
+            TARGET_DSN=wessamp.bigfile
+
 - name: List data sets matching pattern in catalog,
     save output to a new generation of gdgs.
   zos_mvs_raw:
@@ -1637,6 +1735,20 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: Recall a migrated data set.
+  zos_mvs_raw:
+    program_name: ikjeft01
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: systsprt
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: systsin
+          content:
+            - "HRECALL 'MY.DATASET' WAIT"
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -1648,6 +1760,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     DDStatement,
     DummyDefinition,
     VIODefinition,
+    VolumeDefinition,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import (
@@ -1771,6 +1884,7 @@ def run_module():
 
     dd_input_base = dict(
         content=dict(type="raw", required=True),
+        reserved_cols=dict(type="int", required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1856,7 +1970,11 @@ def run_module():
             ),
         )
     )
-
+    dd_volume_base = dict(
+        volume_name=dict(type="str", required=True),
+        unit=dict(type="str", required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
+    )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
@@ -1864,6 +1982,7 @@ def run_module():
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -1883,6 +2002,7 @@ def run_module():
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
     )
@@ -2031,7 +2151,8 @@ def parse_and_validate_args(params):
     )
 
     dd_input_base = dict(
-        content=dict(type=dd_content, required=True),
+        content=dict(type=dd_content, required=True, dependencies=["reserved_cols"]),
+        reserved_cols=dict(type="int", required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2096,7 +2217,11 @@ def parse_and_validate_args(params):
             ),
         )
     )
-
+    dd_volume_base = dict(
+        volume_name=dict(type="str", required=True),
+        unit=dict(type="str", required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
+    )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
@@ -2104,6 +2229,7 @@ def parse_and_validate_args(params):
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -2124,6 +2250,7 @@ def parse_and_validate_args(params):
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
         # verbose=dict(type="bool", required=False),
@@ -2287,15 +2414,16 @@ def dd_content(contents, dependencies):
         return None
     if contents is not None:
         # Empty string can be passed for content but not modify to ensure proper entry
+        spaces = dependencies.get("reserved_cols")
         if len(contents) > 0:
-            contents = modify_contents(contents)
+            contents = modify_contents(contents, spaces)
         return contents
     if isinstance(contents, list):
         return "\n".join(contents)
     return contents
 
 
-def modify_contents(contents):
+def modify_contents(contents, spaces):
     """Return the content of dd_input to a valid form for a JCL program.
 
     Parameters
@@ -2310,18 +2438,20 @@ def modify_contents(contents):
     """
     if not isinstance(contents, list):
         contents = list(contents.split("\n"))
-    contents = prepend_spaces(contents)
+    contents = prepend_spaces(contents, spaces)
     contents = "\n".join(contents)
     return contents
 
 
-def prepend_spaces(lines):
+def prepend_spaces(lines, spaces=2):
     """Return the array with two spaces at the beggining.
 
     Parameters
     ----------
         lines : list
               The list with a line of a program.
+        spaces : int
+              The number of columns to add as left padding to the content.
 
     Raises
     -------
@@ -2337,17 +2467,15 @@ def prepend_spaces(lines):
     for index, line in enumerate(lines):
         if len(line) > 0:
             if len(line) > 80:
-                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. """
                 module.fail_json(msg=msg.format(line))
             else:
-                if len(line) > 1 and line[0] != " " and line[1] != " ":
-                    if len(line) > 78:
-                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                        module.fail_json(msg=msg.format(line))
-                    else:
-                        lines[index] = "  {0}".format(line)
+                len_line = len(line)
+                lines[index] = line.rjust(len_line + spaces, " ")
+                if len(lines[index]) > 80:
+                    msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. Including the spaces at the beginning.
+                    Be aware that the module has reserved {1} columns to the left for JCL processing this value can be modified if the program allows for it."""
+                    module.fail_json(msg=msg.format(line, spaces))
     return lines
 
 
@@ -2637,6 +2765,9 @@ def get_dd_name_and_key(dd):
     elif dd.get("dd_concat"):
         dd_name = dd.get("dd_concat").get("dd_name")
         key = "dd_concat"
+    elif dd.get("dd_volume"):
+        dd_name = dd.get("dd_volume").get("dd_name")
+        key = "dd_volume"
     return dd_name, key
 
 
@@ -2744,6 +2875,14 @@ def build_data_definition(dd):
             dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
+    elif dd.get("dd_volume"):
+        volume_args = dd["dd_volume"]
+        data_definition = VolumeDefinition(
+            volume_name=volume_args.get("volume_name"),
+            unit=volume_args.get("unit"),
+            disposition=volume_args.get("disposition"),
+        )
+
     elif dd.get("dd_concat"):
         data_definition = []
         for single_dd in dd.get("dd_concat").get("dds", []):

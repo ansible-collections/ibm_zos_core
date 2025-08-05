@@ -104,6 +104,16 @@ options:
       - >
         If I(state=uncataloged) and the data set is found, the data set is uncataloged,
         module completes successfully with I(changed=True).
+      - >
+        If I(state=present), the data set is already cataloged and I(volumes) is provided,
+        the module will compare the volumes where it is cataloged against the provided I(volumes).
+        If they don't match, the module will fail with an error indicating the data set is cataloged
+        on a different volume.
+        To resolve this, you must first uncatalog the data set before creating it on the new volume.
+      - >
+        If I(state=present), the data set is already cataloged, I(volumes) is provided,
+        and the volumes match exactly, no action is taken and the module completes successfully
+        with I(changed=False).
     required: false
     type: str
     default: present
@@ -1905,18 +1915,18 @@ def run_module():
             for data_set_params in data_set_param_list:
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
-                result["changed"] = perform_data_set_operations(
+                current_changed = perform_data_set_operations(
                     data_set=data_set,
                     state=data_set_params.get("state"),
                     replace=data_set_params.get("replace"),
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
-                ) or result.get("changed", False)
+                )
+                result["changed"] = result["changed"] or current_changed
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-    else:
-        if module.params.get("replace"):
-            result["changed"] = True
+    if module.params.get("replace"):
+        result["changed"] = True
     module.exit_json(**result)
 
 

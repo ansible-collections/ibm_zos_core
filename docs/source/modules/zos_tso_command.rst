@@ -98,6 +98,11 @@ Examples
          ALLOCATE DDNAME(OUT1) DSNAME('HLQ.PDSE.DATA.DEST(OUTPUT)') SHR;
          OCOPY INDD(IN1) OUTDD(OUT1) BINARY;
 
+   - name: Recall a migrated data set.
+     zos_tso_command:
+       commands:
+         - HRECALL 'MY.DATASET' WAIT
+
 
 
 

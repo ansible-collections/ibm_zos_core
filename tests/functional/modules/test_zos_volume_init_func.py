@@ -16,8 +16,6 @@ import pytest
 
 __metaclass__ = type
 
-TEST_VOL_ADDR = '01A2'
-TEST_VOL_SER = 'USER02'
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -41,24 +39,22 @@ def clear_volume(hosts, volume):
 # verify_volid below or change value to match current volume serial on
 # target.
 
-def test_guard_rail_and_setup(ansible_zos_module, volumes_on_systems):
+def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
     # remove all data sets from target volume. Expected to be the following 3
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
-
-    clear_volume(hosts, volume_1)
+    clear_volume(hosts, volume)
 
     params = {
-        "address":volume_2,
+        "address":address,
         "verify_offline":False,
-        "volid":volume_1,
-        "verify_volid":volume_1
+        "volid":volume,
+        "verify_volid":volume
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(
         address=params['address'],
@@ -72,22 +68,23 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_on_systems):
         assert result['rc'] == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_index_param_index(ansible_zos_module):
+def test_index_param_index(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     params = {
-        "address": volume_2,
+        "address": address,
         "verify_offline": False,
-        "volid": volume_1,
+        "volid": volume,
         "index" : True
     }
 
@@ -103,22 +100,23 @@ def test_index_param_index(ansible_zos_module):
             assert INDEX_CREATION_SUCCESS_MSG not in content_str
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_index_param_index_sms_false(ansible_zos_module):
+def test_index_param_index_sms_false(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     params = {
-        "address": volume_2,
+        "address": address,
         "verify_offline": False,
-        "volid": volume_1,
+        "volid": volume,
         "index" : True,
         "sms_managed" : False
     }
@@ -135,28 +133,29 @@ def test_index_param_index_sms_false(ansible_zos_module):
             assert INDEX_CREATION_SUCCESS_MSG not in content_str
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
 # check that correct volume_addr is assigned to correct volid
-def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems):
+def test_volid_address_assigned_correctly(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -176,61 +175,63 @@ def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems
 
     # Display command to print device status, volser and addr should correspond
     display_cmd_output = list(
-        hosts.all.zos_operator(cmd=f"D U,VOL={volume_1}").contacted.values()
+        hosts.all.zos_operator(cmd=f"D U,VOL={volume}").contacted.values()
     )[0]
 
     # zos_operator output contains the command as well, only the last line of
     # the output is relevant for the needs of this test case.
     display_cmd_output = display_cmd_output.get('content')[-1]
 
-    assert volume_1 in display_cmd_output
+    assert volume in display_cmd_output
 
-def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module, volumes_on_systems):
+def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
-
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
         'index' : False,
         'sms_managed' : True
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert "'Index' cannot be False" in result.get("msg")
 
 
-def test_vtoc_size_parm(ansible_zos_module):
+def test_vtoc_size_parm(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
         'vtoc_size' : 8
         # 'vtoc_size' : 11 # test to test that this test handles 2 digit vtoc_index
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -239,19 +240,20 @@ def test_vtoc_size_parm(ansible_zos_module):
         assert VTOC_LOC_MSG.format(params.get('vtoc_size')) in content_str
 
 
-def test_good_param_values_only_volid(ansible_zos_module):
+def test_good_param_values_only_volid(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -260,23 +262,24 @@ def test_good_param_values_only_volid(ansible_zos_module):
         assert result.get('rc') == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_good_param_values_volid_n_verify_volid(ansible_zos_module):
+def test_good_param_values_volid_n_verify_volid(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
-        'verify_volid' : volume_1
+        'volid': volume,
+        'verify_volid' : volume
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -285,23 +288,24 @@ def test_good_param_values_volid_n_verify_volid(ansible_zos_module):
         assert result.get('rc') == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module):
+def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
         'verify_volume_empty' : True
     }
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -310,24 +314,26 @@ def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module):
         assert result.get('rc') == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_values_address_not_hexadecimal(ansible_zos_module):
+def test_bad_param_values_address_not_hexadecimal(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": 'XYZ',
         "verify_offline": False,
-        "volid": volume_1
+        "volid": volume
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -337,24 +343,25 @@ def test_bad_param_values_address_not_hexadecimal(ansible_zos_module):
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_values_address_length_too_short(ansible_zos_module):
+def test_bad_param_values_address_length_too_short(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": '01',
         "verify_offline": False,
-        "volid": volume_1
+        "volid": volume
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -364,23 +371,25 @@ def test_bad_param_values_address_length_too_short(ansible_zos_module):
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_zos_module):
+def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+
     params = {
         "address": '0000',
         "verify_offline": False,
-        "volid": volume_1
+        "volid": volume
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -390,25 +399,27 @@ def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module):
+def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
 
     params = {
-        "address": volume_2,
+        "address": address,
         "verify_offline": False,
-        "volid": volume_1,
+        "volid": volume,
         "vtoc_size": -10
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -418,25 +429,26 @@ def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module):
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_incorrect_existing_volid(ansible_zos_module):
+def test_bad_param_incorrect_existing_volid(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
 
     params = {
-        "address": volume_2,
+        "address": address,
         "verify_offline": False,
-        "volid": volume_1,
+        "volid": volume,
         "verify_volid": '000000'
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -446,24 +458,26 @@ def test_bad_param_incorrect_existing_volid(ansible_zos_module):
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-def test_bad_param_volid_value_too_long(ansible_zos_module):
+def test_bad_param_volid_value_too_long(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     expected_rc = 12
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": 'ABCDEFGHIJK',
         "verify_offline": False,
-        "volid": volume_1,
+        "volid": volume,
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(**params)
 
@@ -473,7 +487,7 @@ def test_bad_param_volid_value_too_long(ansible_zos_module):
         assert result.get('rc') == expected_rc
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
 # Note - volume needs to be sms managed for zos_data_set to work. Possible
@@ -484,41 +498,42 @@ def test_bad_param_volid_value_too_long(ansible_zos_module):
 #        If there is a data set remaining on the volume, that would interfere
 #        with other tests!
 
-def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
+def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
     dataset = get_tmp_ds_name()
 
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
-
     setup_params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
         'sms_managed': False # need non-sms managed to add data set on ECs
     }
     test_params = {
-        'address': volume_2,
+        'address': address,
         'verify_offline': False,
-        'volid': volume_1,
+        'volid': volume,
         'verify_volume_empty': True,
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     try:
         # set up/initialize volume properly so a data set can be added
         hosts.all.zos_volume_init(**setup_params)
 
         # bring volume back online
-        hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+        hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # allocate data set to volume
-        hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume_1)
+        hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
 
         # take volume back offline
-        hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+        hosts.all.zos_operator(cmd=f"vary {address},offline")
 
         # run vol_init against vol with data set on it.
         results = hosts.all.zos_volume_init(**test_params)
@@ -532,7 +547,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
     # tests. Not sure what to do for DatasetDeleteError
     finally:
         # bring volume back online
-        hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+        hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # remove data set
         hosts.all.zos_data_set(name=dataset, state='absent')
@@ -543,20 +558,21 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
 #        Therefore, while testing against the EC machines, the verify_offline
 #        check needs to be skipped in order for ickdsf to be invoked.
 
-def test_minimal_params(ansible_zos_module, volumes_on_systems):
+def test_minimal_params(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
-
-    volume_1 = TEST_VOL_SER
-    volume_2 = TEST_VOL_ADDR
+    volumes = Volume_Handler(volumes_unit_on_systems)
+    volume, address = volumes.get_available_vol_addr()
+    # remove all data sets from target volume. Expected to be the following 3
+    clear_volume(hosts, volume)
 
     params = {
-        "address":volume_2,
+        "address":address,
         "verify_offline":False,
-        "volid":volume_1
+        "volid":volume
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
+    hosts.all.zos_operator(cmd=f"vary {address},offline")
 
     results = hosts.all.zos_volume_init(
         address=params['address'],
@@ -569,4 +585,4 @@ def test_minimal_params(ansible_zos_module, volumes_on_systems):
         assert result['rc'] == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {volume_2},online")
+    hosts.all.zos_operator(cmd=f"vary {address},online")

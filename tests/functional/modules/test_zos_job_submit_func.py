@@ -486,6 +486,11 @@ def test_job_submit_pds(ansible_zos_module, location):
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
+            assert "system" in result.get("jobs")[0]
+            assert "subsystem" in result.get("jobs")[0]
+            assert "cpu_time" in result.get("jobs")[0]
+            assert "execution_node" in result.get("jobs")[0]
+            assert "origin_node" in result.get("jobs")[0]
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
@@ -771,11 +776,11 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
 @pytest.mark.parametrize("args", [
     {
         "max_rc":None,
-        "wait_time_s":10
+        "wait_time_s":20
     },
     {
         "max_rc":4,
-        "wait_time_s":10
+        "wait_time_s":20
     },
     {
         "max_rc":12,

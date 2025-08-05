@@ -112,11 +112,31 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
+    system:
+      description:
+         The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
     subsystem:
       description:
          The job entry subsystem that MVS uses to do work.
       type: str
       sample: STL1
+    cpu_time:
+      description:
+        Sum of the CPU time used by each job step, in microseconds.
+      type: int
+      sample: 5
+    execution_node:
+      description:
+        Execution node that picked the job and executed it.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node that submitted the job.
+      type: str
+      sample: "STL1"
     class:
       description:
          Identifies the data set used in a system output data set, usually called a sysout data set.
@@ -425,7 +445,11 @@ jobs:
             }
           ]
         },
-        "subsystem": "STL1"
+        "system": "STL1",
+        "subsystem": "STL1",
+        "cpu_time": 1414,
+        "execution_node": "STL1",
+        "origin_node": "STL1"
       }
   ]
 changed:

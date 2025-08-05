@@ -42,9 +42,11 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
+        - v1.15.0-beta.1
         - v1.14.1
         - v1.14.0
         - v1.14.0-beta.1
+        - v1.13.1
         - v1.13.0
         - v1.13.0-beta.1
         - v1.12.0
@@ -53,11 +55,6 @@ body:
         - v1.11.0-beta.1
         - v1.10.0
         - v1.10.0-beta.1
-        - v1.9.4 (default)
-        - v1.8.0
-        - v1.7.0
-        - v1.6.0
-        - v1.5.0
       default: 6
     validations:
       required: false
@@ -68,15 +65,13 @@ body:
       description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v1.3.6
+        - v1.3.5
         - v1.3.4
         - v1.3.3
         - v1.3.2
         - v1.3.1
         - v1.3.0
-        - v1.2.5 (default)
-        - v1.2.4
-        - v1.2.3
-        - v1.2.2
       default: 5
     validations:
       required: false
@@ -101,8 +96,9 @@ body:
       description: What is the version of Ansible on the controller (`ansible --version`)?
       multiple: false
       options:
+        - v2.18.x
         - v2.17.x
-        - v2.16.x (default)
+        - v2.16.x
         - v2.15.x
         - v2.14.x
       default: 1
@@ -147,7 +143,9 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_replace
         - zos_script
+        - zos_stat
         - zos_tso_command
         - zos_unarchive
         - zos_volume_init

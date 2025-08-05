@@ -844,9 +844,17 @@ def run_module(module, arg_def):
     rc, stdout, stderr = module.run_command("df", use_unsafe_shell=False, errors='replace')
 
     if rc != 0:
-        module.fail_json(
-            msg="Checking filesystem list failed with error", stderr=str(res_args)
-        )
+        # FSUMF168 return in stderror means that the mount dataset wouldn't resolve.
+        # While this shows a catalog or volume issue, it should not impact our search for an existing mount
+        # From Dan Acevedo: all listed mounts will be fine... just some wouldn't list.
+
+        if "FSUMF168" not in stderr:
+            module.fail_json(
+                msg="Checking filesystem list failed with error", stderr=str(res_args)
+            )
+        else:
+            rc = 0
+
     sttest = stdout.splitlines()
     for line in sttest:
         if src in line:

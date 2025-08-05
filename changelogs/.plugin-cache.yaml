@@ -110,6 +110,11 @@ plugins:
       name: zos_ping
       namespace: ''
       version_added: 1.1.0
+    zos_replace:
+      description: Replace all instances of a pattern within a file or data set.
+      name: zos_replace
+      namespace: ''
+      version_added: 1.15.0
     zos_script:
       description: Run scripts in z/OS
       name: zos_script
@@ -146,4 +151,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 1.14.0-beta.1
+version: 1.15.0-beta.1

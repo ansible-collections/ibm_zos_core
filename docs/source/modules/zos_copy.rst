@@ -44,6 +44,16 @@ asa_text
   | **default**: False
 
 
+identical_gdg_copy
+  If set to ``true``, and the destination GDG does not exist, the module will copy the source GDG to the destination GDG with identical GDS absolute names.
+
+  If set to ``false``, the copy will be done as a normal copy, without preserving the source GDG absolute names.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
 backup
   Specifies whether a backup of the destination should be created before copying data.
 
@@ -89,6 +99,8 @@ dest
 
   ``dest`` can be a USS file, directory or MVS data set name.
 
+  ``dest`` can be a alias name of a PS, PDS or PDSE data set.
+
   If ``dest`` has missing parent directories, they will be created.
 
   If ``dest`` is a nonexistent USS file, it will be created.
@@ -97,7 +109,7 @@ dest
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 
-  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
+  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32720, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
   If ``src`` is a file and ``dest`` a partitioned data set, ``dest`` does not need to include a member in its value, the module can automatically compute the resulting member name from ``src``.
 
@@ -293,6 +305,8 @@ remote_src
 
 src
   Path to a file/directory or name of a data set to copy to remote z/OS system.
+
+  ``src`` can be a alias name of a PS, PDS or PDSE data set.
 
   If ``remote_src`` is true, then ``src`` must be the path to a Unix System Services (USS) file, name of a data set, or data set member.
 
@@ -930,7 +944,7 @@ Notes
 
    It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+   If trying to copy a migrated data set, first recall it before executing this module. This module does not perform recalls automatically. See modules `zos_mvs_raw <./zos_mvs_raw.html>`_ and `zos_tso_cmd <./zos_tso_cmd.html>`_ for examples of how to recall migrated data sets using this collection.
 
 
 
@@ -941,6 +955,8 @@ See Also
 
    - :ref:`zos_fetch_module`
    - :ref:`zos_data_set_module`
+   - :ref:`zos_mvs_raw_module`
+   - :ref:`zos_tso_cmd_module`
 
 
 

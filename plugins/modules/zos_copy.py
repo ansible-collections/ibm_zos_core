@@ -49,6 +49,15 @@ options:
     type: bool
     default: false
     required: false
+  identical_gdg_copy:
+    description:
+      - If set to C(true), and the destination GDG does not exist, the module
+        will copy the source GDG to the destination GDG with identical GDS absolute names.
+      - If set to C(false), the copy will be done as a normal copy, without
+        preserving the source GDG absolute names.
+    type: bool
+    default: false
+    required: false
   backup:
     description:
       - Specifies whether a backup of the destination should be created before
@@ -94,6 +103,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
+      - C(dest) can be a alias name of a PS, PDS or PDSE data set.
       - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
@@ -105,7 +115,7 @@ options:
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of
         C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the
         remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block
-        (FB) record format with a record length of 80, block size of 32760, and the remaining
+        (FB) record format with a record length of 80, block size of 32720, and the remaining
         attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.
@@ -304,6 +314,7 @@ options:
     description:
       - Path to a file/directory or name of a data set to copy to remote
         z/OS system.
+      - C(src) can be a alias name of a PS, PDS or PDSE data set.
       - If C(remote_src) is true, then C(src) must be the path to a Unix
         System Services (USS) file, name of a data set, or data set member.
       - If C(src) is a local path or a USS path, it can be absolute or relative.
@@ -563,13 +574,15 @@ notes:
       described as the remote user, configured either for the playbook or
       playbook tasks, who can also obtain escalated privileges to execute as
       root or another user.
-    - To use this module, you must define the RACF FACILITY class profile
-      and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If
-      your system uses a different security product, consult that product's
-      documentation to configure the required security classes.
+    - If trying to copy a migrated data set, first recall it before executing this module.
+      This module does not perform recalls automatically. See modules L(zos_mvs_raw,./zos_mvs_raw.html)
+      and L(zos_tso_cmd,./zos_tso_cmd.html) for examples of how to recall migrated data sets
+      using this collection.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
+- module: zos_mvs_raw
+- module: zos_tso_cmd
 """
 
 EXAMPLES = r"""
@@ -979,6 +992,7 @@ class CopyHandler(object):
         asa_text=False,
         backup_name=None,
         force_lock=False,
+        identical_gdg_copy=False,
         tmphlq=None
     ):
         """Utility class to handle copying data between two targets.
@@ -1043,6 +1057,7 @@ class CopyHandler(object):
         self.aliases = aliases
         self.backup_name = backup_name
         self.force_lock = force_lock
+        self.identical_gdg_copy = identical_gdg_copy
         self.tmphlq = tmphlq
 
     def run_command(self, cmd, **kwargs):
@@ -1171,22 +1186,29 @@ class CopyHandler(object):
         """
         src_view = gdgs.GenerationDataGroupView(src)
         generations = src_view.generations()
-        dest_generation = f"{dest}(+1)"
-
         copy_args = {
             "options": ""
         }
-
         if self.is_binary or self.asa_text:
             copy_args["options"] = "-B"
 
+        success = True
         for gds in generations:
-            rc = datasets.copy(gds.name, dest_generation, **copy_args)
-
+            # If identical_gdg_copy is True, use exact source generation name in destination
+            if self.identical_gdg_copy:
+                src_gen_absolute = gds.name
+                parts = src_gen_absolute.split('.')
+                # Extract generation number
+                generation_part = parts[-1]
+                dest_gen_name = f"{dest}.{generation_part}"
+            else:
+                # If identical_gdg_copy is False, use the default next generation
+                dest_gen_name = f"{dest}(+1)"
+                # Perform the copy operation
+            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
             if rc != 0:
-                return False
-
-        return True
+                success = False
+        return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
@@ -1449,7 +1471,7 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r is bytes 0d
+                # In UTF-8, \r is bytes 0d
                 if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)
@@ -3161,8 +3183,8 @@ def allocate_destination_data_set(
 
 
 def normalize_line_endings(src, encoding=None):
-    """Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
-    its line endings to LF.
+    """Normalizes src's encoding to UTF-8, then normalizes
+    its line endings to LF and after encodes back as per encoding param.
 
     Parameters
     ----------
@@ -3179,7 +3201,7 @@ def normalize_line_endings(src, encoding=None):
     # Before copying into a destination dataset, we'll make sure that
     # the source file doesn't contain any carriage returns that would
     # result in empty records in the destination.
-    # Due to the differences between encodings, we'll normalize to IBM-037
+    # Due to the differences between encodings, we'll normalize to UTF-8
     # before checking the EOL sequence.
     enc_utils = encode.EncodeUtils()
     src_tag = enc_utils.uss_file_tag(src)
@@ -3189,10 +3211,11 @@ def normalize_line_endings(src, encoding=None):
         # This should only be true when src is a remote file and no encoding
         # was specified by the user.
         if not encoding:
-            encoding = {"from": encode.Defaults.get_default_system_charset()}
-        src_tag = encoding["from"]
-
-    if src_tag != "IBM-037":
+            src_tag = encode.Defaults.get_default_system_charset()
+        else:
+            src_tag = encoding["to"]
+    is_convertedto_utf8 = False
+    if src_tag != "UTF-8":
         fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
 
@@ -3200,13 +3223,27 @@ def normalize_line_endings(src, encoding=None):
             src,
             converted_src,
             src_tag,
-            "IBM-037"
+            "UTF-8"
         )
-        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        copy_handler._tag_file_encoding(converted_src, "UTF-8")
         src = converted_src
+        is_convertedto_utf8 = True
 
     if copy_handler.file_has_crlf_endings(src):
         src = copy_handler.create_temp_with_lf_endings(src)
+
+    if is_convertedto_utf8:
+        fd, converted_source = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_source,
+            "UTF-8",
+            src_tag
+        )
+        copy_handler._tag_file_encoding(converted_src, src_tag)
+        src = converted_source
 
     return src
 
@@ -3324,6 +3361,17 @@ def run_module(module, arg_def):
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check
     # ********************************************************************
+    originalsrc = module.params.get('src')
+    originaldest = module.params.get('dest')
+    issrcpoundexists = False
+    isdestpoundexists = False
+    # Replacing pound with dollar in src and dest if exists
+    if "£" in module.params["src"]:
+        issrcpoundexists = True
+        module.params["src"] = module.params["src"].replace("£", "$")
+    if "£" in module.params["dest"]:
+        isdestpoundexists = True
+        module.params["dest"] = module.params["dest"].replace("£", "$")
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parser.parse_args(module.params)
@@ -3354,6 +3402,7 @@ def run_module(module, arg_def):
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
     content = module.params.get('content')
+    identical_gdg_copy = module.params.get('identical_gdg_copy', False)
 
     # Set temporary directory at os environment level
     os.environ['TMPDIR'] = f"{os.path.realpath(module.tmpdir)}/"
@@ -3377,6 +3426,17 @@ def run_module(module, arg_def):
     src_member = is_member(src)
     raw_src = src
     raw_dest = dest
+    is_src_alias = False
+    is_dest_alias = False
+
+    if is_mvs_src and not src_member and not is_src_gds:
+        is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
+        if is_src_alias:
+            src = src_base_name
+    if is_mvs_dest and not copy_member and not is_dest_gds:
+        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+        if is_dest_alias:
+            dest = dest_base_name
 
     # Validation for copy from a member
     if src_member:
@@ -3570,10 +3630,19 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
-
     except Exception as err:
         module.fail_json(msg=str(err))
-
+    identical_gdg_copy = module.params.get('identical_gdg_copy', False)
+    if identical_gdg_copy:
+        # Validate destination GDG doesn't exist
+        if dest_exists:
+            module.fail_json(
+                msg=(
+                    f"Identical GDG copy failed: {raw_dest} already exists."
+                    "When using option identical_gdg_copy the destination GDG should not exist."
+                ),
+                changed=False
+            )
     # Checking that we're dealing with a positive generation when dest does not
     # exist.
     if is_dest_gds and not is_dest_gds_active:
@@ -3778,6 +3847,7 @@ def run_module(module, arg_def):
         asa_text=asa_text,
         backup_name=backup_name,
         force_lock=force_lock,
+        identical_gdg_copy=module.params.get('identical_gdg_copy', False),
         tmphlq=tmphlq
     )
 
@@ -3908,8 +3978,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=src,
-            dest=dest,
+            src=originalsrc if issrcpoundexists or is_src_alias else src,
+            dest=originaldest if isdestpoundexists or is_dest_alias else dest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,
@@ -3935,6 +4005,7 @@ def main():
             executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
             aliases=dict(type='bool', default=False, required=False),
+            identical_gdg_copy=dict(type='bool', default=False),
             encoding=dict(
                 type='dict',
                 required=False,

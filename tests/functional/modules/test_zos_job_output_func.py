@@ -117,6 +117,11 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
             assert result.get("jobs")[0].get("content_type") == "JOB"
             assert result.get("jobs")[0].get("execution_time") is not None
+            assert "system" in result.get("jobs")[0]
+            assert "subsystem" in result.get("jobs")[0]
+            assert "cpu_time" in result.get("jobs")[0]
+            assert "execution_node" in result.get("jobs")[0]
+            assert "origin_node" in result.get("jobs")[0]
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

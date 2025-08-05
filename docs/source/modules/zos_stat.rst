@@ -32,6 +32,8 @@ name
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
+  This option doesn't accept the use of wilcards (? and *).
+
   | **required**: True
   | **type**: str
 
@@ -65,6 +67,24 @@ sms_managed
   If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information will update the last referenced date of the data set.
 
   If the system finds the data set is not actually managed by SMS, the rest of the attributes will still be queried and this will be noted in the output from the task.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
+recall
+  Whether to recall a migrated data set to fully query its attributes.
+
+  If set to ``false``, the module will return a limited amount of information for a migrated data set.
+
+  Recalling a data set will make the module take longer to execute.
+
+  Ignored when the data set is not found to be migrated.
+
+  The data set will not be migrated again afterwards.
+
+  The data set will not get recalled when running the module in check mode.
 
   | **required**: False
   | **type**: bool
@@ -243,6 +263,61 @@ stat
     | **returned**: success
     | **type**: str
     | **sample**: data_set
+
+  exists
+    Whether name was found on the managed node.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isfile
+    Whether name is a Unix System Services file.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isdataset
+    Whether name is a data set.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isaggregate
+    Whether name is an aggregate.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isgdg
+    Whether name is a Generation Data Group.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
 
   attributes
     Dictionary containing all the stat data.

@@ -34,9 +34,11 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
+        - v1.15.0-beta.1
         - v1.14.1
         - v1.14.0
         - v1.14.0-beta.1
+        - v1.13.1
         - v1.13.0
         - v1.13.0-beta.1
         - v1.12.0
@@ -46,15 +48,6 @@ body:
         - v1.11.0-beta.1
         - v1.10.0
         - v1.10.0-beta.1
-        - v1.9.4 (default)
-        - v1.9.3
-        - v1.9.2
-        - v1.9.1
-        - v1.9.0
-        - v1.8.0
-        - v1.7.0
-        - v1.6.0
-        - v1.5.0
       default: 6
     validations:
       required: false
@@ -84,7 +77,9 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_replace
         - zos_script
+        - zos_stat
         - zos_tso_command
         - zos_unarchive
         - zos_volume_init

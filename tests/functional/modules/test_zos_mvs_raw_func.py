@@ -45,6 +45,62 @@ def get_temp_idcams_dataset(hosts):
 #                               Data set DD tests                              #
 # ---------------------------------------------------------------------------- #
 
+def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    dump_dataset = get_tmp_ds_name()
+    volume_handler = Volume_Handler(volumes_on_systems)
+    test_volume = volume_handler.get_available_vol()
+    try:
+        results = hosts.all.zos_mvs_raw(
+            program_name="ADRDSSU",
+            auth=True,
+            verbose=True,
+            dds=[
+                {
+                    "dd_data_set": {
+                        "dd_name": "DUMPDD",
+                        "data_set_name": dump_dataset,
+                        "disposition": "new",
+                        "disposition_normal": "catalog",
+                        "disposition_abnormal": "delete",
+                        "space_type": "cyl",
+                        "space_primary": 10,
+                        "space_secondary": 2,
+                        "record_format": "u",
+                        "record_length": 0,
+                        "block_size": 32760,
+                        "type": "seq",
+                    }
+                },
+                {
+                    "dd_volume": {
+                        "dd_name": "VOLDD",
+                        "volume_name": test_volume,
+                        "unit": "3390",
+                        "disposition": "old",
+                    }
+                },
+                {
+                    "dd_input": {
+                        "dd_name": "SYSIN",
+                        "content": "  DUMP FULL INDDNAME(VOLDD) OUTDDNAME(DUMPDD)"
+                    }
+                },
+                {
+                    "dd_output":{
+                        "dd_name":"SYSPRINT",
+                        "return_content":{
+                            "type":"text"
+                        }
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert result.get("changed", False) is True
+    finally:
+        hosts.all.zos_data_set(name=dump_dataset, state="absent")
 
 def test_failing_name_format(ansible_zos_module):
     hosts = ansible_zos_module
@@ -104,6 +160,59 @@ def test_disposition_new(ansible_zos_module, verbose):
             assert result.get("failed", False) is False
             if verbose:
                 assert result.get("stderr") is not None
+    finally:
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        if idcams_dataset:
+            hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "columns",
+        [0, 2],
+)
+def test_dd_content_reserved_columns(ansible_zos_module, columns):
+    idcams_dataset = None
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name()
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
+        idcams_listcat_dataset_cmd = idcams_listcat_dataset_cmd.lstrip()
+
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "reserved_cols": columns,
+                        "content":idcams_listcat_dataset_cmd
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            if columns > 0:
+                assert result.get("ret_code", {}).get("code", -1) == 0
+                assert len(result.get("dd_names", [])) > 0
+                assert result.get("failed", False) is False
+            else:
+                assert result.get("ret_code", {}).get("code", -1) == 12
+                assert len(result.get("dd_names", [])) > 0
+                assert result.get("failed", False) is True
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
@@ -1198,7 +1307,7 @@ def test_input_provided_as_list(ansible_zos_module):
         ("text", "LISTCAT ENTRIES"),
         (
             "base64",
-            "QNPJ4uPDweNAxdXj2cnF4k1",
+            "QEBA08ni48PB40DF1ePZycX",
             # the above corresponds to the following bytes:
             # 40 d3 c9 e2 e3 c3 c1 e3 40 c5 d5 e3 d9 c9 c5 e2
             # which translate in ebdic to: " LISTCAT ENTRIES"

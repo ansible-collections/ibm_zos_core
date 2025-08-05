@@ -204,6 +204,19 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
+        # Validate volume conflicts when:
+        # 1. Dataset exists in catalog (present=True).
+        # 2. User hasn't requested replacement (replace=False).
+        # 3. Specific volumes were requested (volumes parameter provided).
+        if present and not replace and volumes:
+            cataloged_volumes = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
+            requested_volumes = [vol.upper() for vol in volumes]
+            if not any(vol.upper() in requested_volumes for vol in cataloged_volumes):
+                raise DatasetCatalogedOnDifferentVolumeError(
+                    name=name,
+                    existing_volumes=cataloged_volumes,
+                    requested_volumes=volumes
+                )
 
         if not present:
             try:
@@ -1393,10 +1406,6 @@ class DataSet(object):
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
         except exceptions.DatasetVerificationError:
-            # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
-            if volumes and len(volumes) > 1:
-                if DataSet.data_set_cataloged(name, volumes, tmphlq=tmp_hlq):
-                    return 0
             raise DatasetCreateError(
                 raw_name if raw_name else name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
@@ -2094,6 +2103,59 @@ class DataSet(object):
         return volume_string
 
     @staticmethod
+    def check_if_data_set_migrated(name):
+        """Compares the output of datasets.list_dataset_names with and
+        without migrated data set names to check if name has been migrated.
+
+        Parameters
+        ----------
+        name : str
+            Name of a data set.
+
+        Returns
+        -------
+        bool
+            Whether the data set has been migrated.
+        """
+        has_been_migrated = False
+
+        non_migrated_list = datasets.list_dataset_names(name, migrated=False)
+        migrated_list = datasets.list_dataset_names(name, migrated=True)
+
+        if name in migrated_list and name not in non_migrated_list:
+            has_been_migrated = True
+
+        return has_been_migrated
+
+    @staticmethod
+    def recall_migrated_data_set(name, module, tmp_hlq=None):
+        """Recalls a data set using HRECALL.
+
+        Parameters
+        ----------
+        name : str
+            Name of a data set.
+        module : AnsibleModuleHelper
+            Ansible object capable of executing commands.
+
+        Keyword Parameters
+        ------------------
+        tmp_hlq : str
+            Temp HLQ to use with mvscmdauth.
+
+        Returns
+        -------
+        tuple(int, str, str)
+            Return code, standard output and standard error from
+            the HRECALL call.
+        """
+        name = name.replace('$', '\\$')
+        recall_cmd = f"""tsocmd "HRECALL '{name}'" """
+        rc, stdout, stderr = module.run_command(recall_cmd)
+
+        return rc, stdout, stderr
+
+    @staticmethod
     def get_name_if_data_set_is_alias(name, tmp_hlq=None):
         """Checks the catalog to see if 'name' corresponds to a data set
         alias and returns the original data set name in case it is.
@@ -2119,24 +2181,23 @@ class DataSet(object):
         # We need to unescape because this call to the system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
-        idcams_cmd = f" LISTCAT ENTRIES('{name}') ALL"
+        idcams_cmd = f" LISTCAT ALIAS ENTRIES('{name}')ALL"
         response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
-        if response.rc > 0 or response.stderr_response != '':
-            raise MVSCmdExecError(
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
-
-        if re.search(r'(ALIAS -+)(1)', response.stdout_response):
+        if response.rc == 0:
             base_name = re.search(
                 r'(ASSOCIATIONS\s*\n\s*[0-9a-zA-Z]+-+)([0-9a-zA-Z\.@\$#-]+)',
                 response.stdout_response
             ).group(2)
             return True, base_name
-        else:
+        elif response.rc == 4:
             return False, name
+        elif response.rc != 0 or response.stderr_response != '':
+            raise MVSCmdExecError(
+                rc=response.rc,
+                out=response.stdout_response,
+                err=response.stderr_response
+            )
 
     @staticmethod
     def _execute_idcams_cmd(
@@ -3082,6 +3143,10 @@ def temp_member_name():
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
     # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
+    # Issue: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
+    # Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+    # Ignoring this bandit blacklisted issue because we are not using this pseudo-random generator for
+    # SECURITY/CRYPTOGRAPHIC purposes but rather a random sample of characters for a random name generator.
     temp_name = sample(first_char_set, k=1)  # nosec B311
     temp_name += sample(rest_char_set, k=7)  # nosec B311
     temp_name = "".join(temp_name)
@@ -3232,6 +3297,17 @@ class DatasetCatalogError(Exception):
         self.msg = 'An error occurred during cataloging of data set "{0}" on volume(s) "{1}". RC={2}. {3}'.format(
             data_set, ", ".join(volumes), rc, message
         )
+        super().__init__(self.msg)
+
+
+class DatasetCatalogedOnDifferentVolumeError(Exception):
+    def __init__(self, name, existing_volumes, requested_volumes):
+        existing_vol_str = ", ".join(existing_volumes) if existing_volumes else "none"
+        requested_vol_str = ", ".join(requested_volumes) if requested_volumes else "none"
+        self.msg = (
+            "Data set {0} is cataloged with volume {1}, if you want to create data set {0} "
+            "in volume {2} uncatalog the data set first and then create it."
+        ).format(name, existing_vol_str, requested_vol_str)
         super().__init__(self.msg)
 
 

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
+import subprocess
 import yaml
 from shellescape import quote
 from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
@@ -225,12 +226,15 @@ def test_zos_operator_parallel_terminal(get_config):
             user,
             python_path
         )), inventory))
-        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
-            inventory,
-            playbook,
-        )
-        stdout = os.system(command)
-        assert stdout == 0
+
+        command_args = ["ansible-playbook", "-i", inventory, playbook]
+        process1 = subprocess.Popen(command_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process2 = subprocess.Popen(command_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process1.wait()
+        process2.wait()
+
+        assert process1.returncode == 0, f"exit code {process1.returncode}"
+        assert process2.returncode == 0, f"exit code {process2.returncode}"
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

@@ -149,7 +149,7 @@ class ManagedUser:
         Who am I AFTER asking for a managed user = LJBXMONV
     """
 
-    def __init__(self, model_user: str = None, remote_host: str = None, zoau_path: str = None, pyz_path: str = None, pythonpath: str = None, volumes: str = None, hostpattern: str = None) -> None:
+    def __init__(self, model_user: str = None, remote_host: str = None, zoau_path: str = None, pyz_path: str = None, pythonpath: str = None, volumes: str = None, python_interpreter: str=None, hostpattern: str = None) -> None:
         """
         Initialize class with necessary parameters.
 
@@ -168,6 +168,7 @@ class ManagedUser:
         self._pyz_path = pyz_path
         self._pythonpath = pythonpath
         self._volumes = volumes
+        self._python_interpreter = python_interpreter
         self._hostpattern = "all" # can also get it from options host_pattern
         self._managed_racf_user = None
         self._managed_user_group = None
@@ -183,6 +184,7 @@ class ManagedUser:
         inventory_hosts = pytest_module_fixture["options"]["inventory_manager"]._inventory.hosts
         inventory_list = list(inventory_hosts.values())[0].vars.get('ansible_python_interpreter').split(";")
         environment_vars = pytest_interpreter_fixture[0]
+        python_interpreter = pytest_interpreter_fixture[1]
 
         zoau_path = environment_vars.get("ZOAU_HOME")
         pythonpath = environment_vars.get("PYTHONPATH")
@@ -190,10 +192,10 @@ class ManagedUser:
 
         # TODO: To make this dynamic, we need to update AC and then also test with the new fixture because
         # the legacy fixture is using a VOLUMES keyword while raw fixture uses extra_args. Best to move
-        # volumes to extra_args. 
+        # volumes to extra_args.
         volumes = "000000,222222"
         hostpattern = pytest_module_fixture["options"]["host_pattern"]
-        return cls(model_user, remote_host, zoau_path, pyz_path, pythonpath, volumes, hostpattern)
+        return cls(model_user, remote_host, zoau_path, pyz_path, pythonpath, volumes, python_interpreter, hostpattern)
 
 
     def _connect(self, remote_host:str , model_user: str, command: str) -> List[str]:
@@ -434,6 +436,82 @@ class ManagedUser:
         # Carefully crafted 'pytest' command to be allow for it to be called from anther test driven by pytest and uses the zinventory-raw fixture.
         pytest_cmd = f"""pytest {testcase} --override-ini "python_functions=managed_user_" --host-pattern={self._hostpattern}{capture if debug else ""}{verbosity if verbose else ""} --zinventory-raw='{node_inventory}'"""
         result = subprocess.run(pytest_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+        if result.returncode != 0:
+             raise Exception(result.stdout + result.stderr)
+        else:
+            print(result.stdout)
+
+
+    def execute_managed_user_become_test(self, managed_user_test_case: str, become_method: dict[str, str], debug: bool = False, verbose: bool = False, managed_user_type: ManagedUserType = None) -> None:
+        """
+        Executes the test case using articulated pytest options when the test case needs a managed user. This is required
+        to execute any test that needs a manage user, a wrapper test case should call this method, the 'managed_user_test_case'
+        must begin with 'managed_user_' as opposed to 'test_', this because the pytest command built will override the ini
+        with this value. For running playbooks with become method.
+
+        Parameters
+        ----------
+        managed_user_test_case (str)
+            The managed user test case that begins with 'managed_user_'
+        become_method (Dict[str, str])
+            Key value pair of user command and options to set playbook for become method.
+        debug (str)
+            Enable verbose output for pytest, the equivalent command line option of '-s'.
+        verbose (str)
+            Enables pytest verbosity level 4 (-vvvv)
+
+        Raises
+        ------
+        Exception - if the test case fails (non-zero RC from pytest/subprocess), the stdout and stderr are returned for evaluation.
+        ValueError - if the managed user is not created, you must call `self._managed_racf_user()`.
+
+        See Also
+        --------
+        :py:member:`_create_managed_user` required before this function can be used as a managed user needs to exist.
+        """
+
+        if managed_user_test_case is None or not managed_user_test_case.startswith("managed_user_"):
+            raise ValueError("Test cases using a managed user must begin with 'managed_user_' to be collected for execution.")
+
+        # if not self._managed_racf_user:
+        #     raise ValueError("No managed user has been created, please ensure that the method `self._managed_racf_user()` has been called prior.")
+
+        self._create_managed_user(managed_user_type)
+
+        # Get the file path of the caller function
+        calling_test_path = inspect.getfile(inspect.currentframe().f_back)
+
+        # Get the test case name that this code is being run from, this is not an function arg.
+        # managed_user_test_case = inspect.stack()[1][3]
+
+        testcase = f"{calling_test_path}::{managed_user_test_case}"
+        # hostpattern = "all" # can also get it from options host_pattern
+        capture = " -s"
+        verbosity = " -vvvv"
+
+        escaped_user = re.escape(self._managed_racf_user)
+
+        inventory: dict [str, str] = {}
+        inventory.update({'host': self._remote_host})
+        inventory.update({'user': self._managed_racf_user})
+        inventory.update({'zoau': self._zoau_path})  # get this from fixture
+        inventory.update({'pyz': self._pyz_path})    # get this from fixture
+        inventory.update({'python_interpreter': self._python_interpreter})    # get this from fixture
+        inventory.update({'ssh_key': f"/tmp/{escaped_user}/id_rsa"})
+        extra_args = {}
+        extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}}) # get this from fixture
+        inventory.update(extra_args)
+
+        node_inventory = json.dumps(inventory)
+
+        # Get options for become method
+        user = become_method["user"]
+        method = become_method["method"]
+        promp = become_method["promp"]
+        key = become_method["key"]
+        # Carefully crafted 'pytest' command to be allow for it to be called from anther test driven by pytest and uses the zinventory-raw fixture.
+        pytest_cmd = f"""pytest {testcase} --override-ini "python_functions=managed_user_" --host-pattern={self._hostpattern}{capture if debug else ""}{verbosity if verbose else ""} --zinventory-raw='{node_inventory}' --user_adm {user} --user_method {method} --ansible_promp '{promp}' --password {key}"""
+        result = subprocess.run(pytest_cmd, capture_output=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
         if result.returncode != 0:
              raise Exception(result.stdout + result.stderr)
         else:

@@ -575,7 +575,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         results = hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
 
         for result in results.contacted.values():
@@ -707,7 +707,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         results = hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
         for result in results.contacted.values():
             assert result.get("jobs") is not None
@@ -873,7 +873,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
         hosts.all.file(path=temp_jcl_path, state="absent")
         # submit JCL to populate KSDS
@@ -882,7 +882,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd=f"echo {quote(KSDS_REPRO_JCL.format(mvs_vs.upper()))} > {temp_jcl_path}/SAMPLE"
         )
         hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
 
         hosts.all.zos_encode(

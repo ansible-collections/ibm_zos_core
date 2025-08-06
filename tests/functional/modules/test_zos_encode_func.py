@@ -871,10 +871,10 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         )
         for enc_res in encode_res.contacted.values():
             assert enc_res.get("backup_name")[:6] == tmphlq
-            assert result.get("encoding") is not None
-            assert isinstance(result.get("encoding"), dict)
-            assert result.get("encoding").get("to") == FROM_ENCODING
-            assert result.get("encoding").get("from") == TO_ENCODING
+            assert enc_res.get("encoding") is not None
+            assert isinstance(enc_res.get("encoding"), dict)
+            assert enc_res.get("encoding").get("to") == FROM_ENCODING
+            assert enc_res.get("encoding").get("from") == TO_ENCODING
             contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(enc_res.get("backup_name")))
             hosts.all.file(path=temp_jcl_path, state="absent")
             hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -1128,10 +1128,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         for content in enc_ds.contacted.values():
             assert content.get("backup_name") is not None
             assert content.get("backup_name") == backup_data_set
-            assert result.get("encoding") is not None
-            assert isinstance(result.get("encoding"), dict)
-            assert result.get("encoding").get("to") == TO_ENCODING
-            assert result.get("encoding").get("from") == FROM_ENCODING
+            assert content.get("encoding") is not None
+            assert isinstance(content.get("encoding"), dict)
+            assert content.get("encoding").get("to") == TO_ENCODING
+            assert content.get("encoding").get("from") == FROM_ENCODING
 
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         enc_ds = hosts.all.zos_encode(
@@ -1148,10 +1148,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
             assert content.get("msg") is not None
             assert content.get("backup_name") is not None
             assert content.get("backup_name") == backup_data_set
-            assert result.get("encoding") is not None
-            assert isinstance(result.get("encoding"), dict)
-            assert result.get("encoding").get("to") == TO_ENCODING
-            assert result.get("encoding").get("from") == INVALID_ENCODING
+            assert content.get("encoding") is not None
+            assert isinstance(content.get("encoding"), dict)
+            assert content.get("encoding").get("to") == TO_ENCODING
+            assert content.get("encoding").get("from") == INVALID_ENCODING
     finally:
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
         hosts.all.zos_data_set(name=backup_data_set, state="absent")

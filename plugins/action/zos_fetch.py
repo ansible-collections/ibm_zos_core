@@ -253,12 +253,15 @@ class ActionModule(ActionBase):
         #  For instance: If src is: USER.TEST.PROCLIB(DATA)          #
         #  and dest is: /tmp/, then updated dest would be /tmp/DATA  #
         # ********************************************************** #
-
+        print(f"src 1 {src}")
         if os.path.sep not in self._connection._shell.join_path("a", ""):
             src = self._connection._shell._unquote(src)
+            print(f"src 2 {src}")
             source_local = src.replace("\\", "/")
+            print(f"source_local 4 {source_local}")
         else:
             source_local = src
+            print(f"source_local 5 {source_local}")
 
         dest = os.path.expanduser(dest)
         if flat:

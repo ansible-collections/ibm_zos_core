@@ -309,17 +309,20 @@ encoding:
     - Specifies which encodings the destination file or data set should be
       converted from and to.
   type: dict
+  returned: always
   contains:
     from:
       description:
         - The character set of the source I(src).
       type: str
       sample: IBM-1047
+      returned: always
     to:
       description:
         - The destination I(dest) character set for the output to be written as.
       type: str
       sample: ISO8859-1
+      returned: always
 """
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,

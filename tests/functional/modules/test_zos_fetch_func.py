@@ -182,6 +182,13 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None
             assert os.path.exists(dest_path)
+            assert "msg" in result.keys()
+            assert "stdout" in result.keys()
+            assert "stdout_lines" in result.keys()
+            assert "stderr" in result.keys()
+            assert "stderr_lines" in result.keys()
+            assert "rc" is not None
+            assert isinstance(result.get("encoding"), dict)
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
@@ -576,7 +583,7 @@ def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is False
-            assert "note" in result.keys()
+            assert "msg" in result.keys()
             assert result.get("module_stderr") is None
     except Exception:
         raise
@@ -610,7 +617,7 @@ def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is False
-            assert "note" in result.keys()
+            assert "msg" in result.keys()
             assert result.get("module_stderr") is None
             assert not os.path.exists("/tmp/FETCH.TEST.DATA.SET")
     except Exception:

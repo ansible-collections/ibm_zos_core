@@ -57,7 +57,7 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update(
         {
-            "file": src,
+            "src": src,
             "dest": dest,
             "data_set_type": data_set_types[ds_type],
             "is_binary": is_binary,
@@ -185,30 +185,54 @@ class ActionModule(ActionBase):
                 module_args=new_module_args,
                 task_vars=task_vars
             )
+            print(fetch_res)
             ds_type = fetch_res.get("ds_type")
-            src = fetch_res.get("file")
+            src = fetch_res.get("src")
             remote_path = fetch_res.get("remote_path")
+            # Create a dictionary that is a schema for the return values
+            result = dict(
+                src="",
+                dest="",
+                is_binary=False,
+                checksum="",
+                changed=False,
+                data_set_type="",
+                remote_path="",
+                msg="",
+                stdout="",
+                stderr="",
+                stdout_lines=[],
+                stderr_lines=[],
+                rc=0,
+                encoding=new_module_args.get("encoding"),
+            )
+            # Populate it with the modules response
+            result["src"] = fetch_res.get("src")
+            result["dest"] = fetch_res.get("dest")
+            result["is_binary"] = fetch_res.get("is_binary")
+            result["checksum"] = fetch_res.get("checksum")
+            result["changed"] = fetch_res.get("changed")
+            result["data_set_type"] = fetch_res.get("data_set_type")
+            result["remote_path"] = fetch_res.get("remote_path")
+            result["msg"] = fetch_res.get("msg")
+            result["stdout"] = fetch_res.get("stdout")
+            result["stderr"] = fetch_res.get("stderr")
+            result["stdout_lines"] = fetch_res.get("stdout_lines")
+            result["stderr_lines"] = fetch_res.get("stderr_lines")
+            result["rc"] = fetch_res.get("rc")
+            result["encoding"] = fetch_res.get("encoding")
 
-            if fetch_res.get("msg"):
-                result["msg"] = fetch_res.get("msg")
+            if fetch_res.get("failed", False):
                 result["stdout"] = fetch_res.get("stdout") or fetch_res.get(
                     "module_stdout"
                 )
                 result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
                     "module_stderr"
                 )
-                result["stdout_lines"] = fetch_res.get("stdout_lines")
-                result["stderr_lines"] = fetch_res.get("stderr_lines")
-                result["rc"] = fetch_res.get("rc")
-                result["failed"] = True
-                return result
-
-            elif fetch_res.get("note"):
-                result["note"] = fetch_res.get("note")
                 return result
 
         except Exception as err:
-            result["msg"] = "Failure during module execution"
+            result["msg"] = f"Failure during module execution {msg}"
             result["stderr"] = str(err)
             result["stderr_lines"] = str(err).splitlines()
             result["failed"] = True
@@ -290,15 +314,11 @@ class ActionModule(ActionBase):
         try:
             if ds_type in SUPPORTED_DS_TYPES:
                 if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
-                    result[
-                        "msg"
-                    ] = "Destination must be a directory to fetch a partitioned data set"
+                    result["msg"] = "Destination must be a directory to fetch a partitioned data set"
                     result["failed"] = True
                     return result
                 if ds_type == "GDG" and os.path.isfile(dest):
-                    result[
-                        "msg"
-                    ] = "Destination must be a directory to fetch a generation data group"
+                    result["msg"] = "Destination must be a directory to fetch a generation data group"
                     result["failed"] = True
                     return result
 
@@ -309,7 +329,8 @@ class ActionModule(ActionBase):
                     ignore_stderr=ignore_sftp_stderr,
                 )
                 if fetch_content.get("msg"):
-                    return fetch_content
+                    result.update(fetch_content)
+                    return result
 
                 if validate_checksum and ds_type != "GDG" and ds_type != "PO" and not is_binary:
                     new_checksum = _get_file_checksum(dest)

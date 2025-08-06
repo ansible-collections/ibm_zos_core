@@ -536,10 +536,8 @@ def run_module():
     dest_data_set = None
     convert_rc = False
     changed = False
-
-    result = dict(changed=changed, src=src, dest=dest)
-    if backup:
-        result["backup_name"] = None
+    encoding_dict = {"from": from_encoding, "to": to_encoding}
+    result = dict(changed=changed, src=src, dest=dest, encoding=encoding_dict, backup_name=None)
 
     try:
         # Check the src is a USS file/path or an MVS data set
@@ -701,9 +699,7 @@ def run_module():
                 eu.uss_tag_encoding(new_dest, to_encoding)
 
             changed = True
-            result = dict(changed=changed, src=new_src, dest=new_dest, backup_name=backup_name)
-        else:
-            result = dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name)
+        result.update(dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name))
     except encode.TaggingError as e:
         module.fail_json(
             msg=e.msg,

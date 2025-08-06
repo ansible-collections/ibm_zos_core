@@ -1216,7 +1216,7 @@ class CopyHandler(object):
                 if "BGYSC6003E" in stderr :
                     raise GenerationDataGroupCreateError(
                         msg="BGYSC6003E  Invalid generation relative name: This might be because the src GDG is in open state"
-                        ) from e
+                    ) from e
                 else:
                     raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e
         return success
@@ -4359,6 +4359,7 @@ class GenerationDataGroupCreateError(Exception):
         """Error during copy of a Generation Data Group."""
         self.msg = msg
         super().__init__(self.msg)
+
 
 if __name__ == "__main__":
     main()

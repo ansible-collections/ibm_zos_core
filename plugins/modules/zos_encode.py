@@ -306,7 +306,7 @@ backup_name:
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 encoding:
   description:
-    - Specifies which encodings the destination file or data set should be
+    - Specifies which encodings the destination file or data set was
       converted from and to.
   type: dict
   returned: always
@@ -319,7 +319,7 @@ encoding:
       returned: always
     to:
       description:
-        - The destination I(dest) character set for the output to be written as.
+        - The destination I(dest) character set for the output that was written as.
       type: str
       sample: ISO8859-1
       returned: always

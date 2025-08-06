@@ -304,6 +304,22 @@ backup_name:
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
+encoding:
+  description:
+    - Specifies which encodings the destination file or data set should be
+      converted from and to.
+  type: dict
+  contains:
+    from:
+      description:
+        - The character set of the source I(src).
+      type: str
+      sample: IBM-1047
+    to:
+      description:
+        - The destination I(dest) character set for the output to be written as.
+      type: str
+      sample: ISO8859-1
 """
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,

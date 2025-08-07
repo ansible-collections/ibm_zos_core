@@ -121,7 +121,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding', None)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
-        fail_on_missing= _process_boolean(self._task.args.get('fail_on_missing'), default=True)
+        fail_on_missing = _process_boolean(self._task.args.get('fail_on_missing'), default=True)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
             self._task.args.get("ignore_sftp_stderr"), default=True

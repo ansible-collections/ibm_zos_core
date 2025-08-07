@@ -920,20 +920,20 @@ def run_module():
     # ********************************************************** #
     encoding_dict = {"from": encoding.get("from"), "to": encoding.get("to")}
     result = dict(
-                src=src,
-                dest="",
-                is_binary=is_binary,
-                checksum="",
-                changed=False,
-                data_set_type="",
-                remote_path="",
-                msg="",
-                stdout="",
-                stderr="",
-                stdout_lines=[],
-                stderr_lines=[],
-                rc=0,
-                encoding=encoding_dict,
+        src=src,
+        dest="",
+        is_binary=is_binary,
+        checksum="",
+        changed=False,
+        data_set_type="",
+        remote_path="",
+        msg="",
+        stdout="",
+        stderr="",
+        stdout_lines=[],
+        stderr_lines=[],
+        rc=0,
+        encoding=encoding_dict,
     )
     src_data_set = None
     ds_type = None

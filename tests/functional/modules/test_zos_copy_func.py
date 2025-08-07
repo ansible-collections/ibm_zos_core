@@ -413,8 +413,8 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
         # Submit link JCL.
         job_result = hosts.all.zos_job_submit(
             src=temp_jcl_uss_path,
-            location="uss",
-            wait_time_s=60
+            remote_src=True,
+            wait_time=60
         )
         for result in job_result.contacted.values():
             print(result)

@@ -930,6 +930,11 @@ rc:
     returned: failure
     type: int
     sample: 8
+cmd:
+    description: The MVS command issued, if applicable.
+    returned: failure
+    type: str
+    sample: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
 """
 
 
@@ -2980,9 +2985,11 @@ def allocate_destination_data_set(
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
+    dest_params["dest_created"] = False
     if dest_exists and (is_dest_empty or dest_ds_type == "GDG") and not replace:
         return False, dest_params, dest
 
+    dest_params["dest_created"] = True
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:
@@ -3267,14 +3274,18 @@ def update_result(res_args, original_args):
     src = res_args.get("src")
     note = res_args.get("note")
     backup_name = res_args.get("backup_name")
+    dest_created = res_args.get("dest_created")
     dest_data_set_attrs = res_args.get("dest_data_set_attrs")
+
     updated_result = dict(
         dest=res_args.get("dest"),
         changed=res_args.get("changed"),
         invocation=dict(module_args=original_args),
+        dest_created = dest_created,
     )
+
     if src:
-        updated_result["src"] = original_args.get("src")
+        updated_result["src"] = src
     if note:
         updated_result["note"] = note
     if backup_name:
@@ -3816,6 +3827,8 @@ def run_module(module, arg_def):
                 volume=volume,
                 tmphlq=tmphlq
             )
+            if res_args["dest_data_set_attrs"]["dest_created"]:
+                res_args["dest_created"] = res_args["dest_data_set_attrs"]["dest_created"]
     except Exception as err:
         if converted_src:
             src = original_src
@@ -3876,7 +3889,10 @@ def run_module(module, arg_def):
 
             original_checksum = None
             if dest_exists:
+                res_args["dest_created"] = False
                 original_checksum = get_file_checksum(dest)
+            else:
+                res_args["dest_created"] = True
 
             dest = uss_copy_handler.copy_to_uss(
                 src,
@@ -4208,7 +4224,6 @@ def main():
             shutil.rmtree(path)
         elif os.path.exists(default_path):
             shutil.rmtree(default_path)
-        module.fail_json(msg=f"{str(res_args)}")
         res_args = update_result(res_args=res_args, original_args=module.params)
         module.exit_json(**res_args)
     except CopyOperationError as err:

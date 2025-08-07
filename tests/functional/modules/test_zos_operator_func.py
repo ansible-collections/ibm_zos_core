@@ -222,6 +222,7 @@ def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
         assert result.get("msg", False) is False
         assert result.get("cmd") is not None
         assert result.get("wait_time") is not None
+        assert result.get("elapsed") is not None
         assert result.get("time_unit") == "s"
         assert result.get("content") is not None
         # Making sure the output from opercmd logged the command
@@ -241,6 +242,7 @@ def test_response_come_back_complete(ansible_zos_module):
         assert result.get("msg", False) is False
         assert result.get("cmd") is not None
         assert result.get("wait_time") is not None
+        assert result.get("elapsed") is not None
         assert result.get("time_unit") == "s"
         assert result.get("content") is not None
         stdout = result.get('content')

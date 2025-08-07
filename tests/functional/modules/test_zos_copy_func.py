@@ -501,6 +501,7 @@ def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
             assert result.get("changed") is True
             assert result.get("dest") == dest_path
             assert result.get("state") == "file"
+            assert 1 == 0
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:

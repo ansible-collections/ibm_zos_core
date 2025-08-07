@@ -3827,8 +3827,10 @@ def run_module(module, arg_def):
                 volume=volume,
                 tmphlq=tmphlq
             )
-            if res_args["dest_data_set_attrs"]["dest_created"]:
-                res_args["dest_created"] = res_args["dest_data_set_attrs"]["dest_created"]
+            if res_args["changed"]:
+                res_args["dest_created"] = True
+            else:
+                res_args["dest_created"] = False
     except Exception as err:
         if converted_src:
             src = original_src

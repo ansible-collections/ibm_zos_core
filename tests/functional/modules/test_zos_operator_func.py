@@ -200,14 +200,14 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
         )
 
         for result in results.contacted.values():
-        assert result.get("rc") == 0
-        assert result.get("changed") is True
-        assert result.get("msg", False) is False
-        assert result.get("cmd") is not None
-        assert result.get("elapsed") >= wait_time
-        assert result.get("wait_time") is not None
-        assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+            assert result.get("rc") == 0
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("cmd") is not None
+            assert result.get("elapsed") >= wait_time
+            assert result.get("wait_time") is not None
+            assert result.get("time_unit") == "s"
+            assert result.get("content") is not None
 
 
 def test_zos_operator_positive_path_preserve_case(ansible_zos_module):

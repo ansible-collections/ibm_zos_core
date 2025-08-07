@@ -241,7 +241,9 @@ EXAMPLES = r"""
 
 RETURN = r"""
 src:
-    description: The source file path or data set on the remote machine.
+    description:
+        - The source file path or data set on the remote machine.
+        - If the source is not found, then src will be empty.
     returned: success
     type: str
     sample: SOME.DATA.SET
@@ -271,11 +273,6 @@ msg:
     returned: always
     type: str
     sample: The source 'TEST.DATA.SET' does not exist or is uncataloged.
-remote_path:
-    description: The remote path of the fetched file or data set.
-    returned: success
-    type: str
-    sample: /tmp/somefile
 stdout:
     description: The stdout from a USS command or MVS command, if applicable.
     returned: failure
@@ -923,7 +920,7 @@ def run_module():
     # ********************************************************** #
     encoding_dict = {"from": encoding.get("from"), "to": encoding.get("to")}
     result = dict(
-                src="",
+                src=src,
                 dest="",
                 is_binary=is_binary,
                 checksum="",
@@ -1109,7 +1106,7 @@ class ZOSFetchError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
         )
-        super().__init__(self.msg)
+        super().__init__(msg)
 
 
 def main():

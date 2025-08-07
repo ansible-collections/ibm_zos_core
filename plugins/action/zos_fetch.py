@@ -197,7 +197,6 @@ class ActionModule(ActionBase):
                 checksum="",
                 changed=False,
                 data_set_type="",
-                remote_path="",
                 msg="",
                 stdout="",
                 stderr="",
@@ -213,7 +212,6 @@ class ActionModule(ActionBase):
             result["checksum"] = fetch_res.get("checksum")
             result["changed"] = fetch_res.get("changed", False)
             result["data_set_type"] = fetch_res.get("data_set_type")
-            result["remote_path"] = fetch_res.get("remote_path")
             result["msg"] = fetch_res.get("msg")
             result["stdout"] = fetch_res.get("stdout")
             result["stderr"] = fetch_res.get("stderr")

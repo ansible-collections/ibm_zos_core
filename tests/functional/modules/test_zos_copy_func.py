@@ -2341,7 +2341,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, force):
     except AssertionError:
         # Checking for the error code from when the system thinks both data sets
         # are identical.
-        if "FSUM8977" in assert_msg:
+        if "FSUM8977" in str(assert_msg):
             return False
         else:
             raise

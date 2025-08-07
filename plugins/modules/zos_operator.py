@@ -255,7 +255,6 @@ def execute_command(operator_cmd, time_unit, timeout=1, preserve=False, *args, *
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-
     if time_unit != "s":
         elapsed = round((end - start) * 100, 2)
     else:
@@ -282,7 +281,7 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time=dict(type="int", required=False, default=1),
-        time_unit=dict(type="str", required=False, choices=["s","cs"], default="s"),
+        time_unit=dict(type="str", required=False, choices=["s", "cs"], default="s"),
         case_sensitive=dict(type="bool", required=False, default=False),
     )
 
@@ -372,7 +371,7 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False, default=False),
         wait_time=dict(arg_type="int", required=False, default=1),
-        time_unit=dict(type="str", required=False, choices=["s","cs"], default="s"),
+        time_unit=dict(type="str", required=False, choices=["s", "cs"], default="s"),
         case_sensitive=dict(arg_type="bool", required=False, default=False),
     )
     parser = BetterArgParser(arg_defs)

@@ -1,3 +1,0 @@
-trivial:
-  - test_zos_mount_func.py - Modifying the volume cylinder size, so test case does not fail due to volume space constraints.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2043).

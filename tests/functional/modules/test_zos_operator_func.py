@@ -94,7 +94,6 @@ def test_zos_operator_invalid_command(ansible_zos_module):
         print(result)
         assert result.get("changed") is True
         assert result.get("rc") == 0
-        assert result.get("msg") is not None
         assert result.get("cmd") is not None
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None

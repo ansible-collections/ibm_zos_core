@@ -1,7 +1,0 @@
-minor_changes:
-   - zos_mvs_raw - Adds support for volume data definition.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2194)
-
-trivial:
-  - test_zos_mvs_raw_func - added test cases to verify volume definition functionality in zos_mvs_raw module.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2194).

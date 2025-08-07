@@ -124,6 +124,7 @@ jobs
             {
                 "class": "R",
                 "content_type": "JOB",
+                "cpu_time": 1414,
                 "ddnames": [
                     {
                         "byte_count": "775",
@@ -232,10 +233,12 @@ jobs
                     }
                 ],
                 "duration": 0,
+                "execution_node": "STL1",
                 "execution_time": "00:00:03",
                 "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
+                "origin_node": "STL1",
                 "owner": "OMVSADM",
                 "priority": "1",
                 "program_name": "IEBGENER",
@@ -252,7 +255,8 @@ jobs
                         }
                     ]
                 },
-                "subsystem": "STL1"
+                "subsystem": "STL1",
+                "system": "STL1"
             }
         ]
 
@@ -268,8 +272,32 @@ jobs
     | **type**: str
     | **sample**: HELLO
 
+  system
+    The job entry system that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
   subsystem
     The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  cpu_time
+    Sum of the CPU time used by each job step, in microseconds.
+
+    | **type**: int
+    | **sample**: 5
+
+  execution_node
+    Execution node that picked the job and executed it.
+
+    | **type**: str
+    | **sample**: STL1
+
+  origin_node
+    Origin node that submitted the job.
 
     | **type**: str
     | **sample**: STL1

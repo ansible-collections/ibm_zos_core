@@ -256,7 +256,7 @@ def test_operator_sentiseconds(ansible_zos_module):
     results = hosts.all.zos_operator(cmd="d a", time_unit="cs", wait_time=100)
     for result in results.contacted.values():
         assert result.get("rc") == 0
-        assert result.get("changed") is changed
+        assert result.get("changed") is True
         assert result.get("msg", False) is False
         assert result.get("cmd") is not None
         assert result.get("elapsed") is not None

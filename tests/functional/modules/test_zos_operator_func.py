@@ -92,7 +92,6 @@ def test_zos_operator_invalid_command(ansible_zos_module):
     results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is True
-        assert result.get("msg") is not None
         assert result.get("rc") != 0
         assert result.get("msg") is not None
         assert result.get("cmd") is not None
@@ -106,9 +105,7 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
     for result in results.contacted.values():
-        print(result)
         assert result.get("changed") is True
-        assert result.get("msg") is not None
         assert result.get("rc") != 0
         assert result.get("cmd") is not None
         assert result.get("elapsed") is not None

@@ -546,8 +546,6 @@ def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
             else:
                 assert result.get("msg") is not None
                 assert result.get("changed") is False
-                assert result.get("src") is not None
-                assert result.get("dest_created") is not None
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:

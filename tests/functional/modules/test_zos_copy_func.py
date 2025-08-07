@@ -2255,7 +2255,6 @@ def copy_dest_lock(ansible_zos_module, ds_type, force):
         decho_result = hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         for result in decho_result.contacted.values():
             assert_msg = result.get("stdout", "")
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
 
@@ -2288,7 +2287,6 @@ def copy_dest_lock(ansible_zos_module, ds_type, force):
         subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
         for result in subproc_result.contacted.values():
             assert_msg = result.get("stdout", "")
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
 
@@ -2296,7 +2294,6 @@ def copy_dest_lock(ansible_zos_module, ds_type, force):
         job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         for result in job_result.contacted.values():
             assert_msg = result.get("stdout", "")
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
 
@@ -2313,6 +2310,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, force):
         for result in results.contacted.values():
             assert_msg = result.get("stdout", "")
             if force: #and apf_auth_user:
+                print(result)
                 assert result.get("changed") == True
                 assert result.get("msg") is None
                 assert result.get("dest") is not None

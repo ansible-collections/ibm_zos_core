@@ -2985,11 +2985,9 @@ def allocate_destination_data_set(
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
-    dest_params["dest_created"] = False
-    if dest_exists and (is_dest_empty or dest_ds_type == "GDG") and not replace:
+    if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
         return False, dest_params, dest
 
-    dest_params["dest_created"] = True
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:

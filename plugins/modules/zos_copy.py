@@ -930,11 +930,6 @@ rc:
     returned: failure
     type: int
     sample: 8
-cmd:
-    description: The MVS command issued, if applicable.
-    returned: failure
-    type: str
-    sample: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
 """
 
 
@@ -3275,7 +3270,6 @@ def update_result(res_args, original_args):
     dest_data_set_attrs = res_args.get("dest_data_set_attrs")
     updated_result = dict(
         dest=res_args.get("dest"),
-        is_binary=original_args.get("is_binary"),
         changed=res_args.get("changed"),
         invocation=dict(module_args=original_args),
     )
@@ -4214,7 +4208,7 @@ def main():
             shutil.rmtree(path)
         elif os.path.exists(default_path):
             shutil.rmtree(default_path)
-
+        module.fail_json(msg=f"{str(res_args)}")
         res_args = update_result(res_args=res_args, original_args=module.params)
         module.exit_json(**res_args)
     except CopyOperationError as err:

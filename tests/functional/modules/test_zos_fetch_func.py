@@ -582,6 +582,7 @@ def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is False
             assert "msg" in result.keys()
             assert result.get("module_stderr") is None

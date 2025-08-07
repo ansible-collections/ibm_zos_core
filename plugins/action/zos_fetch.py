@@ -121,6 +121,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding', None)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
+        fail_on_missing= _process_boolean(self._task.args.get('fail_on_missing'), default=True)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
             self._task.args.get("ignore_sftp_stderr"), default=True
@@ -185,7 +186,6 @@ class ActionModule(ActionBase):
                 module_args=new_module_args,
                 task_vars=task_vars
             )
-            print(fetch_res)
             ds_type = fetch_res.get("ds_type")
             src = fetch_res.get("src")
             remote_path = fetch_res.get("remote_path")
@@ -209,9 +209,9 @@ class ActionModule(ActionBase):
             # Populate it with the modules response
             result["src"] = fetch_res.get("src")
             result["dest"] = fetch_res.get("dest")
-            result["is_binary"] = fetch_res.get("is_binary")
+            result["is_binary"] = fetch_res.get("is_binary", False)
             result["checksum"] = fetch_res.get("checksum")
-            result["changed"] = fetch_res.get("changed")
+            result["changed"] = fetch_res.get("changed", False)
             result["data_set_type"] = fetch_res.get("data_set_type")
             result["remote_path"] = fetch_res.get("remote_path")
             result["msg"] = fetch_res.get("msg")
@@ -219,7 +219,7 @@ class ActionModule(ActionBase):
             result["stderr"] = fetch_res.get("stderr")
             result["stdout_lines"] = fetch_res.get("stdout_lines")
             result["stderr_lines"] = fetch_res.get("stderr_lines")
-            result["rc"] = fetch_res.get("rc")
+            result["rc"] = fetch_res.get("rc", 0)
             result["encoding"] = fetch_res.get("encoding")
 
             if fetch_res.get("failed", False):
@@ -229,6 +229,11 @@ class ActionModule(ActionBase):
                 result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
                     "module_stderr"
                 )
+                result["failed"] = True
+                return result
+            if "No data was fetched." in result["msg"]:
+                if fail_on_missing:
+                    result["failed"] = True
                 return result
 
         except Exception as err:
@@ -253,15 +258,11 @@ class ActionModule(ActionBase):
         #  For instance: If src is: USER.TEST.PROCLIB(DATA)          #
         #  and dest is: /tmp/, then updated dest would be /tmp/DATA  #
         # ********************************************************** #
-        print(f"src 1 {src}")
         if os.path.sep not in self._connection._shell.join_path("a", ""):
             src = self._connection._shell._unquote(src)
-            print(f"src 2 {src}")
             source_local = src.replace("\\", "/")
-            print(f"source_local 4 {source_local}")
         else:
             source_local = src
-            print(f"source_local 5 {source_local}")
 
         dest = os.path.expanduser(dest)
         if flat:

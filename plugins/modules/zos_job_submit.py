@@ -1212,8 +1212,6 @@ def run_module():
                             job_ret_code.update({"msg_txt": _msg})
                             raise Exception(_msg)
 
-                        # raise Exception("The job return code was not available in the job log, "
-                        #                 "please review the job log and error {0}.".format(job_ret_code_msg))
                     elif job_ret_code_code != 0 and max_rc is None:
                         _msg = ("The job return code {0} was non-zero in the "
                                 "job output, this job has failed.".format(str(job_ret_code_code)))

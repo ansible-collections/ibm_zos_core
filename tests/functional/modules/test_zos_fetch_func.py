@@ -213,6 +213,7 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
             assert result.get("checksum") != local_checksum
             assert result.get("module_stderr") is None
             assert os.path.exists(dest_path)
+            assert "msg" in result.keys()
     finally:
         os.remove(dest_path)
 

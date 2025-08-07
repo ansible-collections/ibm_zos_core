@@ -240,8 +240,10 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-file:
-    description: The source file path or data set on the remote machine.
+src:
+    description:
+        - The source file path or data set on the remote machine.
+        - If the source is not found, then src will be empty.
     returned: success
     type: str
     sample: SOME.DATA.SET
@@ -266,14 +268,9 @@ data_set_type:
     returned: success
     type: str
     sample: PDSE
-note:
-    description: Notice of module failure when C(fail_on_missing) is false.
-    returned: failure and fail_on_missing=false
-    type: str
-    sample: The data set USER.PROCLIB does not exist. No data was fetched.
 msg:
-    description: Message returned on failure.
-    returned: failure
+    description: Any important messages from the module.
+    returned: always
     type: str
     sample: The source 'TEST.DATA.SET' does not exist or is uncataloged.
 stdout:
@@ -921,8 +918,23 @@ def run_module():
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
     # ********************************************************** #
-
-    res_args = dict()
+    encoding_dict = {"from": encoding.get("from"), "to": encoding.get("to")}
+    result = dict(
+        src=src,
+        dest="",
+        is_binary=is_binary,
+        checksum="",
+        changed=False,
+        data_set_type="",
+        remote_path="",
+        msg="",
+        stdout="",
+        stderr="",
+        stdout_lines=[],
+        stderr_lines=[],
+        rc=0,
+        encoding=encoding_dict,
+    )
     src_data_set = None
     ds_type = None
 
@@ -963,7 +975,7 @@ def run_module():
                     )
             else:
                 module.exit_json(
-                    note=("Source '{0}' was not found. No data was fetched.".format(src))
+                    msg=("Source '{0}' was not found. No data was fetched.".format(src))
                 )
 
         if "/" in src:
@@ -992,7 +1004,7 @@ def run_module():
             is_binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #    Fetch a partitioned data set or one of its members      #
@@ -1005,9 +1017,9 @@ def run_module():
                 is_binary,
                 encoding=encoding
             )
-            res_args["remote_path"] = file_path
+            result["remote_path"] = file_path
         else:
-            res_args["remote_path"] = fetch_handler._fetch_pdse(
+            result["remote_path"] = fetch_handler._fetch_pdse(
                 src_data_set.name,
                 is_binary,
                 encoding=encoding
@@ -1027,7 +1039,7 @@ def run_module():
             is_binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a VSAM data set                     #
@@ -1039,32 +1051,32 @@ def run_module():
             is_binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a GDG                               #
     # ********************************************************** #
 
     elif ds_type == "GDG":
-        res_args["remote_path"] = fetch_handler._fetch_gdg(
+        result["remote_path"] = fetch_handler._fetch_gdg(
             src_data_set.name,
             is_binary,
             encoding=encoding
         )
 
     if ds_type == "USS":
-        res_args["file"] = src
+        result["src"] = src
     else:
-        res_args["file"] = src_data_set.name
+        result["src"] = src_data_set.name
 
         # Removing the HLQ since the user is probably not expecting it. The module
         # hasn't returned it ever since it was originally written. Changes made to
         # add GDG/GDS support started leaving the HLQ behind in the file name.
         if hlq:
-            res_args["file"] = res_args["file"].replace(f"{hlq}.", "")
+            result["src"] = result["src"].replace(f"{hlq}.", "")
 
-    res_args["ds_type"] = ds_type
-    module.exit_json(**res_args)
+    result["ds_type"] = ds_type
+    module.exit_json(**result)
 
 
 class ZOSFetchError(Exception):
@@ -1094,7 +1106,7 @@ class ZOSFetchError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
         )
-        super().__init__(self.msg)
+        super().__init__(msg)
 
 
 def main():

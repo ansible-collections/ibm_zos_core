@@ -1,0 +1,3 @@
+breaking_changes:
+  - zos_fetch - Return value ``file`` is replaced by ``src``. Return value ``note`` is deprecated, the messages thrown in ``note`` are now returned in ``msg``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2231).

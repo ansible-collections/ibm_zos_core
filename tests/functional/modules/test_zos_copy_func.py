@@ -2144,7 +2144,7 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
         for cp_res in af_bef_result.contacted.values():
             assert cp_res.get("msg") is None
-            assert cp_res.get("changed") is True
+            assert cp_res.get("changed") is False
             assert cp_res.get("dest") is not None
             assert cp_res.get("dest_created") is not None
             assert cp_res.get("src") is not None

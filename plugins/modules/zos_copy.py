@@ -2989,7 +2989,7 @@ def allocate_destination_data_set(
         return False, dest_params, dest
 
     if dest_exists and is_dest_empty and not replace:
-        return False, dest_params, dest 
+        return False, dest_params, dest
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:
@@ -3281,7 +3281,7 @@ def update_result(res_args, original_args):
         dest=res_args.get("dest"),
         changed=res_args.get("changed"),
         invocation=dict(module_args=original_args),
-        dest_created = dest_created,
+        dest_created=dest_created,
     )
 
     if src:

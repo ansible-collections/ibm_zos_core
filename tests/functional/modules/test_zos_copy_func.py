@@ -4411,6 +4411,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             assert result.get("src") is not None
 
         for result in copy_res_aliases.contacted.values():
+            print(result)
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == "{0}".format(dest_lib_aliases)

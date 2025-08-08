@@ -2985,7 +2985,7 @@ def allocate_destination_data_set(
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
-    if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
+    if dest_exists and (is_dest_empty or dest_ds_type == "GDG") and not replace:
         return False, dest_params, dest
 
     # Giving more priority to the parameters given by the user.

@@ -1955,7 +1955,7 @@ class USSCopyHandler(CopyHandler):
                     rc = response.rc
                 elif self.is_executable:
                     try:
-                        rc = datasets.copy(src, dest, alias=True, is_executable=True)
+                        rc = datasets.copy(src, dest, alias=True, executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         response = copy_exception.response
                         rc = response.rc
@@ -1988,7 +1988,7 @@ class USSCopyHandler(CopyHandler):
                         )
                 elif self.is_executable:
                     try:
-                        datasets.copy(src, dest, alias=True, is_executable=True)
+                        datasets.copy(src, dest, alias=True, executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         raise CopyOperationError(
                             msg="Error while copying source {0} to {1}".format(src, dest),

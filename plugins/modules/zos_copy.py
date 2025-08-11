@@ -1215,8 +1215,10 @@ class CopyHandler(object):
                 stderr = getattr(e.response, 'stderr_response', str(e))
                 if "BGYSC0514E" in stderr :
                     raise GenerationDataGroupCreateError(
-                        msg="BGYSC0514E An error occurred while attempting to define the file." \
-                        " This might be because the GDS part of the src GDG is being used by another process."
+                        msg=(
+                            "BGYSC0514E An error occurred while attempting to define the file."
+                            " This might be because the GDS part of the src GDG is being used by another process."
+                        )
                     ) from e
                 else:
                     raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e

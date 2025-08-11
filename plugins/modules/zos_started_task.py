@@ -177,9 +177,9 @@ def prepare_start_command(member, identifier, job_name, job_account, device, vol
     cmd = 'S '+member
     if identifier:
       cmd = cmd + "." + identifier + "," + device + "," + volume_serial + "," + parameters
-    if jobname:
+    if job_name:
       cmd = cmd + ",jobname=" + job_name
-    if jobaccount:
+    if job_account:
       cmd = cmd + ",jobacct=" + job_account
     if subsystem_name:
       cmd = cmd + ",SUB=" + subsystem_name
@@ -209,14 +209,15 @@ def run_module():
                 'required': False,
                 'aliases': ['member']
             },
-            'identifier': {
+            'identifier_name': {
                 'arg_type': 'str',
-                'required': False
+                'required': False,
+                'aliases': ['identifier']
             },
             'job_name': {
                 'type': 'str',
                 'required': False,
-                'aliases': ['task_name']
+                'aliases': ['job', 'task_name', 'task']
             },
             'job_account': { #55 chars
                 'type': 'str',
@@ -275,12 +276,13 @@ def run_module():
         },
         'identifier_name': {
             'arg_type': 'identifier_name',
-            'required': False
+            'required': False,
+            'aliases': ['identifier']
         },
         'job_name': {
             'arg_type': 'str',
             'required': False,
-            'aliases': ['job']
+            'aliases': ['job', 'task_name', 'task']
         },
         'job_account': {
             'arg_type': 'str',
@@ -346,19 +348,19 @@ def run_module():
     kwargs = {}
 
     # Validations
-    if job_account != "" and len(job_account) > 55:
+    if job_account and len(job_account) > 55:
         module.fail_json(
             msg="job_account value should not exceed 55 characters.",
             changed=False
             )
-    if device_number != "":
+    if device_number:
         devnum_len = len(device_number)
         if devnum_len not in (3, 5) or ( devnum_len == 5 and not device_number.startswith("/")):
             module.fail_json(
                 msg="Invalid device_number.",
                 changed=False
                 )
-    if subsystem_name != "" and len(job_account) > 4:
+    if subsystem_name and len(job_account) > 4:
         module.fail_json(
             msg="The subsystem_name must be 1 - 4 characters.",
             changed=False

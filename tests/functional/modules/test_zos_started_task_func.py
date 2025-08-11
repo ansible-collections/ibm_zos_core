@@ -30,6 +30,33 @@ TASK_JCL_CONTENT="""//STEP1    EXEC PGM=BPXBATCH
 SH sleep 600
 /*"""
 
+def test_start_task_with_invalid_member(ansible_zos_module):
+    hosts = ansible_zos_module
+    start_results = hosts.all.zos_started_task(
+        operation="start",
+        member="SAMPLETASK"
+        )
+
+    for result in start_results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("failed") is True
+        assert result.get("stderr") is not None
+
+def test_start_task_with_invalid_identifier(ansible_zos_module):
+    hosts = ansible_zos_module
+    start_results = hosts.all.zos_started_task(
+        operation="start",
+        member="SAMPLE",
+        identifier="$HELLO"
+        )
+
+    for result in start_results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("failed") is True
+        assert result.get("stderr") is not None
+
 def test_start_and_cancel_zos_started_task(ansible_zos_module):
     try:
         hosts = ansible_zos_module

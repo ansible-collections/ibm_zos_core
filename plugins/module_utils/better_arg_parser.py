@@ -359,7 +359,7 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument "{0}" for type "data_set".'.format(contents)
+                'Invalid argument "{0}" for type "member_name".'.format(contents)
             )
         return str(contents)
     
@@ -391,7 +391,7 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument "{0}" for type "data_set".'.format(contents)
+                'Invalid argument "{0}" for type "identifier_name".'.format(contents)
             )
         return str(contents)
 

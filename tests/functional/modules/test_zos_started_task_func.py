@@ -57,6 +57,35 @@ def test_start_task_with_invalid_identifier(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("stderr") is not None
 
+def test_start_task_with_invalid_jobaccount(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_account = "(T043JM,JM00,1,0,0,This is the invalid job account information to test negative scenario)"
+    start_results = hosts.all.zos_started_task(
+        operation="start",
+        member="SAMPLE",
+        job_account=job_account
+        )
+
+    for result in start_results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("failed") is True
+        assert result.get("msg") is not None
+
+def test_start_task_with_invalid_devicenum(ansible_zos_module):
+    hosts = ansible_zos_module
+    start_results = hosts.all.zos_started_task(
+        operation="start",
+        member="SAMPLE",
+        device_number="0870"
+        )
+
+    for result in start_results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("failed") is True
+        assert result.get("msg") is not None
+
 def test_start_and_cancel_zos_started_task(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -101,7 +130,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
 
         stop_results = hosts.all.zos_started_task(
         operation="cancel",
-        started_task_name="SAMPLE"
+        task_name="SAMPLE"
         )
 
         for result in stop_results.contacted.values():
@@ -123,7 +152,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
 
         display_result = hosts.all.zos_started_task(
         operation="display",
-        started_task_name="SAMPLE"
+        task_name="SAMPLE"
         )
         for result in display_result.contacted.values():
             print(result)
@@ -135,7 +164,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
         
         stop_results = hosts.all.zos_started_task(
         operation="cancel",
-        started_task_name="SAMPLE",
+        task_name="SAMPLE",
         asid=asid_val
         )
 
@@ -200,7 +229,7 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
 
         stop_results = hosts.all.zos_started_task(
         operation="cancel",
-        started_task_name="TESTTSK"
+        task_name="TESTTSK"
         )
 
         for result in stop_results.contacted.values():

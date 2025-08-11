@@ -63,7 +63,7 @@ options:
     default: 1
   time_unit:
     description:
-      - Set the C(wait_time) unit of time, could be s(seconds) or cs(centiseconds).
+      - Set the C(wait_time) unit of time, which can be C(s) (seconds) or C(cs) (centiseconds).
     type: str
     required: false
     default: s

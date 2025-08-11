@@ -77,6 +77,7 @@ def test_zos_operator_various_command(ansible_zos_module):
         hosts = ansible_zos_module
         results = hosts.all.zos_operator(cmd=command)
         for result in results.contacted.values():
+            print(result)
             assert result.get("rc") == expected_rc
             assert result.get("changed") is changed
             assert result.get("msg", False) is False

@@ -255,7 +255,7 @@ def execute_command(operator_cmd, time_unit, timeout=1, preserve=False, *args, *
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-    if time_unit != "s":
+    if time_unit == "cs":
         elapsed = round((end - start) * 100, 2)
     else:
         elapsed = round(end - start, 2)

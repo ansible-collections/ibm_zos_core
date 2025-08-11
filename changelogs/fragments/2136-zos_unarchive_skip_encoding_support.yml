@@ -1,4 +1,0 @@
-trivial:
-  - zos_unarchive - Adds support for skipping encoding in zos_unarchive module.
-    This allows users to skip encoding for certain files after unarchiving them.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2136)

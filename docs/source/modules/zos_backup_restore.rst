@@ -379,3 +379,35 @@ Notes
 
 
 
+Return Values
+-------------
+
+
+changed
+  Indicates if the operation made changes.
+
+  ``true`` when backup/restore was successful, ``false`` otherwise.
+
+  | **returned**: always
+  | **type**: bool
+  | **sample**:
+
+    .. code-block:: json
+
+        true
+
+backup_name
+  The USS file name or data set name that was used as a backup.
+
+  Matches the *backup_name* parameter provided as input.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: /u/oeusr03/my_backup.dzp
+
+message
+  Returns any important messages about the modules execution, if any.
+
+  | **returned**: always
+  | **type**: str
+

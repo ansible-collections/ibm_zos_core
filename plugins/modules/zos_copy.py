@@ -1215,7 +1215,7 @@ class CopyHandler(object):
                 stderr = getattr(e.response, 'stderr_response', str(e))
                 if "BGYSC6003E" in stderr :
                     raise GenerationDataGroupCreateError(
-                        msg="BGYSC6003E  Invalid generation relative name: This might be because the src GDG is in open state"
+                        msg="BGYSC6003E Invalid generation relative name: This might be because the GDS part of the src GDG is being used by another process."
                     ) from e
                 else:
                     raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e

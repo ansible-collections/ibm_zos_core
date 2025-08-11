@@ -67,7 +67,7 @@ options:
     type: str
     required: false
     default: s
-    choices :
+    choices:
       - s
       - cs
   case_sensitive:

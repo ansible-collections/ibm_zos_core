@@ -345,6 +345,26 @@ def run_module():
     device = device_type if device_type is not None else device_number
     kwargs = {}
 
+    # Validations
+    if job_account != "" and len(job_account) > 55:
+        module.fail_json(
+            msg="job_account value should not exceed 55 characters.",
+            changed=False
+            )
+    if device_number != "":
+        devnum_len = len(device_number)
+        if devnum_len not in (3, 5) or ( devnum_len == 5 and not device_number.startswith("/")):
+            module.fail_json(
+                msg="Invalid device_number.",
+                changed=False
+                )
+    if subsystem_name != "" and len(job_account) > 4:
+        module.fail_json(
+            msg="The subsystem_name must be 1 - 4 characters.",
+            changed=False
+            )
+    # keywaord arguments validation.....
+
     wait_s = 5
 
     use_wait_arg = False
@@ -366,7 +386,7 @@ def run_module():
                 started_task_name = started_task_name + "." + identifier
         else:
             module.fail_json(
-            msg="either member_name or identifier is needed but both are missing.",
+            msg="one of job_name, member_name or identifier is needed but all are missing.",
             changed=False
             )
     if operation == 'start':

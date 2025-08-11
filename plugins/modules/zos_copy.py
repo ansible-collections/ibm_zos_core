@@ -2978,7 +2978,7 @@ def allocate_destination_data_set(
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
 
     # Replace in datasets.
-    # Reuse epmty datasets when replace is not true. We don't know whether that
+    # Reuse empty datasets when replace is not true. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.

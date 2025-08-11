@@ -1,0 +1,7 @@
+minor_changes:
+  - zos_job_submit - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2229).
+trivial:
+  - zos_job_submit - Fixes a regression on ZOAU v1.3.6.0 where a job submitted
+    with TYPRUN=COPY would return an error.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2229).

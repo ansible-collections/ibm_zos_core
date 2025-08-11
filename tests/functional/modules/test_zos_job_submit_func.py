@@ -425,7 +425,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
       async_status:
         jid: "{{{{ job_task.ansible_job_id }}}}"
       register: job_result
-      until: job_result.finished
+      until: job_result.finished | bool
       retries: 20
       delay: 5
 """
@@ -1014,8 +1014,8 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
                                             "to": "IBM-1047"
                                         },)
     for result in results.contacted.values():
-        # With ZOAU 1.3.3 changes now code and return msg_code are 0 and 0000 respectively.
-        # assert result.get("changed") is False
+        # With ZOAU 1.3.6 changes now code and return msg_code are both None, now
+        # being consistent with the rest of the possible TYPRUN cases.
         # When running a job with TYPRUN=COPY, a copy of the JCL will be kept in the JES spool, so
         # effectively, the system is changed even though the job didn't run.
         assert result.get("changed") is True
@@ -1024,12 +1024,9 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
             r'The job was run with TYPRUN=COPY.',
             repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
-        assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == 'TYPRUN=COPY'
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == '0000'
-        # assert result.get("jobs")[0].get("ret_code").get("code") is None
-        # assert result.get("jobs")[0].get("ret_code").get("msg") is None
-        # assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
@@ -1048,11 +1045,11 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(
-            r'long running job',
+            r'The job was run with TYPRUN=HOLD or TYPRUN=JCLHOLD',
             repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
         assert result.get("jobs")[0].get("ret_code").get("code") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "HOLD"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
@@ -1072,11 +1069,11 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(
-            r'long running job',
+            r'The job was run with TYPRUN=HOLD or TYPRUN=JCLHOLD',
             repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
         assert result.get("jobs")[0].get("ret_code").get("code") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "HOLD"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 

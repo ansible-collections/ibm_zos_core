@@ -152,7 +152,7 @@ wait_time:
     sample: 5
 time_unit:
     description:
-      The time_unit set for wait_time.
+      The time unit set for wait_time.
     returned: always
     type: str
     sample: s

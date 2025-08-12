@@ -27,6 +27,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
 from ansible import cli
+from datetime import datetime
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member
@@ -73,6 +74,8 @@ class ActionModule(ActionBase):
 
         self.tmp_dir = None
 
+        now = datetime.now()
+        display.vvv(u"{0} ibm_zos_copy Starting validations".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
         if dest:
             if not isinstance(dest, string_types):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
@@ -154,12 +157,23 @@ class ActionModule(ActionBase):
                 return self._exit_action(result, msg, failed=True)
 
             if content:
+                now = datetime.now()
+                display.vvv(u"{0} ibm_zos_copy copying content ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
                 try:
+                    now = datetime.now()
+                    display.vvv(u"{0} ibm_zos_copy writing content to file ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
                     local_content = _write_content_to_temp_file(content)
+                    now = datetime.now()
+                    display.vvv(u"{0} ibm_zos_copy copying content file to remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
                     transfer_res = self._copy_to_remote(
                         local_content, ignore_stderr=ignore_sftp_stderr
                     )
                 finally:
+                    now = datetime.now()
+                    display.vvv(u"{0} ibm_zos_copy removing local content ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                    transfer_res = self._copy_to_remote(
+                        local_content, ignore_stderr=ignore_sftp_stderr
+                    )
                     os.remove(local_content)
             else:
                 if is_src_dir:
@@ -237,9 +251,13 @@ class ActionModule(ActionBase):
                         src = rendered_file
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
+                now = datetime.now()
+                display.vvv(u"{0} ibm_zos_copy copying file to remote  ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
+                now = datetime.now()
+                display.vvv(u"{0} ibm_zos_copy copied file to remote".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
@@ -272,17 +290,29 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
+        now = datetime.now()
+        display.vvv(u"{0} ibm_zos_copy executing zos_copy module from action plugin ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
         )
+        now = datetime.now()
+        display.vvv(u"{0} ibm_zos_copy finalized executing zos_copy module from action plugin ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
 
         # Erasing all rendered Jinja2 templates from the controller.
         if template_dir:
+            now = datetime.now()
+            display.vvv(u"{0} ibm_zos_copy removing template dir ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
             shutil.rmtree(template_dir, ignore_errors=True)
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
+            now = datetime.now()
+            display.vvv(u"{0} ibm_zos_copy removing temporary directory from remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             self._connection.exec_command(f"rm -rf {path}*")
 
@@ -304,7 +334,13 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
+            now = datetime.now()
+            display.vvv(u"{0} ibm_zos_copy Started a remote cleanup ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            now = datetime.now()
+            display.vvv(u"{0} ibm_zos_copy Finalized remote cleanup ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
             return result
 
         return _update_result(is_binary, copy_res, self._task.args, original_src)

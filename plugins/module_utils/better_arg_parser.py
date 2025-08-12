@@ -330,7 +330,7 @@ class BetterArgHandler(object):
         if not isinstance(contents, bool):
             raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
         return contents
-    
+
     def _member_name_type(self, contents, resolve_dependencies):
         """Resolver for data_set type arguments.
 
@@ -362,7 +362,7 @@ class BetterArgHandler(object):
                 'Invalid argument "{0}" for type "member_name".'.format(contents)
             )
         return str(contents)
-    
+
     def _identifier_name_type(self, contents, resolve_dependencies):
         """Resolver for data_set type arguments.
 

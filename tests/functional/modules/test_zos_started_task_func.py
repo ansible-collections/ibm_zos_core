@@ -96,26 +96,13 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(TASK_JCL_CONTENT), temp_path)
         )
 
-        hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+        hosts.all.shell(
+            cmd="dcp {0}/SAMPLE {1}".format(temp_path, data_set_name)
         )
 
         hosts.all.shell(
-            cmd="dcp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(temp_path, data_set_name)
+            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
         )
-
-        copy_result = hosts.all.zos_copy(
-            src="{0}(SAMPLE)".format(data_set_name),
-            dest=PROC_PDS,
-            remote_src=True,
-            force=True
-        )
-
-        for cp_res in copy_result.contacted.values():
-            print(cp_res)
-            assert cp_res.get("msg") is None
-            assert cp_res.get("changed") is True
-            assert cp_res.get("dest") == PROC_PDS
 
         start_results = hosts.all.zos_started_task(
         operation="start",
@@ -176,12 +163,11 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
-        hosts.all.zos_data_set(
-            name=f"{PROC_PDS}(SAMPLE)",
-            state="absent",
-            type="member",
-            force=True
+        hosts.all.shell(
+            cmd="drm {0}".format(data_set_name)
+        )
+        hosts.all.shell(
+            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
         )
 
 def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
@@ -190,30 +176,18 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
         data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
+
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(TASK_JCL_CONTENT), temp_path)
         )
 
-        hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+        hosts.all.shell(
+            cmd="dcp {0}/SAMPLE {1}".format(temp_path, data_set_name)
         )
 
         hosts.all.shell(
-            cmd="dcp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(temp_path, data_set_name)
+            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
         )
-
-        copy_result = hosts.all.zos_copy(
-            src="{0}(SAMPLE)".format(data_set_name),
-            dest=PROC_PDS,
-            remote_src=True,
-            force=True
-        )
-
-        for cp_res in copy_result.contacted.values():
-            print(cp_res)
-            assert cp_res.get("msg") is None
-            assert cp_res.get("changed") is True
-            assert cp_res.get("dest") == PROC_PDS
 
         start_results = hosts.all.zos_started_task(
         operation="start",
@@ -240,10 +214,9 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
         
     finally:
         hosts.all.file(path=temp_path, state="absent")
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
-        hosts.all.zos_data_set(
-            name=f"{PROC_PDS}(SAMPLE)",
-            state="absent",
-            type="member",
-            force=True
+        hosts.all.shell(
+            cmd="drm {0}".format(data_set_name)
+        )
+        hosts.all.shell(
+            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
         )

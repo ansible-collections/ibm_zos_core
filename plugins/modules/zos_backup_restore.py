@@ -174,6 +174,7 @@ options:
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
       - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
+    default: m
     choices:
       - k
       - m

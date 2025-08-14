@@ -97,16 +97,12 @@ EXAMPLES = r"""
     job_id: "STC*"
     job_name: "*"
     owner: "IBMUSER"
-<<<<<<< HEAD
-    ddname: "?"
+    dd_name: "?"
 
 - name: Query a job's output including SYSIN DDs
   zos_job_output:
     job_id: "JOB00548"
     input: true
-=======
-    dd_name: "?"
->>>>>>> 9e6a4ebb0cd181cc9cdd47021a14196541c97fee
 """
 
 RETURN = r"""
@@ -512,12 +508,8 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-<<<<<<< HEAD
-        ddname=dict(type="str", required=False),
         input=dict(type="bool", required=False, default=False),
-=======
         dd_name=dict(type="str", required=False, aliases=['ddname']),
->>>>>>> 9e6a4ebb0cd181cc9cdd47021a14196541c97fee
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -526,12 +518,8 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-<<<<<<< HEAD
-        ddname=dict(type="str", required=False),
         input=dict(type="bool", required=False, default=False),
-=======
         dd_name=dict(type="str", required=False, aliases=['ddname']),
->>>>>>> 9e6a4ebb0cd181cc9cdd47021a14196541c97fee
     )
 
     try:
@@ -550,30 +538,21 @@ def run_module():
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
-<<<<<<< HEAD
-    ddname = module.params.get("ddname")
     sysin = module.params.get("input")
-=======
     dd_name = module.params.get("dd_name")
->>>>>>> 9e6a4ebb0cd181cc9cdd47021a14196541c97fee
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner", stderr="", **results)
 
     try:
         results = {}
-<<<<<<< HEAD
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname, sysin=sysin)
-        results["changed"] = False
-=======
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name, sysin=sysin)
         for job in results["jobs"]:
             if "job_not_found" in job:
                 results["changed"] = False
                 del job['job_not_found']
             else:
                 results["changed"] = True
->>>>>>> 9e6a4ebb0cd181cc9cdd47021a14196541c97fee
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
             msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",

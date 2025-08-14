@@ -254,7 +254,8 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
         delete_data_set_or_file(hosts, backup_name)
         delete_remnants(hosts)
 
-
+# Commenting these tests because of issue https://github.com/ansible-collections/ibm_zos_core/issues/2235
+# which likely is a zoau bug that needs to be fixed.
 # @pytest.mark.parametrize(
 #     "backup_name,overwrite",
 #     [

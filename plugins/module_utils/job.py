@@ -512,7 +512,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
 
                     dd["content"] = tmpcont.split("\n")
 
-                    job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
+                    job["steps"].extend(_parse_steps(tmpcont))
 
                     job["dds"].append(dd)
                     if job["class"] is None:

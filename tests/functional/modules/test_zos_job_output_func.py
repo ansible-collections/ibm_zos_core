@@ -336,7 +336,7 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
             cmd=f"echo {quote(JCL_FILE_CONTENTS_SYSIN)} > {TEMP_PATH}/SYSIN"
         )
         result = hosts.all.zos_job_submit(
-            src=f"{TEMP_PATH}/SYSIN", location="uss", volume=None
+            src=f"{TEMP_PATH}/SYSIN", remote_src=True, volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         sysin = "True"

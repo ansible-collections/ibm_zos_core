@@ -81,7 +81,7 @@ options:
       - The I(before) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
       - To disable the regex behavior of I(before) only, set the I(literal) option to 'before'.
     required: false
-    default:''
+    default: ''
     type: str
   encoding:
     description:
@@ -150,7 +150,8 @@ EXAMPLES = r"""
     regexp: '^MOUNTPOINT*'
     after: export ZOAU_ROOT
 
-- name: Replace a specific line with special character on a dataset after a line, treating the text specified for regexp as a literal string and after as regular expression.
+- name: Replace a specific line with special character on a dataset after a line, treating the text specified
+    for regexp as a literal string and after as regular expression.
   zos_replace:
     target: SAMPLE.SOURCE
     regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv

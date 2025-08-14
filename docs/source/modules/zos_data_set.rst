@@ -89,6 +89,12 @@ state
   If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
 
 
+  If *state=present*, the data set is already cataloged and *volumes* is provided, the module will compare the volumes where it is cataloged against the provided *volumes*. If they don't match, the module will fail with an error indicating the data set is cataloged on a different volume. To resolve this, you must first uncatalog the data set before creating it on the new volume.
+
+
+  If *state=present*, the data set is already cataloged, *volumes* is provided, and the volumes match exactly, no action is taken and the module completes successfully with *changed=False*.
+
+
   | **required**: False
   | **type**: str
   | **default**: present

@@ -136,7 +136,7 @@ All releases will meet the following test criteria.
 * Python 3.12.x
 * IBM Open Enterprise SDK for Python 3.12.x
 * IBM Z Open Automation Utilities (ZOAU) 1.3.4.x
-* z/OS V2R5
+* z/OS V2R5 or V3R1
 
 ## Contributing
 

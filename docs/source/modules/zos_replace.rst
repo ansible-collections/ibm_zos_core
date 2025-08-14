@@ -40,7 +40,7 @@ backup
 
   When set to ``true``, the module creates a backup file or data set.
 
-  The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
+  The backup file name will be returned if *backup* is ``true`` on either success or failure of module execution such that data can be retrieved.
 
   | **required**: False
   | **type**: bool
@@ -52,13 +52,17 @@ backup_name
 
   If *src* is a USS file or path, backup_name must be a file or path name, and it must be an absolute path name.
 
-  If the source is an MVS data set, *backup_name* must be an MVS data set name, and the data set must not be preallocated.
+  If the source is an MVS data set, *backup_name* must be an MVS data set name, and the data set must **not** be preallocated.
+
+  If it is a Generation Data Set (GDS), use a relative positive name, e.g., *SOME.CREATION(+1*).
 
   If *backup_name* is not provided, a default name will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp, e.g. ``/path/file_name.2020-04-23-08-32-29-bak.tar``.
 
+  If *src* is a seq data set and backup_name is not provided, the data set will be backed up to seq data set with a randomly generated name.
+
   If *src* is a data set member and backup_name is not provided, the data set member will be backed up to the same partitioned data set with a randomly generated member name.
 
-  If it is a Generation Data Set (GDS), use a relative positive name, e.g., *SOME.CREATION(+1*).
+  If *src* is a Generation Data Set (GDS) and backup_name is not provided, backup will be a sequential data set.
 
   | **required**: False
   | **type**: str
@@ -74,7 +78,7 @@ before
 
 
 encoding
-  The character set of the source *target*. `zos_replace <./zos_replace.html>`_ requires it to be provided with correct encoding to read the content of a USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
+  The character set for data in the *target*. Module `zos_replace <./zos_replace.html>`_ requires the encoding to correctly read the content of a USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
@@ -83,7 +87,7 @@ encoding
   | **default**: IBM-1047
 
 
-disable_regex
+literal
   A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
 
   | **required**: False
@@ -91,11 +95,11 @@ disable_regex
 
 
 target
-  The location can be a UNIX System Services (USS) file, PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
+  The location can be a UNIX System Services (USS) file, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE.
 
   The USS file must be an absolute pathname.
 
-  It is possible to use a generation data set (GDS) relative name of generation already. created. e.g. *SOME.CREATION(-1*).
+  It is possible to use a generation data set (GDS) relative name of generation already created. e.g. *SOME.CREATION(-1*).
 
   | **required**: True
   | **type**: str
@@ -151,25 +155,25 @@ Examples
      zos_replace:
        target: SAMPLE.SOURCE
        regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
-       replace:  //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
+       replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
        after: '^\$source base \([^\s]+\)'
-       disable_regex: regexp
+       literal: regexp
 
    - name: Replace a specific line before a specific sentence with backup
      zos_replace:
        target: SAMPLE.SOURCE
-       backup: True
+       backup: true
        regexp: //SYSPRINT DD SYSOUT=*
        before: SAMPLES OUTPUT SYSIN *=$DSN
-       disable_regex:
-           - regexp
-           - before
+       literal:
+         - regexp
+         - before
 
    - name: Replace some words between two lines with a backup with tmp_hlq
      zos_replace:
        target: SAMPLE.DATASET
        tmp_hlq: ANSIBLE
-       backup: True
+       backup: true
        backup_name: BACKUP.DATASET
        regexp: var
        replace: vars
@@ -182,7 +186,7 @@ Examples
        regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
        after: ^IEE133I PENDING *
        before: ^IEE252I DEVICE *
-       backup: True
+       backup: true
        backup_name: "SOURCE.GDG(+1)"
 
    - name: Delete some calls to SYSTEM on a member using a backref
@@ -195,6 +199,12 @@ Examples
 
 
 
+
+Notes
+-----
+
+.. note::
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
 
 
@@ -232,7 +242,7 @@ found
   | **sample**: 5
 
 msg
-  Error messages from the module
+  A string with a generic or error message relayed to the user.
 
   | **returned**: failure
   | **type**: str

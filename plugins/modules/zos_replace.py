@@ -81,7 +81,7 @@ options:
       - The I(before) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
       - To disable the regex behavior of I(before) only, set the I(literal) option to 'before'.
     required: false
-    default=''
+    default:''
     type: str
   encoding:
     description:

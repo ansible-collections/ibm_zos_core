@@ -2,6 +2,8 @@ minor_changes:
    - zos_data_set - Adds `noscratch` option to allow uncataloging
      a data set without deleting it from the volume's VTOC.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2210)
+   - zos_job_output - Adds support to query SYSIN DDs from a job with new option input.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2210)
 trivial:
    - data_set - Internal updates to support the noscratch option.
      https://github.com/ansible-collections/ibm_zos_core/pull/2210)

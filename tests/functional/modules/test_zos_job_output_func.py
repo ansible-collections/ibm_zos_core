@@ -50,6 +50,9 @@ def test_zos_job_output_no_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("stderr") is not None
+        assert result.get("msg") is not None
+        assert result.get("failed") is True
         assert result.get("jobs") is None
 
 
@@ -59,7 +62,9 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("stderr") is not None
+        assert result.get("msg") is not None
         assert result.get("failed") is True
+        assert result.get("jobs") is None
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -67,6 +72,9 @@ def test_zos_job_output_no_job_name(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name="")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("stderr") is not None
+        assert result.get("msg") is not None
+        assert result.get("failed") is True
         assert result.get("jobs") is None
 
 
@@ -75,7 +83,46 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
+        assert result.get("msg", False) is False
+        assert result.get("jobs") is not None
+
+        job = result.get("jobs")[0]
+        assert job.get("job_id") is not None
+        assert job.get("job_name") is not None
+        assert job.get("subsystem") is None
+        assert job.get("system") is None
+        assert job.get("owner") is not None
+        assert job.get("cpu_time") is None
+        assert job.get("execution_node") is None
+        assert job.get("origin_node") is None
+        assert job.get("content_type") is None
+        assert job.get("creation_date") is None
+        assert job.get("creation_time") is None
+        assert job.get("execution_time") is None
+        assert job.get("job_class") is None
+        assert job.get("svc_class") is None
+        assert job.get("priority") is None
+        assert job.get("asid") is None
+        assert job.get("queue_position") is None
+        assert job.get("program_name") is None
+        assert job.get("class") is None
+        assert job.get("steps") is not None
+        assert job.get("dds") is not None
+
+        rc = job.get("ret_code")
+        assert rc.get("msg") is None
+        assert rc.get("code") is None
+        assert rc.get("msg_code") is None
+        assert rc.get("msg_txt") is not None
+
+        dds = job.get("dds")[0]
+        assert dds.get("dd_name") == "unavailable"
+        assert dds.get("record_count") == 0
+        assert dds.get("id") is None
+        assert dds.get("stepname") is None
+        assert dds.get("procstep") is None
+        assert dds.get("byte_count") == 0
+        assert dds.get("content") is None
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):
@@ -84,14 +131,20 @@ def test_zos_job_output_no_owner(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg") is not None
+        assert result.get("stderr") is not None
+        assert result.get("failed") is True
+        assert result.get("jobs") is None
 
 
 def test_zos_job_output_invalid_owner(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
-        assert result.get("failed") is True
+        assert result.get("changed") is False
         assert result.get("stderr") is not None
+        assert result.get("msg") is not None
+        assert result.get("failed") is True
+        assert result.get("jobs") is None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -100,6 +153,9 @@ def test_zos_job_output_reject(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg") is not None
+        assert result.get("stderr") is not None
+        assert result.get("failed") is True
+        assert result.get("jobs") is None
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
@@ -112,29 +168,96 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         )
 
         jobs = hosts.all.zos_job_submit(
-            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", remote_src=True, volume=None
         )
         for job in jobs.contacted.values():
-            print(job)
+            assert job.get("changed") is True
+            assert job.get("msg", False) is False
             assert job.get("jobs") is not None
 
-        for job in jobs.contacted.values():
-            submitted_job_id = job.get("jobs")[0].get("job_id")
-            assert submitted_job_id is not None
+            job_ = job.get("jobs")[0]
+            assert job_.get("job_id") is not None
+            submitted_job_id = job_.get("job_id")
+            assert job_.get("job_name") is not None
+            assert job_.get("content_type") is not None
+            assert job_.get("duration") is not None
+            assert job_.get("execution_time") is not None
+            assert job_.get("job_class") is not None
+            assert job_.get("svc_class") is None
+            assert job_.get("priority") is not None
+            assert job_.get("asid") is not None
+            assert job_.get("creation_date") is not None
+            assert job_.get("creation_time") is not None
+            assert job_.get("queue_position") is not None
+            assert job_.get("program_name") is not None
+
+            dds = job_.get("dds")[0]
+            assert dds.get("dd_name") is not None
+            assert dds.get("record_count") != 0
+            assert dds.get("id") is not None
+            assert dds.get("stepname") is not None
+            assert dds.get("procstep") is not None
+            assert dds.get("byte_count") != 0
+            assert dds.get("content") is not None
+
+            step = job_.get("steps")[0]
+            assert step.get("step_name") is not None
+            assert step.get("step_cc") is not None
+
+            rc = job_.get("ret_code")
+            assert rc.get("msg") == "CC"
+            assert rc.get("code") == 0
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("msg_txt") == "CC"
 
         results = hosts.all.zos_job_output(job_id=submitted_job_id)  # was SAMPLE?!
         for result in results.contacted.values():
-            assert result.get("changed") is False
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
             assert result.get("jobs") is not None
-            assert result.get("jobs")[0].get("ret_code").get("steps") is not None
-            assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
-            assert result.get("jobs")[0].get("content_type") == "JOB"
-            assert result.get("jobs")[0].get("execution_time") is not None
-            assert "system" in result.get("jobs")[0]
-            assert "subsystem" in result.get("jobs")[0]
-            assert "cpu_time" in result.get("jobs")[0]
-            assert "execution_node" in result.get("jobs")[0]
-            assert "origin_node" in result.get("jobs")[0]
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") == submitted_job_id
+            assert job.get("job_name") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("system") is not None
+            assert job.get("owner") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("content_type") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("execution_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("svc_class") is None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("queue_position") is not None
+            assert job.get("program_name") is not None
+            assert job.get("class") is not None
+            assert job.get("steps") is not None
+            assert job.get("dds") is not None
+
+            step = job.get("steps")[0]
+            assert step.get("step_name") is not None
+            assert step.get("step_cc") is not None
+
+            rc = job.get("ret_code")
+            assert rc.get("msg") == "CC"
+            assert rc.get("code") == 0
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("msg_txt") == "CC"
+
+            dds = job.get("dds")[0]
+            assert dds.get("dd_name") is not None
+            assert dds.get("record_count") != 0
+            assert dds.get("id") is not None
+            assert dds.get("stepname") is not None
+            assert dds.get("procstep") is not None
+            assert dds.get("byte_count") != 0
+            assert dds.get("content") is not None
+
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
@@ -147,17 +270,55 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
             cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         result = hosts.all.zos_job_submit(
-            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", remote_src=True, volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
         for result in results.contacted.values():
-            assert result.get("changed") is False
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
             assert result.get("jobs") is not None
-            for job in result.get("jobs"):
-                assert len(job.get("ddnames")) == 1
-                assert job.get("ddnames")[0].get("ddname") == dd_name
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("system") is not None
+            assert job.get("owner") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("content_type") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("execution_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("svc_class") is None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("queue_position") is not None
+            assert job.get("program_name") is not None
+            assert job.get("class") is not None
+            assert job.get("steps") is not None
+            assert job.get("dds") is not None
+            assert len(job.get("dds")) == 1
+
+            rc = job.get("ret_code")
+            assert rc.get("msg") == "CC"
+            assert rc.get("code") == 0
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("msg_txt") == "CC"
+
+            dds = job.get("dds")[0]
+            assert dds.get("dd_name") == dd_name
+            assert dds.get("record_count") != 0
+            assert dds.get("id") is not None
+            assert dds.get("stepname") is not None
+            assert dds.get("procstep") is not None
+            assert dds.get("byte_count") != 0
+            assert dds.get("content") is not None
+
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
@@ -200,4 +361,44 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
+        assert result.get("changed") is False
+        assert result.get("msg", False) is False
+        assert result.get("jobs") is not None
+
+        job = result.get("jobs")[0]
+        assert job.get("job_id") is not None
+        assert job.get("job_name") is not None
+        assert job.get("subsystem") is None
+        assert job.get("system") is None
+        assert job.get("owner") is not None
+        assert job.get("cpu_time") is None
+        assert job.get("execution_node") is None
+        assert job.get("origin_node") is None
+        assert job.get("content_type") is None
+        assert job.get("creation_date") is None
+        assert job.get("creation_time") is None
+        assert job.get("execution_time") is None
+        assert job.get("job_class") is None
+        assert job.get("svc_class") is None
+        assert job.get("priority") is None
+        assert job.get("asid") is None
+        assert job.get("queue_position") is None
+        assert job.get("program_name") is None
+        assert job.get("class") is None
+        assert job.get("steps") is not None
+        assert job.get("dds") is not None
+
+        rc = job.get("ret_code")
+        assert rc.get("msg") is None
+        assert rc.get("code") is None
+        assert rc.get("msg_code") is None
+        assert rc.get("msg_txt") is not None
+
+        dds = job.get("dds")[0]
+        assert dds.get("dd_name") == "unavailable"
+        assert dds.get("record_count") == 0
+        assert dds.get("id") is None
+        assert dds.get("stepname") is None
+        assert dds.get("procstep") is None
+        assert dds.get("byte_count") == 0
+        assert dds.get("content") is None

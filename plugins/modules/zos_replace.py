@@ -26,9 +26,17 @@ author:
 options:
   after:
     description:
-      - If specified, only content after this match will be replaced/removed.
+      - A regular expression that if specified, only content after this match will be replaced/removed.
+      - I(after) works as the opening bracket for a search block where the module will search for I(regexp) and
+        if found, replace it with I(replace).
+      - By default works as a regular expression based on re python library L(re python library,https://docs.python.org/es/3.13/library/re.html).
       - Can be used in combination with I(before).
+      - If I(after) is empty, the module will start searching from the beginning of the file till the line match of I(before).
+        Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.
+      - The I(after) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
+      - To disable the regex behavior of I(after) only, set the I(literal) option to 'after'.
     required: false
+    default: ''
     type: str
   backup:
     description:
@@ -63,9 +71,17 @@ options:
     type: str
   before:
     description:
-      - If specified, only content before this match will be replaced/removed.
+      - A regular expression that if specified, only content before this match will be replaced/removed.
+      - I(before) works as the closing bracket for a search block where the module will search for I(regexp) and
+        if found, replace it with I(replace).
+      - By default works as a regular expression based on L(re python library,https://docs.python.org/es/3.13/library/re.html).
       - Can be used in combination with I(after).
+      - If I(before) is empty, the module will start searching from the line that matches I(after) and continue to the end of the file.
+        Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.
+      - The I(before) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
+      - To disable the regex behavior of I(before) only, set the I(literal) option to 'before'.
     required: false
+    default=''
     type: str
   encoding:
     description:
@@ -81,7 +97,10 @@ options:
   literal:
     description:
       - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
+      - To treat multiple options as literal strings disabling regex, include them in the I(literal) list e.g., C(['before', 'after']).
+      - To treat only one option as a literal string disabling regex, set I(literal) to one of the choices "before", "after" or "regexp".
     required: false
+    default: []
     type: raw
   target:
     description:
@@ -112,7 +131,7 @@ options:
       - If not set, matches are removed entirely.
     required: false
     type: str
-    default: ""
+    default: ''
 
 notes:
   - For supported character sets used to encode data, refer to the
@@ -120,18 +139,18 @@ notes:
 """
 
 EXAMPLES = r"""
-- name: Replace with blank space on a USS file any occurrences of the regex
+- name: Replace 'profile/' pattern from USS file via blank substitution.
   zos_replace:
     target: /tmp/src/somefile
     regexp: 'profile\/'
 
-- name: Replace using after on USS file
+- name: Replace regexp match with blank after line match in USS file.
   zos_replace:
     target: "/tmp/source"
     regexp: '^MOUNTPOINT*'
     after: export ZOAU_ROOT
 
-- name: Replace a specific line with special character on a dataset after a line
+- name: Replace a specific line with special character on a dataset after a line, treating the text specified for regexp as a literal string and after as regular expression.
   zos_replace:
     target: SAMPLE.SOURCE
     regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
@@ -139,7 +158,7 @@ EXAMPLES = r"""
     after: '^\$source base \([^\s]+\)'
     literal: regexp
 
-- name: Replace a specific line before a specific sentence with backup
+- name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as literal strings.
   zos_replace:
     target: SAMPLE.SOURCE
     backup: true
@@ -149,7 +168,7 @@ EXAMPLES = r"""
       - regexp
       - before
 
-- name: Replace some words between two lines with a backup with tmp_hlq
+- name: Replace 'var' with 'vars' between matched lines after and before with backup.
   zos_replace:
     target: SAMPLE.DATASET
     tmp_hlq: ANSIBLE
@@ -160,7 +179,7 @@ EXAMPLES = r"""
     after: ^/tmp/source*
     before: ^   if*
 
-- name: Replace lines on a GDS and generate a backup on the same GDG
+- name: Replace lines on a GDS and generate a backup on the same GDG.
   zos_replace:
     target: SOURCE.GDG(0)
     regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
@@ -169,7 +188,7 @@ EXAMPLES = r"""
     backup: true
     backup_name: "SOURCE.GDG(+1)"
 
-- name: Delete some calls to SYSTEM on a member using a backref
+- name: Delete 'SYSTEM' calls via backref between matched lines in PDS member.
   zos_replace:
     target: PDS.SOURCE(MEM)
     regexp: '^(.*?SYSTEM.*?)SYSTEM(.*)'
@@ -183,13 +202,13 @@ backup_name:
     description: Name of the backup file or data set that was created.
     returned: if backup=true
     type: str
-    sample: /path/to/file.txt.2015-02-03@04:15
+    sample: "/path/to/file.txt.2015-02-03@04:15"
 changed:
     description:
         Indicates if the source was modified.
     returned: always
     type: bool
-    sample: 1
+    sample: True
 found:
     description: Number of matches found
     returned: success

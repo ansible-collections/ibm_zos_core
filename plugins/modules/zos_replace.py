@@ -577,28 +577,28 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            after=dict(type='str'),
+            after=dict(type='str', default=''),
             backup=dict(type='bool', default=False, required=False),
             backup_name=dict(type='str', default=None, required=False),
-            before=dict(type='str'),
+            before=dict(type='str', default=''),
             encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            literal=dict(type="raw", required=False, default=None),
+            literal=dict(type="raw", required=False, default=[]),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
         supports_check_mode=False
     )
     args_def = dict(
-        after=dict(type='str'),
+        after=dict(type='str', default=''),
         backup=dict(type='bool', default=False, required=False),
         backup_name=dict(type='data_set_or_path', default=None, required=False),
-        before=dict(type='str'),
+        before=dict(type='str', default=''),
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        literal=dict(type=literals, required=False, default=None),
+        literal=dict(type=literals, required=False, default=[]),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -727,6 +727,8 @@ def literals(contents, dependencies):
     """
     allowed_values = {"after", "before", "regexp"}
     if not contents:
+        return None
+    if contents == []:
         return None
     if not isinstance(contents, list):
         contents = [contents]

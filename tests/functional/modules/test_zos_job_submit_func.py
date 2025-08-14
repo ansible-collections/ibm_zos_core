@@ -1589,7 +1589,7 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         # being consistent with the rest of the possible TYPRUN cases.
         # When running a job with TYPRUN=COPY, a copy of the JCL will be kept in the JES spool, so
         # effectively, the system is changed even though the job didn't run.
-        assert result.get("changed") is False
+        assert result.get("changed") is True
         assert result.get("jobs") is not None
         job = result.get("jobs")[0]
 
@@ -1623,17 +1623,13 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         assert dds.get("content") is not None
 
         rc = job.get("ret_code")
-        assert rc.get("msg") == "NOEXEC"
-        assert rc.get("code") == None
+        assert rc.get("msg") == "TYPRUN=COPY"
+        assert rc.get("code") is None
         assert rc.get("msg_code") is None
-        assert rc.get("msg_txt") is not None
         assert re.search(
-            r'NOEXEC.',
+            r'The job was run with TYPRUN=COPY.',
             repr(rc.get("msg_txt"))
         )
-        assert result.get("jobs")[0].get("ret_code").get("code") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg") == 'TYPRUN=COPY'
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):

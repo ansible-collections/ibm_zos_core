@@ -33,6 +33,7 @@ description:
     like "*".
   - If there is no dd_name, or if dd_name="?", output of all the dds under
     the given job will be displayed.
+  - If SYSIN DDs are needed, C(input) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
@@ -62,6 +63,12 @@ options:
     type: str
     required: false
     aliases: [ ddname ]
+  input:
+    description:
+      - Whether to include SYSIN DDs as part of the output.
+    type: bool
+    default: false
+    required: false
 
 attributes:
   action:
@@ -91,6 +98,11 @@ EXAMPLES = r"""
     job_name: "*"
     owner: "IBMUSER"
     dd_name: "?"
+
+- name: Query a job's output including SYSIN DDs
+  zos_job_output:
+    job_id: "JOB00548"
+    input: true
 """
 
 RETURN = r"""
@@ -496,6 +508,7 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
+        input=dict(type="bool", required=False, default=False),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
     )
 
@@ -505,6 +518,7 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
+        input=dict(type="bool", required=False, default=False),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
     )
 
@@ -524,6 +538,7 @@ def run_module():
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
+    sysin = module.params.get("input")
     dd_name = module.params.get("dd_name")
 
     if not job_id and not job_name and not owner:
@@ -531,7 +546,7 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name, sysin=sysin)
         for job in results["jobs"]:
             if "job_not_found" in job:
                 results["changed"] = False

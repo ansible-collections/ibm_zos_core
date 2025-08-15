@@ -577,14 +577,14 @@ def main():
         indentation=dict(arg_type='int', default=0, required=False)
     )
     result = dict(
-      changed=False,
-      cmd='',
-      found=0,
-      stdout='',
-      stdout_lines=[],
-      stderr='',
-      stderr_lines=[],
-      rc=0,
+        changed=False,
+        cmd='',
+        found=0,
+        stdout='',
+        stdout_lines=[],
+        stderr='',
+        stderr_lines=[],
+        rc=0,
     )
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -679,22 +679,21 @@ def main():
         ret = json.loads("""{0}""".format(stdout))
     except Exception:
         result.update(
-          dict(
-            msg="ZOAU dmod return content is NOT in json format",
-            stdout=str(stdout),
-            stdout_lines=stdout.splitlines(),
-            stderr=str(stderr),
-            stderr_lines=stderr.splitlines(),
-            rc=rc
-          )
+            dict(
+                msg="ZOAU dmod return content is NOT in json format",
+                stdout=str(stdout),
+                stdout_lines=stdout.splitlines(),
+                stderr=str(stderr),
+                stderr_lines=stderr.splitlines(),
+                rc=rc
+            )
         )
         module.fail_json(**result)
 
     result['cmd'] = ret['data']['commands']
     result['changed'] = ret['data']['changed']
     result['found'] = ret['data']['found']
-    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
-    # That information will be given with 'changed' and 'found'
+    # Only populate 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     if len(stderr):
         result['stderr'] = str(stderr)
         result['rc'] = rc

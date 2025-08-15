@@ -348,6 +348,14 @@ stderr:
   returned: failure
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+stdout_lines:
+    description: List of strings containing individual lines from stdout.
+    returned: failure
+    type: list
+stderr_lines:
+    description: List of strings containing individual lines from stderr.
+    returned: failure
+    type: list
 rc:
   description: The return code from ZOAU dmod when json.loads() fails to parse the result from dmod
   returned: failure

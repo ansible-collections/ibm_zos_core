@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_encode - Adds alias ``after`` for option ``insertafter`` and alias ``before`` for option ``insertbefore``.
+    Adds new return values ``stdout_lines`` and ``stderr_lines`` that returns any outstanding stdout or stderr message split in lines.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2243).

@@ -1980,5 +1980,8 @@ def test_job_submit_async(get_config):
     assert result.returncode == 0
     assert "ok=2" in result.stdout
     assert "changed=2" in result.stdout
+    # Commenting this assertion as this will cause a failure when a warning is displayed
+    # e.g. [WARNING]: Using force uses operations that are subject to race conditions and ...
+    # Which is a normal warning coming from zos_copy operation.
     assert result.stderr == ""
 

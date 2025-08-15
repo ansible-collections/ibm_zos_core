@@ -576,7 +576,16 @@ def main():
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )
-    result = dict(changed=False, cmd='', found=0)
+    result = dict(
+      changed=False,
+      cmd='',
+      found=0,
+      stdout='',
+      stdout_lines=[],
+      stderr='',
+      stderr_lines=[],
+      rc=0,
+    )
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
@@ -669,7 +678,16 @@ def main():
         # The triple double quotes is required for special characters (/_) been scape
         ret = json.loads("""{0}""".format(stdout))
     except Exception:
-        result.update(dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc))
+        result.update(
+          dict(
+            msg="ZOAU dmod return content is NOT in json format",
+            stdout=str(stdout),
+            stdout_lines=stdout.splitlines(),
+            stderr=str(stderr),
+            stderr_lines=stderr.splitlines(),
+            rc=rc
+          )
+        )
         module.fail_json(**result)
 
     result['cmd'] = ret['data']['commands']

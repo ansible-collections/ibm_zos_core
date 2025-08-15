@@ -150,7 +150,7 @@ class ActionModule(ActionBase):
                     src=source_full,
                     dest=dest_file,
                     mode="0666",
-                    force=True,
+                    replace=True,
                     encoding=module_args.get('encoding'),
                     remote_src=False,
                 )

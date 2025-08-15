@@ -81,6 +81,7 @@ options:
     - Choices are EOF or '*regex*'.
     - Default is EOF.
     required: false
+    aliases: ['after']
     type: str
   insertbefore:
     description:
@@ -92,6 +93,7 @@ options:
       at the end of the file.
     - Choices are BOF or '*regex*'.
     required: false
+    aliases: ['before']
     type: str
   marker_begin:
     description:
@@ -511,10 +513,12 @@ def main():
                 aliases=['content']
             ),
             insertafter=dict(
-                type='str'
+                type='str',
+                aliases=['after'],
             ),
             insertbefore=dict(
-                type='str'
+                type='str',
+                aliases=['before'],
             ),
             marker_begin=dict(
                 type='str',
@@ -560,8 +564,8 @@ def main():
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),
         marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK', required=False),
         block=dict(arg_type='str', default='', aliases=['content'], required=False),
-        insertafter=dict(arg_type='str', required=False),
-        insertbefore=dict(arg_type='str', required=False),
+        insertafter=dict(arg_type='str', required=False, aliases=['after'],),
+        insertbefore=dict(arg_type='str', required=False, aliases=['before'],),
         marker_begin=dict(arg_type='str', default='BEGIN', required=False),
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
@@ -665,10 +669,8 @@ def main():
         # The triple double quotes is required for special characters (/_) been scape
         ret = json.loads("""{0}""".format(stdout))
     except Exception:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+        result.update(dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc))
+        module.fail_json(**result)
 
     result['cmd'] = ret['data']['commands']
     result['changed'] = ret['data']['changed']

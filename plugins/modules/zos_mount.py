@@ -117,7 +117,7 @@ options:
                       This is usually BPXPRMxx or a copy.
                 required: True
                 type: str
-                aliases=["data_store"]
+                aliases: [ data_store ]
             backup:
                 description:
                     - Creates a backup file or backup data set for
@@ -161,7 +161,7 @@ options:
                 type: list
                 elements: str
                 required: False
-                aliases=["comment"]
+                aliases: [ comment ]
     unmount_opts:
         description:
             - Describes how the unmount will be performed.

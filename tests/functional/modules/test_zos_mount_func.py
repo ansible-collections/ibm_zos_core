@@ -187,7 +187,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_systems):
+def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -231,7 +231,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             path="/pythonx",
             fs_type="zfs",
             state="mounted",
-            persistent=dict(data_store=dest_path),
+            persistent=dict(name=dest_path),
         )
 
         for result in mount_result.values():
@@ -296,7 +296,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
             path="/pythonx",
             fs_type="zfs",
             state="mounted",
-            persistent=dict(data_store=dest_path),
+            persistent=dict(name=dest_path),
         )
 
         for result in mount_result.values():
@@ -330,7 +330,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
             stdin="",
         )
 
-def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
+def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -391,10 +391,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             fs_type="zfs",
             state="mounted",
             persistent=dict(
-                data_store=dest_path,
+                name=dest_path,
                 backup="Yes",
                 backup_name=back_dest_path,
-                comment=["bpxtablecomment - try this", "second line of comment"],
+                marker=["bpxtablemarker - try this", "second line of marker"],
             ),
         )
         # copying from dataset to make editable copy on target
@@ -421,7 +421,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             assert result.get("changed") is True
 
         assert srcfn in data
-        assert "bpxtablecomment - try this" in data
+        assert "bpxtablemarker - try this" in data
     finally:
         hosts.all.zos_mount(
             src=srcfn,
@@ -471,7 +471,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             fs_type="zfs",
             state="absent",
             tmp_hlq=tmphlq,
-            persistent=dict(data_store=persist_data_set, backup=True)
+            persistent=dict(name=persist_data_set, backup=True)
         )
         hosts.all.shell(
             cmd="drm " + DataSet.escape_data_set_name(srcfn),

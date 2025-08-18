@@ -1,4 +1,4 @@
 breaking_changes:
-  - zos_copy - Option ``persistent.data_store`` is deprecated in favor of ``persistent.name``.
+  - zos_mount - Option ``persistent.data_store`` is deprecated in favor of ``persistent.name``.
     Option ``persistent.comment`` is deprecated in favor of ``persistent.marker``.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2244).

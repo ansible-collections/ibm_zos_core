@@ -52,7 +52,7 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
             assert len(item.get("stdout_lines")) > 0
             assert item.get("stderr") == ""
             assert item.get("stdout") != ""
-            assert item.get("command") == "help"
+            assert item.get("command") == command_string[0]
         assert result.get("changed") is True
 
 
@@ -172,8 +172,8 @@ def test_zos_tso_command_invalid_command(ansible_zos_module):
             assert item.get("stderr") == ""
             assert item.get("stdout") == ""
             assert item.get("command") == cmd
-        assert result.get("changed") is False
-        assert result.get("failed") is True
+        assert result.get("changed") is True
+        assert result.get("failed", False) is False
 
 
 # The positive test

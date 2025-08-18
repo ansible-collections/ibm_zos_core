@@ -298,6 +298,15 @@ options:
     type: bool
     required: false
     default: false
+  noscratch:
+    description:
+      - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
+        The Data Set Control Block is not removed from the VTOC.
+      - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+    type: bool
+    required: false
+    default: false
   volumes:
     description:
       - >
@@ -575,6 +584,15 @@ options:
         type: bool
         required: false
         default: false
+      noscratch:
+        description:
+          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+          - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
+            The Data Set Control Block is not removed from the VTOC.
+          - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+        type: bool
+        required: false
+        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -733,6 +751,12 @@ EXAMPLES = r"""
   zos_data_set:
     name: someds.name.here
     state: absent
+
+- name: Uncatalog a data set but do not remove it from the volume.
+  zos_data_set:
+    name: someds.name.here
+    state: absent
+    noscratch: true
 
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:
@@ -1404,7 +1428,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1439,7 +1463,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
     elif state == "cataloged":
         changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
@@ -1586,6 +1610,11 @@ def parse_and_validate_args(params):
                     required=False,
                     default=False,
                 ),
+                noscratch=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1672,6 +1701,11 @@ def parse_and_validate_args(params):
             default=None
         ),
         force=dict(
+            type="bool",
+            required=False,
+            default=False,
+        ),
+        noscratch=dict(
             type="bool",
             required=False,
             default=False,
@@ -1788,6 +1822,11 @@ def run_module():
                     required=False,
                     default=False,
                 ),
+                noscratch=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1868,6 +1907,11 @@ def run_module():
             required=False,
             default=False
         ),
+        noscratch=dict(
+            type="bool",
+            required=False,
+            default=False
+        ),
     )
     result = dict(changed=False, message="", names=[])
 
@@ -1895,6 +1939,8 @@ def run_module():
             module.params["replace"] = None
         if module.params.get("record_format") is not None:
             module.params["record_format"] = None
+        if module.params.get("noscratch") is not None:
+            module.params["noscratch"] = None
     elif module.params.get("type") is not None:
         if module.params.get("type") in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
@@ -1921,6 +1967,7 @@ def run_module():
                     replace=data_set_params.get("replace"),
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
+                    noscratch=data_set_params.get("noscratch"),
                 )
                 result["changed"] = result["changed"] or current_changed
         except Exception as e:

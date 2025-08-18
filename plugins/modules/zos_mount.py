@@ -1139,7 +1139,7 @@ def main():
                         deprecated_aliases=[
                             dict(
                                 name='data_store',
-                                version='2.2.0',  # Version when it will be removed
+                                version='3.0.0',  # Version when it will be removed
                                 collection_name='ibm.ibm_zos_core',
                             )
                         ],
@@ -1152,11 +1152,11 @@ def main():
                         required=False,
                         aliases=["comment"],
                         deprecated_aliases=[
-                                dict(
-                                    name='comment',
-                                    version='2.2.0',  # Version when it will be removed
-                                    collection_name='ibm.ibm_zos_core',
-                                )
+                            dict(
+                                name='comment',
+                                version='3.0.0',  # Version when it will be removed
+                                collection_name='ibm.ibm_zos_core',
+                            )
                         ],
                     ),
                 ),

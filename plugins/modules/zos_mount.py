@@ -1136,10 +1136,29 @@ def main():
                         type="str",
                         required=True,
                         aliases=["data_store"],
+                        deprecated_aliases=[
+                            dict(
+                                name='data_store',
+                                version='2.2.0',  # Version when it will be removed
+                                collection_name='ibm.ibm_zos_core',
+                            )
+                        ],
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    marker=dict(type="list", elements="str", required=False, aliases=["comment"]),
+                    marker=dict(
+                        type="list",
+                        elements="str",
+                        required=False,
+                        aliases=["comment"],
+                        deprecated_aliases=[
+                                dict(
+                                    name='comment',
+                                    version='2.2.0',  # Version when it will be removed
+                                    collection_name='ibm.ibm_zos_core',
+                                )
+                        ],
+                    ),
                 ),
             ),
             unmount_opts=dict(

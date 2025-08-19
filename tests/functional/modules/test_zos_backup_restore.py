@@ -72,9 +72,9 @@ def create_sequential_data_set_with_contents(
     hosts, data_set_name, contents, volume=None
 ):
     if volume is not None:
-        results = hosts.all.zos_data_set(name=data_set_name, type="seq", volumes=volume)
+        results = hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {data_set_name}")
     else:
-        results = hosts.all.zos_data_set(name=data_set_name, type="seq")
+        results = hosts.all.shell(cmd=f"dtouch -tseq {data_set_name}")
     assert_module_did_not_fail(results)
     results = hosts.all.shell("decho '{0}' {1}".format(contents, data_set_name))
     assert_module_did_not_fail(results)
@@ -85,6 +85,13 @@ def create_file_with_contents(hosts, path, contents):
     assert_module_did_not_fail(results)
 
 
+def create_vsam_with_contents(hosts, data_set_name, contents):
+    results = hosts.all.shell(cmd=f"dtouch -tksds -k4:0 {data_set_name}")
+    assert_module_did_not_fail(results)
+    tmp_ds = get_tmp_ds_name()
+    results = hosts.all.shell(cmd=f"decho 'this is a test line' {tmp_ds}")
+
+
 def delete_data_set_or_file(hosts, name):
     if name.startswith("/"):
         delete_file(hosts, name)
@@ -93,7 +100,7 @@ def delete_data_set_or_file(hosts, name):
 
 
 def delete_data_set(hosts, data_set_name):
-    hosts.all.zos_data_set(name=data_set_name, state="absent")
+    hosts.all.shell(cmd=f"drm -F `  {data_set_name}")
 
 
 def delete_file(hosts, path):
@@ -899,15 +906,15 @@ def test_backup_gds(ansible_zos_module, dstype):
         # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
         data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
         backup_dest = get_tmp_ds_name(symbols=True).replace("-", "")
-        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 {data_set_name}")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -935,15 +942,15 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
         data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
         ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
-        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 {data_set_name}")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=ds_name, state="present", type=dstype)
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -1139,3 +1146,29 @@ def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         delete_remnants(hosts, hlqs)
+
+
+def test_backup_of_vsam_index(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+
+    try:
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS
+        )
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=overwrite,
+            recover=recover,
+        )
+        assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in output"
+        assert_data_set_or_file_exists(hosts, backup_name)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts)

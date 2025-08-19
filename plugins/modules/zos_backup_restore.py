@@ -448,7 +448,7 @@ def main():
         hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
-        index=(type="bool", required=False, default=False),
+        index=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)

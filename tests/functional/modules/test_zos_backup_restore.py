@@ -942,15 +942,15 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
         data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
         ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
-        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 {data_set_name}")
+        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 '{data_set_name}'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{ds_name}'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

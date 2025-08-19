@@ -201,6 +201,19 @@ options:
         not be identified, the value C(TMPHLQ) is used.
     required: false
     type: str
+  index:
+    description:
+      - When C(operation=backup) specifies that for any VSAM cluster backup, the backup must also contain
+        all the associated alternate index (AIX®) clusters and paths.
+      - When C(operation=restore) specifies that for any VSAM cluster dumped with the SPHERE keyword,
+        the module must also restore all associated AIX® clusters and paths.
+      - The alternate index is a VSAM function that allows logical records of a
+        KSDS or ESDS to be accessed sequentially and directly by more than one key
+        field. The cluster that has the data is called the base cluster. An
+        alternate index cluster is then built from the base cluster.
+    type: bool
+    required: false
+    default: false
 
 attributes:
   action:
@@ -349,6 +362,16 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
+
+- name: Backup all data sets matching the pattern USER.VSAM.** to z/OS UNIX
+     file /tmp/temp_backup.dzp and ensure the VSAM alternate index are preserved.
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include: user.vsam.**
+    backup_name: /tmp/temp_backup.dzp
+    index: true
+
 """
 RETURN = r"""
 changed:
@@ -424,6 +447,8 @@ def main():
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
+        # 2.0 redesign extra values for ADRDSSU keywords
+        index=(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -444,6 +469,13 @@ def main():
         hlq = params.get("hlq")
         tmp_hlq = params.get("tmp_hlq")
 
+        # 2.0 redesign extra ADRDSSU keywords
+        sphere = params.get("index")
+
+        # extra keyword supported by ZOAU but not part of their signature.
+        keywords = {
+          "sphere": sphere
+        }
         if operation == "backup":
             backup(
                 backup_name=backup_name,
@@ -459,6 +491,7 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                keywords=keywords,
             )
         else:
             restore(
@@ -476,6 +509,7 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                keywords=keywords,
             )
         result["backup_name"] = backup_name
         result["changed"] = True
@@ -573,6 +607,7 @@ def backup(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    keywords={},
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -604,6 +639,8 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    keywords : dict
+        Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -625,6 +662,7 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    keywords={},
 ):
     """Restore data sets or a volume from the backup.
 
@@ -662,6 +700,10 @@ def restore(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    sphere : bool
+        Specifies the value to use for sphere when restoring VSAM clusters.
+    keywords : dict
+        Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
 
     Raises
     ------

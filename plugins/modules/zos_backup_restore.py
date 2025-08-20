@@ -135,6 +135,14 @@ options:
         with matching name on the target device.
     type: bool
     default: False
+  compress:
+    description: 
+      - When I(operation=backup), compress the dataset or file produced by ADRDSSU DUMP. 
+        This option can reduce the size of the temporary dataset produced before it is passed
+        to AMATERSE for tersing.
+      - This is only supported if I(operation=backup). By default it will compress all files.
+    type: bool
+    default: True
   sms_storage_class:
     description:
       - When I(operation=restore), specifies the storage class to use. The storage class will
@@ -420,6 +428,7 @@ def main():
         backup_name=dict(type="str", required=True),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=True),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
@@ -439,6 +448,7 @@ def main():
         backup_name = params.get("backup_name")
         recover = params.get("recover")
         overwrite = params.get("overwrite")
+        compress = params.get("compress")
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
@@ -453,6 +463,7 @@ def main():
                 full_volume=full_volume,
                 temp_volume=temp_volume,
                 overwrite=overwrite,
+                compress=compress,
                 recover=recover,
                 space=space,
                 space_type=space_type,
@@ -546,6 +557,7 @@ def parse_and_validate_args(params):
         backup_name=dict(type=backup_name_type, required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=True),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
@@ -567,6 +579,7 @@ def backup(
     full_volume,
     temp_volume,
     overwrite,
+    compress,
     recover,
     space,
     space_type,
@@ -580,6 +593,8 @@ def backup(
     ----------
     backup_name : str
         The data set or UNIX path to place the backup.
+    compress : bool
+        Compress the dataset or file produced by ADRDSSU before taking backup.
     include_data_sets : list
         A list of data set patterns to include in the backup.
     exclude_data_sets : list
@@ -604,6 +619,7 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -964,6 +980,9 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
+
+    if kwargs.get("compress"):
+        zoau_args["compress"] = kwargs.get("compress")
 
     if kwargs.get("sms_storage_class"):
         zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")

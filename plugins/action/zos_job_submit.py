@@ -79,7 +79,6 @@ class ActionModule(ActionBase):
             tmp_dir = self._connection._shell._options.get("remote_tmp")
             temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
             dest_path = path.join(tmp_dir, temp_file_dir)
-
             tempfile_args = {"path": dest_path, "state": "directory"}
             # Reverted this back to using file ansible module so ansible would handle all temporary dirs
             # creation with correct permissions.

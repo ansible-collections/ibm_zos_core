@@ -313,7 +313,6 @@ class ActionModule(ActionBase):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
-
         tempfile_args = {"path": temp_path, "state": "directory"}
         # Reverted this back to using file ansible module so ansible would handle all temporary dirs
         # creation with correct permissions.

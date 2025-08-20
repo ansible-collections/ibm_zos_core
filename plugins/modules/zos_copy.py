@@ -4097,14 +4097,34 @@ def main():
         )
 
     res_args = conv_path = None
+    import sys
     try:
         res_args, conv_path = run_module(module, arg_def)
+        # Set the trace function
+        sys.settrace(trace_calls)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])
+        sys.settrace(None)
+
+indent_level = 0
+def trace_calls(frame, event, arg):
+    global indent_level
+    logger = SingletonLogger().get_logger()
+    if event == 'call':
+        indent_level += 1
+        function_name = frame.f_code.co_name
+        file_name = frame.f_code.co_filename
+        logger.info(f"{'  ' * indent_level}--> Calling {function_name} in {file_name}")
+    elif event == 'return':
+        function_name = frame.f_code.co_name
+        logger.info(f"{'  ' * indent_level}<-- Returning from {function_name}")
+        indent_level -= 1
+    return trace_calls
+
 
 
 class EncodingConversionError(Exception):

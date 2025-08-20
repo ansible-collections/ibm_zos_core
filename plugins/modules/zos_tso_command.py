@@ -206,8 +206,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         The command result details.
     """
     command_detail_json = []
-    delete_on_close = True
-    tmp_file = NamedTemporaryFile(delete=delete_on_close)
+    tmp_file = NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
@@ -216,9 +215,11 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         command_results = {}
         command_results["command"] = command
         command_results["rc"] = rc
-        command_results["content"] = stdout.split("\n")
-        command_results["lines"] = len(command_results.get("content", []))
+        command_results["stdout"] = stdout
+        command_results["stdout_lines"] = stdout.split("\n")
+        command_results["line_count"] = len(command_results.get("stdout_lines", []))
         command_results["stderr"] = stderr
+        command_results["stderr_lines"] = stderr.split("\n")
 
         if rc <= max_rc:
             command_results["failed"] = False

@@ -314,19 +314,13 @@ class ActionModule(ActionBase):
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
 
-        rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(temp_path))
-        display.vvv(f"ibm_zos_copy: remote mkdir result {rc}, {stdout}, {stderr} path {temp_path}")
-        if rc > 0:
-            msg = f"Failed to create remote temporary directory in {self.tmp_dir}. Ensure that user has proper access."
-            return self._exit_action({}, msg, failed=True)
-
-        # The temporary dir was created successfully using ssh connection user.
-        rc, stdout, stderr = self._connection.exec_command(F"cd {temp_path} && pwd")
-        display.vvv(f"ibm_zos_copy: remote pwd result {rc}, {stdout}, {stderr} path {temp_path}")
-        if rc > 0:
-            msg = f"Failed to resolve remote temporary directory {temp_path}. Ensure that user has proper access."
-            return self._exit_action({}, msg, failed=True)
-        temp_path = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+        tempfile_args = {"path": temp_path, "state": "directory"}
+        # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+        # creation with correct permissions.
+        tempfile = self._execute_module(
+            module_name="file", module_args=tempfile_args, task_vars=task_vars,
+        )
+        temp_path = tempfile.get("path")
 
         _sftp_action = 'put'
 
@@ -371,7 +365,6 @@ class ActionModule(ActionBase):
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
             display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
-            # self._fixup_perms2((self._connection._shell.tmpdir, os.path.dirname(temp_path)))
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
 
             display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)

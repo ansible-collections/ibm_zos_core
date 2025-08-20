@@ -80,21 +80,13 @@ class ActionModule(ActionBase):
             temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
             dest_path = path.join(tmp_dir, temp_file_dir)
 
-            rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(dest_path))
-            display.vvv(f"zos_job_submit: mkdir result {rc}, {stdout}, {stderr} dest path {dest_path}")
-            if rc > 0:
-                result["failed"] = True
-                result["msg"] = f"Failed to create remote temporary directory in {tmp_dir}. Ensure that user has proper access."
-                return result
-
-            # The temporary dir was created successfully using ssh connection user.
-            rc, stdout, stderr = self._connection.exec_command(F"cd {dest_path} && pwd")
-            display.vvv(f"zos_job_submit: remote pwd result {rc}, {stdout}, {stderr} path {dest_path}")
-            if rc > 0:
-                result["failed"] = True
-                result["msg"] = f"Failed to resolve remote temporary directory {dest_path}. Ensure that user has proper access."
-                return result
-            dest_path = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+            tempfile_args = {"path": dest_path, "state": "directory"}
+            # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+            # creation with correct permissions.
+            tempfile = self._execute_module(
+                module_name="file", module_args=tempfile_args, task_vars=task_vars,
+            )
+            dest_path = tempfile.get("path")
             dest_file = path.join(dest_path, path.basename(source))
 
             source_full = None
@@ -143,7 +135,7 @@ class ActionModule(ActionBase):
                 dict(
                     src=source_full,
                     dest=dest_file,
-                    mode="644",
+                    mode="0777",
                     force=True,
                     encoding=module_args.get('encoding'),
                     remote_src=False,

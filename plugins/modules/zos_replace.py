@@ -29,7 +29,7 @@ options:
       - A regular expression that, if specified, only content after this match will be replaced/removed.
       - I(after) works as the opening bracket for a search block where the module will search for I(regexp) and
         if found, replace it with I(replace).
-      - By default works as a regular expression based on re python library L(re python library,https://docs.python.org/es/3.13/library/re.html).
+      - By default, it works as a regular expression based on the L(re Python library,https://docs.python.org/es/3.13/library/re.html).
       - Can be used in combination with I(before).
       - If I(after) is empty, the module will start searching from the beginning of the file till the line match of I(before).
         Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.

@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
-from ibm_zos_core.tests.helpers.version import get_zoau_version
 
 __metaclass__ = type
 
@@ -539,7 +538,6 @@ def test_add_not_found(ansible_zos_module):
     test_info['library'] = f'{TEST_HLQ}.FOO.BAR'
     results = hosts.all.zos_apf(**test_info)
     for result in results.contacted.values():
-        print(result)
         assert result.get("stdout") is not None
         assert result.get("stderr") is not None
         assert result.get("stdout_lines") is not None
@@ -717,11 +715,7 @@ def test_persist_invalid_marker_len(ansible_zos_module, volumes_with_vvds):
         test_info['persistent']['marker'] = "/* {mark} This is a awfully lo%70sng marker */" % ("o")
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            print(result)
-            assert result.get("stdout") is not None
-            assert result.get("stderr") is not None
-            assert result.get("stdout_lines") is not None
-            assert result.get("stderr_lines") is not None
+            assert result.get("failed") is True
             assert result.get("msg") == 'marker length may not exceed 72 characters'
     finally:
         clean_test_env(hosts, test_info)

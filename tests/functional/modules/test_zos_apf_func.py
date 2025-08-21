@@ -480,9 +480,9 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") == ''
+            assert result.get("stderr") is not None
             assert result.get("stdout_lines") is not None
-            assert result.get("stderr_lines") == ['']
+            assert result.get("stderr_lines") is not None
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:

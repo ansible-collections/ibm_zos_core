@@ -113,6 +113,7 @@ options:
             the APF list.
         required: True
         type: str
+        aliases: [data_set_name]
       marker:
         description:
           - The marker line template.
@@ -321,7 +322,7 @@ import json
 from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, zoau_version_checker, data_set, backup as Backup)
+    better_arg_parser, data_set, backup as Backup)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -452,11 +453,10 @@ def main():
                         required=True,
                         aliases=["data_set_name"],
                         deprecated_aliases=[
-                                        dict(
-                                            name='data_set_name',
-                                            version='2.0.0',
-                                            collection_name='ibm.ibm_zos_core',
-                                        )
+                            dict(
+                                name='data_set_name',
+                                version='2.0.0',
+                                collection_name='ibm.ibm_zos_core')
                         ],
                     ),
                     marker=dict(
@@ -522,7 +522,7 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                target=dict(arg_type='str', required=True),
+                target=dict(arg_type='str', required=True, aliases=["data_set_name"]),
                 marker=dict(arg_type='str', required=False, default='/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */'),
                 backup=dict(arg_type='bool', default=False),
                 backup_name=dict(arg_type='str', required=False, default=None),

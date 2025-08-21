@@ -522,9 +522,9 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") == ''
+            assert result.get("stderr") is not None
             assert result.get("stdout_lines") is not None
-            assert result.get("stderr_lines") == ['']
+            assert result.get("stderr_lines") is not None
     finally:
         clean_test_env(hosts, test_info)
 

@@ -450,6 +450,14 @@ def main():
                     target=dict(
                         type='str',
                         required=True,
+                        aliases=["data_set_name"],
+                        deprecated_aliases=[
+                                dict(
+                                    name='data_set_name',
+                                    version='2.0.0',
+                                    collection_name='ibm.ibm_zos_core',
+                                )
+                        ],
                     ),
                     marker=dict(
                         type='str',

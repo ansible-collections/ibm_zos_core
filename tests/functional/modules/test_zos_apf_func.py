@@ -84,7 +84,7 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         test_info['state'] = 'absent'
@@ -135,7 +135,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
             assert result.get("rc") == 0
             assert result.get("backup_name")[:6] == tmphlq
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         test_info['state'] = 'absent'
@@ -181,7 +181,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         test_info['state'] = 'absent'
@@ -269,7 +269,7 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         del_exptd = DEL_EXPECTED.replace(" ", "")
@@ -328,7 +328,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         add_exptd = ADD_BATCH_EXPECTED.format(
@@ -351,7 +351,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         del_exptd = DEL_EXPECTED.replace(" ", "")
@@ -377,7 +377,7 @@ def test_operation_list(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("rc") == 0
         assert result.get("stdout") is not None
-        assert result.get("stderr") is None
+        assert result.get("stderr") == ''
         assert result.get("stdout_lines") is not None
         assert result.get("stderr_lines") == []
         list_json = result.get("stdout")
@@ -425,7 +425,7 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
             list_filtered = result.get("stdout")
@@ -472,7 +472,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         # Second call to zos_apf, same as first but with different expectations
@@ -480,7 +480,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
         test_info['state'] = 'absent'
@@ -522,7 +522,7 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") is not None
-            assert result.get("stderr") is None
+            assert result.get("stderr") == ''
             assert result.get("stdout_lines") is not None
             assert result.get("stderr_lines") == []
     finally:

@@ -1,0 +1,3 @@
+breaking_changes:
+  - zos_apf Option ``data_set_name`` is deprecated in favor of ``target``. Return value ``stdout_lines`` and ``stderr_lines`` are now returned.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2250).

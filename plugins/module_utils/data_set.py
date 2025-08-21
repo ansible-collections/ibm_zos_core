@@ -3020,7 +3020,6 @@ class GenerationDataGroup():
             present = True
 
         if not present:
-            # gdg = gdgs.create(**arguments)
             gdg = _create_gdg(arguments)
 
         else:
@@ -3028,7 +3027,6 @@ class GenerationDataGroup():
                 return changed
             changed = self.ensure_absent(True)
             gdg = _create_gdg(arguments)
-            # gdg = gdgs.create(**arguments)
         if isinstance(gdg, gdgs.GenerationDataGroupView):
             changed = True
         return changed

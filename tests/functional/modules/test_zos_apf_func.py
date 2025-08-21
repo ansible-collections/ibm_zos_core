@@ -82,7 +82,9 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
             test_info['persistent']['target'] = prstds
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            print(result)
             assert result.get("rc") == 0
+            assert 1 == 0
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():

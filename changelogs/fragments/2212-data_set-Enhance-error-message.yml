@@ -1,3 +1,3 @@
 minor_changes:  
-   - data_set - Enhances error message for GDG creation failure.
+   - zos_data_set - Enhances error messages when creating a Generation Data Group fails.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2212)

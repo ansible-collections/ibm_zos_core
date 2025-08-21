@@ -28,13 +28,13 @@ options:
     description:
       - A regular expression that, if specified, only content after this match will be replaced/removed.
       - I(after) works as the opening bracket for a search block where the module will search for I(regexp) and
-        if found, replace it with I(replace).
+        if found, will replace it with I(replace).
       - By default, it works as a regular expression based on the L(re Python library,https://docs.python.org/es/3.13/library/re.html).
       - Can be used in combination with I(before).
-      - If I(after) is empty, the module will start searching from the beginning of the file till the line match of I(before).
+      - If I(after) is empty, the module will start searching from the beginning of the file until the line match of I(before).
         Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.
       - The I(after) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
-      - To disable the regex behavior of I(after) only, set the I(literal) option to 'after'.
+      - To disable the regex behavior of I(after) only, set the I(literal) option to C(after).
     required: false
     default: ''
     type: str
@@ -71,15 +71,15 @@ options:
     type: str
   before:
     description:
-      - A regular expression that if specified, only content before this match will be replaced/removed.
+      - A regular expression that, if specified, only content before this match will be replaced/removed.
       - I(before) works as the closing bracket for a search block where the module will search for I(regexp) and
         if found, replace it with I(replace).
-      - By default works as a regular expression based on L(re python library,https://docs.python.org/es/3.13/library/re.html).
+      - By default, it works as a regular expression based on the L(re Python library,https://docs.python.org/es/3.13/library/re.html).
       - Can be used in combination with I(after).
       - If I(before) is empty, the module will start searching from the line that matches I(after) and continue to the end of the file.
-        Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.
+        Within that range, it will look for a match with I(regexp) and replace it with I(replace), if found.
       - The I(before) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
-      - To disable the regex behavior of I(before) only, set the I(literal) option to 'before'.
+      - To disable the regex behavior of I(before) only, set the I(literal) option to C(before).
     required: false
     default: ''
     type: str
@@ -97,8 +97,8 @@ options:
   literal:
     description:
       - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
-      - To treat multiple options as literal strings disabling regex, include them in the I(literal) list e.g., C(['before', 'after']).
-      - To treat only one option as a literal string disabling regex, set I(literal) to one of the choices "before", "after" or "regexp".
+      - To treat multiple options as literal strings, disabling regex, include them in the I(literal) list e.g., C(['before', 'after']).
+      - To treat only one option as a literal string, disabling regex, set I(literal) to one of the choices C(before), C(after) or C(regexp).
     required: false
     default: []
     type: raw
@@ -139,7 +139,7 @@ notes:
 """
 
 EXAMPLES = r"""
-- name: Replace 'profile/' pattern from USS file via blank substitution.
+- name: Replace 'profile/' pattern in USS file via blank substitution.
   zos_replace:
     target: /tmp/src/somefile
     regexp: 'profile\/'
@@ -189,7 +189,7 @@ EXAMPLES = r"""
     backup: true
     backup_name: "SOURCE.GDG(+1)"
 
-- name: Delete 'SYSTEM' calls via backref between matched lines in PDS member.
+- name: Delete 'SYSTEM' calls via backref between matched lines in a PDS member.
   zos_replace:
     target: PDS.SOURCE(MEM)
     regexp: '^(.*?SYSTEM.*?)SYSTEM(.*)'

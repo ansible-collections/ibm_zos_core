@@ -92,7 +92,7 @@ options:
     default: IBM-1047
   literal:
     description:
-      - If specified, it enables the module to interpret options O(after), O(before) and O(regex) as a literal rather than a regular expression.
+      - If specified, it enables the module to interpret options O(after), O(before) and O(regexp) as a literal rather than a regular expression.
       - Option O(literal) uses any combination of V(after), V(before) and V(regexp).
       - To interpret one option as a literal, use O(literal=regexp), O(literal=after) or O(literal=before).
       - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before'])

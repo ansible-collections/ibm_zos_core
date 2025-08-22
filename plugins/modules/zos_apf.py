@@ -288,7 +288,6 @@ stdout_lines:
   description: List of strings containing individual lines from STDOUT.
   returned: always
   type: list
-  sample: ["Returns a list of dictionaries of APF list entries"]
 stderr:
   description: The error messages from ZOAU command apfadm
   returned: always

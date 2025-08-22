@@ -78,7 +78,6 @@ options:
         names that match at least one of the patterns specified. Multiple patterns
         can be specified using a list.
       - This parameter expects a list, which can be either comma separated or YAML.
-      - If C(pds_patterns) is provided, C(patterns) must be member patterns.
       - When searching for members within a PDS/PDSE, pattern can be a regular expression.
     type: list
     elements: str
@@ -92,17 +91,6 @@ options:
       - Filtering by size is currently only valid for sequential and partitioned data sets.
     required: false
     type: str
-  pds_patterns:
-    description:
-      - List of PDS/PDSE to search. Wildcard is possible.
-      - Required when searching for data set members.
-      - Valid only for C(nonvsam) resource types. Otherwise ignored.
-    aliases:
-      - pds_paths
-      - pds_pattern
-    type: list
-    elements: str
-    required: false
   resource_type:
     description:
       - The types of resources to search.
@@ -237,14 +225,6 @@ EXAMPLES = r"""
     patterns: 'IMS.LIB.*'
     contains: 'hello'
     excludes: '.*TEST'
-
-- name: Find all members starting with characters 'TE' in a given list of PDS patterns
-  zos_find:
-    patterns: '^te.*'
-    pds_patterns:
-      - IMSTEST.TEST.*
-      - IMSTEST.USER.*
-      - USER.*.LIB
 
 - name: Find all data sets greater than 2MB and allocated in one of the specified volumes
   zos_find:
@@ -418,7 +398,7 @@ def content_filter(module, patterns, content):
     return filtered_data_sets
 
 
-def data_set_filter(module, pds_paths, patterns):
+def data_set_filter(module, patterns):
     """ Find data sets that match any pattern in a list of patterns.
 
     Parameters
@@ -442,7 +422,6 @@ def data_set_filter(module, pds_paths, patterns):
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
-    patterns = pds_paths or patterns
     for pattern in patterns:
         rc, out, err = _dls_wrapper(pattern, list_details=True)
         if rc != 0:
@@ -462,66 +441,17 @@ def data_set_filter(module, pds_paths, patterns):
             result = line.split()
             if result:
                 if result[1] == "PO":
-                    if pds_paths:
-                        mls_rc, mls_out, mls_err = module.run_command(
-                            "mls '{0}(*)'".format(result[0]), errors='replace'
-                        )
-                        if mls_rc == 2:
-                            filtered_data_sets["pds"][result[0]] = {}
-                        else:
-                            filtered_data_sets["pds"][result[0]] = \
-                                set(filter(None, mls_out.splitlines()))
-                    else:
+                    mls_rc, mls_out, mls_err = module.run_command(
+                        f"mls '{result[0]}(0)'", errors='replace'
+                    )
+                    if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
+                    else:
+                        filtered_data_sets["pds"][result[0]] = \
+                            set(filter(None, mls_out.splitlines()))
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
-
-
-def pds_filter(module, pds_dict, member_patterns, excludes=None):
-    """ Return all PDS/PDSE data sets whose members match any of the patterns
-    in the given list of member patterns.
-
-    Parameters
-    ----------
-    module : AnsibleModule
-        The Ansible module object being used in the module.
-    pds_dict : dict[str, str]
-        A dictionary where each key is the name of
-        of the PDS/PDSE and the value is a list of
-        members belonging to the PDS/PDSE.
-    member_patterns : list
-        A list of member patterns to search for.
-
-    Returns
-    -------
-    dict[str, set[str]]
-        Filtered PDS/PDSE with corresponding members.
-    """
-    filtered_pds = dict()
-    for pds, members in pds_dict.items():
-        for m in members:
-            for mem_pat in member_patterns:
-                if _match_regex(module, mem_pat, m):
-                    try:
-                        filtered_pds[pds].add(m)
-                    except KeyError:
-                        filtered_pds[pds] = set({m})
-    # ************************************************************************
-    # Exclude any member that matches a given pattern in 'excludes'.
-    # Changes will be made to 'filtered_pds' each iteration. Therefore,
-    # iteration should be performed over a copy of 'filtered_pds'. Because
-    # Python performs a shallow copy when copying a dictionary, a deep copy
-    # should be performed.
-    # ************************************************************************
-    if excludes:
-        for pds, members in deepcopy(filtered_pds).items():
-            for m in members:
-                for ex_pat in excludes:
-                    if _match_regex(module, ex_pat, m):
-                        filtered_pds[pds].remove(m)
-                        break
-    return filtered_pds
 
 
 def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
@@ -817,7 +747,6 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
             # Fetch only active datasets
             init_filtered_data_sets = data_set_filter(
                 module,
-                None,
                 [ds]
             )
             active_datasets = \
@@ -1237,11 +1166,6 @@ def run_module(module):
     excludes = module.params.get('excludes') or module.params.get('exclude')
     patterns = module.params.get('patterns')
     size = module.params.get('size')
-    pds_paths = (
-        module.params.get('pds_paths')
-        or module.params.get('pds_patterns')
-        or module.params.get('pds_pattern')
-    )
     resource_type = module.params.get('resource_type') or module.params.get('resource_types')
     resource_type = [type.upper() for type in resource_type]
     volume = module.params.get('volume') or module.params.get('volumes')
@@ -1294,7 +1218,7 @@ def run_module(module):
     for res_type in filtered_resource_types:
         examined = 0
         filtered_data_sets = list()
-        init_filtered_data_sets = filtered_pds = dict()
+        init_filtered_data_sets = dict()
         if res_type == "MIGRATED":
             migrated_data_sets = list()
             for mtype in filtered_migrated_types:
@@ -1307,23 +1231,16 @@ def run_module(module):
             if contains:
                 init_filtered_data_sets = content_filter(
                     module,
-                    pds_paths if pds_paths else patterns,
+                    patterns,
                     contains
                 )
             else:
                 init_filtered_data_sets = data_set_filter(
                     module,
-                    pds_paths,
                     patterns
                 )
-            if pds_paths:
-                filtered_pds = pds_filter(
-                    module, init_filtered_data_sets.get("pds"), patterns, excludes=excludes
-                )
-                filtered_data_sets = list(filtered_pds.keys())
-            else:
-                filtered_data_sets = \
-                    list(init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys())))
+            filtered_data_sets = \
+                list(init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys())))
             if excludes:
                 filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
             # Filter data sets by age or size
@@ -1344,7 +1261,7 @@ def run_module(module):
             for ds in filtered_data_sets:
                 if ds:
                     if res_type == "NONVSAM":
-                        members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
+                        members = init_filtered_data_sets['pds'].get(ds)
                         if members:
                             res_args['data_sets'].append(
                                 dict(name=ds, members=members, type=res_type)
@@ -1389,12 +1306,6 @@ def main():
                 required=True
             ),
             size=dict(type="str", required=False),
-            pds_patterns=dict(
-                type="list",
-                elements="str",
-                required=False,
-                aliases=["pds_pattern", "pds_paths"]
-            ),
             resource_type=dict(
                 type="list",
                 elements="str",
@@ -1438,11 +1349,6 @@ def main():
         excludes=dict(arg_type="list", required=False, aliases=["exclude"]),
         patterns=dict(arg_type="list", required=True),
         size=dict(arg_type="str", required=False),
-        pds_patterns=dict(
-            arg_type="list",
-            required=False,
-            aliases=["pds_pattern", "pds_paths"]
-        ),
         resource_type=dict(
             arg_type="list",
             required=False,

@@ -98,7 +98,6 @@ def test_find_gdg_data_sets(ansible_zos_module):
         )
 
         for val in find_res.contacted.values():
-            print(val)
             assert val.get('msg') is None
             assert len(val.get('data_sets')) == 1
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')

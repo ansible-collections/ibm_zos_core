@@ -247,9 +247,8 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
-            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
-            patterns=['.*']
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) != 0
@@ -334,9 +333,8 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
             excludes=['.*FILE$'],
-            patterns=['.*']
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
@@ -598,8 +596,7 @@ def test_find_non_existent_data_sets(ansible_zos_module):
 def test_find_non_existent_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*'],
-        patterns=['.*']
+        patterns=[f'{TEST_SUITE_HLQ}.NONE.PDS.*'],
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
@@ -637,9 +634,8 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
             excludes=['.*FILE$'],
-            patterns=['.*']
+            patterns=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3

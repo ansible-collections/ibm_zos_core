@@ -26,15 +26,14 @@ author:
 options:
   after:
     description:
-      - A regular expression that, if specified, only content after this match will be replaced/removed.
-      - I(after) works as the opening bracket for a search block where the module will search for I(regexp) and
-        if found, will replace it with I(replace).
-      - By default, it works as a regular expression based on the L(re Python library,https://docs.python.org/es/3.13/library/re.html).
-      - Can be used in combination with I(before).
-      - If I(after) is empty, the module will start searching from the beginning of the file until the line match of I(before).
-        Within that range, it will look for a match with I(regexp) and replace it with I(replace) if found.
-      - The I(after) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
-      - To disable the regex behavior of I(after) only, set the I(literal) option to C(after).
+      - A regular expression that, if specified, determines which content will be replaced or removed B(after) the match.
+      - Option O(after) is the start position from where the module will seek to match the O(regexp) pattern.
+        When a pattern is matched, occurrences are substituted with the value set for O(replace).
+      - If option O(after) is not set, the module will search from the beginning of the O(target).
+      - Option O(after) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
+      - Option O(after) can be used in combination with O(before).
+        When combined with O(before), patterns are replaced or removed from O(after) until the value set for O(before).
+      - Option O(after) can be interpreted as a literal string instead of a regular expression by setting option I(literal=after).
     required: false
     default: ''
     type: str
@@ -71,15 +70,12 @@ options:
     type: str
   before:
     description:
-      - A regular expression that, if specified, only content before this match will be replaced/removed.
-      - I(before) works as the closing bracket for a search block where the module will search for I(regexp) and
-        if found, replace it with I(replace).
-      - By default, it works as a regular expression based on the L(re Python library,https://docs.python.org/es/3.13/library/re.html).
-      - Can be used in combination with I(after).
-      - If I(before) is empty, the module will start searching from the line that matches I(after) and continue to the end of the file.
-        Within that range, it will look for a match with I(regexp) and replace it with I(replace), if found.
-      - The I(before) value can be treated as a literal string instead of a regular expression by using the I(literal) option.
-      - To disable the regex behavior of I(before) only, set the I(literal) option to C(before).
+      - A regular expression that if, specified, determines which content will be replaced or removed B(before) the match.
+      - Option O(before) is the end position from where the module will seek to match the O(regexp) pattern. When a pattern is matched, occurrences are substituted with the value set for O(replace).
+      - If option O(before) is not set, the module will search to the end of the O(target).
+      - Option O(before) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
+      - Option O(before) can be used in combination with O(after). When combined with O(after), patterns are replaced or removed from O(after) until the value set for O(before).
+      - Option O(before) can be interpreted as a literal string instead of a regular expression by setting option I(literal=before).
     required: false
     default: ''
     type: str
@@ -96,9 +92,10 @@ options:
     default: IBM-1047
   literal:
     description:
-      - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
-      - To treat multiple options as literal strings, disabling regex, include them in the I(literal) list e.g., C(['before', 'after']).
-      - To treat only one option as a literal string, disabling regex, set I(literal) to one of the choices C(before), C(after) or C(regexp).
+      - If specified, it enables the module to interpret options O(after), O(before) and O(regex) as a literal rather than a regular expression.
+      - Option O(literal) uses any combination of V(after), V(before) and V(regexp).
+      - To interpret one option as a literal, use O(literal=regexp), O(literal=after) or O(literal=before).
+      - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before'])
     required: false
     default: []
     type: raw

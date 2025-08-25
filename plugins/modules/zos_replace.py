@@ -27,13 +27,13 @@ options:
   after:
     description:
       - A regular expression that, if specified, determines which content will be replaced or removed B(after) the match.
-      - Option O(after) is the start position from where the module will seek to match the O(regexp) pattern.
-        When a pattern is matched, occurrences are substituted with the value set for O(replace).
-      - If option O(after) is not set, the module will search from the beginning of the O(target).
-      - Option O(after) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
-      - Option O(after) can be used in combination with O(before).
-        When combined with O(before), patterns are replaced or removed from O(after) until the value set for O(before).
-      - Option O(after) can be interpreted as a literal string instead of a regular expression by setting option I(literal=after).
+      - Option I(after) is the start position from where the module will seek to match the I(regexp) pattern.
+        When a pattern is matched, occurrences are substituted with the value set for I(replace).
+      - If option I(after) is not set, the module will search from the beginning of the I(target).
+      - Option I(after) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
+      - Option I(after) can be used in combination with I(before).
+        When combined with I(before), patterns are replaced or removed from I(after) until the value set for I(before).
+      - Option I(after) can be interpreted as a literal string instead of a regular expression by setting option I(literal=after).
     required: false
     default: ''
     type: str
@@ -71,11 +71,11 @@ options:
   before:
     description:
       - A regular expression that if, specified, determines which content will be replaced or removed B(before) the match.
-      - Option O(before) is the end position from where the module will seek to match the O(regexp) pattern. When a pattern is matched, occurrences are substituted with the value set for O(replace).
-      - If option O(before) is not set, the module will search to the end of the O(target).
-      - Option O(before) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
-      - Option O(before) can be used in combination with O(after). When combined with O(after), patterns are replaced or removed from O(after) until the value set for O(before).
-      - Option O(before) can be interpreted as a literal string instead of a regular expression by setting option I(literal=before).
+      - Option I(before) is the end position from where the module will seek to match the I(regexp) pattern. When a pattern is matched, occurrences are substituted with the value set for I(replace).
+      - If option I(before) is not set, the module will search to the end of the I(target).
+      - Option I(before) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
+      - Option I(before) can be used in combination with I(after). When combined with I(after), patterns are replaced or removed from I(after) until the value set for I(before).
+      - Option I(before) can be interpreted as a literal string instead of a regular expression by setting option I(literal=before).
     required: false
     default: ''
     type: str
@@ -92,9 +92,9 @@ options:
     default: IBM-1047
   literal:
     description:
-      - If specified, it enables the module to interpret options O(after), O(before) and O(regexp) as a literal rather than a regular expression.
-      - Option O(literal) uses any combination of V(after), V(before) and V(regexp).
-      - To interpret one option as a literal, use O(literal=regexp), O(literal=after) or O(literal=before).
+      - If specified, it enables the module to interpret options I(after), I(before) and I(regexp) as a literal rather than a regular expression.
+      - Option I(literal) uses any combination of V(after), V(before) and V(regexp).
+      - To interpret one option as a literal, use I(literal=regexp), I(literal=after) or I(literal=before).
       - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before'])
     required: false
     default: []
@@ -156,6 +156,15 @@ EXAMPLES = r"""
     after: '^\$source base \([^\s]+\)'
     literal: regexp
 
+- name: Replace a specific line with special character on a dataset after a line, treating the text specified
+    for regexp and after as regular expression.
+  zos_replace:
+    target: SAMPLE.SOURCE
+    regexp: \ \*\*LIB\ \ DD\ UNIT=SYS,SPACE=\(TRK,\(1,1\)\),VOL=SER=vvvvvv
+    replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
+    after: '^\$source base \([^\s]+\)'
+    literal: regexp
+
 - name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as literal strings.
   zos_replace:
     target: SAMPLE.SOURCE
@@ -165,6 +174,13 @@ EXAMPLES = r"""
     literal:
       - regexp
       - before
+
+- name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as regular expression.
+  zos_replace:
+    target: SAMPLE.SOURCE
+    backup: true
+    regexp: \ //SYSPRINT\ DD\ SYSOUT=\*
+    before: \ SAMPLES OUTPUT SYSIN\ \*\=\$DSN
 
 - name: Replace 'var' with 'vars' between matched lines after and before with backup.
   zos_replace:

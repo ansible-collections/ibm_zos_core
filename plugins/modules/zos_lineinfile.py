@@ -694,6 +694,7 @@ def main():
     stderr = ''
     cmd = ''
     changed = False
+    return_content = None
 
     result = dict(
         changed=False,

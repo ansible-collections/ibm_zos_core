@@ -51,7 +51,7 @@ options:
     type: dict
     required: false
     suboptions:
-      name:
+      type:
         description:
           - The compression format to use.
         type: str
@@ -74,7 +74,7 @@ options:
           terse_pack:
             description:
               - Compression option for use with the terse format,
-                I(name=terse).
+                I(type=terse).
               - Pack will compress records in a data set so that the output
                 results in lossless data compression.
               - Spack will compress records in a data set so the output results
@@ -378,7 +378,7 @@ EXAMPLES = r'''
     src: /tmp/archive/foo.txt
     dest: /tmp/archive/foo_archive_test.tar
     format:
-      name: tar
+      type: tar
 
 # Archive multiple files
 - name: Archive list of files into a zip
@@ -388,7 +388,7 @@ EXAMPLES = r'''
       - /tmp/archive/bar.txt
     dest: /tmp/archive/foo_bar_archive_test.zip
     format:
-    name: zip
+    type: zip
 
 # Archive one data set into terse
 - name: Archive data set into a terse
@@ -396,7 +396,7 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
 
 # Use terse with different options
 - name: Archive data set into a terse, specify pack algorithm and use adrdssu
@@ -404,7 +404,7 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
       format_options:
         terse_pack: "spack"
         use_adrdssu: true
@@ -416,7 +416,7 @@ EXAMPLES = r'''
     exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
     dest: "USER.ARCHIVE.RESULT.XMIT"
     format:
-      name: xmit
+      type: xmit
 
 - name: Archive multiple GDSs into a terse
   zos_archive:
@@ -426,7 +426,7 @@ EXAMPLES = r'''
       - "USER.GDG(-2)"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
       format_options:
         use_adrdssu: true
 
@@ -435,7 +435,7 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.*"
     dest: "USER.GDG(+1)"
     format:
-      name: terse
+      type: terse
       format_options:
         use_adrdssu: true
 
@@ -444,7 +444,7 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -456,7 +456,7 @@ EXAMPLES = r'''
       - "USER.ARCHIVE2.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
       format_options:
         use_adrdssu: true
     encoding:
@@ -574,7 +574,7 @@ def get_archive_handler(module):
         The archive format for the module.
 
     """
-    format = module.params.get("format").get("name")
+    format = module.params.get("format").get("type")
     if format in ["tar", "gz", "bz2", "pax"]:
         return TarArchive(module)
     elif format == "terse":
@@ -705,7 +705,7 @@ class Archive():
         """
         self.module = module
         self.dest = module.params['dest']
-        self.format = module.params.get("format").get("name")
+        self.format = module.params.get("format").get("type")
         self.remove = module.params['remove']
         self.changed = False
         self.errors = []
@@ -1339,18 +1339,6 @@ class MVSArchive(Archive):
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
         data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
-        # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
-        # rc, out, err = self.module.run_command(cmd)
-
-        # if not changed:
-        #     self.module.fail_json(
-        #         msg="Failed preparing {0} to be used as an archive".format(name),
-        #         stdout=out,
-        #         stderr=err,
-        #         stdout_lines=cmd,
-        #         rc=rc,
-        #     )
         return name
 
     def dump_into_temp_ds(self, temp_ds):
@@ -1871,7 +1859,7 @@ def run_module():
             format=dict(
                 type='dict',
                 options=dict(
-                    name=dict(
+                    type=dict(
                         type='str',
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
@@ -1966,7 +1954,7 @@ def run_module():
         format=dict(
             type='dict',
             options=dict(
-                name=dict(
+                type=dict(
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
@@ -1996,7 +1984,7 @@ def run_module():
                 ),
             ),
             default=dict(
-                name="",
+                type="",
                 format_options=dict(
                     terse_pack="spack",
                     xmit_log_data_set="",

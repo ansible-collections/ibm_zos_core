@@ -295,20 +295,20 @@ msg:
   sample: Parameter verification failed
 stdout:
   description: The stdout from ZOAU dsed command.
-  returned: failure
+  returned: always
   type: str
 stderr:
   description: The error messages from ZOAU dsed
-  returned: failure
+  returned: always
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
 stdout_lines:
     description: List of strings containing individual lines from stdout.
-    returned: failure
+    returned: always
     type: list
 stderr_lines:
     description: List of strings containing individual lines from stderr.
-    returned: failure
+    returned: always
     type: list
 backup_name:
     description: Name of the backup file or data set that was created.

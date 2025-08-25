@@ -3073,7 +3073,7 @@ class GenerationDataGroup():
                         else:
                             raise GenerationDataGroupDeleteError(
                                 msg=f"GDG deletion failed. Raw error: {stderr}"
-                          )
+                            )
         else:
             return False
         return True

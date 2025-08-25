@@ -3051,13 +3051,29 @@ class GenerationDataGroup():
             rc = datasets.delete(self.name)
             if rc > 0:
                 if force:
-                    if isinstance(self.gdg, gdgs.GenerationDataGroupView):
-                        self.gdg.delete()
-                    else:
-                        gdg_view = gdgs.GenerationDataGroupView(name=self.name)
-                        gdg_view.delete()
-                else:
-                    raise DatasetDeleteError(self.raw_name, rc)
+                    try:
+                        if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+                            self.gdg.delete()
+                        else:
+                            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                            gdg_view.delete()
+                    except exceptions._ZOAUExtendableException as e:
+                        stderr = getattr(e.response, 'stderr_response', '')
+                        if "BGYSC1603I" in stderr:
+                            raise GenerationDataGroupDeleteError(
+                                msg=(
+                                    "Data set deletion failed: the generation data set is currently in use "
+                                    " by another job or session. Try deleting after ensuring no active usage."
+                                )
+                            )
+                        elif "BGYSC5906E" in stderr:
+                            raise GenerationDataGroupDeleteError(
+                                msg="GDG deletion failed due to an IDCAMS failure. A GDS might be in use or locked."
+                            )
+                        else:
+                            raise GenerationDataGroupDeleteError(
+                                msg=f"GDG deletion failed. Raw error: {stderr}"
+                          )
         else:
             return False
         return True
@@ -3503,5 +3519,12 @@ class GDSNameResolveError(Exception):
 class GenerationDataGroupCreateError(Exception):
     def __init__(self, msg):
         """Error during creation of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
+
+
+class GenerationDataGroupDeleteError(Exception):
+    def __init__(self, msg):
+        """Error during deletion of a Generation Data Group."""
         self.msg = msg
         super().__init__(self.msg)

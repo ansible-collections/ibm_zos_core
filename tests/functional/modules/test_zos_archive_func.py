@@ -717,11 +717,17 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
+            # Changed to using the exact data set name in dls
+            # because using wildcards would fail.
+            # Assert archive data set is in place
+            cmd_result = hosts.all.shell(cmd = f"dls {archive_data_set}")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
-                assert src_data_set != c_result.get("stdout")
+            # Assert src_data_set is removed
+            cmd_result = hosts.all.shell(cmd = f"dls {src_data_set}")
+            for c_result in cmd_result.contacted.values():
+                assert f"BGYSC1103E No datasets match pattern: {src_data_set}." in c_result.get("stderr")
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")

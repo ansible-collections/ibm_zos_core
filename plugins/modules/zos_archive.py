@@ -95,7 +95,7 @@ options:
               - When providing the I(xmit_log_data_set) name, ensure there
                 is adequate space.
             type: str
-          use_adrdssu:
+          adrdssu:
             description:
               - If set to true, the C(zos_archive) module will use Data
                 Facility Storage Management Subsystem data set services
@@ -356,7 +356,7 @@ notes:
     retrieve to the controller and then zos_copy or zos_unarchive for
     copying to a remote or send to the remote and then unpack the archive
     respectively.
-  - When packing and using C(use_adrdssu) flag the module will take up to two
+  - When packing and using C(adrdssu) flag the module will take up to two
     times the space indicated in C(dest_data_set).
   - tar, zip, bz2 and pax are archived using python C(tarfile) library which
     uses the latest version available for each format, for compatibility when
@@ -405,7 +405,7 @@ EXAMPLES = r'''
       type: terse
       format_options:
         spack: true
-        use_adrdssu: true
+        adrdssu: true
 
 # Use a pattern to store
 - name: Archive data set pattern using xmit
@@ -426,7 +426,7 @@ EXAMPLES = r'''
     format:
       type: terse
       format_options:
-        use_adrdssu: true
+        adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
   zos_archive:
@@ -435,7 +435,7 @@ EXAMPLES = r'''
     format:
       type: terse
       format_options:
-        use_adrdssu: true
+        adrdssu: true
 
 - name: Encode the source data set into Latin-1 before archiving into a terse data set
   zos_archive:
@@ -456,7 +456,7 @@ EXAMPLES = r'''
     format:
       type: terse
       format_options:
-        use_adrdssu: true
+        adrdssu: true
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -1177,7 +1177,7 @@ class MVSArchive(Archive):
         ----------
         original_checksums : str
             The SHA256 hash of the contents of input file.
-        use_adrdssu : bool
+        adrdssu : bool
             Whether to use Data Facility Storage Management Subsystem data set services
             program ADRDSSU to uncompress data sets or not.
         expanded_sources : list[str]
@@ -1196,7 +1196,7 @@ class MVSArchive(Archive):
         super(MVSArchive, self).__init__(module)
         self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
-        self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
+        self.adrdssu = module.params.get("format").get("format_options").get("adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
@@ -1648,9 +1648,9 @@ class AMATerseArchive(MVSArchive):
         Raises
         ------
         fail_json
-            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
+            To archive multiple source data sets, you must use option 'adrdssu=True'.
         """
-        if self.use_adrdssu:
+        if self.adrdssu:
             source, changed = self._create_dest_data_set(
                 type="seq",
                 record_format="u",
@@ -1665,7 +1665,7 @@ class AMATerseArchive(MVSArchive):
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.targets) > 1:
                 self.module.fail_json(
-                    msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
+                    msg="To archive multiple source data sets, you must use option 'adrdssu=True'.")
             source = self.targets[0]
         dataset = data_set.MVSDataSet(
             name=self.dest,
@@ -1742,9 +1742,9 @@ class XMITArchive(MVSArchive):
         Raises
         ------
         fail_json
-            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
+            To archive multiple source data sets, you must use option 'adrdssu=True'.
         """
-        if self.use_adrdssu:
+        if self.adrdssu:
             source, changed = self._create_dest_data_set(
                 type="seq",
                 record_format="u",
@@ -1759,7 +1759,7 @@ class XMITArchive(MVSArchive):
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.sources) > 1:
                 self.module.fail_json(
-                    msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
+                    msg="To archive multiple source data sets, you must use option 'adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
         dataset = data_set.MVSDataSet(
@@ -1870,7 +1870,7 @@ def run_module():
                             xmit_log_data_set=dict(
                                 type='str',
                             ),
-                            use_adrdssu=dict(
+                            adrdssu=dict(
                                 type='bool',
                                 default=False,
                             )
@@ -1967,7 +1967,7 @@ def run_module():
                             type='str',
                             required=False,
                         ),
-                        use_adrdssu=dict(
+                        adrdssu=dict(
                             type='bool',
                             default=False,
                         )
@@ -1975,7 +1975,7 @@ def run_module():
                     default=dict(
                         spack=True,
                         xmit_log_data_set="",
-                        use_adrdssu=False),
+                        adrdssu=False),
                 ),
             ),
             default=dict(
@@ -1983,7 +1983,7 @@ def run_module():
                 format_options=dict(
                     spack=True,
                     xmit_log_data_set="",
-                    use_adrdssu=False
+                    adrdssu=False
                 )
             ),
         ),

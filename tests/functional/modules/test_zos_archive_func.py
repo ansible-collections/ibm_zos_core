@@ -432,10 +432,10 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
 
 # List of tests:
 # - test_mvs_archive_single_dataset
-# - test_mvs_archive_single_dataset_use_adrdssu
+# - test_mvs_archive_single_dataset_adrdssu
 # - test_mvs_archive_single_data_set_remove_target
 # - test_mvs_archive_multiple_data_sets
-# - test_mvs_archive_multiple_data_sets_use_adrdssu
+# - test_mvs_archive_multiple_data_sets_adrdssu
 # - test_mvs_archive_multiple_data_sets_remove_target
 # - test_mvs_archive_multiple_data_sets_with_exclusion
 # - test_mvs_archive_multiple_data_sets_with_missing
@@ -571,7 +571,7 @@ def test_mvs_archive_single_dataset(
 @pytest.mark.parametrize(
     "record_format", ["fb", "vb"],
 )
-def test_mvs_archive_single_dataset_use_adrdssu(
+def test_mvs_archive_single_dataset_adrdssu(
     ansible_zos_module,
     ds_format,
     data_set,
@@ -620,7 +620,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(
             "type":ds_format
         }
         format_dict["format_options"] = {
-            "use_adrdssu":True
+            "adrdssu":True
         }
         if ds_format == "terse":
             format_dict["format_options"].update(spack=True)
@@ -784,7 +784,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
         }
         if ds_format == "terse":
             format_dict["format_options"].update(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
             dest=archive_data_set,
@@ -857,7 +857,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
         }
         if ds_format == "terse":
             format_dict["format_options"].update(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         exclude = f"{src_data_set}1"
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
@@ -935,7 +935,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, ds_format
         }
         if ds_format == "terse":
             format_dict["format_options"].update(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
             dest=archive_data_set,
@@ -1015,7 +1015,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
         }
         if ds_format == "terse":
             format_dict["format_options"].update(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=path_list,
             dest=archive_data_set,
@@ -1174,7 +1174,7 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
         format_dict = dict(type=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"] = dict(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
             dest=archive_data_set,
@@ -1217,7 +1217,7 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
         format_dict = dict(type=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"] = dict(spack=True)
-        format_dict["format_options"].update(use_adrdssu=True)
+        format_dict["format_options"].update(adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=data_set_name,
             dest=f"{archive_data_set}(+1)",
@@ -1517,7 +1517,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                         type="member",
                         state="present"
                     )
-        
+
         test_line = "pattern match"
         for ds_name in all_datasets_to_process:
             for member in data_set.get("members"):
@@ -1554,7 +1554,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                     original_hex.append('*')
                 else:
                     parts = line.split()
-                    if len(parts) > 1: 
+                    if len(parts) > 1:
                         original_hex.extend(parts[1:])
 
             reverted_hex = []
@@ -1570,13 +1570,13 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                 try:
                     original_first_star_idx = original_hex.index('*')
                 except ValueError:
-                    original_first_star_idx = len(original_hex) 
+                    original_first_star_idx = len(original_hex)
 
                 try:
                     reverted_first_star_idx = reverted_hex.index('*')
                 except ValueError:
                     reverted_first_star_idx = len(reverted_hex)
-                
+
                 original_hex_to_compare = original_hex[:original_first_star_idx]
                 reverted_hex_to_compare = reverted_hex[:reverted_first_star_idx]
 

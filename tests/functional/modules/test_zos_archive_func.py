@@ -1185,7 +1185,7 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
             assert result.get("dest") == archive_data_set
             assert f"{data_set_name}.G0001V00" in result.get("archived")
             assert f"{data_set_name}.G0002V00" in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f'dls "{archive_data_set}" ')
+            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}' ")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:

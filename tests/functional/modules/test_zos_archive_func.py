@@ -1226,9 +1226,9 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert data_set_name in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f'dls "{archive_data_set}" ')
+            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}*' ")
             for c_result in cmd_result.contacted.values():
-                assert archive_data_set in c_result.get("stdout")
+                assert f"{archive_data_set}.G0001V00" in c_result.get("stdout")
     finally:
         hosts.all.shell(cmd=f"drm {hlq}.*")
 

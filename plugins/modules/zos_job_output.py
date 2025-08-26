@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no dd_name, or if dd_name="?", output of all the dds under
     the given job will be displayed.
-  - If SYSIN DDs are needed, C(input) should be set to C(true).
+  - If SYSIN DDs are needed, I(sysin_dd) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
@@ -63,7 +63,7 @@ options:
     type: str
     required: false
     aliases: [ ddname ]
-  input:
+  sysin_dd:
     description:
       - Whether to include SYSIN DDs as part of the output.
     type: bool
@@ -102,7 +102,7 @@ EXAMPLES = r"""
 - name: Query a job's output including SYSIN DDs
   zos_job_output:
     job_id: "JOB00548"
-    input: true
+    sysin_dd: true
 """
 
 RETURN = r"""
@@ -508,8 +508,8 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-        input=dict(type="bool", required=False, default=False),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
+        sysin_dd=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -518,8 +518,8 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        input=dict(type="bool", required=False, default=False),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
+        sysin_dd=dict(type="bool", required=False, default=False),
     )
 
     try:
@@ -538,8 +538,8 @@ def run_module():
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
-    sysin = module.params.get("input")
     dd_name = module.params.get("dd_name")
+    sysin = module.params.get("sysin_dd")
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner", stderr="", **results)

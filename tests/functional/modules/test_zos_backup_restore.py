@@ -25,11 +25,11 @@ from re import search, IGNORECASE, MULTILINE
 import string
 import random
 import time
+import json
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 DATA_SET_CONTENTS = "HELLO WORLD"
 TMP_DIRECTORY = "/tmp/"
-
 
 c_pgm="""#include <stdio.h>
 #include <stdlib.h>
@@ -252,6 +252,94 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts)
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite,recover",
+    [
+        ("DATA_SET", True, True),
+    ],
+)
+def test_backup_of_data_set_with_compression(ansible_zos_module, backup_name, overwrite, recover):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    
+    backup_name_uncompressed = get_tmp_ds_name(1, 1)
+    backup_name_compressed = get_tmp_ds_name(1, 1)
+
+    size_uncompressed = 0
+    size_compressed = 0
+
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name_uncompressed)
+        delete_data_set_or_file(hosts, backup_name_compressed)
+
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS
+        )
+        # making a larger dataset
+        shell_script_content = f"""#!/bin/bash
+for i in {{1..50}}
+do
+  decho -a "this is a test line to make it big" >> "{data_set_name}"
+done
+"""
+        hosts.all.shell(f"echo '{shell_script_content}' > shell_script2.sh")
+        hosts.all.shell("chmod +x shell_script.sh")
+        script = hosts.all.shell("./shell_script.sh")
+        print(f"the actual script was : {script.contacted.values()}")
+        cmd_result_print = hosts.all.shell(f"dcat {data_set_name}")
+        cmd_result_dataset = hosts.all.shell(f"dls -j -s {data_set_name}")
+
+        for result in cmd_result_print.contacted.values():
+            output = json.loads(result.get("stdout"))
+            print(f"dataset print : {output}")
+
+        for result in cmd_result_dataset.contacted.values():
+            output = json.loads(result.get("stdout"))
+            size_dataset = int(output["data"]["datasets"][0]["used"])
+            print(f"the actual output was : {output}")
+            print(f" the dataset is : {cmd_result_print}")
+            print(f"dataset size : {size_dataset}")
+
+        results_uncompressed = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name_uncompressed,
+            compress= False,
+        )
+        assert_module_did_not_fail(results_uncompressed)
+        assert_data_set_or_file_exists(hosts, backup_name_uncompressed)
+
+        cmd_result_uncompressed = hosts.all.shell(f"dls -j -s {backup_name_uncompressed}")
+        for result in cmd_result_uncompressed.contacted.values():
+            output = json.loads(result.get("stdout"))
+            size_uncompressed = int(output["data"]["datasets"][0]["used"])
+            print(f"the actual output was : {output}")
+            print(f"Uncompressed backup size (used): {size_uncompressed}")
+
+        results_compressed = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name_compressed,
+        )
+        assert_module_did_not_fail(results_compressed)
+        assert_data_set_or_file_exists(hosts, backup_name_compressed)
+
+        cmd_result_compressed = hosts.all.shell(f"dls -j -s {backup_name_compressed}")
+        for result in cmd_result_compressed.contacted.values():
+            output = json.loads(result.get("stdout"))
+            size_compressed = int(output["data"]["datasets"][0]["used"])
+            print(f"Compressed backup size (used): {size_compressed}")
+        if size_uncompressed > 0:
+            assert size_compressed < size_uncompressed, \
+                f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"
+
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name_uncompressed)
+        delete_data_set_or_file(hosts, backup_name_compressed)
         delete_remnants(hosts)
 
 # Commenting these tests because of issue https://github.com/ansible-collections/ibm_zos_core/issues/2235

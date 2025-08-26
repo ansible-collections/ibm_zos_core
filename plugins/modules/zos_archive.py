@@ -65,7 +65,7 @@ options:
           - terse
           - xmit
           - pax
-      format_options:
+      options:
         description:
           - Options specific to a compression format.
         type: dict
@@ -403,7 +403,7 @@ EXAMPLES = r'''
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
       type: terse
-      format_options:
+      options:
         spack: true
         adrdssu: true
 
@@ -425,7 +425,7 @@ EXAMPLES = r'''
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
       type: terse
-      format_options:
+      options:
         adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
@@ -434,7 +434,7 @@ EXAMPLES = r'''
     dest: "USER.GDG(+1)"
     format:
       type: terse
-      format_options:
+      options:
         adrdssu: true
 
 - name: Encode the source data set into Latin-1 before archiving into a terse data set
@@ -455,7 +455,7 @@ EXAMPLES = r'''
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
       type: terse
-      format_options:
+      options:
         adrdssu: true
     encoding:
       from: IBM-1047
@@ -1202,7 +1202,7 @@ class MVSArchive(Archive):
         super(MVSArchive, self).__init__(module)
         self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
-        self.adrdssu = module.params.get("format").get("format_options").get("adrdssu")
+        self.adrdssu = module.params.get("format").get("options").get("adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
@@ -1611,7 +1611,7 @@ class AMATerseArchive(MVSArchive):
             Compression option for use with the terse format.
         """
         super(AMATerseArchive, self).__init__(module)
-        spack = module.params.get("format").get("format_options").get("spack")
+        spack = module.params.get("format").get("options").get("spack")
         # We store pack_ard in uppercase because the AMATerse command requires
         # it in uppercase.
         self.pack_arg = "SPACK" if spack else "PACK"
@@ -1703,7 +1703,7 @@ class XMITArchive(MVSArchive):
             The name of the data set to store xmit log output.
         """
         super(XMITArchive, self).__init__(module)
-        self.xmit_log_data_set = module.params.get("format").get("format_options").get("xmit_log_data_set")
+        self.xmit_log_data_set = module.params.get("format").get("options").get("xmit_log_data_set")
 
     def add(self, src, archive):
         """Archive src into archive using TSO XMIT.
@@ -1865,7 +1865,7 @@ def run_module():
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                     ),
-                    format_options=dict(
+                    options=dict(
                         type='dict',
                         required=False,
                         options=dict(
@@ -1960,7 +1960,7 @@ def run_module():
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                 ),
-                format_options=dict(
+                options=dict(
                     type='dict',
                     required=False,
                     options=dict(
@@ -1986,7 +1986,7 @@ def run_module():
             ),
             default=dict(
                 type="",
-                format_options=dict(
+                options=dict(
                     spack=True,
                     xmit_log_data_set="",
                     adrdssu=False

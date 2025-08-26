@@ -270,7 +270,7 @@ def set_uss_environment(ansible_zos_module, content, file):
 
 def remove_uss_environment(ansible_zos_module, file):
     hosts = ansible_zos_module
-    hosts.all.shell(cmd="rm " + file)
+    hosts.all.shell(cmd=f"rm '{file}'")
 
 def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content):
     hosts = ansible_zos_module
@@ -1431,7 +1431,8 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
         )
         results = hosts.all.shell(cmd=f"cat \"//'{ds_full_name}'\" ")
         for result in results.contacted.values():
-
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
+        # ds_full_name gets converted to a file too
+        remove_uss_environment(ansible_zos_module, ds_full_name)

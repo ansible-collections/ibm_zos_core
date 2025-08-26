@@ -71,7 +71,7 @@ options:
         type: dict
         required: false
         suboptions:
-          terse_pack:
+          spack:
             description:
               - Compression option for use with the terse format,
                 I(type=terse).
@@ -81,11 +81,9 @@ options:
                 in complex data compression.
               - Spack will produce smaller output and take approximately 3
                 times longer than pack compression.
-            type: str
+            type: bool
             required: false
-            choices:
-              - pack
-              - spack
+            default: true
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -406,7 +404,7 @@ EXAMPLES = r'''
     format:
       type: terse
       format_options:
-        terse_pack: "spack"
+        spack: true
         use_adrdssu: true
 
 # Use a pattern to store
@@ -1607,13 +1605,10 @@ class AMATerseArchive(MVSArchive):
             Compression option for use with the terse format.
         """
         super(AMATerseArchive, self).__init__(module)
-        self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
+        spack = module.params.get("format").get("format_options").get("spack")
         # We store pack_ard in uppercase because the AMATerse command requires
         # it in uppercase.
-        if self.pack_arg is None:
-            self.pack_arg = "SPACK"
-        else:
-            self.pack_arg = self.pack_arg.upper()
+        self.pack_arg = "SPACK" if spack else "PACK"
 
     def add(self, src, archive):
         """Archive src into archive using AMATERSE program.
@@ -1868,9 +1863,9 @@ def run_module():
                         type='dict',
                         required=False,
                         options=dict(
-                            terse_pack=dict(
-                                type='str',
-                                choices=['pack', 'spack'],
+                            spack=dict(
+                                type='bool',
+                                default=True,
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1963,10 +1958,10 @@ def run_module():
                     type='dict',
                     required=False,
                     options=dict(
-                        terse_pack=dict(
-                            type='str',
+                        spack=dict(
+                            type='bool',
                             required=False,
-                            choices=['pack', 'spack'],
+                            default=True,
                         ),
                         xmit_log_data_set=dict(
                             type='str',
@@ -1978,7 +1973,7 @@ def run_module():
                         )
                     ),
                     default=dict(
-                        terse_pack="spack",
+                        spack=True,
                         xmit_log_data_set="",
                         use_adrdssu=False),
                 ),
@@ -1986,7 +1981,7 @@ def run_module():
             default=dict(
                 type="",
                 format_options=dict(
-                    terse_pack="spack",
+                    spack=True,
                     xmit_log_data_set="",
                     use_adrdssu=False
                 )

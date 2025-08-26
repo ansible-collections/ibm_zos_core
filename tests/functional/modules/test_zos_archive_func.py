@@ -523,7 +523,7 @@ def test_mvs_archive_single_dataset(
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
-                "terse_pack":"spack"
+                "spack":True
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -623,7 +623,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(
             "use_adrdssu":True
         }
         if ds_format == "terse":
-            format_dict["format_options"].update(terse_pack="spack")
+            format_dict["format_options"].update(spack=True)
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
             dest=archive_data_set,
@@ -703,7 +703,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
-                "terse_pack":"spack"
+                "spack":True
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -783,7 +783,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
             "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["format_options"].update(terse_pack="spack")
+            format_dict["format_options"].update(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
@@ -856,7 +856,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
             "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["format_options"].update(terse_pack="spack")
+            format_dict["format_options"].update(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         exclude = f"{src_data_set}1"
         archive_result = hosts.all.zos_archive(
@@ -934,7 +934,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, ds_format
             "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["format_options"].update(terse_pack="spack")
+            format_dict["format_options"].update(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
@@ -1014,7 +1014,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
             "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["format_options"].update(terse_pack="spack")
+            format_dict["format_options"].update(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=path_list,
@@ -1102,7 +1102,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
-                "terse_pack":"spack"
+                "spack":True
             }
 
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
@@ -1173,7 +1173,7 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
             assert result.get("module_stderr") is None
         format_dict = dict(type=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"] = dict(terse_pack="spack")
+            format_dict["format_options"] = dict(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
@@ -1216,7 +1216,7 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
             assert result.get("module_stderr") is None
         format_dict = dict(type=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"] = dict(terse_pack="spack")
+            format_dict["format_options"] = dict(spack=True)
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=data_set_name,
@@ -1299,7 +1299,7 @@ def test_mvs_archive_single_dataset_encoding(
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
-                "terse_pack":"spack"
+                "spack":True
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -1372,7 +1372,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding(ansible_zos_module, ds_fo
 
         format_dict = {"type": ds_format}
         if ds_format == "terse":
-            format_dict["format_options"] = {"terse_pack": "spack"}
+            format_dict["format_options"] = {"spack": True}
         for ds_name in matched_datasets:
             archive_data_set = get_tmp_ds_name()
             archive_result = hosts.all.zos_archive(
@@ -1446,7 +1446,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding(ansible_zos
 
         format_dict = {"type": ds_format}
         if ds_format == "terse":
-            format_dict["format_options"] = {"terse_pack": "spack"}
+            format_dict["format_options"] = {"spack": True}
         #skipping some files to encode
         skip_encoding_list = [matched_datasets[0]]
         current_encoding_config = encoding.copy()
@@ -1526,7 +1526,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
 
         format_dict = {"type": ds_format}
         if ds_format == "terse":
-            format_dict["format_options"] = {"terse_pack": "spack"}
+            format_dict["format_options"] = {"spack": True}
         for ds_name in matched_datasets:
 
             original_hex_result = hosts.all.shell(cmd=f"dcat '{ds_name}' | od -x")

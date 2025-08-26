@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-  - If SYSIN DDs are needed, C(sysin_dd) should be set to C(true).
+  - If SYSIN DDs are needed, O(sysin_dd) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"

@@ -465,6 +465,12 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+  dest:
+    description:
+      - The remote absolute path or data set where the archive was
+        created.
+    type: str
+    returned: always
 state:
     description:
         - The state of the input C(src).

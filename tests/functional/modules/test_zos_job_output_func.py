@@ -329,24 +329,17 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         data_set_name = get_tmp_ds_name()
-        result = hosts.all.zos_data_set(
-                    name=data_set_name,
-                    type="seq",
-                    state="present"
-                )
-        print(f"job_submit_result: {result.contacted.values()}")
+        hosts.all.shell(cmd=f"dtouch -tseq '{data_set_name}'")
         hosts.all.shell(
             cmd=f"echo {quote(JCL_FILE_CONTENTS_SYSIN.format(data_set_name))} > {TEMP_PATH}/SYSIN"
         )
         result = hosts.all.zos_job_submit(
             src=f"{TEMP_PATH}/SYSIN", remote_src=True, volume=None
         )
-        print(f"job_submit_result: {result.contacted.values()}")
         hosts.all.file(path=TEMP_PATH, state="absent")
         sysin = True
         results = hosts.all.zos_job_output(job_name="SYSINS", input=sysin)
         for result in results.contacted.values():
-            print(f"job_output_result: {result}")
             assert result.get("changed") is True
             for job in result.get("jobs"):
                 assert len(job.get("dds")) >= 1
@@ -357,7 +350,7 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
                         break
                 assert sysin_found
     finally:
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{data_set_name}'")
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 

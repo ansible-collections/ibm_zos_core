@@ -160,7 +160,7 @@ EXAMPLES = r"""
     for regexp and after as regular expression.
   zos_replace:
     target: SAMPLE.SOURCE
-    regexp: \ \*\*LIB\ \ DD\ UNIT=SYS,SPACE=\(TRK,\(1,1\)\),VOL=SER=vvvvvv
+    regexp: '\ \*\*LIB\ \ DD\ UNIT=SYS,SPACE=\(TRK,\(1,1\)\),VOL=SER=vvvvvv'
     replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
     after: '^\$source base \([^\s]+\)'
     literal: regexp
@@ -179,8 +179,8 @@ EXAMPLES = r"""
   zos_replace:
     target: SAMPLE.SOURCE
     backup: true
-    regexp: \ //SYSPRINT\ DD\ SYSOUT=\*
-    before: \ SAMPLES OUTPUT SYSIN\ \*\=\$DSN
+    regexp: '\ //SYSPRINT\ DD\ SYSOUT=\*'
+    before: '\ SAMPLES OUTPUT SYSIN\ \*\=\$DSN'
 
 - name: Replace 'var' with 'vars' between matched lines after and before with backup.
   zos_replace:

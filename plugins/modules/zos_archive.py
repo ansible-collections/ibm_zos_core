@@ -71,6 +71,7 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
+        aliases: [ format_options ]
         suboptions:
           spack:
             description:
@@ -2002,6 +2003,14 @@ def run_module():
                         spack=True,
                         xmit_log_data_set="",
                         adrdssu=False),
+                    aliases=['format_options'],
+                    deprecated_aliases=[
+                        dict(
+                            name='format_options',
+                            version='3.0.0',
+                            collection_name='ibm.ibm_zos_core'
+                        )
+                    ],
                 ),
             ),
             default=dict(

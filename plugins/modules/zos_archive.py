@@ -1872,6 +1872,7 @@ def run_module():
                     options=dict(
                         type='dict',
                         required=False,
+                        aliases=['format_options'],
                         options=dict(
                             spack=dict(
                                 type='bool',

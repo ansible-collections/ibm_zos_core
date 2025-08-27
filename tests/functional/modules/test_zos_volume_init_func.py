@@ -530,7 +530,8 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
         hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # allocate data set to volume
-        hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
+        hosts.all.shell(cmd=f"dtouch -tpds -V{volume} '{name}'")
+        # hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
 
         # take volume back offline
         hosts.all.zos_operator(cmd=f"vary {address},offline")
@@ -550,7 +551,8 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
         hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # remove data set
-        hosts.all.zos_data_set(name=dataset, state='absent')
+        hosts.all.shell(cmd=f"drm '{name}'")
+        # hosts.all.zos_data_set(name=dataset, state='absent')
 
 
 # Note - technically verify_offline is not REQUIRED but it defaults to True

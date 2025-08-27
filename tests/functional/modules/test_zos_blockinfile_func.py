@@ -1728,7 +1728,7 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     ds_name = get_tmp_ds_name()
     try:
         ds_name = ds_name.upper() + "." + ds_type
-        hosts.all.shell(cmd=f"dtouch -t{ds_type} '{ds_name}'")
+        results = hosts.all.shell(cmd=f"dtouch -t{ds_type} '{ds_name}'")
         # results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
         for result in results.contacted.values():
             assert result.get("changed") is True

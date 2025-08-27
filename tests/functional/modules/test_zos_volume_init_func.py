@@ -530,7 +530,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
         hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # allocate data set to volume
-        hosts.all.shell(cmd=f"dtouch -tpds -V{volume} '{name}'")
+        hosts.all.shell(cmd=f"dtouch -tpds -V{volume} '{dataset}'")
         # hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
 
         # take volume back offline
@@ -551,7 +551,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
         hosts.all.zos_operator(cmd=f"vary {address},online")
 
         # remove data set
-        hosts.all.shell(cmd=f"drm '{name}'")
+        hosts.all.shell(cmd=f"drm '{dataset}'")
         # hosts.all.zos_data_set(name=dataset, state='absent')
 
 

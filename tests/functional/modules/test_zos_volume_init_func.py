@@ -490,7 +490,7 @@ def test_bad_param_volid_value_too_long(ansible_zos_module, volumes_unit_on_syst
     hosts.all.zos_operator(cmd=f"vary {address},online")
 
 
-# Note - volume needs to be sms managed for zos_data_set to work. Possible
+# Note - volume needs to be sms managed for data set creation to work. Possible
 #        points of failure are:
 #        unable to init volume first time around
 #        unable to allocate data set
@@ -531,7 +531,6 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
 
         # allocate data set to volume
         hosts.all.shell(cmd=f"dtouch -tpds -V{volume} '{dataset}'")
-        # hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
 
         # take volume back offline
         hosts.all.zos_operator(cmd=f"vary {address},offline")

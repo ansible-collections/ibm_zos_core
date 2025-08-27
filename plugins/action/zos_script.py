@@ -92,7 +92,7 @@ class ActionModule(ActionBase):
             copy_module_args = dict(
                 src=script_path,
                 dest=tempfile_path,
-                force=True,
+                replace=True,
                 is_binary=False,
                 encoding=module_args.get('encoding'),
                 use_template=module_args.get('use_template', False),

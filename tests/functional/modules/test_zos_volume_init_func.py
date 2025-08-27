@@ -551,7 +551,6 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
 
         # remove data set
         hosts.all.shell(cmd=f"drm '{dataset}'")
-        # hosts.all.zos_data_set(name=dataset, state='absent')
 
 
 # Note - technically verify_offline is not REQUIRED but it defaults to True

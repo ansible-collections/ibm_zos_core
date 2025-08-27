@@ -1986,6 +1986,7 @@ def run_module():
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=['name'],
                 ),
                 options=dict(
                     type='dict',
@@ -2003,12 +2004,14 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
+                            aliases=['use_adrdssu'],
                         )
                     ),
                     default=dict(
                         spack=True,
                         xmit_log_data_set="",
                         adrdssu=False),
+                    aliases=['format_options'],
                 ),
             ),
             default=dict(

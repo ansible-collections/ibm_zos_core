@@ -65,6 +65,7 @@ options:
           - terse
           - xmit
           - pax
+        aliases: [ name ]
       options:
         description:
           - Options specific to a compression format.
@@ -103,6 +104,7 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
+            aliases: [ use_adrdssu ]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -1863,7 +1865,8 @@ def run_module():
                     type=dict(
                         type='str',
                         default='gz',
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                        aliases=['name'],
                     ),
                     options=dict(
                         type='dict',
@@ -1879,6 +1882,7 @@ def run_module():
                             adrdssu=dict(
                                 type='bool',
                                 default=False,
+                                aliases=['use_adrdssu'],
                             )
                         ),
                     ),
@@ -1958,7 +1962,15 @@ def run_module():
                 type=dict(
                     type='str',
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=['name'],
+                    deprecated_aliases=[
+                        dict(
+                            name='name',
+                            version='3.0.0',
+                            collection_name='ibm.ibm_zos_core'
+                        )
+                    ],
                 ),
                 options=dict(
                     type='dict',
@@ -1976,6 +1988,14 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
+                            aliases=['use_adrdssu'],
+                            deprecated_aliases=[
+                                dict(
+                                    name='use_adrdssu',
+                                    version='3.0.0',
+                                    collection_name='ibm.ibm_zos_core'
+                                )
+                            ],
                         )
                     ),
                     default=dict(

@@ -1209,7 +1209,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
         # Create two empty members
         hosts.all.shell(cmd=f"decho '' '{default_data_set_name}({member_1})'")
-        hosts.all.shell(cmd=f"decho '' '{params["path"]}'")
+        hosts.all.shell(cmd=f"decho '' '{params['path']}'")
         # write member to verify cases
         if ds_type in ["pds", "pdse"]:
             cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), params["path"])
@@ -1269,7 +1269,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
         # Create two empty members
         hosts.all.shell(cmd=f"decho '' '{default_data_set_name}({member_1})'")
-        hosts.all.shell(cmd=f"decho '' '{params["path"]}'")
+        hosts.all.shell(cmd=f"decho '' '{params['path']}'")
         cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), params["path"])
         hosts.all.shell(cmd=cmd_str)
         results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))

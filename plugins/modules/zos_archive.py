@@ -1868,11 +1868,25 @@ def run_module():
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                         aliases=['name'],
+                        deprecated_aliases=[
+                            dict(
+                                name='name',
+                                version='3.0.0',
+                                collection_name='ibm.ibm_zos_core'
+                            )
+                        ],
                     ),
                     options=dict(
                         type='dict',
                         required=False,
                         aliases=['format_options'],
+                        deprecated_aliases=[
+                            dict(
+                                name='format_options',
+                                version='3.0.0',
+                                collection_name='ibm.ibm_zos_core'
+                            )
+                        ],
                         options=dict(
                             spack=dict(
                                 type='bool',
@@ -1885,6 +1899,13 @@ def run_module():
                                 type='bool',
                                 default=False,
                                 aliases=['use_adrdssu'],
+                                deprecated_aliases=[
+                                    dict(
+                                        name='use_adrdssu',
+                                        version='3.0.0',
+                                        collection_name='ibm.ibm_zos_core'
+                                    )
+                                ],
                             )
                         ),
                     ),
@@ -1965,14 +1986,6 @@ def run_module():
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                    aliases=['name'],
-                    deprecated_aliases=[
-                        dict(
-                            name='name',
-                            version='3.0.0',
-                            collection_name='ibm.ibm_zos_core'
-                        )
-                    ],
                 ),
                 options=dict(
                     type='dict',
@@ -1990,28 +2003,12 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['use_adrdssu'],
-                            deprecated_aliases=[
-                                dict(
-                                    name='use_adrdssu',
-                                    version='3.0.0',
-                                    collection_name='ibm.ibm_zos_core'
-                                )
-                            ],
                         )
                     ),
                     default=dict(
                         spack=True,
                         xmit_log_data_set="",
                         adrdssu=False),
-                    aliases=['format_options'],
-                    deprecated_aliases=[
-                        dict(
-                            name='format_options',
-                            version='3.0.0',
-                            collection_name='ibm.ibm_zos_core'
-                        )
-                    ],
                 ),
             ),
             default=dict(

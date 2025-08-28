@@ -179,7 +179,7 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         sysin = "True"
-        results = hosts.all.zos_job_output(job_name="SYSINS", input=sysin)
+        results = hosts.all.zos_job_output(job_name="SYSINS", sysin_dd=sysin)
         for result in results.contacted.values():
             print(result)
             assert result.get("changed") is False

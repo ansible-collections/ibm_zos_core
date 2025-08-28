@@ -21,10 +21,188 @@ module: zos_user
 version_added: '2.0.0'
 author:
   - "Alex Moreno (@rexemin)"
-short_description:
+short_description: Manage user and group profiles in RACF
 description:
-  - The L(zos_user,./zos_user.html)
+  - The L(zos_user,./zos_user.html) module executes RACF TSO commands that can manage
+    user and group RACF profiles.
+  - The module can create, update and delete RACF profiles, as well as list information
+    about them.
 options:
+  name:
+    description:
+      - Name of the RACF profile the module will operate on.
+    type: str
+    required: true
+    aliases:
+      - src
+  operation:
+    description:
+      - RACF command that will be executed.
+      - Group profiles can be created, updated, listed, deleted and purged.
+      - User profiles can use any of the choices.
+      - C(delete) will run a RACF C(DELGROUP) or a C(DELUSER) TSO command. This will
+        remove the profile but not every reference in the RACF database.
+      - C(purge) will execute the RACF utility IRRDBU00, thereby removing all references
+        of a profile from the RACF database.
+      - C(connect) will add a given user profile to a group. C(remove) will remove the
+        user from a group.
+    type: str
+    required: true
+    choices:
+      - create
+      - update
+      - list
+      - delete
+      - purge
+      - connect
+      - remove
+  scope:
+    description:
+      - Whether commands should affect a user or a group profile.
+    type: str
+    required: true
+    choices:
+      - user
+      - group
+  general:
+    description:
+      - Options that change common attributes in a RACF profile.
+    required: false
+    type: dict
+    suboptions:
+      model:
+        description:
+          - RACF profile that will be used as a model for the profile being changed.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      owner:
+        description:
+          - Owner of the profile that is being changed.
+          - It can be a user or a group profile.
+        type: str
+        required: false
+      installation_data:
+        description:
+          - Installation-defined data that will be stored in the profile.
+          - Maximum length of 255 characters.
+          - The module will automatically enclose the contents in single quotation
+            marks.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      custom_fields:
+        description:
+          - Custom fields that will be stored with the profile.
+        type: dict
+        required: false
+        suboptions:
+          add:
+            description:
+              - Adds custom fields to this profile.
+              - Each custom field should be a C(key: value) pair.
+            type: dict
+            required: false
+          delete:
+            description:
+              - Deletes each custom field listed.
+            type: list
+            elements: str
+            required: false
+          delete_block:
+            description:
+              - Delete the whole custom fields block from the profile.
+              - This option is only valid when updating profiles, it will be ignored
+                when creating one.
+              - This option is mutually exclusive with C(add) and C(delete).
+            type: bool
+            required: required
+  group:
+    description:
+      - Options that change group-specific attributes in a RACF profile.
+      - Only valid when changing a group profile, ignored for user profiles.
+    required: false
+    type: dict
+    suboptions:
+      superior_group:
+        description:
+          - Superior group that will be assigned to the profile.
+        type: str
+        required: false
+      terminal_access:
+        description:
+          - Whether to allow the use of the universal access authority for a
+            terminal during authorization checking.
+        type: bool
+        required: false
+      universal_group:
+        description:
+          - Whether the group should be allowed to have an unlimited number of
+            users.
+        type: bool
+        required: false
+  dfp:
+    description:
+      - Options that set DFP attributes from the Storage Management Subsytem.
+    required: false
+    type: dict
+    suboptions:
+      data_app_id:
+        description: Name of a DFP data application.
+        type: str
+        required: false
+      data_class:
+        description: Default data class for data set allocation.
+        type: str
+        required: false
+      management_class:
+        description: Default management class for data set migration and backup.
+        type: str
+        required: false
+      storage_class:
+        description: Default storage class for data set space, device and volume.
+        type: str
+        required: false
+      delete:
+        description:
+          - Delete the whole DFP block from the profile.
+          - This option is only valid when updating profiles, it will be ignored
+            when creating one.
+          - This option is mutually exclusive with every other option in this section.
+        type: bool
+        required: false
+  omvs:
+    description:
+      - Attributes for how Unix System Services should work under a profile.
+    required: false
+    type: dict
+    suboptions:
+      uid:
+        description:
+          - How RACF should assign a user its UID.
+          - C(none) will be ignored when creating a profile.
+          - C(custom) and C(shared) require C(custom_uid) too.
+        type: str
+        required: false
+        choices:
+          - auto
+          - custom
+          - shared
+          - none
+      custom_uid:
+        description:
+          - Specifies the profile's UID.
+          - A number between 0 and 2,147,483,647.
+        type: int
+        required: false
+      delete:
+        description:
+          - Delete the whole OMVS block from the profile.
+          - This option is only valid when updating profiles, it will be ignored
+            when creating one.
+          - This option is mutually exclusive with every other option in this section.
+        type: bool
+        required: false
 
 attributes:
   action:
@@ -40,6 +218,7 @@ attributes:
 notes:
 
 seealso:
+  - module: zos_tso_command
 """
 
 EXAMPLES = r"""
@@ -193,6 +372,9 @@ class RACFHandler():
         self.should_remove_empty_strings in each subclass.
         """
         for block in self.params:
+            if self.params[block] is None:
+                continue
+
             for option in self.params[block]:
                 if self.params[block][option] == "":
                     del self.params[block][option]
@@ -241,9 +423,17 @@ class RACFHandler():
                 self.params[block[0]] = filtered_params if filtered_params else None
 
         # Removing empty dictionaries from the parameters.
+        clean_params = copy.deepcopy(self.params)
         for block in self.params:
-            if isinstance(self.params[block], dict) and not self.params[block]:
-                del self.params[block]
+            if self.params[block] is None:
+                del clean_params[block]
+                continue
+
+            for option in self.params[block]:
+                if self.params[block][option] is None:
+                    del clean_params[block][option]
+
+        self.params = clean_params
 
     def are_blocks_defined(self):
         """Checks that there's at least one block of information accompanying an operation.
@@ -424,13 +614,11 @@ class GroupHandler(RACFHandler):
             ],
             'flat': [
                 ('omvs', ('uid', 'custom_uid')),
-                ('ovm', ('uid',))
             ]
         },
         'update': {
             'flat': [
                 ('omvs', ('uid', 'custom_uid')),
-                ('ovm', ('uid',))
             ]
         }
     }
@@ -444,7 +632,7 @@ class GroupHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'group', 'dfp', 'omvs', 'ovm']
+        'update': ['general', 'group', 'dfp', 'omvs']
     }
 
     validations = [
@@ -454,9 +642,6 @@ class GroupHandler(RACFHandler):
         (('dfp', 'management_class'), 'length', ((0, 8),)),
         (('dfp', 'storage_class'), 'length', ((0, 8),)),
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
-        (('ovm', 'root'), 'length', ((0, 1023),)),
-        (('ovm', 'home'), 'length', ((0, 1023),)),
-        (('ovm', 'uid'), 'range', (0, 2_147_483_647, -1))
     ]
 
     def execute_operation(self):
@@ -501,8 +686,8 @@ class GroupHandler(RACFHandler):
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_group_string()}'.strip()
 
-        # OMVS and OVM blocks won't use the string methods since a group only uses one option
-        # from both blocks.
+        # The OMVS block won't use the string methods since a group only uses one option
+        # from it.
         omvs = self.params.get('omvs')
         if omvs is not None:
             if omvs.get('uid') == 'auto':
@@ -512,10 +697,6 @@ class GroupHandler(RACFHandler):
                 if omvs['uid'] == 'shared':
                     cmd = f'{cmd}SHARED'
                 cmd = f'{cmd})'
-
-        ovm = self.params.get('ovm')
-        if ovm is not None and ovm.get('uid') != -1:
-            cmd = f"{cmd} OVM(GID({ovm['uid']}))"
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -538,8 +719,8 @@ class GroupHandler(RACFHandler):
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_group_string()}'.strip()
 
-        # OMVS and OVM blocks won't use the string options since a group only uses one option
-        # from both blocks.
+        # The OMVS block won't use the string options since a group only uses one option
+        # from it.
         omvs = self.params.get('omvs')
         if omvs is not None:
             if omvs.get('delete'):
@@ -554,16 +735,6 @@ class GroupHandler(RACFHandler):
                 cmd = f'{cmd})'
             else:
                 cmd = f'{cmd} OMVS(NOGID)'
-
-        ovm = self.params.get('ovm')
-        if ovm is not None:
-            if ovm.get('delete'):
-                cmd = f'{cmd} NOOVM'
-
-            if ovm.get('uid') != -1:
-                cmd = f"{cmd} OVM(GID({ovm['uid']}))"
-            else:
-                cmd = f"{cmd} OVM(NOGID)"
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -754,33 +925,6 @@ def run_module():
                         'required': False
                     }
                 }
-            },
-            'ovm': {
-                'type': 'dict',
-                'required': False,
-                'mutually_exclusive': [
-                    ('root', 'delete'),
-                    ('home', 'delete'),
-                    ('uid', 'delete'),
-                ],
-                'options': {
-                    'root': {
-                        'type': 'str',
-                        'required': False
-                    },
-                    'home': {
-                        'type': 'str',
-                        'required': False
-                    },
-                    'uid': {
-                        'type': 'int',
-                        'required': False
-                    },
-                    'delete': {
-                        'type': 'bool',
-                        'required': False
-                    }
-                }
             }
         },
         supports_check_mode=True
@@ -835,16 +979,6 @@ def run_module():
                 'uid': {'arg_type': 'str', 'required': False},
                 'custom_uid': {'arg_type': 'int', 'required': False}
             }
-        },
-        'ovm': {
-            'arg_type': 'dict',
-            'required': False,
-            'options': {
-                'root': {'arg_type': 'str', 'required': False},
-                'home': {'arg_type': 'str', 'required': False},
-                'uid': {'arg_type': 'int', 'required': False},
-                'delete': {'arg_type': 'bool', 'required': False}
-            }
         }
     }
 
@@ -879,6 +1013,7 @@ def run_module():
     if result['rc'] == 0:
         result['changed'] = True
     else:
+        result['msg'] = 'An error ocurred while executing the RACF command.'
         module.fail_json(**result)
 
     module.exit_json(**result)

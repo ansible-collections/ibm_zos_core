@@ -532,7 +532,7 @@ def test_mvs_unarchive_single_data_set(
         dataset = get_tmp_ds_name(3)
         hlq = "ANSIBLE"
         # Create source data set
-        hosts.all.shell(cmd=f"dtouch -t{data_set.get("dstype")} -l{record_length} -r{record_format} '{dataset}'")
+        hosts.all.shell(cmd=f"dtouch -t{data_set.get('dstype')} -l{record_length} -r{record_format} '{dataset}'")
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
@@ -654,7 +654,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(
         dataset = get_tmp_ds_name(3)
         hlq = "ANSIBLE"
         # Create source data set
-        hosts.all.shell(cmd=f"dtouch -t{data_set.get("dstype")} -l{record_length} -r{record_format} '{dataset}'")
+        hosts.all.shell(cmd=f"dtouch -t{data_set.get('dstype')} -l{record_length} -r{record_format} '{dataset}'")
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
@@ -1253,7 +1253,7 @@ def test_mvs_unarchive_single_data_set_remote_src(
         hlq = "ANSIBLE"
         tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
         # Create source data set
-        hosts.all.shell(cmd=f"dtouch -t{data_set.get("dstype")} -l{record_length} -r{record_format} '{dataset}'")
+        hosts.all.shell(cmd=f"dtouch -t{data_set.get('dstype')} -l{record_length} -r{record_format} '{dataset}'")
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
@@ -1376,7 +1376,7 @@ def test_mvs_unarchive_encoding(
         record_format = "fb"
         record_length = 80
         # Create source data set
-        hosts.all.shell(cmd=f"dtouch -t{data_set.get("dstype")} -l{record_length} -r{record_format} '{dataset}'")
+        hosts.all.shell(cmd=f"dtouch -t{data_set.get('dstype')} -l{record_length} -r{record_format} '{dataset}'")
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
@@ -1489,7 +1489,7 @@ def test_mvs_unarchive_encoding_skip_encoding(
         hlq = "ANSIBLE"
         record_format = "fb"
         # Create source data set
-        hosts.all.shell(cmd=f"dtouch -t{data_set.get("dstype")} -l{record_length} -r{record_format} '{dataset}'")
+        hosts.all.shell(cmd=f"dtouch -t{data_set.get('dstype')} -l{record_length} -r{record_format} '{dataset}'")
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):

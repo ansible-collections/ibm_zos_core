@@ -1694,20 +1694,26 @@ def test_mvs_unarchive_fail_copy_remote_src(ansible_zos_module):
 
 @pytest.mark.ds
 @pytest.mark.parametrize(
-    "format", [
+    "ds_format", [
         "terse",
         "xmit",
         ])
 @pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
-def test_gdg_unarchive(ansible_zos_module, dstype, format):
+def test_gdg_unarchive(ansible_zos_module, dstype, ds_format):
     try:
         HLQ = "ANSIBLE"
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name(symbols=True)
         archive_data_set = get_tmp_ds_name(symbols=True)
-        hosts.all.shell(cmd=f"dtouch -tGDG -L3 '{data_set_name}'")
-        hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
-        hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
+        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 '{data_set_name}'")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -1730,12 +1736,10 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds))
 
-        format_dict = dict(name=format, options=dict())
-        if format == "terse":
+        format_dict = dict(name=ds_format, options=dict())
+        if ds_format == "terse":
             format_dict["options"] = dict(spack=True)
         format_dict["options"].update(adrdssu=True)
-        if format == "terse":
-            del format_dict["options"]["spack"]
         archive_result = hosts.all.zos_archive(
             src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
             dest=archive_data_set,
@@ -1749,7 +1753,7 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
-        hosts.all.shell(cmd=f"drm '{data_set_name}(-1)' && {data_set_name}(0)")
+        hosts.all.shell(cmd=f"drm '{data_set_name}(-1)' && drm '{data_set_name}(0)'")
         unarchive_format_dict = {
             "name": ds_format,
             "format_options": {
@@ -1758,7 +1762,7 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
         }
         unarchive_result = hosts.all.zos_unarchive(
             src=archive_data_set,
-            format=format_dict,
+            format=unarchive_format_dict,
             remote_src=True
         )
         for result in unarchive_result.contacted.values():

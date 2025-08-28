@@ -273,15 +273,11 @@ def test_backup_of_data_set_with_compression(ansible_zos_module, backup_name, ov
         delete_data_set_or_file(hosts, backup_name_uncompressed)
         delete_data_set_or_file(hosts, backup_name_compressed)
 
-        # creating a dataset using the dtouch
-        hosts.all.shell("dtouch -tseq {data_set_name}")
-
-        # making a larger dataset
+        #not creating a dataset as decho will do it
         shell_script_content = f"""#!/bin/bash
 for i in {{1..50}}
 do
   decho -a "this is a test line to make it big" "{data_set_name}"
-  decho -a "this is a test line to make" "{data_set_name}"
 done
 """
         hosts.all.shell(f"echo '{shell_script_content}' > shell_script.sh")
@@ -317,6 +313,11 @@ done
             output_compressed = json.loads(result.get("stdout"))
             size_compressed = int(output_compressed["data"]["datasets"][0]["used"])
 
+        #When using compress=True with terse=True(default), two different algorithms are used.
+        #The zEDC hardware compresses the data, and then AMATERSE reprocess that compressed data.
+        #It's not designed to compress already highly compressed data. The overhead of the AMATERSE,
+        #combined with zEDC hardware compress, can outweigh the benefits.
+        #This lead to a final file size larger than if you had only used Terse.
         if size_uncompressed > 0:
             assert size_compressed > size_uncompressed, \
                 f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"

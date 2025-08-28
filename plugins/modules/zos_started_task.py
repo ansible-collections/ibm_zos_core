@@ -29,7 +29,7 @@ description:
 options:
   asid:
     description:
-      - I(asid) is a unique address space identifier which gets assigned to each running task.
+      - I(asid) is a unique address space identifier which gets assigned to each running started task.
     required: false
     type: str
   device_type:
@@ -124,6 +124,12 @@ options:
       - If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
     required: false
     type: str
+  verbose:
+    description:
+      - Return System logs that describe the task's execution.
+    required: false
+    type: bool
+    default: false
 """
 EXAMPLES = r"""
 - name: Start a started task using member name.
@@ -138,7 +144,7 @@ RETURN = r"""
 
 from ansible.module_utils.basic import AnsibleModule
 import traceback
-
+import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -150,7 +156,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import opercmd
+    from zoautil_py import opercmd,zsystem
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
@@ -160,7 +166,7 @@ except ImportError:
 #     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=1, *args, **kwargs):
     """Execute operator command.
 
     Parameters
@@ -179,14 +185,29 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
     OperatorQueryResult
         The result of the command.
     """
+    task_params = {}
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
     timeout_c = 100 * timeout_s
+    if execute_display_before:
+        task_params = execute_display_command(started_task_name, timeout_c)
+    
     response = opercmd.execute(operator_cmd, timeout_c, *args, **kwargs)
+
+    if execute_display_after:
+        task_params = execute_display_command(started_task_name, timeout_c)
 
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-    return rc, stdout, stderr
+    return rc, stdout, stderr, task_params
+
+def execute_display_command(started_task_name, timeout_c):
+    cmd = "d a,"+started_task_name
+    display_response = opercmd.execute(cmd, timeout_c)
+    task_params = []
+    if display_response.rc == 0 and display_response.stderr_response == "":
+        task_params = extract_keys(display_response.stdout_response)
+    return task_params
 
 
 def prepare_start_command(member, identifier, job_name, job_account, device, volume_serial, subsystem_name, reus_asid, parameters, keyword_parameters):
@@ -206,6 +227,53 @@ def prepare_start_command(member, identifier, job_name, job_account, device, vol
     return cmd
 
 
+def extract_keys(stdout):
+    # keys = {'A': 'ASID', 'CT': 'CPU_Time', 'ET': 'Elapsed_Time', 'WUID': 'WUID', 'USERID': 'USERID', 'P': 'Priority'}
+    # params = {}
+    # for key in keys:
+    #     parm = re.search(rf"{key}=([^\s]+)", stdout)
+    #     if parm:
+    #         params[keys[key]] = parm.group(1)
+    # return params
+    lines = stdout.strip().split('\n')
+    tasks = []
+    current_task = None
+    task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
+    kv_pattern = re.compile(r'(\S+)=(\S+)')
+    for line in lines[5:]:
+        line = line.strip()
+        if len(line.split()) >= 5 and task_header_regex.search(line):
+            if current_task:
+                tasks.append(current_task)
+            match = task_header_regex.search(line)
+            current_task = {
+                "TASK_NAME": match.group(1),
+                "DETAILS": {}
+            }
+            for match in kv_pattern.finditer(line):
+                key, value = match.groups()
+                current_task["DETAILS"][key] = value
+        elif current_task:
+            for match in kv_pattern.finditer(line):
+                key, value = match.groups()
+                current_task["DETAILS"][key] = value
+    if current_task:
+        tasks.append(current_task)
+    return tasks
+
+
+def fetch_logs(command):
+    stdout = zsystem.read_console(options='-t1')
+    stdout_lines = stdout.splitlines()
+    first = None
+    for i, line in enumerate(stdout_lines):
+        if command in line:
+            if first is None:
+                first = i
+    if first is None:
+        return ""
+    return stdout_lines[first:]
+
 def run_module():
     """Initialize the module.
 
@@ -216,10 +284,10 @@ def run_module():
     """
     module = AnsibleModule(
         argument_spec={
-            'operation': {
+            'state': {
                 'type': 'str',
                 'required': True,
-                'choices': ['start', 'stop', 'modify', 'display', 'force', 'cancel']
+                'choices': ['started', 'stopped', 'modified', 'display', 'forced', 'cancelled']
             },
             'member_name': {
                 'type': 'str',
@@ -266,25 +334,28 @@ def run_module():
                 'required': False
             },
             'keyword_parameters': {
-                'type': 'str',
+                'type': 'dict',
                 'required': False,
                 'no_log': False
             },
             'asid': {
                 'type': 'str',
                 'required': False
+            },
+            'verbose': {
+                'type': 'bool',
+                'required': False
             }
         },
         mutually_exclusive=[
-            ['job_name', 'identifier_name'],
             ['device_number', 'device_type']
         ],
         supports_check_mode=True
     )
 
     args_def = {
-        'operation': {
-            'type': 'str',
+        'state': {
+            'arg_type': 'str',
             'required': True
         },
         'member_name': {
@@ -331,11 +402,15 @@ def run_module():
             'required': False
         },
         'keyword_parameters': {
-            'arg_type': 'str',
+            'arg_type': 'basic_dict',
             'required': False
         },
         'asid': {
             'arg_type': 'str',
+            'required': False
+        },
+        'verbose': {
+            'arg_type': 'bool',
             'required': False
         }
     }
@@ -349,7 +424,7 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
-    operation = module.params.get('operation')
+    operation = module.params.get('state')
     member = module.params.get('member_name')
     identifier = module.params.get('identifier')
     job_name = module.params.get('job_name')
@@ -362,8 +437,19 @@ def run_module():
     subsystem_name = module.params.get('subsystem_name')
     reus_asid = module.params.get('reus_asid')
     keyword_parameters = module.params.get('keyword_parameters')
+    verbose = module.params.get('verbose')
+    keyword_parameters_string = None
+    if keyword_parameters is not None:
+        keyword_parameters_string = ','.join(f"{key}={value}" for key, value in keyword_parameters.items())
     device = device_type if device_type is not None else device_number
     kwargs = {}
+    start_errmsg = ['ERROR']
+    stop_errmsg = ['NOT ACTIVE']
+    display_errmsg = ['NOT ACTIVE']
+    modify_errmsg = ['REJECTED', 'NOT ACTIVE']
+    cancel_errmsg = ['NOT ACTIVE']
+    force_errmsg = ['NOT ACTIVE']
+    err_msg = []
 
     # Validations
     if job_account and len(job_account) > 55:
@@ -378,7 +464,7 @@ def run_module():
                 msg="Invalid device_number.",
                 changed=False
             )
-    if subsystem_name and len(job_account) > 4:
+    if subsystem_name and len(subsystem_name) > 4:
         module.fail_json(
             msg="The subsystem_name must be 1 - 4 characters.",
             changed=False
@@ -397,7 +483,20 @@ def run_module():
     args = []
     cmd = ''
     started_task_name = ""
-    if operation != 'start':
+    if operation != 'started':
+        if job_name is not None:
+            started_task_name = job_name
+            if identifier is not None:
+                started_task_name = started_task_name + "." + identifier
+        else:
+            module.fail_json(
+                msg="job_name is missing which is mandatory.",
+                changed=False
+            )
+    execute_display_before = False
+    execute_display_after = False
+    if operation == 'started':
+        execute_display_after = True
         if job_name is not None:
             started_task_name = job_name
         elif member is not None:
@@ -406,61 +505,94 @@ def run_module():
                 started_task_name = started_task_name + "." + identifier
         else:
             module.fail_json(
-                msg="one of job_name, member_name or identifier is needed but all are missing.",
+                msg="member_name is missing which is mandatory.",
                 changed=False
             )
-    if operation == 'start':
-        # member name is mandatory
-        if member is None or member.strip() == "":
+        err_msg = start_errmsg
+        if member is None:
             module.fail_json(
                 msg="member_name is missing which is mandatory.",
                 changed=False
             )
-        cmd = prepare_start_command(member, identifier, job_name, job_account, device, volume_serial, subsystem_name, reus_asid, parameters, keyword_parameters)
+        if job_name is not None and identifier is not None:
+            module.fail_json(
+                msg="job_name and identifier_name are mutually exclusive while starting a started task.",
+                changed=False
+            )
+        cmd = prepare_start_command(member, identifier, job_name, job_account, device, volume_serial, subsystem_name, reus_asid, parameters, keyword_parameters_string)
     elif operation == 'display':
+        err_msg = display_errmsg
         cmd = 'd a,' + started_task_name
-    elif operation == 'stop':
+    elif operation == 'stopped':
+        execute_display_before = True
+        err_msg = stop_errmsg
         cmd = 'p ' + started_task_name
-    elif operation == 'cancel':
+        if asid:
+            cmd = cmd + ',a=' + asid
+    elif operation == 'cancelled':
+        execute_display_before = True
+        err_msg = cancel_errmsg
         cmd = 'c ' + started_task_name
         if asid:
             cmd = cmd + ',a=' + asid
-    elif operation == 'force':
+    elif operation == 'forced':
+        execute_display_before = True
+        err_msg = force_errmsg
         cmd = 'force ' + started_task_name
         if asid:
             cmd = cmd + ',a=' + asid
-    elif operation == 'modify':
+    elif operation == 'modified':
+        execute_display_after = True
+        err_msg = modify_errmsg
         cmd = 'f ' + started_task_name + ',' + parameters
     changed = False
     stdout = ""
     stderr = ""
-    rc, out, err = execute_command(cmd, timeout_s=wait_s, *args, **kwargs)
-    if "ERROR" in out or err != "":
+    rc, out, err, task_params = execute_command(cmd, started_task_name, execute_display_before, execute_display_after, timeout_s=wait_s, *args, **kwargs)
+    logs = fetch_logs(cmd.upper()) # it will display both start/display logs
+    logs_str = "\n".join(logs)
+    if any(msg in out for msg in err_msg) or any(msg in logs_str for msg in err_msg) or err != "":
         changed = False
         stdout = out
         stderr = err
         if err == "" or err is None:
             stderr = out
+            stdout = ""
     else:
         changed = True
         stdout = out
         stderr = err
+        if operation == 'display':
+            task_params = extract_keys(out)
 
     result = dict()
 
     if module.check_mode:
         module.exit_json(**result)
-
-    result = dict(
-        changed=changed,
-        cmd=cmd,
-        remote_cmd=cmd,
-        rc=rc,
-        stdout=stdout,
-        stderr=stderr,
-        stdout_lines=stdout.split('\n'),
-        stderr_lines=stderr.split('\n'),
-    )
+    
+    if verbose:
+        result = dict(
+            changed=changed,
+            cmd=cmd,
+            task=task_params,
+            rc=rc,
+            verbose_output=logs_str,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout.split('\n'),
+            stderr_lines=stderr.split('\n'),
+        )
+    else:
+        result = dict(
+            changed=changed,
+            cmd=cmd,
+            task=task_params,
+            rc=rc,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout.split('\n'),
+            stderr_lines=stderr.split('\n'),
+        )
 
     module.exit_json(**result)
 

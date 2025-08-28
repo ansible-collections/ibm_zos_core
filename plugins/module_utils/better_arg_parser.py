@@ -152,6 +152,7 @@ class BetterArgHandler(object):
         # TODO: determine if we should optionally allow top-level args to be passed
         self.type_handlers = {
             "dict": self._dict_type,
+            "basic_dict": self._basic_dict_type,
             "list": self._list_type,
             "str": self._str_type,
             "bool": self._bool_type,
@@ -254,6 +255,32 @@ class BetterArgHandler(object):
         self._assert_mutually_exclusive(contents)
         return contents
 
+    def _basic_dict_type(self, contents, resolve_dependencies):
+        """Resolver for str type arguments.
+
+        Parameters
+        ----------
+        contents : dict
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        dict
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not isinstance(contents, dict):
+            raise ValueError('Invalid argument "{0}" for type "dict".'.format(contents))
+        return contents
+    
     def _str_type(self, contents, resolve_dependencies):
         """Resolver for str type arguments.
 

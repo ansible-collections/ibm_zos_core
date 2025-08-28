@@ -25,8 +25,8 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-NO_AUTO_INCREMENT= """- hosts : zvm
-  collections :
+NO_AUTO_INCREMENT= """- hosts: zvm
+  collections:
     - ibm.ibm_zos_core
   gather_facts: False
   vars:

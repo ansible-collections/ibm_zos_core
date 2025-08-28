@@ -136,8 +136,8 @@ options:
     type: bool
     default: False
   compress:
-    description: 
-      - When I(operation=backup), compress the dataset or file produced by ADRDSSU DUMP. 
+    description:
+      - When I(operation=backup), compress the dataset or file produced by ADRDSSU DUMP.
         This option can reduce the size of the temporary dataset produced before it is passed
         to AMATERSE for tersing.
       - This is only supported if I(operation=backup). By default it will compress all files.
@@ -262,6 +262,14 @@ EXAMPLES = r"""
       include:
         - user.gdg(-1)
         - user.gdg(0)
+    backup_name: my.backup.dzp
+
+- name: Backup datasets bypassing compress
+  zos_backup_restore:
+    operation: backup
+    compress: false
+    data_sets:
+      include: someds.name.here
     backup_name: my.backup.dzp
 
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
@@ -619,7 +627,7 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    
+
     """
     args = locals()
     zoau_args = to_dzip_args(**args)

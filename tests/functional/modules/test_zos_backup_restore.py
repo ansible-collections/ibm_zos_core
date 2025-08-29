@@ -275,7 +275,7 @@ def test_backup_of_data_set_with_compression(ansible_zos_module, backup_name, ov
 
         #not creating a dataset as decho will do it
         shell_script_content = f"""#!/bin/bash
-for i in {{1..50}}
+for i in {{1..100}}
 do
   decho -a "this is a test line to make it big" "{data_set_name}"
 done
@@ -303,6 +303,7 @@ done
             operation="backup",
             data_sets=dict(include=data_set_name),
             backup_name=backup_name_compressed,
+            compress= True,
             overwrite=overwrite,
         )
         assert_module_did_not_fail(results_compressed)
@@ -318,6 +319,79 @@ done
         #It's not designed to compress already highly compressed data. The overhead of the AMATERSE,
         #combined with zEDC hardware compress, can outweigh the benefits.
         #This lead to a final file size larger than if you had only used Terse.
+        if size_uncompressed > 0:
+            assert size_compressed > size_uncompressed, \
+                f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"
+
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name_uncompressed)
+        delete_data_set_or_file(hosts, backup_name_compressed)
+        delete_remnants(hosts)
+
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite,recover",
+    [
+        ("DATA_SET", True, True),
+    ],
+)
+def test_backup_of_data_set_with_terse(ansible_zos_module, backup_name, overwrite, recover):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    backup_name_uncompressed = get_tmp_ds_name(1, 1)
+    backup_name_compressed = get_tmp_ds_name(1, 1)
+    size_uncompressed = 0
+    size_compressed = 0
+
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name_uncompressed)
+        delete_data_set_or_file(hosts, backup_name_compressed)
+
+        #not creating a dataset as decho will do it
+        shell_script_content = f"""#!/bin/bash
+for i in {{1..100}}
+do
+  decho -a "this is a test line to make it big" "{data_set_name}"
+done
+"""
+        hosts.all.shell(f"echo '{shell_script_content}' > shell_script.sh")
+        hosts.all.shell("chmod +x shell_script.sh")
+        hosts.all.shell("./shell_script.sh")
+
+        results_uncompressed = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name_uncompressed,
+            compress= False,
+            terse= True,
+            overwrite=overwrite,
+        )
+        assert_module_did_not_fail(results_uncompressed)
+        assert_data_set_or_file_exists(hosts, backup_name_uncompressed)
+
+        cmd_result_uncompressed = hosts.all.shell(f"dls -j -s {backup_name_uncompressed}")
+        for result in cmd_result_uncompressed.contacted.values():
+            output = json.loads(result.get("stdout"))
+            size_uncompressed = int(output["data"]["datasets"][0]["used"])
+
+        results_compressed = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name_compressed,
+            overwrite=overwrite,
+            compress= True,
+            terse= False,
+        )
+        assert_module_did_not_fail(results_compressed)
+        assert_data_set_or_file_exists(hosts, backup_name_compressed)
+
+        cmd_result_compressed = hosts.all.shell(f"dls -j -s {backup_name_compressed}")
+        for result in cmd_result_compressed.contacted.values():
+            output_compressed = json.loads(result.get("stdout"))
+            size_compressed = int(output_compressed["data"]["datasets"][0]["used"])
+
         if size_uncompressed > 0:
             assert size_compressed > size_uncompressed, \
                 f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"

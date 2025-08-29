@@ -100,7 +100,7 @@ class ActionModule(ActionBase):
                     src=source,
                     dest=dest,
                     dest_data_set=dest_data_set,
-                    force=force,
+                    replace=force,
                     is_binary=True,
                 )
             )

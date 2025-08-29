@@ -1,0 +1,3 @@
+breaking_changes:
+  - zos_find - Option value ``pds_pattern`` is deprecated.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2261).

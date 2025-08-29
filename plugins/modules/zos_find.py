@@ -66,6 +66,7 @@ options:
         Multiple patterns can be specified using a list.
       - The pattern can be a regular expression.
       - If the pattern is a regular expression, it must match the full data set name.
+      - Members are affected to be exclude if match on of the patterns.
     aliases:
       - exclude
     type: list
@@ -442,7 +443,7 @@ def data_set_filter(module, patterns):
             if result:
                 if result[1] == "PO":
                     mls_rc, mls_out, mls_err = module.run_command(
-                        f"mls '{result[0]}(0)'", errors='replace'
+                        f"mls '{result[0]}(*)'", errors='replace'
                     )
                     if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
@@ -452,6 +453,29 @@ def data_set_filter(module, patterns):
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
+
+
+def filter_members(module, members, excludes):
+    """ Return all PDS/PDSE data sets whose members match any of the patterns
+    in the given list of member patterns.
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used in the module.
+    member : set
+        A list of member patterns to on it.
+    excludes : string
+        The str value to filter members.
+    Returns
+    -------
+    dict[str, set[str]]
+        Filtered PDS/PDSE with corresponding members.
+    """
+    filtered_members = {
+    member for member in members
+    if not any(_match_regex(module, exclude, member) for exclude in excludes)
+    }
+    return filtered_members
 
 
 def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
@@ -1263,6 +1287,8 @@ def run_module(module):
                     if res_type == "NONVSAM":
                         members = init_filtered_data_sets['pds'].get(ds)
                         if members:
+                            if excludes:
+                                members = filter_members(module, members, excludes)
                             res_args['data_sets'].append(
                                 dict(name=ds, members=members, type=res_type)
                             )

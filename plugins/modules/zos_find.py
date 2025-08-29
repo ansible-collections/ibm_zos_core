@@ -325,7 +325,6 @@ import datetime
 import math
 import json
 
-from copy import deepcopy
 from re import match as fullmatch
 
 
@@ -472,8 +471,8 @@ def filter_members(module, members, excludes):
         Filtered PDS/PDSE with corresponding members.
     """
     filtered_members = {
-    member for member in members
-    if not any(_match_regex(module, exclude, member) for exclude in excludes)
+        member for member in members
+        if not any(_match_regex(module, exclude, member) for exclude in excludes)
     }
     return filtered_members
 

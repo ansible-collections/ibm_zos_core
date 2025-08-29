@@ -620,19 +620,28 @@ class GroupHandler(RACFHandler):
             'flat': [
                 ('omvs', ('uid', 'custom_uid')),
             ]
-        }
+        },
+        'delete': {},
+        'purge': {},
+        'list': {}
     }
 
     should_remove_empty_strings = {
         'create': True,
-        'update': False
+        'update': False,
+        'delete': False,
+        'purge': False,
+        'list': False
     }
 
     # All empty lists indicate an operation that doesn't require any other
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'group', 'dfp', 'omvs']
+        'update': ['general', 'group', 'dfp', 'omvs'],
+        'delete': [],
+        'purge': [],
+        'list': []
     }
 
     validations = [
@@ -643,6 +652,24 @@ class GroupHandler(RACFHandler):
         (('dfp', 'storage_class'), 'length', ((0, 8),)),
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
     ]
+
+    def __init__(self, module, module_params):
+        """Initializes a new handler with all the context needed to execute RACF
+        commands.
+
+        Parameters
+        ----------
+            module: AnsibleModule
+                Object with all the task's context.
+            module_params: dict
+                Module options specified in the task.
+        """
+        super().__init__(module, module_params)
+
+        # Removing all block params since these operations only need the
+        # name.
+        if self.operation in ['delete', 'purge', 'list']:
+            self.params = {}
 
     def execute_operation(self):
         """Given the operation and scope, it executes a RACF command.
@@ -664,6 +691,8 @@ class GroupHandler(RACFHandler):
                 rc, stdout, stderr, cmd = self._create_group()
             if self.operation == 'update':
                 rc, stdout, stderr, cmd = self._update_group()
+            if self.operation == 'delete':
+                rc, stdout, stderr, cmd = self._delete_group()
 
         self.cmd = cmd
         # Getting the base dictionary.
@@ -736,6 +765,22 @@ class GroupHandler(RACFHandler):
             else:
                 cmd = f'{cmd} OMVS(NOGID)'
 
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
+    def _delete_group(self):
+        """Builds and execute a DELGROUP command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the DELGROUP command.
+        """
+        cmd = f'DELGROUP ({self.name})'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
         if rc == 0:

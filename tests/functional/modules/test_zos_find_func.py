@@ -568,9 +568,7 @@ def test_find_invalid_age_indicator_fails(ansible_zos_module):
     find_res = hosts.all.zos_find(patterns=['some.pattern'], age='3s')
     for val in find_res.contacted.values():
         assert val.get('msg') is not None
-        assert val.get('rc') is not None
-        assert val.get('stdout') is not None
-        assert val.get('stderr') is not None
+        assert val.get('changed') is False
 
 
 def test_find_invalid_size_indicator_fails(ansible_zos_module):
@@ -578,9 +576,7 @@ def test_find_invalid_size_indicator_fails(ansible_zos_module):
     find_res = hosts.all.zos_find(patterns=['some.pattern'], size='5h')
     for val in find_res.contacted.values():
         assert val.get('msg') is not None
-        assert val.get('rc') is not None
-        assert val.get('stdout') is not None
-        assert val.get('stderr') is not None
+        assert val.get('changed') is False
 
 
 def test_find_non_existent_data_sets(ansible_zos_module):

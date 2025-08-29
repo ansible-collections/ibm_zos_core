@@ -171,7 +171,8 @@ def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
     size_units = 'T'
     record_length = 100
     record_format = 'fb'
-    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+    # You get the UTC hour in the ECs
+    creation_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
 
     try:
         data_set_creation_result = hosts.all.shell(

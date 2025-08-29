@@ -614,6 +614,7 @@ class GroupHandler(RACFHandler):
             ],
             'flat': [
                 ('omvs', ('uid', 'custom_uid')),
+                ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class'))
             ]
         },
         'update': {
@@ -674,25 +675,16 @@ class GroupHandler(RACFHandler):
     def execute_operation(self):
         """Given the operation and scope, it executes a RACF command.
 
-        Parameters
-        ----------
-            operation: str
-                One of 'create', 'list', 'update', 'delete', 'purge', 'connect'
-                or 'remove'.
-            scope: str
-                One of 'user' or 'group'.
-
         Returns
         -------
             tuple: Return code, standard output and standard error from the command.
         """
-        if self.scope == 'group':
-            if self.operation == 'create':
-                rc, stdout, stderr, cmd = self._create_group()
-            if self.operation == 'update':
-                rc, stdout, stderr, cmd = self._update_group()
-            if self.operation == 'delete':
-                rc, stdout, stderr, cmd = self._delete_group()
+        if self.operation == 'create':
+            rc, stdout, stderr, cmd = self._create_group()
+        if self.operation == 'update':
+            rc, stdout, stderr, cmd = self._update_group()
+        if self.operation == 'delete':
+            rc, stdout, stderr, cmd = self._delete_group()
 
         self.cmd = cmd
         # Getting the base dictionary.
@@ -811,6 +803,154 @@ class GroupHandler(RACFHandler):
         return cmd
 
 
+class UserHandler(RACFHandler):
+    """Subclass containing all information needed to clean, validate and execute
+    RACF commands affecting user profiles.
+    """
+    filters = {
+        'create': {
+            'nested': [
+                ('general', 'custom_fields', ('add',))
+            ],
+            'flat': [
+                ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
+                ('language', ('primary', 'secondary'))
+            ]
+        },
+        'update': {},
+        'delete': {},
+        'purge': {},
+        'list': {}
+    }
+
+    should_remove_empty_strings = {
+        'create': True,
+        'update': False,
+        'delete': False,
+        'purge': False,
+        'list': False
+    }
+
+    # All empty lists indicate an operation that doesn't require any other
+    # block to make sense.
+    valid_blocks = {
+        'create': [],
+        'update': ['general', 'group', 'dfp', 'language', 'omvs'],
+        'delete': [],
+        'purge': [],
+        'list': []
+    }
+
+    validations = [
+        (('general', 'installation_data'), 'length', ((0, 255),)),
+        (('dfp', 'data_app_id'), 'length', ((0, 8),)),
+        (('dfp', 'data_class'), 'length', ((0, 8),)),
+        (('dfp', 'management_class'), 'length', ((0, 8),)),
+        (('dfp', 'storage_class'), 'length', ((0, 8),)),
+        (('language', 'primary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
+        (('language', 'secondary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
+        (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0))
+    ]
+
+    def __init__(self, module, module_params):
+        """Initializes a new handler with all the context needed to execute RACF
+        commands.
+
+        Parameters
+        ----------
+            module: AnsibleModule
+                Object with all the task's context.
+            module_params: dict
+                Module options specified in the task.
+        """
+        super().__init__(module, module_params)
+
+        # Removing all block params since these operations only need the
+        # name.
+        if self.operation in ['delete', 'purge', 'list']:
+            self.params = {}
+
+    def execute_operation(self):
+        """Given the operation and scope, it executes a RACF command.
+
+        Returns
+        -------
+            tuple: Return code, standard output and standard error from the command.
+        """
+        if self.operation == 'create':
+            rc, stdout, stderr, cmd = self._create_user()
+        if self.operation == 'update':
+            rc, stdout, stderr, cmd = self._update_user()
+        if self.operation == 'delete':
+            rc, stdout, stderr, cmd = self._delete_user()
+
+        self.cmd = cmd
+        # Getting the base dictionary.
+        result = super().execute_operation()
+        result['rc'] = rc
+        result['stdout'] = stdout
+        result['stderr'] = stderr
+        return result
+
+    def _create_user(self):
+        """Builds and execute an ADDUSER command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the ADDUSER command.
+        """
+        cmd = f'ADDUSER ({self.name})'
+
+        # TODO: add language
+        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
+
+        # The OMVS block won't use the string methods since a group only uses one option
+        # from it.
+        omvs = self.params.get('omvs')
+        if omvs is not None:
+            if omvs.get('uid') == 'auto':
+                cmd = f'{cmd} OMVS(AUTOGID)'
+            elif omvs.get('uid') != 'none':
+                cmd = f"{cmd} OMVS(GID({omvs['custom_uid']})"
+                if omvs['uid'] == 'shared':
+                    cmd = f'{cmd}SHARED'
+                cmd = f'{cmd})'
+
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
+    def _update_user(self):
+        """Builds and execute an ALTUSER command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the ALTUSER command.
+        """
+        pass
+
+    def _delete_user(self):
+        """Builds and execute a DELUSER command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the DELUSER command.
+        """
+        cmd = f'DELUSER ({self.name})'
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
+
 def get_racf_handler(module, module_params):
     """Returns the correct handler needed for the scope and operation given in a task.
 
@@ -828,8 +968,7 @@ def get_racf_handler(module, module_params):
     if module_params['scope'] == 'group':
         return GroupHandler(module, module_params)
     elif module_params['scope'] == 'user':
-        pass
-        # return UserHandler(module, module_params)
+        return UserHandler(module, module_params)
 
 
 def run_module():
@@ -935,6 +1074,28 @@ def run_module():
                         'required': False
                     },
                     'storage_class': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'delete': {
+                        'type': 'bool',
+                        'required': False
+                    }
+                }
+            },
+            'language': {
+                'type': 'dict',
+                'required': False,
+                'mutually_exclusive': [
+                    ('primary', 'delete'),
+                    ('secondary', 'delete')
+                ],
+                'options': {
+                    'primary': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'secondary': {
                         'type': 'str',
                         'required': False
                     },

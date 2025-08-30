@@ -130,6 +130,14 @@ options:
     required: false
     type: bool
     default: false
+  wait_time_s:
+    required: false
+    default: 5
+    type: int
+    description:
+      - Option I(wait_time_s) is the total time that module
+        L(zos_started_tak,./zos_started_task.html) will wait for a submitted task. The time begins when the module is executed
+        on the managed node.
 """
 EXAMPLES = r"""
 - name: Start a started task using member name.
@@ -228,7 +236,7 @@ def prepare_start_command(member, identifier, job_name, job_account, device, vol
 
 
 def extract_keys(stdout):
-    # keys = {'A': 'ASID', 'CT': 'CPU_Time', 'ET': 'Elapsed_Time', 'WUID': 'WUID', 'USERID': 'USERID', 'P': 'Priority'}
+    keys = {'A': 'ASID', 'CT': 'CPU_Time', 'ET': 'Elapsed_Time', 'WUID': 'WUID', 'USERID': 'USERID', 'P': 'Priority'}
     # params = {}
     # for key in keys:
     #     parm = re.search(rf"{key}=([^\s]+)", stdout)
@@ -252,10 +260,14 @@ def extract_keys(stdout):
             }
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
+                if key in keys:
+                    key = keys[key]
                 current_task["DETAILS"][key] = value
         elif current_task:
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
+                if key in keys:
+                    key = keys[key]
                 current_task["DETAILS"][key] = value
     if current_task:
         tasks.append(current_task)
@@ -345,6 +357,11 @@ def run_module():
             'verbose': {
                 'type': 'bool',
                 'required': False
+            },
+            'wait_time_s': {
+                'type': 'int',
+                'required': False,
+                'default': 5
             }
         },
         mutually_exclusive=[
@@ -412,6 +429,10 @@ def run_module():
         'verbose': {
             'arg_type': 'bool',
             'required': False
+        },
+        'wait_time_s': {
+            'arg_type': 'int',
+            'required': False
         }
     }
 
@@ -437,10 +458,21 @@ def run_module():
     subsystem_name = module.params.get('subsystem_name')
     reus_asid = module.params.get('reus_asid')
     keyword_parameters = module.params.get('keyword_parameters')
+    wait_time_s = module.params.get('wait_time_s')
     verbose = module.params.get('verbose')
     keyword_parameters_string = None
     if keyword_parameters is not None:
-        keyword_parameters_string = ','.join(f"{key}={value}" for key, value in keyword_parameters.items())
+        # keyword_parameters_string = ','.join(f"{key}={value}" for key, value in keyword_parameters.items())
+        for key, value in keyword_parameters.items():
+            key_len = len(key)
+            value_len = len(value)
+            if key_len > 44 or value_len > 44 or key_len + value_len > 65:
+                module.fail_json(
+                    msg="The length of a keyword=option is exceeding 66 characters or length of an individual value is exceeding 44 characters. key:{0}, value:{1}".format(key, value),
+                    changed=False
+                )
+            else:
+                keyword_parameters_string = ','.join(f"{key}={value}")
     device = device_type if device_type is not None else device_number
     kwargs = {}
     start_errmsg = ['ERROR']

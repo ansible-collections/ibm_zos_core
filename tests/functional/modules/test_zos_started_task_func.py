@@ -29,13 +29,15 @@ TASK_JCL_CONTENT="""//STEP1    EXEC PGM=BPXBATCH
 //STDPARM  DD *
 SH sleep 600
 /*"""
-PROC_JCL_CONTENT="""//TEST     PROC  TIME=6
-//STEP1    EXEC PGM=BPXBATCH
+PROC_JCL_CONTENT="""//TESTERS  PROC
+//TEST     JOB MSGCLASS=A,NOTIFY=&SYSUID
+//STEP1    EXEC PGM=BPXBATCH,PARM='SH'
 //STDOUT   DD   SYSOUT=*                                               
 //STDERR   DD   SYSOUT=*
 //STDPARM  DD *,SYMBOLS=EXECSYS
-SH sleep &TIME
-/*"""
+SH sleep 60
+/*
+//PEND"""
 
 def test_start_task_with_invalid_member(ansible_zos_module):
     hosts = ansible_zos_module
@@ -277,7 +279,7 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
         hosts.all.file(path=temp_path, state="directory")
 
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(PROC_JCL_CONTENT), temp_path)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(TASK_JCL_CONTENT), temp_path)
         )
 
         hosts.all.shell(
@@ -285,13 +287,14 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
         )
 
         hosts.all.shell(
-            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
+            cmd="dcp {0} \"//'{1}(SAMPLE2)'\"".format(data_set_name, PROC_PDS)
         )
 
         start_results = hosts.all.zos_started_task(
             state="started",
-            member="SAMPLE",
-            job_name="SPROC"
+            member="SAMPLE2",
+            job_name="SPROC",
+            verbose=True
         )
 
         for result in start_results.contacted.values():
@@ -317,5 +320,5 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
             cmd="drm {0}".format(data_set_name)
         )
         hosts.all.shell(
-            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+            cmd="mrm '{0}(SAMPLE2)'".format(PROC_PDS)
         )

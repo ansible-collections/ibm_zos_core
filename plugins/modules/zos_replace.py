@@ -71,10 +71,12 @@ options:
   before:
     description:
       - A regular expression that if, specified, determines which content will be replaced or removed B(before) the match.
-      - Option I(before) is the end position from where the module will seek to match the I(regexp) pattern. When a pattern is matched, occurrences are substituted with the value set for I(replace).
+      - Option I(before) is the end position from where the module will seek to match the I(regexp) pattern.
+        When a pattern is matched, occurrences are substituted with the value set for I(replace).
       - If option I(before) is not set, the module will search to the end of the I(target).
       - Option I(before) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
-      - Option I(before) can be used in combination with I(after). When combined with I(after), patterns are replaced or removed from I(after) until the value set for I(before).
+      - Option I(before) can be used in combination with I(after).
+        When combined with I(after), patterns are replaced or removed from I(after) until the value set for I(before).
       - Option I(before) can be interpreted as a literal string instead of a regular expression by setting option I(literal=before).
     required: false
     default: ''

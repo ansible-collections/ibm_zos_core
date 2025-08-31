@@ -21,7 +21,7 @@ Synopsis
 - The job id can be specific such as "STC02560", or one that uses a pattern such as "STC*" or "*".
 - The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
 - The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
-- If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
+- If there is no dd_name, or if dd_name="?", output of all the dds under the given job will be displayed.
 
 
 
@@ -52,7 +52,7 @@ owner
   | **type**: str
 
 
-ddname
+dd_name
   Data definition name (show only this DD on a found job). (e.g "JESJCL", "?")
 
   | **required**: False
@@ -81,21 +81,21 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Job output with ddname
+   - name: Job output with dd_name
      zos_job_output:
        job_id: "STC02560"
-       ddname: "JESMSGLG"
+       dd_name: "JESMSGLG"
 
-   - name: JES Job output without ddname
+   - name: JES Job output without dd_name
      zos_job_output:
        job_id: "STC02560"
 
-   - name: JES Job output with all ddnames
+   - name: JES Job output with all dd_name
      zos_job_output:
        job_id: "STC*"
        job_name: "*"
        owner: "IBMUSER"
-       ddname: "?"
+       dd_name: "?"
 
 
 
@@ -125,7 +125,7 @@ jobs
                 "class": "R",
                 "content_type": "JOB",
                 "cpu_time": 1414,
-                "ddnames": [
+                "dds": [
                     {
                         "byte_count": "775",
                         "content": [
@@ -147,7 +147,7 @@ jobs
                             "-            6 SYSOUT SPOOL KBYTES",
                             "-         0.00 MINUTES EXECUTION TIME"
                         ],
-                        "ddname": "JESMSGLG",
+                        "dd_name": "JESMSGLG",
                         "id": "2",
                         "procstep": "",
                         "record_count": "17",
@@ -171,7 +171,7 @@ jobs
                             "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                             "         7 //                                                                              "
                         ],
-                        "ddname": "JESJCL",
+                        "dd_name": "JESJCL",
                         "id": "3",
                         "procstep": "",
                         "record_count": "14",
@@ -200,7 +200,7 @@ jobs
                             " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
                             "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
                         ],
-                        "ddname": "JESYSMSG",
+                        "dd_name": "JESYSMSG",
                         "id": "4",
                         "procstep": "",
                         "record_count": "19",
@@ -214,7 +214,7 @@ jobs
                             "                                                                                                                         ",
                             " PROCESSING ENDED AT EOD                                                                                                 "
                         ],
-                        "ddname": "SYSPRINT",
+                        "dd_name": "SYSPRINT",
                         "id": "102",
                         "procstep": "",
                         "record_count": "4",
@@ -225,7 +225,7 @@ jobs
                         "content": [
                             " HELLO, WORLD                                                                    "
                         ],
-                        "ddname": "SYSUT2",
+                        "dd_name": "SYSUT2",
                         "id": "103",
                         "procstep": "",
                         "record_count": "1",
@@ -247,14 +247,14 @@ jobs
                     "code": 0,
                     "msg": "CC 0000",
                     "msg_code": "0000",
-                    "msg_txt": "",
-                    "steps": [
-                        {
-                            "step_cc": 0,
-                            "step_name": "STEP0001"
-                        }
-                    ]
+                    "msg_txt": ""
                 },
+                "steps": [
+                    {
+                        "step_cc": 0,
+                        "step_name": "STEP0001"
+                    }
+                ],
                 "subsystem": "STL1",
                 "system": "STL1"
             }
@@ -331,13 +331,13 @@ jobs
     | **type**: str
     | **sample**: 00:00:10
 
-  ddnames
+  dds
     Data definition names.
 
     | **type**: list
     | **elements**: dict
 
-    ddname
+    dd_name
       Data definition name.
 
       | **type**: str
@@ -374,7 +374,7 @@ jobs
       | **sample**: 574
 
     content
-      The ddname content.
+      The dd content.
 
       | **type**: list
       | **elements**: str
@@ -448,13 +448,7 @@ jobs
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": "",
-                  "steps": [
-                      {
-                          "step_cc": 0,
-                          "step_name": "STEP0001"
-                      }
-                  ]
+                  "msg_txt": ""
               }
           }
 
@@ -481,29 +475,39 @@ jobs
 
       | **type**: int
 
-    steps
-      Series of JCL steps that were executed and their return codes.
 
-      | **type**: list
-      | **elements**: dict
+  steps
+    Series of JCL steps that were executed and their return codes.
 
-      step_name
-        Name of the step shown as "was executed" in the DD section.
+    | **type**: list
+    | **elements**: dict
+    | **sample**:
 
-        | **type**: str
-        | **sample**: STEP0001
+      .. code-block:: json
 
-      step_cc
-        The CC returned for this step in the DD section.
+          [
+              {
+                  "step_cc": 0,
+                  "step_name": "STEP0001"
+              }
+          ]
 
-        | **type**: int
+    step_name
+      Name of the step shown as "was executed" in the DD section.
 
+      | **type**: str
+      | **sample**: STEP0001
+
+    step_cc
+      The CC returned for this step in the DD section.
+
+      | **type**: int
 
 
 
 changed
   Indicates if any changes were made during module operation
 
-  | **returned**: on success
+  | **returned**: always
   | **type**: bool
 

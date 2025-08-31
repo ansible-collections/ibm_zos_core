@@ -220,8 +220,12 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \\n
-    | **choices**: \\n, \\r, \\r\\n
+    | **default**: 
+
+    | **choices**: 
+, , 
+
+
 
   auto_reload
     Whether to reload a template file when it has changed after the task has started.

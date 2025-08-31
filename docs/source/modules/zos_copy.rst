@@ -37,7 +37,7 @@ asa_text
 
   If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
 
-  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
+  This option is only valid for text files. If ``is_binary`` is ``true`` or ``is_executable`` is ``true`` as well, the module will fail.
 
   | **required**: False
   | **type**: bool
@@ -109,7 +109,7 @@ dest
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 
-  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32720, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
+  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32720, and the remaining attributes will be computed. If *is_executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
   If ``src`` is a file and ``dest`` a partitioned data set, ``dest`` does not need to include a member in its value, the module can automatically compute the resulting member name from ``src``.
 
@@ -166,7 +166,7 @@ tmp_hlq
   | **type**: str
 
 
-force
+replace
   If set to ``true`` and the remote file or data set ``dest`` is empty, the ``dest`` will be reused.
 
   If set to ``true`` and the remote file or data set ``dest`` is NOT empty, the ``dest`` will be deleted and recreated with the ``src`` data set attributes, otherwise it will be recreated with the ``dest`` data set attributes.
@@ -182,12 +182,12 @@ force
   | **default**: False
 
 
-force_lock
-  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass DISP=SHR and continue with the copy operation.
+force
+  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force`` to bypass DISP=SHR and continue with the copy operation.
 
   If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
 
-  Using ``force_lock`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
+  Using ``force`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
 
   If a data set member has aliases, and is not a program object, copying that member to a dataset that is in use will result in the aliases not being preserved in the target dataset. When this scenario occurs the module will fail.
 
@@ -218,10 +218,10 @@ is_binary
   | **default**: False
 
 
-executable
+is_executable
   If set to ``true``, indicates that the file or library to be copied is an executable.
 
-  If *executable=true*, and ``dest`` is a data set, it must be a PDS or PDSE (library).
+  If *is_executable=true*, and ``dest`` is a data set, it must be a PDS or PDSE (library).
 
   If ``dest`` is a nonexistent data set, the library attributes assigned will be Undefined (U) record format with a record length of 0, block size of 32760 and the remaining attributes will be computed.
 
@@ -237,7 +237,7 @@ executable
 aliases
   If set to ``true``, indicates that any aliases found in the source (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
 
-  Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
+  Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``is_executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
 
   Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
 
@@ -681,8 +681,11 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \\n
-    | **choices**: \\n, \\r, \\r\\n
+    | **default**: 
+
+    | **choices**: 
+, , 
+
 
 
   auto_reload
@@ -820,14 +823,14 @@ Examples
        src: HLQ.SAMPLE.PDSE
        dest: HLQ.EXISTING.PDSE
        remote_src: true
-       force: true
+       replace: true
 
    - name: Copy PDS member to a new PDS member. Replace if it already exists
      zos_copy:
        src: HLQ.SAMPLE.PDSE(SRCMEM)
        dest: HLQ.NEW.PDSE(DESTMEM)
        remote_src: true
-       force: true
+       replace: true
 
    - name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
      zos_copy:
@@ -891,7 +894,7 @@ Examples
        src: HLQ.COBOLSRC.PDSE(TESTPGM)
        dest: HLQ.NEW.PDSE(MYCOBOL)
        remote_src: true
-       executable: true
+       is_executable: true
        aliases: true
 
    - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
@@ -899,7 +902,7 @@ Examples
        src: '/home/loadlib/'
        dest: HLQ.LOADLIB.NEW
        remote_src: true
-       executable: true
+       is_executable: true
        aliases: true
 
    - name: Copy a file with ASA characters to a new sequential data set.
@@ -940,7 +943,7 @@ Notes
 
    This module uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
-   Beginning in version 1.8.x, zos_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option ``executable`` that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos_copy.html) error.
+   Beginning in version 1.8.x, zos_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option ``is_executable`` that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos_copy.html) error.
 
    It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
@@ -1118,7 +1121,7 @@ state
 note
   A note to the user after module terminates.
 
-  | **returned**: When ``force=true`` and ``dest`` exists
+  | **returned**: When ``replace=true`` and ``dest`` exists
   | **type**: str
   | **sample**: No data was copied
 

@@ -1246,7 +1246,7 @@ def run_module(module):
     filtered_migrated_types = set()
     vsam_migrated_types = set()
 
-    excludes_datasets, exclude_members = []
+    excludes_datasets = exclude_members = []
     if excludes:
         exclude_members, excludes_datasets = get_members_to_exclude(excludes)
     for type in resource_type:

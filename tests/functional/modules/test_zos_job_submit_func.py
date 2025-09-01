@@ -425,7 +425,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
       async_status:
         jid: "{{{{ job_task.ansible_job_id }}}}"
       register: job_result
-      until: job_result.finished
+      until: job_result.finished | bool
       retries: 20
       delay: 5
 """
@@ -1585,11 +1585,11 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
                                             "to": "IBM-1047"
                                         },)
     for result in results.contacted.values():
-        # With ZOAU 1.3.3 changes now code and return msg_code are 0 and 0000 respectively.
-        # assert result.get("changed") is False
+        # With ZOAU 1.3.6 changes now code and return msg_code are both None, now
+        # being consistent with the rest of the possible TYPRUN cases.
         # When running a job with TYPRUN=COPY, a copy of the JCL will be kept in the JES spool, so
         # effectively, the system is changed even though the job didn't run.
-        assert result.get("changed") is False
+        assert result.get("changed") is True
         assert result.get("jobs") is not None
         job = result.get("jobs")[0]
 
@@ -1623,12 +1623,11 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         assert dds.get("content") is not None
 
         rc = job.get("ret_code")
-        assert rc.get("msg") == "NOEXEC"
-        assert rc.get("code") == None
+        assert rc.get("msg") == "TYPRUN=COPY"
+        assert rc.get("code") is None
         assert rc.get("msg_code") is None
-        assert rc.get("msg_txt") is not None
         assert re.search(
-            r'NOEXEC.',
+            r'The job was run with TYPRUN=COPY.',
             repr(rc.get("msg_txt"))
         )
 
@@ -1674,12 +1673,12 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
 
         rc = job.get("ret_code")
         assert re.search(
-            r'long running job',
-            repr(rc.get("msg_txt"))
+            r'The job was run with TYPRUN=HOLD or TYPRUN=JCLHOLD',
+            repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
-        assert rc.get("code") is None
-        assert rc.get("msg") == "HOLD"
-        assert rc.get("msg_code") is None
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "HOLD"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
@@ -1723,12 +1722,12 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
 
         rc = job.get("ret_code")
         assert re.search(
-            r'long running job',
-            repr(rc.get("msg_txt"))
+            r'The job was run with TYPRUN=HOLD or TYPRUN=JCLHOLD',
+            repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
-        assert rc.get("code") is None
-        assert rc.get("msg") == "HOLD"
-        assert rc.get("msg_code") is None
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "HOLD"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 @pytest.mark.parametrize("generation", ["0", "-1"])
@@ -1981,5 +1980,8 @@ def test_job_submit_async(get_config):
     assert result.returncode == 0
     assert "ok=2" in result.stdout
     assert "changed=2" in result.stdout
+    # Commenting this assertion as this will cause a failure when a warning is displayed
+    # e.g. [WARNING]: Using force uses operations that are subject to race conditions and ...
+    # Which is a normal warning coming from zos_copy operation.
     assert result.stderr == ""
 

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from shellescape import quote
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -27,6 +28,19 @@ JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',
 HELLO, WORLD
 /*
 //SYSUT2   DD SYSOUT=*
+//
+"""
+
+JCL_FILE_CONTENTS_SYSIN = """//SYSINS  JOB (T043JM,JM00,1,0,0,0),'SYSINS - JRM',CLASS=R,   
+//      MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM               
+//STEP1   EXEC PGM=BPXBATCH,PARM='SH sleep 1'              
+//STDOUT   DD SYSOUT=*                                     
+//STDERR   DD SYSOUT=*                                     
+//LISTCAT EXEC PGM=IDCAMS,REGION=4M                        
+//SYSPRINT DD   SYSOUT=*                                   
+//SYSIN DD   *                                             
+     LISTCAT ENTRIES('{0}') ALL           
+/*                                                         
 //
 """
 
@@ -249,7 +263,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 
-def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
+def test_zos_job_output_job_exists_with_filtered_dd_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -261,7 +275,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"
-        results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
+        results = hosts.all.zos_job_output(job_name="HELLO", dd_name=dd_name)
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("msg", False) is False
@@ -307,6 +321,36 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
             assert dds.get("content") is not None
 
     finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
+
+
+def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        data_set_name = get_tmp_ds_name()
+        hosts.all.shell(cmd=f"dtouch -tseq '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCL_FILE_CONTENTS_SYSIN.format(data_set_name))} > {TEMP_PATH}/SYSIN"
+        )
+        result = hosts.all.zos_job_submit(
+            src=f"{TEMP_PATH}/SYSIN", remote_src=True, volume=None
+        )
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        sysin = True
+        results = hosts.all.zos_job_output(job_name="SYSINS", input=sysin)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            for job in result.get("jobs"):
+                assert len(job.get("dds")) >= 1
+                sysin_found = False
+                for ddname_entry in job.get("dds"):
+                    if ddname_entry.get("dd_name") == "SYSIN":
+                        sysin_found = True
+                        break
+                assert sysin_found
+    finally:
+        hosts.all.shell(cmd=f"drm '{data_set_name}'")
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 

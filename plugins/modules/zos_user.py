@@ -815,7 +815,8 @@ class UserHandler(RACFHandler):
             'flat': [
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
                 ('language', ('primary', 'secondary')),
-                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files'))
+                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
+                ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data'))
             ]
         },
         'update': {},
@@ -858,7 +859,19 @@ class UserHandler(RACFHandler):
         (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
         (('omvs', 'max_threads'), 'range', (0, 100_000, -1)),
         (('omvs', 'max_cpu_time'), 'range', (7, 2_147_483_647, 0)),
-        (('omvs', 'max_files'), 'range', (3, 524_287, 0))
+        (('omvs', 'max_files'), 'range', (3, 524_287, 0)),
+        (('tso', 'account_num'), 'length', ((0, 39),)),
+        (('tso', 'logon_cmd'), 'length', ((0, 80),)),
+        (('tso', 'logon_proc'), 'length', ((0, 8),)),
+        (('tso', 'dest_id'), 'length', ((0, 7),)),
+        (('tso', 'hold_class'), 'length', ((0, 1),)),
+        (('tso', 'job_class'), 'length', ((0, 1),)),
+        (('tso', 'msg_class'), 'length', ((0, 1),)),
+        (('tso', 'sysout_class'), 'length', ((0, 1),)),
+        (('tso', 'region_size'), 'range', (0, 2_096_128, -1)),
+        (('tso', 'max_region_size'), 'range', (0, 2_096_128, -1)),
+        (('tso', 'unit_name'), 'length', ((0, 8),)),
+        (('tso', 'user_data'), 'format', ('[^\s*$]|[0-9a-zA-Z]{4}',)),
     ]
 
     def __init__(self, module, module_params):
@@ -1118,14 +1131,18 @@ def run_module():
                 'type': 'dict',
                 'required': False,
                 'mutually_exclusive': [
-                    ('addr_space_size', 'delete'),
                     ('uid', 'delete'),
                     ('custom_uid', 'delete'),
-                    ('max_cpu_time', 'delete'),
-                    ('max_files', 'delete'),
                     ('home', 'delete'),
+                    ('program', 'delete'),
                     ('nonshared_size', 'delete'),
+                    ('shared_size', 'delete'),
+                    ('addr_space_size', 'delete'),
                     ('map_size', 'delete'),
+                    ('max_procs', 'delete'),
+                    ('max_threads', 'delete'),
+                    ('max_cpu_time', 'delete'),
+                    ('max_files', 'delete')
                 ],
                 'required_if': [
                     ('uid', 'custom', ('custom_uid',)),
@@ -1188,12 +1205,88 @@ def run_module():
                         'required': False
                     }
                 }
+            },
+            'tso': {
+                'type': 'dict',
+                'required': False,
+                'mutually_exclusive': [
+                    ('account_num', 'delete'),
+                    ('logon_cmd', 'delete'),
+                    ('logon_proc', 'delete'),
+                    ('dest_id', 'delete'),
+                    ('hold_class', 'delete'),
+                    ('job_class', 'delete'),
+                    ('msg_class', 'delete'),
+                    ('sysout_class', 'delete'),
+                    ('region_size', 'delete'),
+                    ('max_region_size', 'delete'),
+                    ('security_label', 'delete'),
+                    ('unit_name', 'delete'),
+                    ('user_data', 'delete'),
+                ],
+                'options': {
+                    'account_num': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'logon_cmd': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'logon_proc': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'dest_id': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'hold_class': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'job_class': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'msg_class': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'sysout_class': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'region_size': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'max_region_size': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'security_label': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'unit_name': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'user_data': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'delete': {
+                        'type': 'bool',
+                        'required': False
+                    }
+                }
             }
         },
         supports_check_mode=True
     )
 
-    # TODO: update this
     args_def = {
         'name': {'arg_type': 'str', 'required': True, 'aliases': ['src']},
         'operation': {'arg_type': 'str', 'required': True},
@@ -1261,6 +1354,26 @@ def run_module():
                 'max_threads': {'arg_type': 'int', 'required': False},
                 'max_cpu_time': {'arg_type': 'int', 'required': False},
                 'max_files': {'arg_type': 'int', 'required': False},
+                'delete': {'arg_type': 'bool', 'required': False}
+            }
+        },
+        'tso': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'account_num': {'arg_type': 'str', 'required': False},
+                'logon_cmd': {'arg_type': 'str', 'required': False},
+                'logon_proc': {'arg_type': 'str', 'required': False},
+                'dest_id': {'arg_type': 'str', 'required': False},
+                'hold_class': {'arg_type': 'str', 'required': False},
+                'job_class': {'arg_type': 'str', 'required': False},
+                'msg_class': {'arg_type': 'str', 'required': False},
+                'sysout_class': {'arg_type': 'str', 'required': False},
+                'region_size': {'arg_type': 'int', 'required': False},
+                'max_region_size': {'arg_type': 'int', 'required': False},
+                'security_label': {'arg_type': 'str', 'required': False},
+                'unit_name': {'arg_type': 'str', 'required': False},
+                'user_data': {'arg_type': 'str', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         }

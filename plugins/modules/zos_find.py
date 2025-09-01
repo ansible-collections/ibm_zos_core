@@ -893,7 +893,7 @@ def get_members_to_exclude(excludes):
                 datasets_to_exclude.append(datasets)
         else:
             if exclude:
-                datasets_to_exclude.append(datasets)
+                datasets_to_exclude.append(exclude)
     return members_to_exclude, datasets_to_exclude
 
 

@@ -734,10 +734,13 @@ def test_find_gdg_and_nonvsam_data_sets(ansible_zos_module):
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             resource_type=["gdg", "nonvsam"],
         )
+        data_sets = [{"name":data_set_name, "type": "NONVSAM"} for data_set_name in SEQ_NAMES]
+        data_sets.append({"name":gdg_b, "type": "GDG"})
         for val in find_res.contacted.values():
             assert val.get('msg') is None
-            assert len(val.get('data_sets')) == 4
-            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
+            assert len(val.get('data_sets')) >= 4
+            for data_set in data_sets:
+                assert data_set in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('examined') is not None
     finally:

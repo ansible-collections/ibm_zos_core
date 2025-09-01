@@ -66,7 +66,7 @@ options:
         Multiple patterns can be specified using a list.
       - The pattern can be a regular expression.
       - If the pattern is a regular expression, it must match the full data set name.
-      - To exclude members, the regular expression or pattern must be enclosed in parentheses.
+      - To exclude members, the regular expression or pattern must be enclosed in parentheses. This expression can be used alongside a pattern to exclude data set names.
     aliases:
       - exclude
     type: list

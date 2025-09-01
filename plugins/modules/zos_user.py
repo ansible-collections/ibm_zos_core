@@ -814,7 +814,8 @@ class UserHandler(RACFHandler):
             ],
             'flat': [
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
-                ('language', ('primary', 'secondary'))
+                ('language', ('primary', 'secondary')),
+                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files'))
             ]
         },
         'update': {},
@@ -849,7 +850,15 @@ class UserHandler(RACFHandler):
         (('dfp', 'storage_class'), 'length', ((0, 8),)),
         (('language', 'primary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
         (('language', 'secondary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
-        (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0))
+        (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
+        (('omvs', 'home'), 'length', ((0, 1023),)),
+        (('omvs', 'program'), 'length', ((0, 1023),)),
+        (('omvs', 'addr_space_size'), 'range', (10_485_760, 2_147_483_647, 0)),
+        (('omvs', 'map_size'), 'range', (1, 16_777_216, 0)),
+        (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
+        (('omvs', 'max_threads'), 'range', (0, 100_000, -1)),
+        (('omvs', 'max_cpu_time'), 'range', (7, 2_147_483_647, 0)),
+        (('omvs', 'max_files'), 'range', (3, 524_287, 0))
     ]
 
     def __init__(self, module, module_params):
@@ -1109,8 +1118,14 @@ def run_module():
                 'type': 'dict',
                 'required': False,
                 'mutually_exclusive': [
+                    ('addr_space_size', 'delete'),
                     ('uid', 'delete'),
-                    ('custom_uid', 'delete')
+                    ('custom_uid', 'delete'),
+                    ('max_cpu_time', 'delete'),
+                    ('max_files', 'delete'),
+                    ('home', 'delete'),
+                    ('nonshared_size', 'delete'),
+                    ('map_size', 'delete'),
                 ],
                 'required_if': [
                     ('uid', 'custom', ('custom_uid',)),
@@ -1126,6 +1141,48 @@ def run_module():
                         'type': 'int',
                         'required': False
                     },
+                    'home': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'program': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    # TODO: add validation for this one
+                    'nonshared_size': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    # TODO: add validation for this one
+                    'shared_size': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'addr_space_size': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'map_size': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'max_procs': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'max_threads': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'max_cpu_time': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'max_files': {
+                        'type': 'int',
+                        'required': False
+                    },
                     'delete': {
                         'type': 'bool',
                         'required': False
@@ -1136,6 +1193,7 @@ def run_module():
         supports_check_mode=True
     )
 
+    # TODO: update this
     args_def = {
         'name': {'arg_type': 'str', 'required': True, 'aliases': ['src']},
         'operation': {'arg_type': 'str', 'required': True},
@@ -1178,12 +1236,32 @@ def run_module():
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         },
+        'language': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'primary': {'arg_type': 'str', 'required': False},
+                'secondary': {'arg_type': 'str', 'required': False},
+                'delete': {'arg_type': 'bool', 'required': False}
+            }
+        },
         'omvs': {
             'arg_type': 'dict',
             'required': False,
             'options': {
                 'uid': {'arg_type': 'str', 'required': False},
-                'custom_uid': {'arg_type': 'int', 'required': False}
+                'custom_uid': {'arg_type': 'int', 'required': False},
+                'home': {'arg_type': 'path', 'required': False},
+                'program': {'arg_type': 'path', 'required': False},
+                'nonshared_size': {'arg_type': 'str', 'required': False},
+                'shared_size': {'arg_type': 'str', 'required': False},
+                'addr_space_size': {'arg_type': 'int', 'required': False},
+                'map_size': {'arg_type': 'int', 'required': False},
+                'max_procs': {'arg_type': 'int', 'required': False},
+                'max_threads': {'arg_type': 'int', 'required': False},
+                'max_cpu_time': {'arg_type': 'int', 'required': False},
+                'max_files': {'arg_type': 'int', 'required': False},
+                'delete': {'arg_type': 'bool', 'required': False}
             }
         }
     }

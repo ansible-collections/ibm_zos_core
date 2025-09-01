@@ -333,7 +333,7 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            excludes=['.*FILE$'],
+            excludes=['(.*FILE$)'],
             patterns=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*']
         )
         for val in find_res.contacted.values():
@@ -630,7 +630,7 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            excludes=['.*FILE$'],
+            excludes=['(.*FILE$)'],
             patterns=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
         )
         for val in find_res.contacted.values():

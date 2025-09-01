@@ -66,7 +66,7 @@ options:
         Multiple patterns can be specified using a list.
       - The pattern can be a regular expression.
       - If the pattern is a regular expression, it must match the full data set name.
-      - Members are affected to be exclude if match on of the patterns.
+      - To exclude members, the regular expression or pattern must be enclosed in parentheses.
     aliases:
       - exclude
     type: list
@@ -207,6 +207,14 @@ seealso:
 
 
 EXAMPLES = r"""
+- name: Exclude all members starting with characters 'TE' in a given list datasets patterns 
+  zos_find:
+    excludes: '(^te.*)'
+    patterns:
+      - IMSTEST.TEST.*
+      - IMSTEST.USER.*
+      - USER.*.LIB
+
 - name: Find all data sets with HLQ 'IMS.LIB' or 'IMSTEST.LIB' that contain the word 'hello'
   zos_find:
     patterns:
@@ -463,7 +471,7 @@ def filter_members(module, members, excludes):
         The Ansible module object being used in the module.
     member : set
         A list of member patterns to on it.
-    excludes : string
+    excludes : list
         The str value to filter members.
     Returns
     -------
@@ -858,6 +866,37 @@ def exclude_data_sets(module, data_set_list, excludes):
     return data_set_list
 
 
+def get_members_to_exclude(excludes):
+    """Get from the excludes str any subject that is isndie () to get members to exclude
+
+    Args
+    ----
+    excludes : str
+        String of exlucions of the find operation including members
+
+    Returns
+    -------
+    members_to_exclude [list]
+        The patters of members to be exlude from the list
+    datasets_to_exclude [list]
+        The patters of datasets to be exlude from the list
+    """
+    members_to_exclude = []
+    datasets_to_exclude = []
+    for exclude in excludes:
+        match = re.search(r'\(([^)]+)\)', exclude)
+        if match:
+            members = match.group(1)
+            datasets = exclude[:match.start()] + exclude[match.end():]
+            members_to_exclude.append(members)
+            if datasets:
+                datasets_to_exclude.append(datasets)
+        else:
+            if exclude:
+                datasets_to_exclude.append(datasets)
+    return members_to_exclude, datasets_to_exclude
+
+
 def _age_filter(ds_date, now, age):
     """Determine whether a given date is older than 'age'.
 
@@ -1207,6 +1246,7 @@ def run_module(module):
     filtered_migrated_types = set()
     vsam_migrated_types = set()
 
+    exclude_members, excludes_datasets = get_members_to_exclude(excludes)
     for type in resource_type:
         if type in vsam_types:
             filtered_resource_types.add("VSAM")
@@ -1264,8 +1304,8 @@ def run_module(module):
                 )
             filtered_data_sets = \
                 list(init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys())))
-            if excludes:
-                filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
+            if len(excludes_datasets) > 0:
+                filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes_datasets)
             # Filter data sets by age or size
             if size or age:
                 filtered_data_sets = data_set_attribute_filter(
@@ -1279,15 +1319,14 @@ def run_module(module):
             filtered_data_sets, examined = vsam_filter(module, patterns, vsam_resource_types, age=age, excludes=excludes)
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
-
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:
                     if res_type == "NONVSAM":
                         members = init_filtered_data_sets['pds'].get(ds)
                         if members:
-                            if excludes:
-                                members = filter_members(module, members, excludes)
+                            if len(exclude_members) > 0:
+                                members = filter_members(module, members, exclude_members)
                             res_args['data_sets'].append(
                                 dict(name=ds, members=members, type=res_type)
                             )

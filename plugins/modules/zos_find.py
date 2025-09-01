@@ -207,7 +207,7 @@ seealso:
 
 
 EXAMPLES = r"""
-- name: Exclude all members starting with characters 'TE' in a given list datasets patterns 
+- name: Exclude all members starting with characters 'TE' in a given list datasets patterns
   zos_find:
     excludes: '(^te.*)'
     patterns:

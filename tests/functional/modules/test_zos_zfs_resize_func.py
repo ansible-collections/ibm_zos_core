@@ -1060,6 +1060,9 @@ def no_auto_increase(path):
         )
         stdout = os.system(command)
         assert stdout != 0
+        return True
+    except AssertionError:
+        return False
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")
@@ -1120,6 +1123,9 @@ def no_auto_increase_accept(path):
         )
         stdout = os.system(command)
         assert stdout == 0
+        return True
+    except AssertionError:
+        return False
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

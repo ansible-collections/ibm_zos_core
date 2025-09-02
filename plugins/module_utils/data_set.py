@@ -36,12 +36,14 @@ except ImportError:
 
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
+    from zoautil_py.exceptions import GenerationDataGroupCreateException
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
+    GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -2948,6 +2950,14 @@ class GenerationDataGroup():
         # Removed escaping since is not needed by the GDG python api.
         # self.name = DataSet.escape_data_set_name(self.name)
 
+    @staticmethod
+    def _validate_gdg_name(name):
+        """Validates the length of a GDG name."""
+        if name and len(name) > 35:
+            raise GenerationDataGroupCreateError(
+                msg="GDG creation failed: dataset name exceeds 35 characters."
+            )
+
     def create(self):
         """Creates the GDG.
 
@@ -2956,6 +2966,7 @@ class GenerationDataGroup():
         int
             Indicates if changes were made.
         """
+        GenerationDataGroup._validate_gdg_name(self.name)
         gdg = gdgs.create(
             name=self.name,
             limit=self.limit,
@@ -2984,16 +2995,38 @@ class GenerationDataGroup():
         changed = False
         present = False
         gdg = None
+        name = arguments.get("name")
+
+        # Add this line to validate the name length before any operation
+        GenerationDataGroup._validate_gdg_name(name)
+
+        def _create_gdg(args):
+            try:
+                return gdgs.create(**args)
+            except exceptions._ZOAUExtendableException as e:
+                # Now, check if it's the specific exception we want to handle.
+                if isinstance(e, GenerationDataGroupCreateException):
+                    stderr = getattr(e.response, 'stderr_response', '')
+                    if "BGYSC5906E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="FIFO creation failed: the system may not support FIFO datasets or is not configured for it.")
+                    elif "BGYSC6104E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="GDG creation failed: 'purge=true' requires 'scratch=true'.")
+                    else:
+                        raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}")
+                else:
+                    # If it's a different ZOAU error, re-raise it.
+                    raise e
         if gdgs.exists(arguments.get("name")):
             present = True
 
         if not present:
-            gdg = gdgs.create(**arguments)
+            gdg = _create_gdg(arguments)
+
         else:
             if not replace:
                 return changed
             changed = self.ensure_absent(True)
-            gdg = gdgs.create(**arguments)
+            gdg = _create_gdg(arguments)
         if isinstance(gdg, gdgs.GenerationDataGroupView):
             changed = True
         return changed

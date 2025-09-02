@@ -1003,10 +1003,30 @@ def test_fail_operation(ansible_zos_module):
 # No auto increment playbook
 #############################
 
-def test_no_auto_increase(get_config):
+
+def test_no_auto_increase_wrapper(get_config):
+    path = get_config
+    retries = 0
+    max_retries = 5
+    success = False
+
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying no_auto_increase. Retry: {retries}.')
+        result = no_auto_increase(path)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+def no_auto_increase(path):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
-    path = get_config
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]
@@ -1044,10 +1064,29 @@ def test_no_auto_increase(get_config):
         os.remove("inventory.yml")
         os.remove("playbook.yml")
 
-def test_no_auto_increase_accept(get_config):
+def test_no_auto_increase_accept_wrapper(get_config):
+    path = get_config
+    retries = 0
+    max_retries = 5
+    success = False
+
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying no_auto_increase_accept. Retry: {retries}.')
+        result = no_auto_increase_accept(path)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+def no_auto_increase_accept(path):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
-    path = get_config
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]

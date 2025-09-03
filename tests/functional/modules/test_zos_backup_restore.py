@@ -268,7 +268,6 @@ def test_backup_and_restore_of_data_set_with_compression_and_terse(ansible_zos_m
     backup_name_compressed = get_tmp_ds_name(1, 1)
     size_uncompressed = 0
     size_compressed = 0
-    hlq= "TCOMP"
 
     try:
         delete_data_set_or_file(hosts, data_set_name)
@@ -331,24 +330,28 @@ done
             assert size_compressed > size_uncompressed, \
                 f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"
 
+        #deleting dataset to test the restore.
+        delete_data_set_or_file(hosts, data_set_name)
+
         #testing restoration of files
         hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=backup_name_compressed,
-            hlq=hlq,
+            backup_name=backup_name_compressed
         )
-        cmd_result_restored = hosts.all.shell(f"dls -j -s {hlq}.*")
+        cmd_result_restored = hosts.all.shell(f"dls -j -s {data_set_name}")
         for result in cmd_result_restored.contacted.values():
             output_restored = json.loads(result.get("stdout"))
             size_restored_compressed = int(output_restored["data"]["datasets"][0]["used"])
 
+        #deleting dataset to test the restore
+        delete_data_set_or_file(hosts, data_set_name)
+
         hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name_uncompressed,
-            hlq=hlq,
             overwrite=True,
         )
-        cmd_result_restored = hosts.all.shell(f"dls -j -s {hlq}.*")
+        cmd_result_restored = hosts.all.shell(f"dls -j -s {data_set_name}")
         for result in cmd_result_restored.contacted.values():
             output_restored = json.loads(result.get("stdout"))
             size_restored_uncompressed = int(output_restored["data"]["datasets"][0]["used"])
@@ -360,7 +363,7 @@ done
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name_uncompressed)
         delete_data_set_or_file(hosts, backup_name_compressed)
-        delete_remnants(hosts, hlq)
+        delete_remnants(hosts)
 
 # Commenting these tests because of issue https://github.com/ansible-collections/ibm_zos_core/issues/2235
 # which likely is a zoau bug that needs to be fixed.

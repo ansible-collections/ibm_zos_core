@@ -72,9 +72,9 @@ def create_sequential_data_set_with_contents(
     hosts, data_set_name, contents, volume=None
 ):
     if volume is not None:
-        results = hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {data_set_name}")
+        results = hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{data_set_name}'")
     else:
-        results = hosts.all.shell(cmd=f"dtouch -tseq {data_set_name}")
+        results = hosts.all.shell(cmd=f"dtouch -tseq '{data_set_name}'")
     assert_module_did_not_fail(results)
     results = hosts.all.shell("decho '{0}' {1}".format(contents, data_set_name))
     assert_module_did_not_fail(results)
@@ -100,7 +100,7 @@ def delete_data_set_or_file(hosts, name):
 
 
 def delete_data_set(hosts, data_set_name):
-    hosts.all.shell(cmd=f"drm -F `  {data_set_name}")
+    hosts.all.shell(cmd=f"drm -F '{data_set_name}'")
 
 
 def delete_file(hosts, path):
@@ -906,15 +906,15 @@ def test_backup_gds(ansible_zos_module, dstype):
         # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
         data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
         backup_dest = get_tmp_ds_name(symbols=True).replace("-", "")
-        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 {data_set_name}")
+        results = hosts.all.shell(cmd=f"dtouch -tGDG -L3 '{data_set_name}'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dtouch -t{dstype} {data_set_name}(+1)")
+        results = hosts.all.shell(cmd=f"dtouch -t{dstype} '{data_set_name}(+1)'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -1141,7 +1141,7 @@ def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
                 f"Backup name '{backup_name}' is there in output so tmphlq failed."
             print(result)
             assert result.get("changed", False) is False
-            
+
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)

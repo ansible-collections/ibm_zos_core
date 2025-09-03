@@ -464,10 +464,12 @@ def remove_uss_environment(ansible_zos_module, file):
 def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content):
     hosts = ansible_zos_module
     hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-    hosts.all.zos_data_set(name=ds_name, type=ds_type)
+    hosts.all.shell(cmd=f"dtouch -t{ds_type} '{ds_name}'")
+    # hosts.all.zos_data_set(name=ds_name, type=ds_type)
     if ds_type in ["pds", "pdse"]:
         ds_full_name = ds_name + "(MEM)"
-        hosts.all.zos_data_set(name=ds_full_name, state="present", type="member")
+        hosts.all.shell(cmd=f"decho '' '{ds_full_name}'")
+        # hosts.all.zos_data_set(name=ds_full_name, state="present", type="member")
         cmd_str = f"cp -CM {quote(temp_file)} \"//'{ds_full_name}'\""
     else:
         ds_full_name = ds_name
@@ -478,7 +480,8 @@ def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
 
 def remove_ds_environment(ansible_zos_module, ds_name):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=ds_name, state="absent")
+    hosts.all.shell(cmd=f"drm '{ds_name}'")
+    # hosts.all.zos_data_set(name=ds_name, state="absent")
 
 #########################
 # USS test cases
@@ -1322,7 +1325,8 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
     try:
         ds_full_name = get_tmp_ds_name()
         temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-        hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
+        hosts.all.shell(cmd=f"dtouch -t{ds_type} '{ds_full_name}'")
+        # hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
         cmd_str = f"cp {quote(temp_file)} \"//'{ds_full_name}'\" "
         hosts.all.shell(cmd=cmd_str)
@@ -1336,7 +1340,8 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
             for key in kwargs:
                 assert kwargs.get(key) in result.get(key)
     finally:
-        hosts.all.zos_data_set(name=ds_full_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{ds_full_name}'")
+        # hosts.all.zos_data_set(name=ds_full_name, state="absent")
         hosts.all.file(name=temp_file, state="absent")
 
 
@@ -1410,7 +1415,8 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
         if backup_ds_name != "":
-            ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
+            hosts.all.shell(cmd=f"drm '{backup_ds_name}'")
+            # ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 
 
@@ -1435,24 +1441,28 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
     else:
         params["path"] = f"{default_data_set_name}({member_2})"
     try:
+        hosts.all.shell(cmd=f"dtouch -t{ds_type} '{default_data_set_name}'")
         # set up:
-        hosts.all.zos_data_set(
-            name=default_data_set_name,
-            state="present",
-            type=ds_type,
-            replace=True
-        )
+        # hosts.all.zos_data_set(
+        #     name=default_data_set_name,
+        #     state="present",
+        #     type=ds_type,
+        #     replace=True
+        # )
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-        hosts.all.zos_data_set(
-            batch=[
-                {
-                    "name": f"{default_data_set_name}({member_1})",
-                    "type": "member",
-                    "state": "present", "replace": True, },
-                {   "name": params["path"], "type": "member",
-                    "state": "present", "replace": True, },
-            ]
-        )
+        # Create two empty members
+        hosts.all.shell(cmd=f"decho '' '{default_data_set_name}({member_1})'")
+        hosts.all.shell(cmd=f"decho '' '{params['path']}'")
+        # hosts.all.zos_data_set(
+        #     batch=[
+        #         {
+        #             "name": f"{default_data_set_name}({member_1})",
+        #             "type": "member",
+        #             "state": "present", "replace": True, },
+        #         {   "name": params["path"], "type": "member",
+        #             "state": "present", "replace": True, },
+        #     ]
+        # )
         # write memeber to verify cases
         if ds_type in ["pds", "pdse"]:
             cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), params["path"])
@@ -1486,7 +1496,8 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         hosts.all.shell(cmd='rm -r {0}'.format(path))
-        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{default_data_set_name}'")
+        # hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
 @pytest.mark.ds
@@ -1545,7 +1556,8 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
     ds_name = get_tmp_ds_name(5, 5, symbols=True)
     backup = get_tmp_ds_name(6, 6, symbols=True)
     try:
-        result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
+        hosts.all.shell(cmd=f"dtouch -tseq '{ds_name}'")
+        # result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
 
         params["src"] = ds_name
         results = hosts.all.zos_blockinfile(**params)
@@ -1613,7 +1625,8 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
     ds_name = get_tmp_ds_name(5, 5, symbols=True)
     backup = get_tmp_ds_name(6, 6, symbols=True)
     try:
-        result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
+        hosts.all.shell(cmd=f"dtouch -tseq '{ds_name}'")
+        # result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
 
         params["src"] = ds_name
         results = hosts.all.zos_blockinfile(**params)
@@ -1715,7 +1728,8 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     ds_name = get_tmp_ds_name()
     try:
         ds_name = ds_name.upper() + "." + ds_type
-        results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
+        results = hosts.all.shell(cmd=f"dtouch -t{ds_type} '{ds_name}'")
+        # results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
         for result in results.contacted.values():
             assert result.get("changed") is True
         params["path"] = ds_name
@@ -1724,7 +1738,8 @@ def test_ds_not_supported(ansible_zos_module, dstype):
             assert result.get("changed") is False
             assert result.get("msg") == "VSAM data set type is NOT supported"
     finally:
-        hosts.all.zos_data_set(name=ds_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{ds_name}'")
+        # hosts.all.zos_data_set(name=ds_name, state="absent")
 
 
 # Enhancemed #1339
@@ -1746,30 +1761,34 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
     params["path"] = f"{default_data_set_name}({member_2})"
     content = TEST_CONTENT
     try:
+        hosts.all.shell(cmd=f"dtouch -t{ds_type} '{default_data_set_name}'")
         # set up:
-        hosts.all.zos_data_set(
-            name=default_data_set_name,
-            state="present",
-            type=ds_type,
-            replace=True
-        )
+        # hosts.all.zos_data_set(
+        #     name=default_data_set_name,
+        #     state="present",
+        #     type=ds_type,
+        #     replace=True
+        # )
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-        hosts.all.zos_data_set(
-            batch=[
-                {
-                    "name": f"{default_data_set_name}({member_1})",
-                    "type": "member",
-                    "state": "present",
-                    "replace": True,
-                },
-                {
-                    "name": params["path"],
-                    "type": "member",
-                    "state": "present",
-                    "replace": True,
-                },
-            ]
-        )
+        # Create two empty members
+        hosts.all.shell(cmd=f"decho '' '{default_data_set_name}({member_1})'")
+        hosts.all.shell(cmd=f"decho '' '{params['path']}'")
+        # hosts.all.zos_data_set(
+        #     batch=[
+        #         {
+        #             "name": f"{default_data_set_name}({member_1})",
+        #             "type": "member",
+        #             "state": "present",
+        #             "replace": True,
+        #         },
+        #         {
+        #             "name": params["path"],
+        #             "type": "member",
+        #             "state": "present",
+        #             "replace": True,
+        #         },
+        #     ]
+        # )
         cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file) ,params["path"])
         hosts.all.shell(cmd=cmd_str)
         results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
@@ -1796,4 +1815,5 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         hosts.all.shell(cmd='rm -r {0}'.format(path))
-        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{default_data_set_name}'")
+        # hosts.all.zos_data_set(name=default_data_set_name, state="absent")

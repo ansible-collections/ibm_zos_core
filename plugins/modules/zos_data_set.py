@@ -1428,7 +1428,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratch):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1452,6 +1452,12 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
         If changes were made.
     """
     changed = False
+    final_scratch = scratch
+    if final_scratch is None:
+        if data_set.data_set_type == "gdg":
+            final_scratch = False  # Default for GDGs is to NOT scratch
+        else:
+            final_scratch = True   # Default for other types is TO scratch
     if state == "present" and data_set.data_set_type == "member":
         changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq)
     elif state == "present" and data_set.data_set_type == "gdg":
@@ -1463,7 +1469,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, scratch=final_scratch)
     elif state == "cataloged":
         changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":

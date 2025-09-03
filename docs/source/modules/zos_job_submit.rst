@@ -247,11 +247,8 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: 
-
-    | **choices**: 
-, , 
-
+    | **default**: \\n
+    | **choices**: \\n, \\r, \\r\\n
 
 
   auto_reload

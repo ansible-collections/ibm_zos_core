@@ -311,6 +311,18 @@ scratch
   | **default**: False
 
 
+noscratch
+  When ``state=absent``, specifies whether to keep the data set's entry in the VTOC.
+
+  If ``noscratch=True``, the data set is uncataloged but not physically removed from the volume. The Data Set Control Block is not removed from the VTOC.
+
+  This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
 volumes
   If cataloging a data set, *volumes* specifies the name of the volume(s) where the data set is located.
 
@@ -598,6 +610,18 @@ batch
     | **default**: False
 
 
+  noscratch
+    When ``state=absent``, specifies whether to keep the data set's entry in the VTOC.
+
+    If ``noscratch=True``, the data set is uncataloged but not physically removed from the volume. The Data Set Control Block is not removed from the VTOC.
+
+    This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
   extended
     Sets the *extended* attribute for Generation Data Groups.
 
@@ -782,6 +806,12 @@ Examples
      zos_data_set:
        name: someds.name.here
        state: absent
+
+   - name: Uncatalog a data set but do not remove it from the volume.
+     zos_data_set:
+       name: someds.name.here
+       state: absent
+       noscratch: true
 
    - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
      zos_data_set:

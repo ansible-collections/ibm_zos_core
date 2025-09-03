@@ -22,6 +22,7 @@ Synopsis
 - The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
 - The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
 - If there is no dd_name, or if dd_name="?", output of all the dds under the given job will be displayed.
+- If SYSIN DDs are needed, ``input`` should be set to ``true``.
 
 
 
@@ -57,6 +58,14 @@ dd_name
 
   | **required**: False
   | **type**: str
+
+
+input
+  Whether to include SYSIN DDs as part of the output.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
 
 
 
@@ -96,6 +105,11 @@ Examples
        job_name: "*"
        owner: "IBMUSER"
        dd_name: "?"
+
+   - name: Query a job's output including SYSIN DDs
+     zos_job_output:
+       job_id: "JOB00548"
+       input: true
 
 
 

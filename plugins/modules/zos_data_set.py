@@ -291,14 +291,22 @@ options:
     default: false
   scratch:
     description:
-      - Specifies the disposition of the data set when C(state=absent).
-      - If C(true), the data set is physically removed from the volume and its entry is removed from the catalog.
-      - If C(false), the data set is uncataloged but not physically removed from the volume.
-      - When not specified, the default behavior depends on the data set C(type).
-        For C(type=gdg), the default is C(false) (the data set is uncataloged only).
-        For all other types, the default is C(true) (the data set is physically deleted).
+      - Sets the I(scratch) attribute for Generation Data Groups.
+      - Specifies what action is to be taken for a generation data set located on disk
+        volumes when the data set is uncataloged from the GDG base as a result of
+        EMPTY/NOEMPTY processing.
     type: bool
     required: false
+    default: false
+  noscratch:
+    description:
+      - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
+        The Data Set Control Block is not removed from the VTOC.
+      - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+    type: bool
+    required: false
+    default: false
   volumes:
     description:
       - >
@@ -576,6 +584,15 @@ options:
         type: bool
         required: false
         default: false
+      noscratch:
+        description:
+          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+          - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
+            The Data Set Control Block is not removed from the VTOC.
+          - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+        type: bool
+        required: false
+        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -610,14 +627,13 @@ options:
         default: false
       scratch:
         description:
-          - Specifies the disposition of the data set when C(state=absent).
-          - If C(true), the data set is physically removed from the volume and its entry is removed from the catalog.
-          - If C(false), the data set is uncataloged but not physically removed from the volume.
-          - When not specified, the default behavior depends on the data set C(type).
-            For C(type=gdg), the default is C(false) (the data set is uncataloged only).
-            For all other types, the default is C(true) (the data set is physically deleted).
+          - Sets the I(scratch) attribute for Generation Data Groups.
+          - Specifies what action is to be taken for a generation data set located on disk
+            volumes when the data set is uncataloged from the GDG base as a result of
+            EMPTY/NOEMPTY processing.
         type: bool
         required: false
+        default: false
       volumes:
         description:
           - >
@@ -731,16 +747,16 @@ EXAMPLES = r"""
     type: rrds
     sms_storage_class: mydata
 
-- name: Delete a data set if it exists (using default scratch behavior)
+- name: Delete a data set if it exists
   zos_data_set:
     name: someds.name.here
     state: absent
 
-- name: Uncatalog a data set but do not remove it from the volume
+- name: Uncatalog a data set but do not remove it from the volume.
   zos_data_set:
     name: someds.name.here
     state: absent
-    scratch: false
+    noscratch: true
 
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:
@@ -1429,8 +1445,6 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratc
     force : str
         Whether or not the data set can be shared with others during the
         operation.
-    scratch : bool
-        Whether to physically remove the data set from the volume.
 
     Returns
     -------
@@ -1438,14 +1452,12 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratc
         If changes were made.
     """
     changed = False
-
     final_scratch = scratch
     if final_scratch is None:
         if data_set.data_set_type == "gdg":
             final_scratch = False  # Default for GDGs is to NOT scratch
         else:
             final_scratch = True   # Default for other types is TO scratch
-
     if state == "present" and data_set.data_set_type == "member":
         changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq)
     elif state == "present" and data_set.data_set_type == "gdg":
@@ -1453,6 +1465,8 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratc
     elif state == "present":
         changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
     elif state == "absent" and data_set.data_set_type == "member":
+        changed = data_set.ensure_absent(force=force)
+    elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent":
         changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, scratch=final_scratch)
@@ -1585,6 +1599,7 @@ def parse_and_validate_args(params):
                 scratch=dict(
                     type="bool",
                     required=False,
+                    default=False
                 ),
                 extended=dict(
                     type="bool",
@@ -1597,6 +1612,11 @@ def parse_and_validate_args(params):
                     default=False
                 ),
                 force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
+                noscratch=dict(
                     type="bool",
                     required=False,
                     default=False,
@@ -1671,7 +1691,7 @@ def parse_and_validate_args(params):
         limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False, default=False),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1687,6 +1707,11 @@ def parse_and_validate_args(params):
             default=None
         ),
         force=dict(
+            type="bool",
+            required=False,
+            default=False,
+        ),
+        noscratch=dict(
             type="bool",
             required=False,
             default=False,
@@ -1794,11 +1819,16 @@ def run_module():
                 limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False, default=False),
                 purge=dict(type="bool", required=False, default=False),
-                scratch=dict(type="bool", required=False, default=None),
+                scratch=dict(type="bool", required=False, default=False),
                 extended=dict(type="bool", required=False, default=False),
                 fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
+                noscratch=dict(
                     type="bool",
                     required=False,
                     default=False,
@@ -1864,7 +1894,7 @@ def run_module():
         limit=dict(type="int", required=False, no_log=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=None),
+        scratch=dict(type="bool", required=False, default=False),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1879,6 +1909,11 @@ def run_module():
             default=None
         ),
         force=dict(
+            type="bool",
+            required=False,
+            default=False
+        ),
+        noscratch=dict(
             type="bool",
             required=False,
             default=False
@@ -1910,8 +1945,8 @@ def run_module():
             module.params["replace"] = None
         if module.params.get("record_format") is not None:
             module.params["record_format"] = None
-        if module.params.get("scratch") is not None:
-            module.params["scratch"] = None
+        if module.params.get("noscratch") is not None:
+            module.params["noscratch"] = None
     elif module.params.get("type") is not None:
         if module.params.get("type") in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
@@ -1938,7 +1973,7 @@ def run_module():
                     replace=data_set_params.get("replace"),
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
-                    scratch=data_set_params.get("scratch"),
+                    noscratch=data_set_params.get("noscratch"),
                 )
                 result["changed"] = result["changed"] or current_changed
         except Exception as e:

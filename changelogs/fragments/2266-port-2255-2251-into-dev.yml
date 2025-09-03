@@ -9,3 +9,9 @@ trivial:
    - test_zos_job_output_func - modified the test case 'test_zos_job_output_job_exists_with_sysin'
      to use sysin_dd instead of input.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2266).
+
+   - test_zos_zfs_resize_func - Added a retry for autoincrease test in case that would fail.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2266).
+
+   - test_zos_find_func - Updated an assertion condition that allows for more data sets to reside in the testing machine.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2266).

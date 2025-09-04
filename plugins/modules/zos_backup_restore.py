@@ -506,7 +506,6 @@ def main():
         if sphere:
             keywords.update(sphere=None)
 
-
         if operation == "backup":
             backup(
                 backup_name=backup_name,

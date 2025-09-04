@@ -474,10 +474,10 @@ def main():
         print(f"params {params.get("index")}")
 
         # extra keyword supported by ZOAU but not part of their signature.
-        keywords = {
-          "sphere": sphere
-        }
-        print(f"keywords {keywords}")
+        if sphere:
+          keywords = {
+            "sphere": None
+          }
         if operation == "backup":
             backup(
                 backup_name=backup_name,
@@ -511,7 +511,6 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
-                sphere=sphere,
                 keywords=keywords,
             )
         result["backup_name"] = backup_name
@@ -667,7 +666,6 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    sphere=False,
     keywords={},
 ):
     """Restore data sets or a volume from the backup.
@@ -706,8 +704,6 @@ def restore(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    sphere : bool
-        Specifies the value to use for sphere when restoring VSAM clusters.
     keywords : dict
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
 
@@ -1029,6 +1025,9 @@ def to_dzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
+    if kwargs.get("keywords"):
+        zoau_args["keywords"] = kwargs.get("keywords")
+
     return zoau_args
 
 
@@ -1091,6 +1090,9 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))
         zoau_args["keep_original_hlq"] = False
+
+    if kwargs.get("keywords"):
+        zoau_args["keywords"] = kwargs.get("keywords")
 
     return zoau_args
 

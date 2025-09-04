@@ -26,6 +26,7 @@ import string
 import random
 import time
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 
 DATA_SET_CONTENTS = "HELLO WORLD"
 TMP_DIRECTORY = "/tmp/"
@@ -85,11 +86,9 @@ def create_file_with_contents(hosts, path, contents):
     assert_module_did_not_fail(results)
 
 
-def create_vsam_with_contents(hosts, data_set_name, contents):
+def create_vsam(hosts, data_set_name):
     results = hosts.all.shell(cmd=f"dtouch -tksds -k4:0 {data_set_name}")
     assert_module_did_not_fail(results)
-    tmp_ds = get_tmp_ds_name()
-    results = hosts.all.shell(cmd=f"decho 'this is a test line' {tmp_ds}")
 
 
 def delete_data_set_or_file(hosts, name):
@@ -1148,27 +1147,70 @@ def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
         delete_remnants(hosts, hlqs)
 
 
-def test_backup_of_vsam_index(ansible_zos_module):
+def test_backup_of_vsam_index(ansible_zos_module, volumes_with_vvds):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    alternate_index = get_tmp_ds_name()
+    backup_name = get_tmp_ds_name()
 
     try:
-        create_sequential_data_set_with_contents(
-            hosts, data_set_name, DATA_SET_CONTENTS
+        volume_handler = Volume_Handler(volumes_with_vvds)
+        volume = volume_handler.get_available_vol()
+        # Create VSAM KSDS
+        create_vsam(
+            hosts, data_set_name
         )
+        # Create alternate indexes
+        aix_cmd = f"""
+echo '  DEFINE ALTERNATEINDEX (NAME({alternate_index}) -
+  RELATE({data_set_name}) -
+  KEYS(4 0) -
+  VOLUMES({volume}) -
+  CYLINDERS(10 1) -
+  FREESPACE(10 10) -
+  NONUNIQUEKEY) -
+  DATA (NAME({alternate_index}.DATA)) -
+  INDEX (NAME({alternate_index}.INDEX))  ' | mvscmdauth --pgm=IDCAMS --sysprint=* --sysin=stdin
+
+        """
+        results = hosts.all.shell(cmd=f"{aix_cmd}")
+        assert_module_did_not_fail(results)
+
+
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=data_set_name),
             backup_name=backup_name,
-            overwrite=overwrite,
-            recover=recover,
+            index=True,
         )
         assert_module_did_not_fail(results)
-        for result in results.contacted.values():
-            assert result.get("backup_name") == backup_name, \
-                f"Backup name '{backup_name}' not found in output"
         assert_data_set_or_file_exists(hosts, backup_name)
+
+        # Delete the vsam data set and alternate index
+        delete_data_set(hosts, data_set_name)
+        delete_data_set(hosts, alternate_index)
+
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            index=True,
+        )
+
+        # Validate that both original vsam and alternate index exist
+        vls_result = hosts.all.shell(f"vls {alternate_index}")
+        assert_module_did_not_fail(vls_result)
+        for result in vls_result.contacted.values():
+            assert alternate_index in result.get("stdout")
+            assert f"{alternate_index}.DATA" in result.get("stdout")
+            assert f"{alternate_index}.INDEX" in result.get("stdout")
+        vls_result = hosts.all.shell(f"vls {data_set_name}")
+        assert_module_did_not_fail(vls_result)
+        for result in vls_result.contacted.values():
+            assert data_set_name in result.get("stdout")
+            assert f"{data_set_name}.DATA" in result.get("stdout")
+            assert f"{data_set_name}.INDEX" in result.get("stdout")
     finally:
         delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, alternate_index)
         delete_data_set_or_file(hosts, backup_name)
         delete_remnants(hosts)

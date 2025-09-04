@@ -1,5 +1,0 @@
-minor_changes:
-   - zos_backup_restore - Add the option to bypass additional compression
-     after the ADRDSSU dump has occurred. Enabling this option with
-     terse can increase the size of the dzip file or dataset.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2260)

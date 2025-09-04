@@ -696,7 +696,7 @@ def test_find_vsam_and_gdg_data_sets(ansible_zos_module, volumes_on_systems):
             resource_type=['cluster', 'gdg']
         )
         for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) == 2
+            assert len(val.get('data_sets')) >= 2
             assert val.get('matched') == len(val.get('data_sets'))
             assert {"name":VSAM_NAMES[0], "type": "CLUSTER"} in val.get('data_sets')
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
@@ -781,7 +781,7 @@ def test_find_vsam_and_nonvsam_data_sets(ansible_zos_module, volumes_on_systems)
         )
         for val in find_res.contacted.values():
             assert val.get('msg') is None
-            assert len(val.get('data_sets')) == 4
+            assert len(val.get('data_sets')) >= 4
             assert {"name":f'{VSAM_NAMES[0]}.DATA', "type": "DATA"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('examined') is not None

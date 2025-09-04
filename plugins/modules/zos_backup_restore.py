@@ -645,7 +645,7 @@ def backup(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    keywords=dict(),
+    keywords,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -704,7 +704,7 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    keywords=dict(),
+    keywords,
 ):
     """Restore data sets or a volume from the backup.
 

@@ -1324,4 +1324,3 @@ echo '  DEFINE ALTERNATEINDEX (NAME({alternate_index}) -
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, alternate_index)
         delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)

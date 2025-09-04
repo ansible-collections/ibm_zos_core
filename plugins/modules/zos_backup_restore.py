@@ -500,7 +500,6 @@ def main():
 
         # 2.0 redesign extra ADRDSSU keywords
         sphere = params.get("index")
-        print(f"params {params.get("index")}")
 
         # extra keyword supported by ZOAU but not part of their signature.
         if sphere:
@@ -646,7 +645,7 @@ def backup(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    keywords={},
+    keywords=dict(),
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -705,7 +704,7 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    keywords={},
+    keywords=dict(),
 ):
     """Restore data sets or a volume from the backup.
 
@@ -755,7 +754,6 @@ def restore(
     zoau_args = to_dunzip_args(**args)
     output = ""
     try:
-        print(f"dunzip args {zoau_args}")
         rc = datasets.dunzip(**zoau_args)
     except zoau_exceptions.ZOAUException as dunzip_exception:
         output = dunzip_exception.response.stdout_response

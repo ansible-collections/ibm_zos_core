@@ -503,9 +503,9 @@ def main():
 
         # extra keyword supported by ZOAU but not part of their signature.
         if sphere:
-          keywords = {
-            "sphere": None
-          }
+            keywords = {
+                "sphere": None
+            }
         if operation == "backup":
             backup(
                 backup_name=backup_name,

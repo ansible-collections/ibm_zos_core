@@ -1428,7 +1428,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratch):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1452,12 +1452,6 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratc
         If changes were made.
     """
     changed = False
-    final_scratch = scratch
-    if final_scratch is None:
-        if data_set.data_set_type == "gdg":
-            final_scratch = False  # Default for GDGs is to NOT scratch
-        else:
-            final_scratch = True   # Default for other types is TO scratch
     if state == "present" and data_set.data_set_type == "member":
         changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq)
     elif state == "present" and data_set.data_set_type == "gdg":
@@ -1469,7 +1463,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, scratc
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, scratch=final_scratch)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
     elif state == "cataloged":
         changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
@@ -1616,11 +1610,6 @@ def parse_and_validate_args(params):
                     required=False,
                     default=False,
                 ),
-                noscratch=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
             ),
         ),
         # For individual data set args
@@ -1691,7 +1680,7 @@ def parse_and_validate_args(params):
         limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1707,11 +1696,6 @@ def parse_and_validate_args(params):
             default=None
         ),
         force=dict(
-            type="bool",
-            required=False,
-            default=False,
-        ),
-        noscratch=dict(
             type="bool",
             required=False,
             default=False,
@@ -1819,16 +1803,11 @@ def run_module():
                 limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False, default=False),
                 purge=dict(type="bool", required=False, default=False),
-                scratch=dict(type="bool", required=False, default=False),
+                scratch=dict(type="bool", required=False,),
                 extended=dict(type="bool", required=False, default=False),
                 fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
-                noscratch=dict(
                     type="bool",
                     required=False,
                     default=False,
@@ -1894,7 +1873,7 @@ def run_module():
         limit=dict(type="int", required=False, no_log=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1909,11 +1888,6 @@ def run_module():
             default=None
         ),
         force=dict(
-            type="bool",
-            required=False,
-            default=False
-        ),
-        noscratch=dict(
             type="bool",
             required=False,
             default=False
@@ -1966,6 +1940,15 @@ def run_module():
 
             for data_set_params in data_set_param_list:
                 # this returns MVSDataSet, Member or GenerationDataGroup
+                scratch = data_set_params.get("scratch")
+                if scratch is None:
+        # Apply default logic based on type
+                    if data_set_params.get("type") == "gdg":
+                        scratch = False  # don't scratch GDG datasets by default
+                    else:
+                        print ("Hellloooooo")
+                        scratch = True   # scratch other datasets by default
+                data_set_params["noscratch"] = not scratch
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(
                     data_set=data_set,

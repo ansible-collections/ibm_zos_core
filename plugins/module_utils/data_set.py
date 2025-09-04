@@ -1434,7 +1434,8 @@ class DataSet(object):
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name, noscratch=(not scratch))
+        noscratch = not scratch
+        rc = datasets.delete(name, noscratch= noscratch)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 

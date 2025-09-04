@@ -502,10 +502,11 @@ def main():
         sphere = params.get("index")
 
         # extra keyword supported by ZOAU but not part of their signature.
+        keywords = {}
         if sphere:
-            keywords = {
-                "sphere": None
-            }
+            keywords.update(sphere=None)
+
+
         if operation == "backup":
             backup(
                 backup_name=backup_name,

@@ -293,7 +293,7 @@ options:
     description:
       - "When C(state=absent), specifies whether to physically remove the data set from the volume."
       - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
-      - If C(scratch=false), the data set is uncataloged but not physically removed from the volume. 
+      - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
         This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
       - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
     type: bool
@@ -575,15 +575,6 @@ options:
         type: bool
         required: false
         default: false
-      noscratch:
-        description:
-          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-          - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-            The Data Set Control Block is not removed from the VTOC.
-          - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-        type: bool
-        required: false
-        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -618,13 +609,13 @@ options:
         default: false
       scratch:
         description:
-          - Sets the I(scratch) attribute for Generation Data Groups.
-          - Specifies what action is to be taken for a generation data set located on disk
-            volumes when the data set is uncataloged from the GDG base as a result of
-            EMPTY/NOEMPTY processing.
+          - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+          - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+          - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
+            This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+          - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
         type: bool
         required: false
-        default: false
       volumes:
         description:
           - >
@@ -746,8 +737,9 @@ EXAMPLES = r"""
 - name: Uncatalog a data set but do not remove it from the volume.
   zos_data_set:
     name: someds.name.here
+    type: seq
     state: absent
-    noscratch: true
+    scratch: false
 
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:

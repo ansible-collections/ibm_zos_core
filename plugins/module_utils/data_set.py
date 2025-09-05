@@ -3031,7 +3031,7 @@ class GenerationDataGroup():
             changed = True
         return changed
 
-    def ensure_absent(self, force):
+    def ensure_absent(self, force, noscratch=False):
         """Ensure gdg base is deleted. If force is True and there is an
         existing GDG with active generations it will remove them and delete
         the GDG.
@@ -3048,7 +3048,7 @@ class GenerationDataGroup():
         # Check whether GDG exists or not
         if gdgs.exists(name=self.name):
             # Try to delete
-            rc = datasets.delete(self.name)
+            rc = datasets.delete(self.name, no_scratch=noscratch)
             if rc > 0:
                 if force:
                     try:

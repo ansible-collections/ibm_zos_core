@@ -1444,7 +1444,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     elif state == "absent" and data_set.data_set_type == "member":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_absent(force=force)
+        changed = data_set.ensure_absent(force=force, noscratch=noscratch)
     elif state == "absent":
         changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
     elif state == "cataloged":
@@ -1709,6 +1709,16 @@ def parse_and_validate_args(params):
     return parsed_args
 
 
+def determine_scratch(data_set_params):
+    scratch = data_set_params.get("scratch")
+    if scratch is None:
+        if data_set_params.get("type") == "gdg" and data_set_params.get("state") == "present":
+            scratch = False
+        elif data_set_params.get("state") == "absent":
+            scratch = True
+    return scratch
+
+
 def run_module():
     """Runs the module.
 
@@ -1921,14 +1931,7 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
-                # Determine noscratch value
-                scratch = data_set_params.get("scratch")
-                if scratch is None:
-                    # Apply default logic based on type
-                    if data_set_params.get("type") == "gdg":
-                        scratch = False  # don't scratch GDG datasets by default
-                    else:
-                        scratch = True   # scratch other datasets by default
+                scratch = determine_scratch(data_set_params)
                 data_set_params["noscratch"] = not scratch
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)

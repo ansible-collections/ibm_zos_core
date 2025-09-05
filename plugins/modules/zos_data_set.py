@@ -1939,16 +1939,16 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
-                # this returns MVSDataSet, Member or GenerationDataGroup
+                # Determine noscratch value
                 scratch = data_set_params.get("scratch")
                 if scratch is None:
-        # Apply default logic based on type
+                    # Apply default logic based on type
                     if data_set_params.get("type") == "gdg":
                         scratch = False  # don't scratch GDG datasets by default
                     else:
-                        print ("Hellloooooo")
                         scratch = True   # scratch other datasets by default
                 data_set_params["noscratch"] = not scratch
+                # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(
                     data_set=data_set,

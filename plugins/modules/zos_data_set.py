@@ -291,22 +291,13 @@ options:
     default: false
   scratch:
     description:
-      - Sets the I(scratch) attribute for Generation Data Groups.
-      - Specifies what action is to be taken for a generation data set located on disk
-        volumes when the data set is uncataloged from the GDG base as a result of
-        EMPTY/NOEMPTY processing.
+      - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+      - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+      - If C(scratch=false), the data set is uncataloged but not physically removed from the volume. 
+        This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+      - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
     type: bool
     required: false
-    default: false
-  noscratch:
-    description:
-      - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-        The Data Set Control Block is not removed from the VTOC.
-      - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-    type: bool
-    required: false
-    default: false
   volumes:
     description:
       - >
@@ -1592,8 +1583,7 @@ def parse_and_validate_args(params):
                 ),
                 scratch=dict(
                     type="bool",
-                    required=False,
-                    default=False
+                    required=False
                 ),
                 extended=dict(
                     type="bool",

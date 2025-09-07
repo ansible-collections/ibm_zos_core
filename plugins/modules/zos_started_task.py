@@ -27,25 +27,46 @@ description:
   - start, display, modify, cancel, force and stop a started task
 
 options:
+  arm_restart:
+    description:
+      - Indicates that the batch job or started task should be automatically restarted after the cancel
+        completes, if it is registered as an element of the automatic restart manager. If the job or task is
+        not registered or if you do not specify this parameter, MVS will not automatically restart the job or
+        task.
+      - Only applicable when I(state=cancelled), otherwise is ignored.
+    required: false
+    type: str
   asid:
     description:
-      - I(asid) is a unique address space identifier which gets assigned to each running started task.
+      - When I(state) is I(cancelled), I(cancelled) or I(stopped) B(asid)
+        is the hexadecimal address space identifier of the work unit you want to cancel, stop or force.
+      - When I(state=displayed) B(asid) is the hexadecimal address space identifier of the work unit of
+        the task you get details from.
     required: false
     type: str
   device_type:
     description:
       - I(device_type) is the type of the output device (if any) associated with the task.
+      - Only applicable when I(state=started) otherwise ignored.
     required: false
     type: str
   device_number:
     description:
       - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
         A slash (/) must precede a 4-digit number but is not before a 3-digit number.
+      - Only applicable when I(state=started) otherwise ignored.
+    required: false
+    type: str
+  dump:
+    description:
+      - A dump is to be taken. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP) depends on the JCL
+        for the job.
+      - Only applicable when I(state=cancelled) otherwise ignored.
     required: false
     type: str
   identifier_name:
     description:
-      - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
+      - I(identifier_name) is the name that identifies the task. This name can be up to 8 characters long.
         The first character must be alphabetical.
     required: false
     type: str
@@ -56,12 +77,14 @@ options:
       - I(job_account) specifies accounting data in the JCL JOB statement for the started task.
         If the source JCL was a job and has already accounting data, the value that is specified on this parameter
         overrides the accounting data in the source JCL.
+      - Only applicable when I(state=started) otherwise ignored.
     required: false
     type: str
   job_name:
     description:
-      - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
+      - When I(state=started) B(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
         then member_name is used as job_name.
+      - Otherwise, B(job_name) is the started task job name used to find and apply the I(state) selected.
     required: false
     type: str
     aliases:
@@ -73,37 +96,44 @@ options:
       - Any appropriate keyword parameter that you specify to override the corresponding parameter in the cataloged procedure.
         The maximum length of each keyword=option is 66 characters. No individual value within this field can be longer than
         44 characters in length.
+      - Only applicable when I(state=started) otherwise ignored.
     required: false
     type: str
   member_name:
     description:
       - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
         for the task to be started. The member can be either a job or a cataloged procedure.
+      - Only applicable when I(state=started) otherwise ignored.
     required: false
     type: str
     aliases:
       - member
-  operation:
+  state:
     description:
-      - The started task operation which needs to be performed.
+      - The desired state the started task should be after the module is executed.
       - >
-        If I(operation=start) and the data set does not exist on the managed node,
-        no action taken, module completes successfully with I(changed=False).
+        If I(state=started) and the started task is not found on the managed node,
+        no action is taken, module completes successfully with I(changed=False).
+      - If I(state) is I(cancelled), I(stopped) or I(forced) and the started task is not running on the managed node,
+        no action is taken, module completes successfully with I(changed=False).
+      - If I(state) is I(modified) and the started task is not running, not found or modification was not done,
+        the module will fail.
+      - If I(state) is I(displayed) the module will return the started task details.
     required: true
     type: str
     choices:
-      - start
-      - stop
-      - modify
-      - display
-      - force
-      - cancel
+      - started
+      - stopped
+      - modified
+      - displayed
+      - forced
+      - cancelled
   parameters:
     description:
       - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
     required: false
     type: str
-  reus_asid:
+  reuse_asid:
     description:
       - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
         a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
@@ -113,37 +143,79 @@ options:
     choices:
       - 'YES'
       - 'NO'
-  subsystem_name:
+  subsystem:
     description:
       - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
         which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
     required: false
     type: str
-  volume_serial:
+  user_id:
+    description:
+      - The user ID of the time-sharing user you want to cancel or force.
+      - Only applicable when I(state=cancelled) or I(state=forced), otherwise ignored.
+    required: false
+    type: str
+    default: None
+  volume:
     description:
       - If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
+      - Only applicable when I(state=started) otherwise ignored.
     required: false
     type: str
   verbose:
     description:
-      - Return System logs that describe the task's execution.
+      - When I(verbose=true) return system logs that describe the task's execution.
+      - Using this option will can return a big response depending on system's load, also it could surface other programs
+        activity.
     required: false
     type: bool
     default: false
-  wait_time_s:
+  wait_time:
     required: false
     default: 5
     type: int
     description:
-      - Option I(wait_time_s) is the total time that module
+      - Option I(wait_time) is the total time that module
         L(zos_started_tak,./zos_started_task.html) will wait for a submitted task. The time begins when the module is executed
         on the managed node.
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+notes:
+    - Commands may need to use specific prefixes like $, they can be discovered by
+      issuing the following command C(D OPDATA,PREFIX).
 """
 EXAMPLES = r"""
 - name: Start a started task using member name.
   zos_started_task:
     member: "PROCAPP"
-    operation: "start"
+    state: "started"
+    job_name: "pocapp"
+
+- name: Cancel a TSO user session.
+  zos_started_task:
+    user_id: "PROCAPP"
+    state: "cancelled"
+
+- name: Cancel a started task using the job name.
+  zos_started_task:
+    job_name: "procapp"
+    state: "cancelled"
+
+- name: Get details from a started task.
+  zos_started_task:
+    job_name: "procapp"
+    state: "displayed"
+
 """
 
 RETURN = r"""

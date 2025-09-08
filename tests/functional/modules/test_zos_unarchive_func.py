@@ -371,7 +371,7 @@ def test_uss_unarchive_copy_to_remote(ansible_zos_module):
             src=tar_file,
             dest=USS_TEMP_DIR,
             format={
-                "name":"tar"
+                "type":"tar"
             },
             force=True,
         )
@@ -1337,7 +1337,7 @@ def test_mvs_unarchive_single_data_set_remote_src(
             source_path = res.get("dest")
 
         unarchive_format_dict = {
-            "name": ds_format,
+            "type": ds_format,
             "options": {
                 "adrdssu": True
             }

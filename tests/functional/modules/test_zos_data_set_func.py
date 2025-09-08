@@ -1187,7 +1187,6 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
         results = hosts.all.zos_data_set(
             name=dataset,
             state='absent',
-            type='seq',
             scratch=False,
         )
         for result in results.contacted.values():
@@ -1246,8 +1245,8 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         # Create both data sets in a batch
         setup_results = hosts.all.zos_data_set(
             batch=[
-                {'name': dataset_1, 'type': 'seq', 'state': 'present', 'volumes': [volume]},
-                {'name': dataset_2, 'type': 'seq', 'state': 'present', 'volumes': [volume]}
+                {'name': dataset_1, 'state': 'present', 'volumes': [volume]},
+                {'name': dataset_2, 'state': 'present', 'volumes': [volume]}
             ]
         )
         for result in setup_results.contacted.values():
@@ -1270,7 +1269,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
             check_result = hosts.all.zos_data_set(
                 name=dataset,
                 state='absent',
-                type='seq',
             )
             for result in check_result.contacted.values():
                 assert result.get("changed") is False  # Already uncataloged

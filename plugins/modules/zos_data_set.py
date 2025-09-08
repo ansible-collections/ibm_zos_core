@@ -295,7 +295,11 @@ options:
       - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
       - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
         This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-      - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
+      - When C(state=present) option B(scratch) sets the I(scratch) attribute for Generation Data Groups and is 
+         ignored for any other data set type.
+      - When C(state=present) and C(type=GDG) specifies what action is to be taken for a generation data set located on disk
+        volumes when the data set is uncataloged from the GDG base as a result of
+        EMPTY/NOEMPTY processing.
     type: bool
     required: false
   volumes:

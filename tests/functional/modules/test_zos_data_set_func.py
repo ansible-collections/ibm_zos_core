@@ -1198,7 +1198,6 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
         results = hosts.all.zos_data_set(
             name=dataset,
             state='absent',
-            type='seq',
         )
         for result in results.contacted.values():
             assert result.get("changed") is False

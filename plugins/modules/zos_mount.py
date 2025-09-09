@@ -819,7 +819,6 @@ def run_module(module, arg_def):
             stderr="",
         )
     )
-    print(f"RES ARGS {res_args}")
     # data set to be mounted/unmounted must exist
     fs_du = data_set.DataSetUtils(src, tmphlq=tmphlq)
     fs_exists = fs_du.exists()

@@ -194,7 +194,6 @@ space_type
 
   | **required**: False
   | **type**: str
-  | **default**: m
   | **choices**: k, m, g, cyl, trk
 
 

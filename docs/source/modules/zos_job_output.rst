@@ -21,8 +21,7 @@ Synopsis
 - The job id can be specific such as "STC02560", or one that uses a pattern such as "STC*" or "*".
 - The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
 - The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
-- If there is no dd_name, or if dd_name="?", output of all the dds under the given job will be displayed.
-- If SYSIN DDs are needed, ``input`` should be set to ``true``.
+- If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
 
 
 
@@ -53,19 +52,11 @@ owner
   | **type**: str
 
 
-dd_name
+ddname
   Data definition name (show only this DD on a found job). (e.g "JESJCL", "?")
 
   | **required**: False
   | **type**: str
-
-
-input
-  Whether to include SYSIN DDs as part of the output.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
 
 
 
@@ -90,26 +81,21 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Job output with dd_name
+   - name: Job output with ddname
      zos_job_output:
        job_id: "STC02560"
-       dd_name: "JESMSGLG"
+       ddname: "JESMSGLG"
 
-   - name: JES Job output without dd_name
+   - name: JES Job output without ddname
      zos_job_output:
        job_id: "STC02560"
 
-   - name: JES Job output with all dd_name
+   - name: JES Job output with all ddnames
      zos_job_output:
        job_id: "STC*"
        job_name: "*"
        owner: "IBMUSER"
-       dd_name: "?"
-
-   - name: Query a job's output including SYSIN DDs
-     zos_job_output:
-       job_id: "JOB00548"
-       input: true
+       ddname: "?"
 
 
 
@@ -139,7 +125,7 @@ jobs
                 "class": "R",
                 "content_type": "JOB",
                 "cpu_time": 1414,
-                "dds": [
+                "ddnames": [
                     {
                         "byte_count": "775",
                         "content": [
@@ -161,7 +147,7 @@ jobs
                             "-            6 SYSOUT SPOOL KBYTES",
                             "-         0.00 MINUTES EXECUTION TIME"
                         ],
-                        "dd_name": "JESMSGLG",
+                        "ddname": "JESMSGLG",
                         "id": "2",
                         "procstep": "",
                         "record_count": "17",
@@ -185,7 +171,7 @@ jobs
                             "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                             "         7 //                                                                              "
                         ],
-                        "dd_name": "JESJCL",
+                        "ddname": "JESJCL",
                         "id": "3",
                         "procstep": "",
                         "record_count": "14",
@@ -214,7 +200,7 @@ jobs
                             " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
                             "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
                         ],
-                        "dd_name": "JESYSMSG",
+                        "ddname": "JESYSMSG",
                         "id": "4",
                         "procstep": "",
                         "record_count": "19",
@@ -228,7 +214,7 @@ jobs
                             "                                                                                                                         ",
                             " PROCESSING ENDED AT EOD                                                                                                 "
                         ],
-                        "dd_name": "SYSPRINT",
+                        "ddname": "SYSPRINT",
                         "id": "102",
                         "procstep": "",
                         "record_count": "4",
@@ -239,7 +225,7 @@ jobs
                         "content": [
                             " HELLO, WORLD                                                                    "
                         ],
-                        "dd_name": "SYSUT2",
+                        "ddname": "SYSUT2",
                         "id": "103",
                         "procstep": "",
                         "record_count": "1",
@@ -261,14 +247,14 @@ jobs
                     "code": 0,
                     "msg": "CC 0000",
                     "msg_code": "0000",
-                    "msg_txt": ""
+                    "msg_txt": "",
+                    "steps": [
+                        {
+                            "step_cc": 0,
+                            "step_name": "STEP0001"
+                        }
+                    ]
                 },
-                "steps": [
-                    {
-                        "step_cc": 0,
-                        "step_name": "STEP0001"
-                    }
-                ],
                 "subsystem": "STL1",
                 "system": "STL1"
             }
@@ -345,13 +331,13 @@ jobs
     | **type**: str
     | **sample**: 00:00:10
 
-  dds
+  ddnames
     Data definition names.
 
     | **type**: list
     | **elements**: dict
 
-    dd_name
+    ddname
       Data definition name.
 
       | **type**: str
@@ -388,7 +374,7 @@ jobs
       | **sample**: 574
 
     content
-      The dd content.
+      The ddname content.
 
       | **type**: list
       | **elements**: str
@@ -462,7 +448,13 @@ jobs
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": 0,
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
           }
 
@@ -489,39 +481,29 @@ jobs
 
       | **type**: int
 
+    steps
+      Series of JCL steps that were executed and their return codes.
 
-  steps
-    Series of JCL steps that were executed and their return codes.
+      | **type**: list
+      | **elements**: dict
 
-    | **type**: list
-    | **elements**: dict
-    | **sample**:
+      step_name
+        Name of the step shown as "was executed" in the DD section.
 
-      .. code-block:: json
+        | **type**: str
+        | **sample**: STEP0001
 
-          [
-              {
-                  "step_cc": 0,
-                  "step_name": "STEP0001"
-              }
-          ]
+      step_cc
+        The CC returned for this step in the DD section.
 
-    step_name
-      Name of the step shown as "was executed" in the DD section.
+        | **type**: int
 
-      | **type**: str
-      | **sample**: STEP0001
-
-    step_cc
-      The CC returned for this step in the DD section.
-
-      | **type**: int
 
 
 
 changed
   Indicates if any changes were made during module operation
 
-  | **returned**: always
+  | **returned**: on success
   | **type**: bool
 

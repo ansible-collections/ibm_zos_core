@@ -335,30 +335,12 @@ msg
   | **type**: str
   | **sample**: Parameter verification failed
 
-stdout
-  The stdout from ZOAU dsed command.
-
-  | **returned**: always
-  | **type**: str
-
-stderr
+return_content
   The error messages from ZOAU dsed
 
-  | **returned**: always
+  | **returned**: failure
   | **type**: str
   | **sample**: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
-
-stdout_lines
-  List of strings containing individual lines from stdout.
-
-  | **returned**: always
-  | **type**: list
-
-stderr_lines
-  List of strings containing individual lines from stderr.
-
-  | **returned**: always
-  | **type**: list
 
 backup_name
   Name of the backup file or data set that was created.

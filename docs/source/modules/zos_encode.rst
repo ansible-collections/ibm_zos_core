@@ -333,24 +333,3 @@ backup_name
   | **type**: str
   | **sample**: /path/file_name.2020-04-23-08-32-29-bak.tar
 
-encoding
-  Specifies which encodings the destination file or data set was converted from and to.
-
-  | **returned**: always
-  | **type**: dict
-
-  from
-    The character set of the source *src*.
-
-    | **returned**: always
-    | **type**: str
-    | **sample**: IBM-1047
-
-  to
-    The destination *dest* character set for the output that was written as.
-
-    | **returned**: always
-    | **type**: str
-    | **sample**: ISO8859-1
-
-

@@ -1935,8 +1935,7 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
-                scratch = determine_scratch(data_set_params)
-                data_set_params["noscratch"] = not scratch
+                data_set_params["noscratch"] = not determine_scratch(data_set_params)
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(

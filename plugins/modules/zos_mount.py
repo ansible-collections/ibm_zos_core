@@ -768,11 +768,7 @@ def run_module(module, arg_def):
             backup_name = mt_backupOper(module, name, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
-        if "mounted" in state or "present" in state:
-            persistent["addDataset"] = name
-        else:
-            persistent["delDataset"] = name
-        del persistent["name"]
+        persistent["name"]
 
     write_persistent = False
     if "mounted" in state or "present" in state or "absent" in state:

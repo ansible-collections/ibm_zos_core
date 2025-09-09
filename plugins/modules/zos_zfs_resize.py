@@ -33,7 +33,7 @@ options:
       - The Fully Qualified Name of the zFS data set that will be resized.
     required: true
     type: str
-    aliases: [ src ]
+    aliases: [ source ]
   size:
     description:
       - The desired size of the data set after the resizing is performed.

@@ -1,18 +1,12 @@
 minor_changes:
-  - zos_data_set:
-    Merged `noscratch` functionality into the `scratch` option.
-    This allows uncataloging a data set without deleting it from
-    the volume's VTOC when `scratch:false` is specified.
+  - zos_data_set - Merged `noscratch` functionality into the `scratch` option.
+    This allows uncataloging a data set without deleting it from the volume's VTOC
+    when `scratch:false` is specified.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
 trivial:
-  - data_set:
-    Internal updates to support the new `scratch` option behavior
-    (previously `noscratch`).
+  - data_set - Internal updates to support the new `scratch` option behavior (previously `noscratch`).
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
-  - test_zos_data_set_func:
-    Added test cases to verify the merged `noscratch` functionality
-    in the `zos_data_set` module.
+  - test_zos_data_set_func - Added test cases to verify the merged `noscratch` functionality in the `zos_data_set` module.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
-  - test_zfs_resize:
-    Added a retry for autoincrease test in case that would fail.
+  - test_zfs_resize - Added a retry for autoincrease test in case that would fail.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).

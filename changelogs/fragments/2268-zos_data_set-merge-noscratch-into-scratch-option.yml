@@ -7,5 +7,5 @@ trivial:
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
   - test_zos_data_set_func - Added test cases to verify the merged `noscratch` functionality in the `zos_data_set` module.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
-  - test_zfs_resize - Added a retry for autoincrease test in case that would fail.
+  - test_zos_zfs_resize_func.py - Added a retry for autoincrease test in case that would fail.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2268).

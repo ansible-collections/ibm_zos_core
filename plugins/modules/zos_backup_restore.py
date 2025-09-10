@@ -693,8 +693,8 @@ def parse_and_validate_args(params):
             type='dict',
             required=False,
             options=dict(
-                storage_class=dict(type="str", required=False),
-                management_class=dict(type="str", required=False),
+                storage_class=dict(type=sms_type, required=False),
+                management_class=dict(type=sms_type, required=False),
                 disable_automatic_class=dict(type="list", elements="str", required=False, default=[]),
                 disable_automatic_storage_class=dict(type="bool", required=False),
                 disable_automatic_management_class=dict(type="bool", required=False),

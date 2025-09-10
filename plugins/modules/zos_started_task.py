@@ -1072,10 +1072,13 @@ def run_module():
     system_logs = ""
     if err != "" or any(msg in out for msg in err_msg):
         isFailed = True
+    # Fetch system logs to validate any error occured in execution
     if not isFailed or verbose:
         system_logs = fetch_logs(cmd.upper(), wait_time_s)
         if any(msg in system_logs for msg in err_msg):
             isFailed = True
+    if not verbose:
+        system_logs = ""
     current_state = ""
     if isFailed:
         if rc == 0:

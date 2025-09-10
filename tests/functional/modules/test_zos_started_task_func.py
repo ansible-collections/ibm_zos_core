@@ -345,6 +345,7 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("stderr") is not None
         assert result.get("cmd") == "C TESTER.SAMPLE"
+        assert result.get("verbose_output") == ""
     cancel_results = hosts.all.zos_started_task(
         state = "cancelled",
         asid = "0012",
@@ -357,6 +358,7 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("stderr") is not None
         assert result.get("cmd") == "C U=OMVSTEST,A=0012,DUMP"
+        assert result.get("verbose_output") != ""
     cancel_results = hosts.all.zos_started_task(
         state = "cancelled",
         userid = "OMVSADM",
@@ -446,6 +448,7 @@ def test_force_task_negative(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("stderr") is not None
         assert result.get("cmd") == "FORCE U=OMVSTEST,TCB=000678,RETRY=YES"
+        assert result.get("verbose_output") != ""
 
 
 def test_start_and_cancel_zos_started_task(ansible_zos_module):
@@ -478,7 +481,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is not None
+            assert result.get("verbose_output") != ""
 
         force_results = hosts.all.zos_started_task(
             state = "forced",
@@ -502,7 +505,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
 
         # validate identifier
         start_results = hosts.all.zos_started_task(
@@ -517,7 +520,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
             assert result.get("cmd") == "S SAMPLE.TESTER,REUSASID=YES"
 
         stop_results = hosts.all.zos_started_task(
@@ -529,7 +532,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("changed") is False
             assert result.get("stderr") is not None
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
 
         stop_results = hosts.all.zos_started_task(
             state = "cancelled",
@@ -542,7 +545,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
 
         job_account = "(T043JM,JM00,1,0,0,)"
         start_results = hosts.all.zos_started_task(
@@ -569,7 +572,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
 
         display_output = list(display_result.contacted.values())[0].get("stdout")
         asid_val =  re.search(r"\bA=([^ \n\r\t]+)", display_output).group(1)
@@ -587,7 +590,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is not None
+            assert result.get("verbose_output") != ""
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
@@ -673,7 +676,7 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert result.get("rc") == 0
         assert result.get("stderr") == ""
         assert len(result.get("tasks")) > 0
-        assert result.get("verbose_output") is None
+        assert result.get("verbose_output") == ""
 
     display_output = list(display_result.contacted.values())[0].get("stdout")
     asid_val =  re.search(r"\bA=([^ \n\r\t]+)", display_output).group(1)
@@ -769,6 +772,7 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
+            assert result.get("verbose_output") != ""
 
         stop_results = hosts.all.zos_started_task(
             state = "cancelled",

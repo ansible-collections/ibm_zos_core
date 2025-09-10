@@ -4,5 +4,5 @@ breaking_changes:
     (https://github.com/ansible-collections/ibm_zos_core/pull/2272).
 minor_changes:
   - zos_mount - New return value ``persistent.state`` that returns the entry state in the persistent data set.
-    New return value ``persistent.name`` that the persistent data set name.
+    New return value ``persistent.name`` that returns the persistent data set name.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2272).

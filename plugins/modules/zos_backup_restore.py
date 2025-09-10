@@ -135,6 +135,22 @@ options:
         with matching name on the target device.
     type: bool
     default: False
+  compress:
+    description:
+      - When I(operation=backup), enables compression of partitioned data sets using system-level
+        compression features. If supported, this may utilize zEDC hardware compression.
+      - This option can reduce the size of the temporary dataset generated during backup operations
+        either before the AMATERSE step when I(terse) is True or the resulting backup
+        when I(terse) is False.
+    type: bool
+    default: False
+  terse:
+    description:
+      - When I(operation=backup), executes an AMATERSE step to compress and pack the temporary data set
+        for the backup. This creates a backup with a format suitable for transferring off-platform.
+      - If I(operation=backup) and if I(dataset=False) then option I(terse) must be True.
+    type: bool
+    default: True
   sms_storage_class:
     description:
       - When I(operation=restore), specifies the storage class to use. The storage class will
@@ -174,6 +190,7 @@ options:
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
       - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
+    default: m
     choices:
       - k
       - m
@@ -200,6 +217,19 @@ options:
         not be identified, the value C(TMPHLQ) is used.
     required: false
     type: str
+  index:
+    description:
+      - When C(operation=backup) specifies that for any VSAM cluster backup, the backup must also contain
+        all the associated alternate index (AIX®) clusters and paths.
+      - When C(operation=restore) specifies that for any VSAM cluster dumped with the SPHERE keyword,
+        the module must also restore all associated AIX® clusters and paths.
+      - The alternate index is a VSAM function that allows logical records of a
+        KSDS or ESDS to be accessed sequentially and directly by more than one key
+        field. The cluster that has the data is called the base cluster. An
+        alternate index cluster is then built from the base cluster.
+    type: bool
+    required: false
+    default: false
 
 attributes:
   action:
@@ -253,6 +283,15 @@ EXAMPLES = r"""
       include:
         - user.gdg(-1)
         - user.gdg(0)
+    backup_name: my.backup.dzp
+
+- name: Backup datasets using compress
+  zos_backup_restore:
+    operation: backup
+    compress: true
+    terse: true
+    data_sets:
+      include: someds.name.here
     backup_name: my.backup.dzp
 
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
@@ -348,6 +387,16 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
+
+- name: Backup all data sets matching the pattern USER.VSAM.** to z/OS UNIX
+     file /tmp/temp_backup.dzp and ensure the VSAM alternate index are preserved.
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include: user.vsam.**
+    backup_name: /tmp/temp_backup.dzp
+    index: true
+
 """
 RETURN = r"""
 changed:
@@ -412,17 +461,21 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"], default="m"),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
         backup_name=dict(type="str", required=True),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=False),
+        terse=dict(type="bool", default=True),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
+        # 2.0 redesign extra values for ADRDSSU keywords
+        index=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -431,17 +484,27 @@ def main():
         operation = params.get("operation")
         data_sets = params.get("data_sets", {})
         space = params.get("space")
-        space_type = params.get("space_type")
+        space_type = params.get("space_type", "m")
         volume = params.get("volume")
         full_volume = params.get("full_volume")
         temp_volume = params.get("temp_volume")
         backup_name = params.get("backup_name")
         recover = params.get("recover")
         overwrite = params.get("overwrite")
+        compress = params.get("compress")
+        terse = params.get("terse")
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
         tmp_hlq = params.get("tmp_hlq")
+
+        # 2.0 redesign extra ADRDSSU keywords
+        sphere = params.get("index")
+
+        # extra keyword supported by ZOAU but not part of their signature.
+        keywords = {}
+        if sphere:
+            keywords.update(sphere=None)
 
         if operation == "backup":
             backup(
@@ -452,12 +515,15 @@ def main():
                 full_volume=full_volume,
                 temp_volume=temp_volume,
                 overwrite=overwrite,
+                compress=compress,
+                terse=terse,
                 recover=recover,
                 space=space,
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                keywords=keywords,
             )
         else:
             restore(
@@ -475,6 +541,7 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                keywords=keywords,
             )
         result["backup_name"] = backup_name
         result["changed"] = True
@@ -545,10 +612,14 @@ def parse_and_validate_args(params):
         backup_name=dict(type=backup_name_type, required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=False),
+        terse=dict(type="bool", default=True),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
+        # 2.0 redesign extra values for ADRDSSU keywords
+        index=dict(type="bool", required=False, default=False),
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
@@ -566,12 +637,15 @@ def backup(
     full_volume,
     temp_volume,
     overwrite,
+    compress,
+    terse,
     recover,
     space,
     space_type,
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    keywords,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -579,6 +653,8 @@ def backup(
     ----------
     backup_name : str
         The data set or UNIX path to place the backup.
+    compress : bool
+        Compress the dataset or file produced by ADRDSSU before taking backup.
     include_data_sets : list
         A list of data set patterns to include in the backup.
     exclude_data_sets : list
@@ -589,6 +665,8 @@ def backup(
         Specifies if a backup will be made of the entire volume.
     temp_volume : bool
         Specifies the volume that should be used to store temporary files.
+    terse : bool
+        Uses AMATERSE to compress and pack the dump generated by ADRDSSU.
     overwrite : bool
         Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
     recover : bool
@@ -603,6 +681,8 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    keywords : dict
+        Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -624,6 +704,7 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    keywords,
 ):
     """Restore data sets or a volume from the backup.
 
@@ -661,6 +742,8 @@ def restore(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    keywords : dict
+        Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
 
     Raises
     ------
@@ -964,6 +1047,12 @@ def to_dzip_args(**kwargs):
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
 
+    if kwargs.get("compress"):
+        zoau_args["compress"] = kwargs.get("compress")
+
+    if kwargs.get("terse"):
+        zoau_args["terse"] = kwargs.get("terse")
+
     if kwargs.get("sms_storage_class"):
         zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
 
@@ -978,6 +1067,9 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
+    if kwargs.get("keywords"):
+        zoau_args["keywords"] = kwargs.get("keywords")
 
     return zoau_args
 
@@ -1041,6 +1133,9 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))
         zoau_args["keep_original_hlq"] = False
+
+    if kwargs.get("keywords"):
+        zoau_args["keywords"] = kwargs.get("keywords")
 
     return zoau_args
 

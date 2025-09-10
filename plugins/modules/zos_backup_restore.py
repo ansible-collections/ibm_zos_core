@@ -188,7 +188,7 @@ options:
           - Specifies that the automatic class selection (ACS) routines will not be
             used to determine the target data set class names for the provided list.
           - The list must contain fully or partially qualified data set names.
-          - To include all selected data sets, `**` in a list.
+          - To include all selected data sets, "**" in a list.
           - You must have READ access to RACF FACILITY class profile
             `STGADMIN.ADR.RESTORE.BYPASSACS` to use this option.
         type: list
@@ -441,7 +441,7 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms:
       disable_automatic_class:
-        - '**'
+        - "**"
       disable_automatic_storage_class: true
       disable_automatic_management_class: true
 
@@ -453,8 +453,8 @@ EXAMPLES = r"""
     backup_name: MY.BACKUP.DZP
     sms:
       disable_automatic_class:
-        - ANSIBLE.TEST.*
-        - **.ONE.*
+        - "ANSIBLE.TEST.**"
+        - "**.ONE.**"
       disable_automatic_storage_class: true
       disable_automatic_management_class: true
 

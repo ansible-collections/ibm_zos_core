@@ -1,4 +1,4 @@
-breaking_change:
+breaking_changes:
   - zos_backup_restore - Add new dictionary option ``sms`` to specify how interact with the storage class.
     Option ``sms_storage_class`` is deprecated in favor of ``storage_class`` and is under new option ``sms`` being sms.storage_class.
     Option ``sms_management_class`` is deprecated in favor of ``management_class`` and is under new option ``sms`` being sms.management_class.

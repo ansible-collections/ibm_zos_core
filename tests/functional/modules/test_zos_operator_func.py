@@ -22,8 +22,8 @@ from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
 
 __metaclass__ = type
 
-PARALLEL_RUNNING = """- hosts : zvm
-  collections :
+PARALLEL_RUNNING = """- hosts: zvm
+  collections:
     - ibm.ibm_zos_core
   gather_facts: False
   vars:

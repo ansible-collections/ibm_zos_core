@@ -702,7 +702,11 @@ def extract_keys(stdout):
         'WKL': 'workload_manager',
         'ASTE': 'address_space_table_entry',
         'RGP': 'resource_group',
-        'DSPNAME': 'dataspace_name'
+        'DSPNAME': 'dataspace_name',
+        'DMN': 'domain_number',
+        'AFF': 'affinity',
+        'SRVR': 'server',
+        'QSC': 'queue_scan_count'
     }
     lines = stdout.strip().split('\n')
     tasks = []
@@ -720,13 +724,13 @@ def extract_keys(stdout):
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                current_task[key] = value
+                current_task[key.lower()] = value
         elif current_task:
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                current_task[key] = value
+                current_task[key.lower()] = value
     if current_task:
         el_time = current_task.get('elapsed_time')
         if el_time:
@@ -1105,9 +1109,8 @@ def run_module():
         stderr=stderr,
         stdout_lines=stdout.split('\n'),
         stderr_lines=stderr.split('\n'),
+        verbose_output=system_logs
     )
-    if verbose:
-        result["verbose_output"] = system_logs
 
     module.exit_json(**result)
 

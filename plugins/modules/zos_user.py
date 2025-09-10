@@ -816,7 +816,9 @@ class UserHandler(RACFHandler):
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
                 ('language', ('primary', 'secondary')),
                 ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
-                ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data'))
+                ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data')),
+                ('access', ('authority', 'universal_access', 'group_name', 'group_account', 'group_operations', 'default_group', 'clauth', 'auditor', 'roaudit', 'adsp_attribute', 'category', 'operator_card', 'maintenance_access', 'restricted', 'security_label', 'security_level', 'special')),
+                ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display', 'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs', 'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs', 'responses'))
             ]
         },
         'update': {},
@@ -837,7 +839,7 @@ class UserHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'group', 'dfp', 'language', 'omvs'],
+        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator'],
         'delete': [],
         'purge': [],
         'list': []
@@ -872,6 +874,10 @@ class UserHandler(RACFHandler):
         (('tso', 'max_region_size'), 'range', (0, 2_096_128, -1)),
         (('tso', 'unit_name'), 'length', ((0, 8),)),
         (('tso', 'user_data'), 'format', ('[^\s*$]|[0-9a-zA-Z]{4}',)),
+        (('operator', 'alt_group'), 'length', ((0, 8),)),
+        (('operator', 'cmd_system'), 'length', ((0, 8),)),
+        (('operator', 'search_key'), 'length', ((0, 8),)),
+        (('operator', 'msg_storage'), 'range', (1, 2000, 0)),
     ]
 
     def __init__(self, module, module_params):
@@ -1222,7 +1228,7 @@ def run_module():
                     ('max_region_size', 'delete'),
                     ('security_label', 'delete'),
                     ('unit_name', 'delete'),
-                    ('user_data', 'delete'),
+                    ('user_data', 'delete')
                 ],
                 'options': {
                     'account_num': {
@@ -1276,6 +1282,282 @@ def run_module():
                     'user_data': {
                         'type': 'str',
                         'required': False
+                    },
+                    'delete': {
+                        'type': 'bool',
+                        'required': False
+                    }
+                }
+            },
+            'access': {
+                'type': 'dict',
+                'required': False,
+                'mutually_exclusive': [
+                    ('authority', 'delete'),
+                    ('universal_access', 'delete'),
+                    ('group_name', 'delete'),
+                    ('group_account', 'delete'),
+                    ('group_operations', 'delete'),
+                    ('default_group', 'delete'),
+                    ('clauth', 'delete'),
+                    ('auditor', 'delete'),
+                    ('roaudit', 'delete'),
+                    ('adsp_attribute', 'delete'),
+                    ('category', 'delete'),
+                    ('operator_card', 'delete'),
+                    ('maintenance_access', 'delete'),
+                    ('restricted', 'delete'),
+                    ('security_label', 'delete'),
+                    ('security_level', 'delete'),
+                    ('special', 'delete')
+                ],
+                'options': {
+                    'authority': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['use', 'create', 'connect', 'join']
+                    },
+                    'universal_access': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['alter', 'control', 'update', 'read', 'none']
+                    },
+                    'group_name': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'group_account': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'group_operations': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'default_group': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'clauth': {
+                        'type': 'dict',
+                        'required': False,
+                        'mutually_exclusive': [
+                            ('add', 'delete')
+                        ],
+                        'options': {
+                            'add': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                            'delete': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                        }
+                    },
+                    'auditor': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'roaudit': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'adsp_attribute': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'category': {
+                        'type': 'dict',
+                        'required': False,
+                        'mutually_exclusive': [
+                            ('add', 'delete')
+                        ],
+                        'options': {
+                            'add': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                            'delete': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                        }
+                    },
+                    'operator_card': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'maintenance_access': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'restricted': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'security_label': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'security_level': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'special': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'delete': {
+                        'type': 'bool',
+                        'required': False
+                    }
+                }
+            },
+            'operator': {
+                'type': 'dict',
+                'required': False,
+                'mutually_exclusive': [
+                    ('alt_group', 'delete'),
+                    ('authority', 'delete'),
+                    ('cmd_system', 'delete'),
+                    ('search_key', 'delete'),
+                    ('migration_id', 'delete'),
+                    ('display', 'delete'),
+                    ('msg_level', 'delete'),
+                    ('msg_format', 'delete'),
+                    ('msg_storage', 'delete'),
+                    ('msg_scope', 'delete'),
+                    ('automated_msgs', 'delete'),
+                    ('del_msgs', 'delete'),
+                    ('hardcopy_msgs', 'delete'),
+                    ('internal_msgs', 'delete'),
+                    ('routing_msgs', 'delete'),
+                    ('undelivered_msgs', 'delete'),
+                    ('unknown_msgs', 'delete'),
+                    ('responses', 'delete')
+                ],
+                'options': {
+                    'alt_group': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'authority': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['master', 'all', 'info', 'cons', 'io', 'sys', 'delete']
+                    },
+                    'cmd_system': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'search_key': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'migration_id': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    # TODO: allow multiple choices
+                    # TODO: default should be ['jobnames', 'sess']
+                    'display': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['jobnames', 'jobnamest', 'sess', 'sesst', 'status', 'delete']
+                    },
+                    'msg_level': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['nb', 'all', 'r', 'i', 'ce', 'e', 'in', 'delete']
+                    },
+                    'msg_format': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['j', 'm', 's', 't', 'x', 'delete']
+                    },
+                    'msg_storage': {
+                        'type': 'int',
+                        'required': False
+                    },
+                    'msg_scope': {
+                        'type': 'dict',
+                        'required': False,
+                        'mutually_exclusive': [
+                            ('add', 'remove'),
+                            ('add', 'delete'),
+                            ('remove', 'delete'),
+                        ],
+                        'options': {
+                            'add': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                            'remove': {
+                                'type': 'list',
+                                'elements': 'str',
+                                'required': False
+                            },
+                            'delete': {
+                                'type': 'bool',
+                                'required': False
+                            }
+                        }
+                    },
+                    'automated_msgs': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'del_msgs': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['normal', 'all', 'none', 'delete']
+                    },
+                    'hardcopy_msgs': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'internal_msgs': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'routing_msgs': {
+                        'type': 'list',
+                        'required': False,
+                        'elements': 'str'
+                    },
+                    'undelivered_msgs': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'unknown_msgs': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'responses': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': True
                     },
                     'delete': {
                         'type': 'bool',
@@ -1374,6 +1656,77 @@ def run_module():
                 'security_label': {'arg_type': 'str', 'required': False},
                 'unit_name': {'arg_type': 'str', 'required': False},
                 'user_data': {'arg_type': 'str', 'required': False},
+                'delete': {'arg_type': 'bool', 'required': False}
+            }
+        },
+        'access': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'authority': {'arg_type': 'str', 'required': False},
+                'universal_access': {'arg_type': 'str', 'required': False},
+                'group_name': {'arg_type': 'str', 'required': False},
+                'group_account': {'arg_type': 'bool', 'required': False},
+                'group_operations': {'arg_type': 'bool', 'required': False},
+                'default_group': {'arg_type': 'str', 'required': False},
+                'clauth': {
+                    'arg_type': 'dict',
+                    'required': False,
+                    'options': {
+                        'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                        'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
+                    }
+                },
+                'auditor': {'arg_type': 'bool', 'required': False},
+                'roaudit': {'arg_type': 'bool', 'required': False},
+                'adsp_attribute': {'arg_type': 'bool', 'required': False},
+                'category': {
+                    'arg_type': 'dict',
+                    'required': False,
+                    'options': {
+                        'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                        'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
+                    }
+                },
+                'operator_card': {'arg_type': 'bool', 'required': False},
+                'maintenance_access': {'arg_type': 'bool', 'required': False},
+                'restricted': {'arg_type': 'bool', 'required': False},
+                'security_label': {'arg_type': 'str', 'required': False},
+                'security_level': {'arg_type': 'str', 'required': False},
+                'special': {'arg_type': 'bool', 'required': False},
+                'delete': {'arg_type': 'bool', 'required': False}
+            }
+        },
+        'operator': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'alt_group': {'arg_type': 'str', 'required': False},
+                'authority': {'arg_type': 'str', 'required': False},
+                'cmd_system': {'arg_type': 'str', 'required': False},
+                'search_key': {'arg_type': 'str', 'required': False},
+                'migration_id': {'arg_type': 'bool', 'required': False},
+                'display': {'arg_type': 'str', 'required': False},
+                'msg_level': {'arg_type': 'str', 'required': False},
+                'msg_format': {'arg_type': 'str', 'required': False},
+                'msg_storage': {'arg_type': 'int', 'required': False},
+                'msg_scope': {
+                    'arg_type': 'dict',
+                    'required': False,
+                    'options': {
+                        'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                        'remove': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                        'delete': {'arg_type': 'bool', 'required': False}
+                    }
+                },
+                'automated_msgs': {'arg_type': 'bool', 'required': False},
+                'del_msgs': {'arg_type': 'str', 'required': False},
+                'hardcopy_msgs': {'arg_type': 'bool', 'required': False},
+                'internal_msgs': {'arg_type': 'bool', 'required': False},
+                'routing_msgs': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                'undelivered_msgs': {'arg_type': 'bool', 'required': False},
+                'unknown_msgs': {'arg_type': 'bool', 'required': False},
+                'responses': {'arg_type': 'bool', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         }

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds, get_volume_and_unit
+from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds, get_volume_and_unit, get_volumes_sms_mng_class
 from ansible.plugins.action import ActionBase
 import sys
 from mock import MagicMock
@@ -167,11 +167,29 @@ def volumes_unit_on_systems(ansible_zos_module, request):
     if path is None:
         src = request.config.getoption("--zinventory-raw")
         helper = ZTestHelper.from_args(src)
-        list_volumes = helper.get_volume_and_unit()
+        list_volumes = helper.get_volumes_list()
     else:
-        list_volumes = get_volume_and_unit(ansible_zos_module, path)
+        list_volumes = get_volume_and_unit(ansible_zos_module)
 
     yield list_volumes
+
+
+@pytest.fixture(scope="session")
+def volumes_sms_systems(ansible_zos_module, request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory")
+    list_volumes = None
+
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volumes(ansible_zos_module, path)
+
+    volumes_with_sms = get_volumes_sms_mng_class(ansible_zos_module, list_volumes)
+    yield volumes_with_sms
+
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
 # * because automatic teardown is not performed, leading to mock pollution

@@ -135,7 +135,6 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
-        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")
@@ -169,7 +168,6 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
-        print(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
@@ -1293,7 +1291,6 @@ def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("backup_name") == '', \
                 f"Backup name '{backup_name}' is there in output so tmphlq failed."
-            print(result)
             assert result.get("changed", False) is False
 
     finally:

@@ -1,0 +1,6 @@
+breaking_changes:
+  - zos_unarchive - Option ``format.format_options`` is deprecated in favor of ``format.options``.
+    Option ``format.format_options.name`` is deprecated in favor of ``format.options.type``.
+    Option ``format.format_options.use_adrdssu`` is deprecated in favor of ``format.options.use_adrdssu``.
+    Return values ``stdout_lines`` and ``stderr_lines`` is added.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2271).

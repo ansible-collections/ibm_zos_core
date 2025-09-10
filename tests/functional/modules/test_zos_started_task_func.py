@@ -560,7 +560,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
-            assert result.get("verbose_output") is None
+            assert result.get("verbose_output") == ""
 
         display_result = hosts.all.zos_started_task(
             state = "displayed",

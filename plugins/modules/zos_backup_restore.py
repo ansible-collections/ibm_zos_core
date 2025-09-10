@@ -441,7 +441,7 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms:
       disable_automatic_class:
-        - **
+        - '**'
       disable_automatic_storage_class: true
       disable_automatic_management_class: true
 
@@ -466,8 +466,8 @@ EXAMPLES = r"""
       include: user.vsam.**
     backup_name: /tmp/temp_backup.dzp
     index: true
-
 """
+
 RETURN = r"""
 changed:
   description:

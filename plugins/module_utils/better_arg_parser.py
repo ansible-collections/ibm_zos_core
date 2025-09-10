@@ -280,7 +280,7 @@ class BetterArgHandler(object):
         if not isinstance(contents, dict):
             raise ValueError('Invalid argument "{0}" for type "dict".'.format(contents))
         return contents
-    
+
     def _str_type(self, contents, resolve_dependencies):
         """Resolver for str type arguments.
 

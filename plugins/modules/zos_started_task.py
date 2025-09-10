@@ -27,274 +27,134 @@ description:
   - start, display, modify, cancel, force and stop a started task
 
 options:
-  start_task:
+  arm:
     description:
-      - The start operation of the started task.
+    - I(arm) indicates to execute normal task termination routines without causing address space destruction.
+    required: false
+    type: bool
+  armrestart:
+    description:
+    - I(armrestart) indicates to restart a started task automatically after the cancel completes.
+    required: false
+    type: bool
+  asid:
+    description:
+    - I(asid) is a unique address space identifier which gets assigned to each running started task.
+    required: false
+    type: str
+  device_type:
+    description:
+    - I(device_type) is the type of the output device (if any) associated with the task.
+    required: false
+    type: str
+  device_number:
+    description:
+    - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
+        A slash (/) must precede a 4-digit number but is not before a 3-digit number.
+    required: false
+    type: str
+  dump:
+    description:
+    - I(dump) indicates to take dump before ending a started task.
+    required: false
+    type: bool
+  identifier_name:
+    description:
+    - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
+        The first character must be alphabetical.
+    required: false
+    type: str
+    aliases:
+    - identifier
+  job_account:
+    description:
+    - I(job_account) specifies accounting data in the JCL JOB statement for the started task.
+        If the source JCL was a job and has already accounting data, the value that is specified on this parameter
+        overrides the accounting data in the source JCL.
+    required: false
+    type: str
+  job_name:
+    description:
+    - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
+        then member_name is used as job_name.
+    required: false
+    type: str
+    aliases:
+    - job
+    - task
+    - task_name
+  keyword_parameters:
+    description:
+    - Any appropriate keyword parameter that you specify to override the corresponding parameter in the cataloged procedure.
+        The maximum length of each keyword=option is 66 characters. No individual value within this field can be longer than
+        44 characters in length.
     required: false
     type: dict
-    suboptions:
-        device_type:
-            description:
-            - I(device_type) is the type of the output device (if any) associated with the task.
-            required: false
-            type: str
-        device_number:
-            description:
-            - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
-                A slash (/) must precede a 4-digit number but is not before a 3-digit number.
-            required: false
-            type: str
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_account:
-            description:
-            - I(job_account) specifies accounting data in the JCL JOB statement for the started task.
-                If the source JCL was a job and has already accounting data, the value that is specified on this parameter
-                overrides the accounting data in the source JCL.
-            required: false
-            type: str
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
-        keyword_parameters:
-            description:
-            - Any appropriate keyword parameter that you specify to override the corresponding parameter in the cataloged procedure.
-                The maximum length of each keyword=option is 66 characters. No individual value within this field can be longer than
-                44 characters in length.
-            required: false
-            type: dict
-        member_name:
-            description:
-            - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
-                for the task to be started. The member can be either a job or a cataloged procedure.
-            required: false
-            type: str
-            aliases:
-            - member
-        parameters:
-            description:
-            - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
-            required: false
-            type: list
-            elements: str
-        reus_asid:
-            description:
-            - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
-                a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
-                on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
-            required: false
-            type: str
-            choices:
-            - 'YES'
-            - 'NO'
-        subsystem:
-            description:
-            - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
-                which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
-            required: false
-            type: str
-        volume_serial:
-            description:
-            - If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
-            required: false
-            type: str
-  display_task:
+  member_name:
     description:
-      - The display operation of the started task.
+    - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
+        for the task to be started. The member can be either a job or a cataloged procedure.
     required: false
-    type: dict
-    suboptions:
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
-  modify_task:
+    type: str
+    aliases:
+    - member
+  parameters:
     description:
-      - The modify operation of the started task.
+    - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
     required: false
-    type: dict
-    suboptions:
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
-        parameters:
-            description:
-            - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
-            required: false
-            type: list
-            elements: str
-  cancel_task:
+    type: list
+    elements: str
+  retry:
     description:
-      - The cancel operation of the started task.
+    - I(retry) is applicable for only FORCE TCB.
     required: false
-    type: dict
-    suboptions:
-        armrestart:
-            description:
-            - I(armrestart) indicates to restart a started task automatically after the cancel completes.
-            required: false
-            type: bool
-        asid:
-            description:
-            - I(asid) is a unique address space identifier which gets assigned to each running started task.
-            required: false
-            type: str
-        dump:
-            description:
-            - I(dump) indicates to take dump before ending a started task.
-            required: false
-            type: bool
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
-        userid:
-            description:
-            - I(userid) is the user ID of the time-sharing user you want to cancel.
-            required: false
-            type: str
-  force_task:
+    type: str
+    choices:
+    - 'YES'
+    - 'NO'
+  reus_asid:
     description:
-      - The force operation of the started task.
+    - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
+        a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
+        on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
     required: false
-    type: dict
-    suboptions:
-        arm:
-            description:
-            - I(arm) indicates to execute normal task termination routines without causing address space destruction.
-            required: false
-            type: bool
-        armrestart:
-            description:
-            - I(armrestart) indicates to restart a started task automatically after the cancel completes.
-            required: false
-            type: bool
-        asid:
-            description:
-            - I(asid) is a unique address space identifier which gets assigned to each running started task.
-            required: false
-            type: str
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
-        retry:
-            description:
-            - I(retry) is applicable for only FORCE TCB.
-            required: false
-            type: str
-            choices:
-            - 'YES'
-            - 'NO'
-        tcb_address:
-            description:
-            - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
-            required: false
-            type: str
-        userid:
-            description:
-            - I(userid) is the user ID of the time-sharing user you want to cancel.
-            required: false
-            type: str
-  stop_task:
+    type: str
+    choices:
+    - 'YES'
+    - 'NO'
+  state:
     description:
-      - The stop operation of the started task.
+      - The final state desired for specified started task.
+    required: True
+    type: str
+    choices:
+      - started
+      - displayed
+      - modified
+      - cancelled
+      - stopped
+      - forced
+  subsystem:
+    description:
+    - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
+        which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
     required: false
-    type: dict
-    suboptions:
-        asid:
-            description:
-            - I(asid) is a unique address space identifier which gets assigned to each running started task.
-            required: false
-            type: str
-        identifier_name:
-            description:
-            - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-                The first character must be alphabetical.
-            required: false
-            type: str
-            aliases:
-            - identifier
-        job_name:
-            description:
-            - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-                then member_name is used as job_name.
-            required: false
-            type: str
-            aliases:
-            - job
-            - task
-            - task_name
+    type: str
+  tcb_address:
+    description:
+    - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
+    required: false
+    type: str
+  volume_serial:
+    description:
+    - If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
+    required: false
+    type: str
+  userid:
+    description:
+    - I(userid) is the user ID of the time-sharing user you want to cancel.
+    required: false
+    type: str
   verbose:
     description:
       - Return System logs that describe the task's execution.
@@ -306,7 +166,7 @@ options:
     default: 0
     type: int
     description:
-      - Option I(wait_time_s) is the the maximum amount of time, in centiseconds (0.01s), to wait for a response after submitting
+      - Option I(wait_time_s) is the the maximum amount of time, in seconds, to wait for a response after submitting
         the console command. Default value of 0 means to wait the default amount of time supported by the opercmd utility.
 """
 EXAMPLES = r"""
@@ -317,11 +177,75 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
+changed:
+  description:
+    True if the state was changed, otherwise False.
+  returned: always
+  type: bool
+cmd:
+    description: Command executed via opercmd.
+    returned: changed
+    type: str
+    sample: S SAMPLE
+msg:
+    description: Failure or skip message returned by the module.
+    returned: failure or skipped
+    type: str
+    sample:
+      File /u/user/file.txt is already missing on the system, skipping script
+rc:
+    description:
+    - The return code is 0 when command executed successfully.
+    - The return code is 1 when opercmd throws any error.
+    - The return code is 5 when any parameter validation failed.
+    returned: changed
+    type: int
+    sample: 0
+state:
+    description: The final state of the started task, after execution..
+    returned: changed
+    type: str
+    sample: S SAMPLE
+tasks:
+  description:
+    The output information for a list of started tasks matching specified criteria.
+    If no started task is found then this will return empty.
+  returned: success
+  type: list
+  elements: dict
+  contains:
+    job_name:
+      description:
+         The name of the batch job.
+      type: str
+      sample: LINKJOB
+stdout:
+    description: The STDOUT from the command, may be empty.
+    returned: changed
+    type: str
+    sample: ISF031I CONSOLE OMVS0000 ACTIVATED.
+stderr:
+    description: The STDERR from the command, may be empty.
+    returned: changed
+    type: str
+    sample: An error has ocurred.
+stdout_lines:
+    description: List of strings containing individual lines from STDOUT.
+    returned: changed
+    type: list
+    sample: ["Allocation to SYSEXEC completed."]
+stderr_lines:
+    description: List of strings containing individual lines from STDERR.
+    returned: changed
+    type: list
+    sample: ["An error has ocurred"]
 
 """
 
 from ansible.module_utils.basic import AnsibleModule
 import traceback
+import re
+from datetime import datetime, timedelta
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
@@ -403,7 +327,7 @@ def execute_display_command(started_task_name, timeout_s):
     return task_params
 
 
-def validate_and_prepare_start_command(module, start_parms):
+def validate_and_prepare_start_command(module):
     """Validates parameters and creates start command
 
     Parameters
@@ -418,17 +342,17 @@ def validate_and_prepare_start_command(module, start_parms):
     cmd
         The start command in string format.
     """
-    member = start_parms.get('member_name')
-    identifier = start_parms.get('identifier_name')
-    job_name = start_parms.get('job_name')
-    job_account = start_parms.get('job_account')
-    parameters = start_parms.get('parameters') or []
-    device_type = start_parms.get('device_type') or ""
-    device_number = start_parms.get('device_number') or ""
-    volume_serial = start_parms.get('volume_serial') or ""
-    subsystem_name = start_parms.get('subsystem')
-    reus_asid = start_parms.get('reus_asid')
-    keyword_parameters = start_parms.get('keyword_parameters')
+    member = module.params.get('member_name')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    job_account = module.params.get('job_account')
+    parameters = module.params.get('parameters') or []
+    device_type = module.params.get('device_type') or ""
+    device_number = module.params.get('device_number') or ""
+    volume_serial = module.params.get('volume_serial') or ""
+    subsystem_name = module.params.get('subsystem')
+    reus_asid = module.params.get('reus_asid')
+    keyword_parameters = module.params.get('keyword_parameters')
     keyword_parameters_string = ""
     device = device_type if device_type else device_number
     # Validations
@@ -527,7 +451,7 @@ def validate_and_prepare_start_command(module, start_parms):
     return started_task_name, cmd
 
 
-def prepare_display_command(module, display_parms):
+def prepare_display_command(module):
     """Validates parameters and creates display command
 
     Parameters
@@ -542,8 +466,8 @@ def prepare_display_command(module, display_parms):
     cmd
         The display command in string format.
     """
-    identifier = display_parms.get('identifier_name')
-    job_name = display_parms.get('job_name')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
     started_task_name = ""
     if job_name:
         started_task_name = job_name
@@ -559,7 +483,7 @@ def prepare_display_command(module, display_parms):
     return started_task_name, cmd
 
 
-def prepare_stop_command(module, stop_parms):
+def prepare_stop_command(module):
     """Validates parameters and creates stop command
 
     Parameters
@@ -574,9 +498,9 @@ def prepare_stop_command(module, stop_parms):
     cmd
         The stop command in string format.
     """
-    identifier = stop_parms.get('identifier_name')
-    job_name = stop_parms.get('job_name')
-    asid = stop_parms.get('asid')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    asid = module.params.get('asid')
     started_task_name = ""
     if job_name:
         started_task_name = job_name
@@ -594,7 +518,7 @@ def prepare_stop_command(module, stop_parms):
     return started_task_name, cmd
 
 
-def prepare_modify_command(module, modify_parms):
+def prepare_modify_command(module):
     """Validates parameters and creates modify command
 
     Parameters
@@ -609,9 +533,9 @@ def prepare_modify_command(module, modify_parms):
     cmd
         The modify command in string format.
     """
-    identifier = modify_parms.get('identifier_name')
-    job_name = modify_parms.get('job_name')
-    parameters = modify_parms.get('parameters')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    parameters = module.params.get('parameters')
     started_task_name = ""
     if job_name:
         started_task_name = job_name
@@ -633,7 +557,7 @@ def prepare_modify_command(module, modify_parms):
     return started_task_name, cmd
 
 
-def prepare_cancel_command(module, cancel_parms):
+def prepare_cancel_command(module):
     """Validates parameters and creates cancel command
 
     Parameters
@@ -648,12 +572,12 @@ def prepare_cancel_command(module, cancel_parms):
     cmd
         The cancel command in string format.
     """
-    identifier = cancel_parms.get('identifier_name')
-    job_name = cancel_parms.get('job_name')
-    asid = cancel_parms.get('asid')
-    dump = cancel_parms.get('dump')
-    armrestart = cancel_parms.get('armrestart')
-    userid = cancel_parms.get('userid')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    asid = module.params.get('asid')
+    dump = module.params.get('dump')
+    armrestart = module.params.get('armrestart')
+    userid = module.params.get('userid')
     started_task_name = ""
     if job_name:
         started_task_name = job_name
@@ -683,12 +607,12 @@ def prepare_cancel_command(module, cancel_parms):
     return started_task_name, cmd
 
 
-def prepare_force_command(module, force_parms):
+def prepare_force_command(module):
     """Validates parameters and creates force command
 
     Parameters
     ----------
-    force_parms : dict
+    module : dict
         The started task force command parameters.
 
     Returns
@@ -698,14 +622,14 @@ def prepare_force_command(module, force_parms):
     cmd
         The force command in string format.
     """
-    identifier = force_parms.get('identifier_name')
-    job_name = force_parms.get('job_name')
-    asid = force_parms.get('asid')
-    arm = force_parms.get('arm')
-    armrestart = force_parms.get('armrestart')
-    userid = force_parms.get('userid')
-    tcb_address = force_parms.get('tcb_address')
-    retry = force_parms.get('retry')
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    asid = module.params.get('asid')
+    arm = module.params.get('arm')
+    armrestart = module.params.get('armrestart')
+    userid = module.params.get('userid')
+    tcb_address = module.params.get('tcb_address')
+    retry = module.params.get('retry')
     started_task_name = ""
     if tcb_address and len(tcb_address) != 6:
         module.fail_json(
@@ -764,39 +688,81 @@ def extract_keys(stdout):
     tasks
         The list of task parameters.
     """
-    keys = {'A': 'ASID', 'CT': 'CPU_Time', 'ET': 'Elapsed_Time', 'WUID': 'WUID', 'USERID': 'USERID', 'P': 'Priority'}
+    keys = {
+        'A': 'asid',
+        'CT': 'cpu_time',
+        'ET': 'elapsed_time',
+        'WUID': 'work_unit_identifier',
+        'USERID': 'userid',
+        'P': 'priority',
+        'PER': 'program_event_recording',
+        'SMC': 'system_management_control',
+        'PGN': 'program_name',
+        'SCL': 'started_class_list',
+        'WKL': 'workload_manager',
+        'ASTE': 'address_space_table_entry',
+        'RGP': 'resource_group',
+        'DSPNAME': 'dataspace_name'
+    }
     lines = stdout.strip().split('\n')
     tasks = []
-    current_task = None
+    current_task = {}
     task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
     kv_pattern = re.compile(r'(\S+)=(\S+)')
     for line in lines[5:]:
         line = line.strip()
-        if len(line.split()) >= 5 and task_header_regex.search(line):
+        match_firstline = task_header_regex.search(line)
+        if len(line.split()) >= 5 and match_firstline:
             if current_task:
                 tasks.append(current_task)
-            match = task_header_regex.search(line)
-            current_task = {
-                "TASK_NAME": match.group(1),
-                "DETAILS": {}
-            }
+            current_task['task_name'] = match_firstline.group(1)
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                current_task["DETAILS"][key] = value
+                current_task[key] = value
         elif current_task:
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                current_task["DETAILS"][key] = value
+                current_task[key] = value
     if current_task:
+        el_time = current_task.get('elapsed_time')
+        if el_time:
+            current_task['started_time'] = calculate_start_time(el_time)
         tasks.append(current_task)
     return tasks
 
 
-def fetch_logs(command):
+def parse_time(ts_str):
+    # Case 1: Duration like "000.005seconds"
+    sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
+    if sec_match:
+        return timedelta(seconds=float(sec_match.group(1)))
+    # Case 2: hh.mm.ss
+    hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
+    if hms_match:
+        h, m, s = map(int, hms_match.groups())
+        return timedelta(hours=h, minutes=m, seconds=s)
+    # Case 3: hhhhh.mm
+    hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
+    if hm_match:
+        h, m = map(int, hm_match.groups())
+        return timedelta(hours=h, minutes=m)
+
+
+def calculate_start_time(ts_str):
+    now = datetime.now()
+    parsed = parse_time(ts_str)
+    if parsed is None:
+        return ""
+    # If it's a timedelta (duration), subtract from now → absolute datetime
+    if isinstance(parsed, timedelta):
+        return f"{(now - parsed).strftime('%Y-%m-%d %H:%M:%S')}"
+
+
+def fetch_logs(command, timeout):
     """Extracts keys and values from the given stdout
 
     Parameters
@@ -809,7 +775,9 @@ def fetch_logs(command):
     list
         The list of logs from SYSLOG
     """
-    stdout = zsystem.read_console(options='-t1')
+    time_mins = timeout // 60 + 1
+    option = '-t' + str(time_mins)
+    stdout = zsystem.read_console(options=option)
     stdout_lines = stdout.splitlines()
     first = None
     pattern = rf"\b{command}\b"
@@ -822,79 +790,6 @@ def fetch_logs(command):
     return logs
 
 
-def parse_and_validate_args(params):
-    """Parse and validate input parameters
-
-    Parameters
-    ----------
-    params : dict
-        The dictionary which has input parameters.
-
-    Returns
-    -------
-    dict
-        The validated list of input parameters.
-    """
-    start_args = dict(
-        device_type=dict(type="str", required=False),
-        device_number=dict(type="str", required=False),
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_account=dict(type="str", required=False),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        keyword_parameters=dict(type="basic_dict", required=False),
-        member_name=dict(type="member_name", required=False, aliases=["member"]),
-        parameters=dict(type="list", elements="str", required=False),
-        reus_asid=dict(type="str", required=False),
-        subsystem=dict(type="str", required=False),
-        volume_serial=dict(type="str", required=False)
-    )
-    display_args = dict(
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"])
-    )
-    modify_args = dict(
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        parameters=dict(type="list", elements="str", required=False)
-    )
-    cancel_args = dict(
-        armrestart=dict(type="bool", required=False),
-        asid=dict(type="str", required=False),
-        dump=dict(type="bool", required=False),
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        userid=dict(type="str", required=False)
-    )
-    force_args = dict(
-        arm=dict(type="bool", required=False),
-        armrestart=dict(type="bool", required=False),
-        asid=dict(type="str", required=False),
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        retry=dict(type="str", required=False),
-        tcb_address=dict(type="str", required=False),
-        userid=dict(type="str", required=False)
-    )
-    stop_args = dict(
-        asid=dict(type="str", required=False),
-        identifier_name=dict(type="identifier_name", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"])
-    )
-    module_args = dict(
-        start_task=dict(type="dict", required=False, options=start_args),
-        stop_task=dict(type="dict", required=False, options=stop_args),
-        display_task=dict(type="dict", required=False, options=display_args),
-        modify_task=dict(type="dict", required=False, options=modify_args),
-        cancel_task=dict(type="dict", required=False, options=cancel_args),
-        force_task=dict(type="dict", required=False, options=force_args),
-        verbose=dict(type="bool", required=False),
-        wait_time_s=dict(type="int", default=5)
-    )
-    parser = better_arg_parser.BetterArgParser(module_args)
-    parsed_args = parser.parse_args(params)
-    return parsed_args
-
-
 def run_module():
     """Initialize the module.
 
@@ -903,81 +798,212 @@ def run_module():
     fail_json
         z/OS started task operation failed.
     """
-    start_args = dict(
-        device_type=dict(type="str", required=False),
-        device_number=dict(type="str", required=False),
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_account=dict(type="str", required=False),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        keyword_parameters=dict(type="dict", required=False, no_log=False),
-        member_name=dict(type="str", required=False, aliases=["member"]),
-        parameters=dict(type="list", elements="str", required=False),
-        reus_asid=dict(type="str", required=False, choices=["YES", "NO"]),
-        subsystem=dict(type="str", required=False),
-        volume_serial=dict(type="str", required=False)
-    )
-    display_args = dict(
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"])
-    )
-    modify_args = dict(
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        parameters=dict(type="list", elements="str", required=False)
-    )
-    cancel_args = dict(
-        armrestart=dict(type="bool", required=False),
-        asid=dict(type="str", required=False),
-        dump=dict(type="bool", required=False),
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        userid=dict(type="str", required=False)
-    )
-    force_args = dict(
-        arm=dict(type="bool", required=False),
-        armrestart=dict(type="bool", required=False),
-        asid=dict(type="str", required=False),
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"]),
-        retry=dict(type="str", required=False, choices=["YES", "NO"]),
-        tcb_address=dict(type="str", required=False),
-        userid=dict(type="str", required=False)
-    )
-    stop_args = dict(
-        asid=dict(type="str", required=False),
-        identifier_name=dict(type="str", required=False, aliases=["identifier"]),
-        job_name=dict(type="str", required=False, aliases=["job", "task", "task_name"])
-    )
-
-    module_args = dict(
-        start_task=dict(type="dict", required=False, options=start_args),
-        stop_task=dict(type="dict", required=False, options=stop_args),
-        display_task=dict(type="dict", required=False, options=display_args),
-        modify_task=dict(type="dict", required=False, options=modify_args),
-        cancel_task=dict(type="dict", required=False, options=cancel_args),
-        force_task=dict(type="dict", required=False, options=force_args),
-        verbose=dict(type="bool", required=False, default=False),
-        wait_time_s=dict(type="int", default=5)
-    )
-
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec={
+            'state': {
+                'type': 'str',
+                'required': True,
+                'choices': ['started', 'stopped', 'modified', 'displayed', 'forced', 'cancelled']
+            },
+            'arm': {
+                'type': 'bool',
+                'required': False
+            },
+            'armrestart': {
+                'type': 'bool',
+                'required': False
+            },
+            'asid': {
+                'type': 'str',
+                'required': False
+            },
+            'device_number': {
+                'type': 'str',
+                'required': False
+            },
+            'device_type': {
+                'type': 'str',
+                'required': False
+            },
+            'dump': {
+                'type': 'bool',
+                'required': False
+            },
+            'identifier_name': {
+                'type': 'str',
+                'required': False,
+                'aliases': ['identifier']
+            },
+            'job_account': {
+                'type': 'str',
+                'required': False
+            },
+            'job_name': {
+                'type': 'str',
+                'required': False,
+                'aliases': ['job', 'task_name', 'task']
+            },
+            'keyword_parameters': {
+                'type': 'dict',
+                'required': False,
+                'no_log': False
+            },
+            'member_name': {
+                'type': 'str',
+                'required': False,
+                'aliases': ['member']
+            },
+            'parameters': {
+                'type': 'list',
+                'elements': 'str',
+                'required': False
+            },
+            'retry': {
+                'type': 'str',
+                'required': False,
+                'choices': ['YES', 'NO']
+            },
+            'reus_asid': {
+                'type': 'str',
+                'required': False,
+                'choices': ['YES', 'NO']
+            },
+            'subsystem': {
+                'type': 'str',
+                'required': False
+            },
+            'tcb_address': {
+                'type': 'str',
+                'required': False
+            },
+            'userid': {
+                'type': 'str',
+                'required': False
+            },
+            'verbose': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
+            'volume_serial': {
+                'type': 'str',
+                'required': False
+            },
+            'wait_time_s': {
+                'type': 'int',
+                'required': False,
+                'default': 0
+            }
+        },
         mutually_exclusive=[
-            ["start_task", "stop_task", "display_task", "modify_task", "cancel_task", "force_task"]
+            ['device_number', 'device_type']
         ],
         supports_check_mode=True
     )
 
+    args_def = {
+        'state': {
+            'arg_type': 'str',
+            'required': True
+        },
+        'arm': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'armrestart': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'asid': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'device_number': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'device_type': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'dump': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'identifier_name': {
+            'arg_type': 'identifier_name',
+            'required': False,
+            'aliases': ['identifier']
+        },
+        'job_account': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'job_name': {
+            'arg_type': 'str',
+            'required': False,
+            'aliases': ['job', 'task_name', 'task']
+        },
+        'keyword_parameters': {
+            'arg_type': 'basic_dict',
+            'required': False
+        },
+        'member_name': {
+            'arg_type': 'member_name',
+            'required': False,
+            'aliases': ['member']
+        },
+        'parameters': {
+            'arg_type': 'list',
+            'elements': 'str',
+            'required': False
+        },
+        'retry': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'reus_asid': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'subsystem': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'tcb_address': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'userid': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'verbose': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'volume_serial': {
+            'arg_type': 'str',
+            'required': False
+        },
+        'wait_time_s': {
+            'arg_type': 'int',
+            'required': False
+        }
+    }
+
     try:
-        parms = parse_and_validate_args(module.params)
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
     except ValueError as err:
         module.fail_json(
-            rc=5,
             msg='Parameter verification failed.',
             stderr=str(err)
         )
-    wait_time_s = parms.get('wait_time_s')
-    verbose = parms.get('verbose')
+    state = module.params.get('state')
+    wait_time_s = module.params.get('wait_time_s')
+    verbose = module.params.get('verbose')
     kwargs = {}
     """
     Below error messages are used to detrmine if response has any error.When
@@ -1011,29 +1037,29 @@ def run_module():
 
     execute_display_before = False
     execute_display_after = False
-    if parms.get('start_task'):
+    if state == "started":
         err_msg = start_errmsg
         execute_display_after = True
-        started_task_name, cmd = validate_and_prepare_start_command(module, parms.get('start_task'))
-    elif parms.get('display_task'):
+        started_task_name, cmd = validate_and_prepare_start_command(module)
+    elif state == "displayed":
         err_msg = display_errmsg
-        started_task_name, cmd = prepare_display_command(module, parms.get('display_task'))
-    elif parms.get('stop_task'):
+        started_task_name, cmd = prepare_display_command(module)
+    elif state == "stopped":
         execute_display_before = True
         err_msg = stop_errmsg
-        started_task_name, cmd = prepare_stop_command(module, parms.get('stop_task'))
-    elif parms.get('cancel_task'):
+        started_task_name, cmd = prepare_stop_command(module)
+    elif state == "cancelled":
         execute_display_before = True
         err_msg = cancel_errmsg
-        started_task_name, cmd = prepare_cancel_command(module, parms.get('cancel_task'))
-    elif parms.get('force_task'):
+        started_task_name, cmd = prepare_cancel_command(module)
+    elif state == "forced":
         execute_display_before = True
         err_msg = force_errmsg
-        started_task_name, cmd = prepare_force_command(module, parms.get('force_task'))
-    elif parms.get('modify_task'):
+        started_task_name, cmd = prepare_force_command(module)
+    elif state == "modified":
         execute_display_after = True
         err_msg = modify_errmsg
-        started_task_name, cmd = prepare_modify_command(module, parms.get('modify_task'))
+        started_task_name, cmd = prepare_modify_command(module)
     changed = False
     stdout = ""
     stderr = ""
@@ -1043,9 +1069,10 @@ def run_module():
     if err != "" or any(msg in out for msg in err_msg):
         isFailed = True
     if not isFailed or verbose:
-        system_logs = fetch_logs(cmd.upper())
+        system_logs = fetch_logs(cmd.upper(), wait_time_s)
         if any(msg in system_logs for msg in err_msg):
             isFailed = True
+    current_state = ""
     if isFailed:
         if rc == 0:
             rc = 1
@@ -1056,36 +1083,32 @@ def run_module():
             stderr = out
             stdout = ""
     else:
+        current_state = state
         changed = True
         stdout = out
         stderr = err
-        if parms.get('display_task'):
+        if state == "displayed":
             task_params = extract_keys(out)
 
     result = dict()
 
     if module.check_mode:
         module.exit_json(**result)
-    state = ""
-    
+
     result = dict(
-            changed=changed,
-            cmd=cmd,
-            tasks=task_params,
-            rc=rc,
-            stdout=stdout,
-            stderr=stderr,
-            stdout_lines=stdout.split('\n'),
-            stderr_lines=stderr.split('\n'),
-        )
+        changed=changed,
+        state=current_state,
+        cmd=cmd,
+        tasks=task_params,
+        rc=rc,
+        stdout=stdout,
+        stderr=stderr,
+        stdout_lines=stdout.split('\n'),
+        stderr_lines=stderr.split('\n'),
+    )
     if verbose:
         result["verbose_output"] = system_logs
-    if parms.get('display_task') or parms.get('modify_task'):
-        if len(task_params) > 0 and not isFailed:
-            result["state"] = "Active"
-        else:
-            result["state"] = "NotActive"
-    
+
     module.exit_json(**result)
 
 

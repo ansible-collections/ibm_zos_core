@@ -214,11 +214,11 @@ tasks:
   type: list
   elements: dict
   contains:
-    job_name:
+    address_space_table_entry:
       description:
-         The name of the batch job.
+         The name of the started task.
       type: str
-      sample: LINKJOB
+      sample: SAMPLE
 stdout:
     description: The STDOUT from the command, may be empty.
     returned: changed
@@ -268,7 +268,7 @@ except ImportError:
 #     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=1, *args, **kwargs):
+def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=1, **kwargs):
     """Execute operator command.
 
     Parameters
@@ -293,7 +293,7 @@ def execute_command(operator_cmd, started_task_name, execute_display_before=Fals
     timeout_c = 100 * timeout_s
     if execute_display_before:
         task_params = execute_display_command(started_task_name, timeout_c)
-    response = opercmd.execute(operator_cmd, timeout_c, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout_c, **kwargs)
 
     if execute_display_after:
         task_params = execute_display_command(started_task_name, timeout_c)
@@ -700,7 +700,8 @@ def extract_keys(stdout):
         'PGN': 'program_name',
         'SCL': 'started_class_list',
         'WKL': 'workload_manager',
-        'ASTE': 'address_space_table_entry',
+        'ASTE': 'data_space_address_entry',
+        'ADDR SPACE ASTE': 'address_space_second_table_entry',
         'RGP': 'resource_group',
         'DSPNAME': 'dataspace_name',
         'DMN': 'domain_number',
@@ -711,15 +712,28 @@ def extract_keys(stdout):
     lines = stdout.strip().split('\n')
     tasks = []
     current_task = {}
+    aste_key = "ADDR SPACE ASTE"
     task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
-    kv_pattern = re.compile(r'(\S+)=(\S+)')
+    kv_pattern = re.compile(rf'({re.escape(aste_key)}|\S+)=(\S+)')
     for line in lines[5:]:
         line = line.strip()
         match_firstline = task_header_regex.search(line)
         if len(line.split()) >= 5 and match_firstline:
             if current_task:
+                el_time = current_task.get('elapsed_time')
+                if el_time:
+                    current_task['started_time'] = calculate_start_time(el_time)
                 tasks.append(current_task)
+                current_task = {}
             current_task['task_name'] = match_firstline.group(1)
+            current_task['task_identifier'] = match_firstline.group(2)
+            if "=" not in match_firstline.group(5):
+                current_task['proc_step_name'] = match_firstline.group(3)
+                current_task['task_type'] = match_firstline.group(4)
+                current_task['task_status'] = match_firstline.group(5)
+            else:
+                current_task['task_type'] = match_firstline.group(3)
+                current_task['task_status'] = match_firstline.group(4)
             for match in kv_pattern.finditer(line):
                 key, value = match.groups()
                 if key in keys:
@@ -730,7 +744,10 @@ def extract_keys(stdout):
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                current_task[key.lower()] = value
+                if current_task.get(key.lower()):
+                    current_task[key.lower()] = [current_task[key.lower()], value]
+                else:
+                    current_task[key.lower()] = value
     if current_task:
         el_time = current_task.get('elapsed_time')
         if el_time:
@@ -741,6 +758,8 @@ def extract_keys(stdout):
 
 def parse_time(ts_str):
     # Case 1: Duration like "000.005seconds"
+    print("hiiiii")
+    print(ts_str)
     sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
     if sec_match:
         return timedelta(seconds=float(sec_match.group(1)))
@@ -1028,15 +1047,14 @@ def run_module():
     cancel_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'DUPLICATE NAME FOUND']
     force_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'CANCELABLE', 'DUPLICATE NAME FOUND']
     err_msg = []
-
+    kwargs = {}
     use_wait_arg = False
     if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
         use_wait_arg = True
 
-    if use_wait_arg:
+    if use_wait_arg or wait_time_s:
         kwargs.update({"wait": True})
 
-    args = []
     cmd = ""
 
     execute_display_before = False
@@ -1067,7 +1085,7 @@ def run_module():
     changed = False
     stdout = ""
     stderr = ""
-    rc, out, err, task_params = execute_command(cmd, started_task_name, execute_display_before, execute_display_after, timeout_s=wait_time_s, *args, **kwargs)
+    rc, out, err, task_params = execute_command(cmd, started_task_name, execute_display_before, execute_display_after, timeout_s=wait_time_s, **kwargs)
     isFailed = False
     system_logs = ""
     if err != "" or any(msg in out for msg in err_msg):

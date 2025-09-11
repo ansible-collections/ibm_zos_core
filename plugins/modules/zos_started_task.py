@@ -21,7 +21,7 @@ DOCUMENTATION = r"""
 module: zos_started_task
 version_added: 1.16.0
 author:
-  - "Ravella Surendra Babu (@surendra.ravella582)"
+  - "Ravella Surendra Babu (@surendrababuravella)"
 short_description: Perform operations on started tasks.
 description:
   - start, display, modify, cancel, force and stop a started task
@@ -161,12 +161,12 @@ options:
     required: false
     type: bool
     default: false
-  wait_time_s:
+  wait_time:
     required: false
     default: 0
     type: int
     description:
-      - Option I(wait_time_s) is the the maximum amount of time, in seconds, to wait for a response after submitting
+      - Option I(wait_time) is the the maximum amount of time, in seconds, to wait for a response after submitting
         the console command. Default value of 0 means to wait the default amount of time supported by the opercmd utility.
 """
 EXAMPLES = r"""
@@ -249,9 +249,6 @@ from datetime import datetime, timedelta
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
@@ -740,14 +737,26 @@ def extract_keys(stdout):
                     key = keys[key]
                 current_task[key.lower()] = value
         elif current_task:
+            data_space = {}
             for match in kv_pattern.finditer(line):
+                dsp_keys = ['dataspace_name', 'data_space_address_entry']
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
-                if current_task.get(key.lower()):
-                    current_task[key.lower()] = [current_task[key.lower()], value]
+                if key in dsp_keys:
+                    data_space[key] = value
+                # key_val = current_task.get(key.lower())
+                # if key_val:
+                #     if isinstance(key_val, str):
+                #         current_task[key.lower()] = [key_val, value]
+                #     elif isinstance(key_val, list):
+                #         current_task[key.lower()] = key_val + [value]
                 else:
                     current_task[key.lower()] = value
+            if current_task.get("dataspaces"):
+                current_task["dataspaces"] = current_task["dataspaces"] + [data_space]
+            elif data_space:
+                current_task["dataspaces"] = [data_space]
     if current_task:
         el_time = current_task.get('elapsed_time')
         if el_time:
@@ -758,8 +767,6 @@ def extract_keys(stdout):
 
 def parse_time(ts_str):
     # Case 1: Duration like "000.005seconds"
-    print("hiiiii")
-    print(ts_str)
     sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
     if sec_match:
         return timedelta(seconds=float(sec_match.group(1)))
@@ -776,13 +783,13 @@ def parse_time(ts_str):
 
 
 def calculate_start_time(ts_str):
-    now = datetime.now()
+    now = datetime.now().astimezone()
     parsed = parse_time(ts_str)
     if parsed is None:
         return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
-        return f"{(now - parsed).strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{now - parsed}"
 
 
 def fetch_logs(command, timeout):
@@ -912,7 +919,7 @@ def run_module():
                 'type': 'str',
                 'required': False
             },
-            'wait_time_s': {
+            'wait_time': {
                 'type': 'int',
                 'required': False,
                 'default': 0
@@ -1009,7 +1016,7 @@ def run_module():
             'arg_type': 'str',
             'required': False
         },
-        'wait_time_s': {
+        'wait_time': {
             'arg_type': 'int',
             'required': False
         }
@@ -1025,7 +1032,7 @@ def run_module():
             stderr=str(err)
         )
     state = module.params.get('state')
-    wait_time_s = module.params.get('wait_time_s')
+    wait_time_s = module.params.get('wait_time')
     verbose = module.params.get('verbose')
     kwargs = {}
     """
@@ -1048,11 +1055,8 @@ def run_module():
     force_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'CANCELABLE', 'DUPLICATE NAME FOUND']
     err_msg = []
     kwargs = {}
-    use_wait_arg = False
-    if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
-        use_wait_arg = True
 
-    if use_wait_arg or wait_time_s:
+    if wait_time_s:
         kwargs.update({"wait": True})
 
     cmd = ""

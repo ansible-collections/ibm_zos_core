@@ -198,7 +198,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        is_binary=True,
+        binary=True,
     )
     hosts.all.shell(
         cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
@@ -214,7 +214,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
+        binary=True,
         remote_src=True,
     )
 
@@ -271,7 +271,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
+        binary=True,
         remote_src=True,
     )
 
@@ -326,7 +326,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        is_binary=True,
+        binary=True,
     )
     # Make it readable at console
     hosts.all.shell(
@@ -356,7 +356,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
+        binary=True,
         remote_src=True,
     )
 
@@ -381,7 +381,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
         hosts.all.zos_copy(
             src=dest_path,
             dest=test_tmp_file_filename,
-            is_binary=True,
+            binary=True,
             remote_src=True,
         )
         results = hosts.all.shell(

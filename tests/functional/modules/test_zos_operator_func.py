@@ -22,8 +22,8 @@ from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
 
 __metaclass__ = type
 
-PARALLEL_RUNNING = """- hosts: zvm
-  collections:
+PARALLEL_RUNNING = """- hosts : zvm
+  collections :
     - ibm.ibm_zos_core
   gather_facts: False
   vars:
@@ -61,7 +61,9 @@ INVENTORY = """all:
       ansible_user: {2}
       ansible_python_interpreter: {3}"""
 
-def test_zos_operator_parallel_terminal(path):
+
+def test_zos_operator_parallel_terminal(get_config):
+    path = get_config
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]
@@ -231,4 +233,5 @@ def test_response_come_back_complete(ansible_zos_module):
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
+
 

@@ -80,24 +80,6 @@ def test_zos_operator_various_command(ansible_zos_module):
             assert result["rc"] == expected_rc
             assert result.get("changed") is changed
 
-
-def test_zos_operator_invalid_command(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-
-
-def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-        transparency = False
-        if any('DUMP COMMAND' in str for str in result.get("content")):
-            transparency = True
-        assert transparency
-
 def test_zos_operator_parallel_terminal(get_config):
     path = get_config
     with open(path, 'r') as file:
@@ -133,6 +115,25 @@ def test_zos_operator_parallel_terminal(get_config):
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")
+
+
+def test_zos_operator_invalid_command(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+
+
+def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        transparency = False
+        if any('DUMP COMMAND' in str for str in result.get("content")):
+            transparency = True
+        assert transparency
+
 
 
 def test_zos_operator_positive_path(ansible_zos_module):

@@ -530,11 +530,6 @@ try:
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
-# try:
-#     from zoautil_py import exceptions as zoau_exceptions
-# except ImportError:
-#     zoau_exceptions = ZOAUImportError(traceback.format_exc())
-
 
 def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=1, **kwargs):
     """Execute operator command.

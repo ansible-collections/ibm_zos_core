@@ -29,78 +29,97 @@ description:
 options:
   arm:
     description:
-    - I(arm) indicates to execute normal task termination routines without causing address space destruction.
+        - I(arm) indicates to execute normal task termination routines without causing address space destruction.
     required: false
     type: bool
   armrestart:
     description:
-    - I(armrestart) indicates to restart a started task automatically after the cancel completes.
+        - Indicates that the batch job or started task should be automatically restarted after the cancel
+          completes, if it is registered as an element of the automatic restart manager. If the job or
+          task is not registered or if you do not specify this parameter, MVS will not automatically
+          restart the job or task.
+          Only applicable when state is cancelled or forced, otherwise is ignored.
     required: false
     type: bool
   asid:
     description:
-    - I(asid) is a unique address space identifier which gets assigned to each running started task.
+        - When state is cancelled or stopped or forced, asid is the hexadecimal address space
+          identifier of the work unit you want to cancel, stop or force.
+        - When state=displayed asid is the hexadecimal address space identifier of the work unit of
+          the task you get details from.
     required: false
     type: str
   device_type:
     description:
-    - I(device_type) is the type of the output device (if any) associated with the task.
+        - Option device_type is the type of the output device (if any) associated with the task.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: str
   device_number:
     description:
-    - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
-        A slash (/) must precede a 4-digit number but is not before a 3-digit number.
+        - Option device_number is the number of the device to be started. A device number is 3 or 4
+          hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit
+          number.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: str
   dump:
     description:
-    - I(dump) indicates to take dump before ending a started task.
+        - A dump is to be taken. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP)
+          depends on the JCL for the job.
+          Only applicable when state=cancelled otherwise ignored.
     required: false
     type: bool
   identifier_name:
     description:
-    - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
-        The first character must be alphabetical.
+        - Option identifier_name is the name that identifies the task. This name can be up to 8
+          characters long. The first character must be alphabetical.
     required: false
     type: str
     aliases:
-    - identifier
+        - identifier
   job_account:
     description:
-    - I(job_account) specifies accounting data in the JCL JOB statement for the started task.
-        If the source JCL was a job and has already accounting data, the value that is specified on this parameter
-        overrides the accounting data in the source JCL.
+        - Option job_account specifies accounting data in the JCL JOB statement for the started
+          task. If the source JCL was a job and has already accounting data, the value that is
+          specified on this parameter overrides the accounting data in the source JCL.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: str
   job_name:
     description:
-    - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
-        then member_name is used as job_name.
+        - When state=started job_name is a name which should be assigned to a started task
+          while starting it. If job_name is not specified, then member_name is used as job_name.
+          Otherwise, job_name is the started task job name used to find and apply the state
+          selected.
     required: false
     type: str
     aliases:
-    - job
-    - task
-    - task_name
+        - job
+        - task
+        - task_name
   keyword_parameters:
     description:
-    - Any appropriate keyword parameter that you specify to override the corresponding parameter in the cataloged procedure.
-        The maximum length of each keyword=option is 66 characters. No individual value within this field can be longer than
-        44 characters in length.
+        - Any appropriate keyword parameter that you specify to override the corresponding
+          parameter in the cataloged procedure. The maximum length of each keyword=option is 66
+          characters. No individual value within this field can be longer than 44 characters in length.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: dict
   member_name:
     description:
-    - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
-        for the task to be started. The member can be either a job or a cataloged procedure.
+        - Option member_name is a 1 - 8 character name of a member of a partitioned data set that
+          contains the source JCL for the task to be started. The member can be either a job or a
+          cataloged procedure.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: str
     aliases:
-    - member
+        - member
   parameters:
     description:
-    - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
+        - Program parameters passed to the started program, which might be a list in parentheses or
+          a string in single quotation marks
     required: false
     type: list
     elements: str
@@ -110,21 +129,28 @@ options:
     required: false
     type: str
     choices:
-    - 'YES'
-    - 'NO'
+        - 'YES'
+        - 'NO'
   reus_asid:
     description:
-    - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
-        a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
-        on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
+        - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
+          a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
+          on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
     required: false
     type: str
     choices:
-    - 'YES'
-    - 'NO'
+        - 'YES'
+        - 'NO'
   state:
     description:
-      - The final state desired for specified started task.
+      - The desired state the started task should be after the module is executed.
+        If state=started and the started task is not found on the managed node, no action is taken,
+        module completes successfully with changed=False.
+        If state is cancelled , stopped or forced and the started task is not running on the
+        managed node, no action is taken, module completes successfully with changed=False.
+        If state is modified and the started task is not running, not found or modification was not
+        done, the module will fail.
+        If state is displayed the module will return the started task details.
     required: True
     type: str
     choices:
@@ -136,8 +162,9 @@ options:
       - forced
   subsystem:
     description:
-    - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
-        which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
+        - The name of the subsystem that selects the task for processing. The name must be 1 - 4
+          characters, which are defined in the IEFSSNxx parmlib member, and the subsystem must
+          be active.
     required: false
     type: str
   tcb_address:
@@ -147,33 +174,112 @@ options:
     type: str
   volume_serial:
     description:
-    - If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
+        - If devicetype is a tape or direct-access device, the volume serial number of the volume is
+          mounted on the device.
+          Only applicable when state=started otherwise ignored.
     required: false
     type: str
   userid:
     description:
-    - I(userid) is the user ID of the time-sharing user you want to cancel.
+        - The user ID of the time-sharing user you want to cancel or force.
+          Only applicable when state=cancelled or state=forced , otherwise ignored.
     required: false
     type: str
   verbose:
     description:
-      - Return System logs that describe the task's execution.
+        - When verbose=true return system logs that describe the task’s execution.
+          Using this option will can return a big response depending on system’s load, also it could
+          surface other programs activity.
     required: false
     type: bool
     default: false
   wait_time:
+    description:
+        - Option wait_time is the total time that module zos_started_tak will wait for a submitted
+          task. The time begins when the module is executed on the managed node. Default value of 0
+          means to wait the default amount of time supported by the opercmd utility.
     required: false
     default: 0
     type: int
-    description:
-      - Option I(wait_time) is the the maximum amount of time, in seconds, to wait for a response after submitting
-        the console command. Default value of 0 means to wait the default amount of time supported by the opercmd utility.
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 EXAMPLES = r"""
 - name: Start a started task using member name.
   zos_started_task:
+    state: "started"
     member: "PROCAPP"
-    operation: "start"
+- name: Start a started task using member name and identifier.
+  zos_started_task:
+    state: "started"
+    member: "PROCAPP"
+    identifier: "SAMPLE"
+- name: Start a started task using member name and job.
+  zos_started_task:
+    state: "started"
+    member: "PROCAPP"
+    job_name: "SAMPLE"
+- name: Start a started task using member name, job and enable verbose.
+  zos_started_task:
+    state: "started"
+    member: "PROCAPP"
+    job_name: "SAMPLE"
+    verbose: True
+- name: Start a started task using member name, subsystem and enable reuse asid.
+  zos_started_task:
+    state: "started"
+    member: "PROCAPP"
+    subsystem: "MSTR"
+    reus_asid: "YES"
+- name: Display a started task using started task name.
+  zos_started_task:
+    state: "displayed"
+    task_name: "PROCAPP"
+- name: Display started tasks using matching regex.
+  zos_started_task:
+    state: "displayed"
+    task_name: "s*"
+- name: Display all started tasks.
+  zos_started_task:
+    state: "displayed"
+    task_name: "all"
+- name: Cancel a started tasks using task name.
+  zos_started_task:
+    state: "cancelled"
+    task_name: "SAMPLE"
+- name: Cancel a started tasks using task name and asid.
+  zos_started_task:
+    state: "cancelled"
+    task_name: "SAMPLE"
+    asid: 0014
+- name: Cancel a started tasks using task name and asid.
+  zos_started_task:
+    state: "modified"
+    task_name: "SAMPLE"
+    parameters: ["XX=12"]
+- name: Stop a started task using task name.
+  zos_started_task:
+    state: "stopped"
+    task_name: "SAMPLE"
+- name: Stop a started task using task name, identifier and asid.
+  zos_started_task:
+    state: "stopped"
+    task_name: "SAMPLE"
+    identifier: "SAMPLE"
+    asid: 00A5
+- name: Force a started task using task name.
+  zos_started_task:
+    state: "forced"
+    task_name: "SAMPLE"
 """
 
 RETURN = r"""
@@ -206,6 +312,26 @@ state:
     returned: changed
     type: str
     sample: S SAMPLE
+stderr:
+    description: The STDERR from the command, may be empty.
+    returned: changed
+    type: str
+    sample: An error has ocurred.
+stderr_lines:
+    description: List of strings containing individual lines from STDERR.
+    returned: changed
+    type: list
+    sample: ["An error has ocurred"]
+stdout:
+    description: The STDOUT from the command, may be empty.
+    returned: changed
+    type: str
+    sample: ISF031I CONSOLE OMVS0000 ACTIVATED.
+stdout_lines:
+    description: List of strings containing individual lines from STDOUT.
+    returned: changed
+    type: list
+    sample: ["Allocation to SYSEXEC completed."]
 tasks:
   description:
     The output information for a list of started tasks matching specified criteria.
@@ -214,32 +340,177 @@ tasks:
   type: list
   elements: dict
   contains:
-    address_space_table_entry:
+    address_space_second_table_entry:
+      description:
+         The control block used to manage memory for a started task
+      type: str
+      sample: 03E78500
+    affinity:
+      description:
+         The identifier of the processor, for up to any four processors, if the job requires the services of specific processors.
+         affinity=NONE means the job can run on any processor.
+      type: str
+      sample: NONE
+    asid:
+      description:
+         Address space identifier (ASID), in hexadecimal.
+      type: str
+      sample: 0054
+    cpu_time:
+      description:
+         The processor time used by the address space, including the initiator. This time does not include SRB time.
+         nnnnnnnn has one of these formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours:
+            sss.tttS
+            When time is less than 1000 seconds
+            hh.mm.ss
+            When time is at least 1000 seconds, but less than 100 hours
+            hhhhh.mm
+            When time is at least 100 hours
+            ********
+            When time exceeds 100000 hours
+            NOTAVAIL
+            When the TOD clock is not working
+      type: str
+      sample: 000.008S
+    dataspaces:
+      description:
+         The started task dataspaces details.
+      returned: success
+      type: list
+      elements: dict
+      contains:
+        data_space_address_entry:
+          description:
+            Central address of the data space ASTE.
+          type: str
+          sample: 058F2180
+        dataspace_name:
+          description:
+            Data space name associated with the address space.
+          type: str
+          sample: CIRRGMAP
+    domain_number:
+      description:
+         domain_number=N/A if the system is operating in goal mode.
+      type: str
+      sample: N/A
+    elapsed_time:
+      description:
+         -> For address spaces other than system address spaces, the elapsed time since job select time.
+         -> For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
+         -> For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
+            sss.tttS
+            When time is less than 1000 seconds
+            hh.mm.ss
+            When time is at least 1000 seconds, but less than 100 hours
+            hhhhh.mm
+            When time is at least 100 hours
+            ********
+            When time exceeds 100000 hours
+            NOTAVAIL
+            When the TOD clock is not working
+      type: str
+      sample: 812.983S
+    priority:
+      description:
+         The priority of a started task is determined by the Workload Manager (WLM), based on the service class and importance assigned to it.
+      type: str
+      sample: 1
+    proc_step_name:
+      description:
+         One of the following:
+         ->   For APPC-initiated transactions, the user ID requesting the transaction.
+         ->   The name of a step within a cataloged procedure that was called by the step specified in field sss.
+         ->   Blank, if there is no cataloged procedure.
+         ->   The identifier of the requesting transaction program.
+      type: str
+      sample: VLF
+    program_event_recording:
+      description:
+         YES if A PER trap is active in the address space.
+         NO if No PER trap is active in the address space.
+      type: str
+      sample: NO
+    program_name:
+      description:
+         program_name=N/A if the system is operating in goal mode.
+      type: str
+      sample: N/A
+    queue_scan_count:
+      description:
+         YES if the address space has been quiesced.
+         NO if the address space is not quiesced.
+      type: str
+      sample: NO
+    resource_group:
+      description:
+         The name of the resource group currently associated the service class. It can also be N/A if there is no resource group association.
+      type: str
+      sample: N/A
+    server:
+      description:
+         YES if the address space is a server.
+         No if the address space is not a server.
+      type: str
+      sample: NO
+    started_class_list:
+      description:
+         The name of the service class currently associated with the address space.
+      type: str
+      sample: SYSSTC
+    started_time:
+      description:
+         The time when the started task started.
+      type: str
+      sample: 2025-09-11 18:21:50.293644+00:00
+    system_management_control:
+      description:
+         Number of outstanding step-must-complete requests.
+      type: str
+      sample: 000
+    task_identifier:
+      description:
+         One of the following:
+         -> The name of a system address space.
+         -> The name of a step, for a job or attached APPC transaction program attached by an initiator.
+         -> The identifier of a task created by the START command.
+         -> The name of a step that called a cataloged procedure.
+         -> STARTING, if initiation of a started job, system task, or attached APPC transaction program is incomplete.
+         -> *MASTER*, for the master address space.
+         -> The name of an initiator address space.
+      type: str
+      sample: SPROC
+    task_name:
       description:
          The name of the started task.
       type: str
       sample: SAMPLE
-stdout:
-    description: The STDOUT from the command, may be empty.
-    returned: changed
-    type: str
-    sample: ISF031I CONSOLE OMVS0000 ACTIVATED.
-stderr:
-    description: The STDERR from the command, may be empty.
-    returned: changed
-    type: str
-    sample: An error has ocurred.
-stdout_lines:
-    description: List of strings containing individual lines from STDOUT.
+    task_status:
+      description:
+         The status of the task can be one of the following.
+          -> IN for swapped in.
+          -> OUT for swapped out, ready to run.
+          -> OWT for swapped out, waiting, not ready to run.
+          -> OU* for in process of being swapped out.
+          -> IN* for in process of being swapped in.
+          -> NSW for non-swappable.
+      type: str
+      sample: NSW
+    task_type:
+      description:
+         S for started task.
+      type: str
+      sample: S
+    workload_manager:
+      description:
+         The name of the workload currently associated with the address space.
+      type: str
+      sample: SYSTEM
+verbose_output:
+    description: If C(verbose=true), the system log related to the started task executed state will be shown.
     returned: changed
     type: list
-    sample: ["Allocation to SYSEXEC completed."]
-stderr_lines:
-    description: List of strings containing individual lines from STDERR.
-    returned: changed
-    type: list
-    sample: ["An error has ocurred"]
-
+    sample: NC0000000 ZOSMACHINE 25240 12:40:30.15 OMVS0000 00000210....
 """
 
 from ansible.module_utils.basic import AnsibleModule

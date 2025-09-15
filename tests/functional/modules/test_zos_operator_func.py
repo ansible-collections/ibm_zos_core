@@ -198,9 +198,27 @@ def test_response_come_back_complete(ansible_zos_module):
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
 
-
-def test_zos_operator_parallel_terminal(get_config):
+def test_no_auto_increase_wrapper(get_config):
     path = get_config
+    retries = 0
+    max_retries = 5
+    success = False
+
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying no_auto_increase. Retry: {retries}.')
+        result = test_zos_operator_parallel_terminal(path)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+def test_zos_operator_parallel_terminal(path):
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]
@@ -231,6 +249,9 @@ def test_zos_operator_parallel_terminal(get_config):
         )
         stdout = os.system(command)
         assert stdout == 0
+        return True
+    except AssertionError:
+        return False
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

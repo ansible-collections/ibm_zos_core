@@ -987,7 +987,7 @@ def test_fail_operation(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
-    size = 200
+    size = 50
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
         results = hosts.all.zos_zfs_resize(target=ds_name,

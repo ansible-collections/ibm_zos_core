@@ -134,6 +134,51 @@ INVENTORY = """all:
       ansible_user: {2}
       ansible_python_interpreter: {3}"""
 
+
+def no_auto_increase_accept(get_config):
+    path = get_config
+    ds_name = get_tmp_ds_name()
+    mount_point = "/" + get_random_file_name(dir="tmp")
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(NO_AUTO_INCREMENT.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            ds_name,
+            mount_point,
+            "False"
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), inventory))
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory,
+            playbook
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+        return True
+    except AssertionError:
+        return False
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")
+        
 def make_temp_folder(hosts):
     """Create a temporary file on a z/OS system and return its path."""
     tempfile_name = ""
@@ -1003,91 +1048,51 @@ def test_fail_operation(ansible_zos_module):
 # No auto increment playbook
 #############################
 
-def test_no_auto_increase_accept_wrapper(get_config):
+# def test_no_auto_increase_accept_wrapper(get_config):
+#     path = get_config
+#     retries = 0
+#     max_retries = 5
+#     success = False
+
+#     # Not adding a try/except block here so a real exception can bubble up
+#     # and stop pytest immediately (if using -x or --stop).
+#     while retries < max_retries:
+#         print(f'Trying no_auto_increase_accept. Retry: {retries}.')
+#         result = no_auto_increase_accept(path)
+
+#         if result:
+#             success = True
+#             break
+
+#         retries += 1
+
+#     assert success is True
+
+
+
+
+# def test_no_auto_increase_wrapper(get_config):
+#     path = get_config
+#     retries = 0
+#     max_retries = 5
+#     success = False
+
+#     # Not adding a try/except block here so a real exception can bubble up
+#     # and stop pytest immediately (if using -x or --stop).
+#     while retries < max_retries:
+#         print(f'Trying no_auto_increase. Retry: {retries}.')
+#         result = no_auto_increase(path)
+
+#         if result:
+#             success = True
+#             break
+
+#         retries += 1
+
+#     assert success is True
+
+def no_auto_increase(get_config):
     path = get_config
-    retries = 0
-    max_retries = 5
-    success = False
-
-    # Not adding a try/except block here so a real exception can bubble up
-    # and stop pytest immediately (if using -x or --stop).
-    while retries < max_retries:
-        print(f'Trying no_auto_increase_accept. Retry: {retries}.')
-        result = no_auto_increase_accept(path)
-
-        if result:
-            success = True
-            break
-
-        retries += 1
-
-    assert success is True
-
-def no_auto_increase_accept(path):
-    ds_name = get_tmp_ds_name()
-    mount_point = "/" + get_random_file_name(dir="tmp")
-    with open(path, 'r') as file:
-        enviroment = yaml.safe_load(file)
-    ssh_key = enviroment["ssh_key"]
-    hosts = enviroment["host"].upper()
-    user = enviroment["user"].upper()
-    python_path = enviroment["python_path"]
-    cut_python_path = python_path[:python_path.find('/bin')].strip()
-    zoau = enviroment["environment"]["ZOAU_ROOT"]
-    python_version = cut_python_path.split('/')[2]
-
-    try:
-        playbook = "playbook.yml"
-        inventory = "inventory.yml"
-        os.system("echo {0} > {1}".format(quote(NO_AUTO_INCREMENT.format(
-            zoau,
-            cut_python_path,
-            python_version,
-            ds_name,
-            mount_point,
-            "False"
-        )), playbook))
-        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
-            hosts,
-            ssh_key,
-            user,
-            python_path
-        )), inventory))
-        command = "ansible-playbook -i {0} {1}".format(
-            inventory,
-            playbook
-        )
-        stdout = os.system(command)
-        assert stdout == 0
-        return True
-    except AssertionError:
-        return False
-    finally:
-        os.remove("inventory.yml")
-        os.remove("playbook.yml")
-        
-
-def test_no_auto_increase_wrapper(get_config):
-    path = get_config
-    retries = 0
-    max_retries = 5
-    success = False
-
-    # Not adding a try/except block here so a real exception can bubble up
-    # and stop pytest immediately (if using -x or --stop).
-    while retries < max_retries:
-        print(f'Trying no_auto_increase. Retry: {retries}.')
-        result = no_auto_increase(path)
-
-        if result:
-            success = True
-            break
-
-        retries += 1
-
-    assert success is True
-
-def no_auto_increase(path):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
     with open(path, 'r') as file:

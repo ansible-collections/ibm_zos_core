@@ -973,7 +973,7 @@ def test_backup_and_restore_of_sms_group(ansible_zos_module, volumes_sms_systems
     data_set_backup_location = get_tmp_ds_name()
     try:
         volumes = Volume_Handler(volumes_sms_systems)
-        volume, smsgrp = volumes.get_available_vol_sms()
+        volume, smsgrp = volumes.get_available_vol_with_sms()
         delete_data_set_or_file(hosts, data_set_backup_location)
         delete_data_set_or_file(hosts, data_set_name)
         create_sequential_data_set_with_contents(
@@ -992,7 +992,7 @@ def test_backup_and_restore_of_sms_group(ansible_zos_module, volumes_sms_systems
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         delete_data_set_or_file(hosts, data_set_name)
         sms = {
-            "disable_automatic_class":['data_set_name'],
+            "disable_automatic_class":[data_set_name],
             "disable_automatic_storage_class":True
             }
         results = hosts.all.zos_backup_restore(
@@ -1015,7 +1015,7 @@ def test_backup_and_restore_all_of_sms_group(ansible_zos_module, volumes_sms_sys
     data_set_backup_location = get_tmp_ds_name()
     try:
         volumes = Volume_Handler(volumes_sms_systems)
-        volume, smsgrp = volumes.get_available_vol_sms()
+        volume, smsgrp = volumes.get_available_vol_with_sms()
         delete_data_set_or_file(hosts, data_set_backup_location)
         delete_data_set_or_file(hosts, data_set_name)
         create_sequential_data_set_with_contents(

@@ -72,7 +72,7 @@ class Volume_Handler:
         print("Not more volumes in disposal return volume USER02")
         return "USER02","01A2"
 
-    def get_available_vol_sms(self):
+    def get_available_vol_with_sms(self):
         """ Check in the list of volumes one on use or not, also send a default
         volume USER02 as is the one with less data sets included."""
         for volume in self.volumes:
@@ -234,11 +234,11 @@ def get_volume_and_unit(ansible_zos_module):
 
     return list_volumes
 
-def get_volumes_sms_mng_class(ansible_zos_module, volumes_on_system):
+def get_volumes_sms_mgmt_class(ansible_zos_module, volumes_on_system):
     """
     From the current volumes available to write and delete dataset search for any sms group that is associate with.
     """
-    volumes_smsclass = find_volume_sms_class(ansible_zos_module, volumes_on_system)
+    volumes_smsclass = find_volume_with_sms_class(ansible_zos_module, volumes_on_system)
     if len(volumes_smsclass) > 0:
         return volumes_smsclass
 
@@ -249,7 +249,7 @@ def get_volumes_sms_mng_class(ansible_zos_module, volumes_on_system):
     return volumes_smsclass
 
 
-def find_volume_sms_class(ansible_zos_module, volumes_on_system):
+def find_volume_with_sms_class(ansible_zos_module, volumes_on_system):
     """
     Fetches all volumes in the system and returns a list of volumes for
     which there are sms class.

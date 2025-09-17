@@ -818,7 +818,8 @@ class UserHandler(RACFHandler):
                 ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
                 ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data')),
                 ('access', ('authority', 'universal_access', 'group_name', 'group_account', 'group_operations', 'default_group', 'clauth', 'auditor', 'roaudit', 'adsp_attribute', 'category', 'operator_card', 'maintenance_access', 'restricted', 'security_label', 'security_level', 'special')),
-                ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display', 'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs', 'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs', 'responses'))
+                ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display', 'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs', 'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs', 'responses')),
+                ('restrictions', ('days', 'time', 'resume', 'revoke'))
             ]
         },
         'update': {},
@@ -839,7 +840,7 @@ class UserHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator'],
+        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions'],
         'delete': [],
         'purge': [],
         'list': []
@@ -878,6 +879,9 @@ class UserHandler(RACFHandler):
         (('operator', 'cmd_system'), 'length', ((0, 8),)),
         (('operator', 'search_key'), 'length', ((0, 8),)),
         (('operator', 'msg_storage'), 'range', (1, 2000, 0)),
+        (('restrictions', 'time'), 'format', ('^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$', 'anytime')),
+        (('restrictions', 'resume'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{4})$',)),
+        (('restrictions', 'revoke'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{4})$',)),
     ]
 
     def __init__(self, module, module_params):
@@ -1564,6 +1568,44 @@ def run_module():
                         'required': False
                     }
                 }
+            },
+            'restrictions': {
+                'type': 'dict',
+                'required': False,
+                'mutually_exclusive': [
+                    ('resume', 'delete_resume'),
+                    ('revoke', 'delete_revoke')
+                ],
+                'options': {
+                    # TODO: allow multiple
+                    'days': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['anyday', 'weekdays', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+                        'default': 'anyday'
+                    },
+                    'time': {
+                        'type': 'str',
+                        'required': False,
+                        'default': 'anytime'
+                    },
+                    'resume': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'delete_resume': {
+                        'type': 'bool',
+                        'required': False
+                    },
+                    'revoke': {
+                        'type': 'str',
+                        'required': False
+                    },
+                    'delete_revoke': {
+                        'type': 'bool',
+                        'required': False
+                    },
+                }
             }
         },
         supports_check_mode=True
@@ -1728,6 +1770,18 @@ def run_module():
                 'unknown_msgs': {'arg_type': 'bool', 'required': False},
                 'responses': {'arg_type': 'bool', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
+            }
+        },
+        'restrictions': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'days': {'arg_type': 'str', 'required': False},
+                'time': {'arg_type': 'str', 'required': False},
+                'resume': {'arg_type': 'str', 'required': False},
+                'delete_resume': {'arg_type': 'bool', 'required': False},
+                'revoke': {'arg_type': 'str', 'required': False},
+                'delete_revoke': {'arg_type': 'bool', 'required': False}
             }
         }
     }

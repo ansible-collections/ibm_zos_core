@@ -1330,7 +1330,7 @@ def test_mvs_unarchive_single_data_set_remote_src(
         fetch_result = hosts.all.zos_fetch(
             src=mvs_dest_archive,
             dest=tmp_folder.name,
-            is_binary=True
+            binary=True
         )
 
         for res in fetch_result.contacted.values():

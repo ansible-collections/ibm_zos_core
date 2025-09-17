@@ -463,6 +463,13 @@ persistent:
             type: list
             sample:
                 - [u'I did this because..']
+        state:
+            description:
+                - The state of the persistent entry in the persistent data set.
+                - Possible values are C(added) and C(removed).
+            returned: always
+            type: str
+            sample: added
 unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
@@ -768,11 +775,10 @@ def run_module(module, arg_def):
             backup_name = mt_backupOper(module, name, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
-        if "mounted" in state or "present" in state:
-            persistent["addDataset"] = name
+        if state == "mounted" or state == "present":
+            persistent["state"] = "added"
         else:
-            persistent["delDataset"] = name
-        del persistent["name"]
+            persistent["state"] = "removed"
 
     write_persistent = False
     if "mounted" in state or "present" in state or "absent" in state:
@@ -795,7 +801,7 @@ def run_module(module, arg_def):
             path=path,
             fs_type=fs_type,
             state=state,
-            persistent=parsed_args.get("persistent"),
+            persistent=persistent,
             unmount_opts=unmount_opts,
             mount_opts=mount_opts,
             src_params=src_params,
@@ -813,7 +819,6 @@ def run_module(module, arg_def):
             stderr="",
         )
     )
-
     # data set to be mounted/unmounted must exist
     fs_du = data_set.DataSetUtils(src, tmphlq=tmphlq)
     fs_exists = fs_du.exists()

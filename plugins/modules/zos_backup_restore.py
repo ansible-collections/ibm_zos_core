@@ -943,16 +943,21 @@ def set_adrdssu_keywords(sphere, sms=None, access=None):
 
     if sms:
         if sms.get("disable_automatic_management_class"):
-            nullmgmtclass = True if sms.get("disable_automatic_management_class") else False
-            keywords.update(null_management_class=nullmgmtclass)
+            sms.get("management_class") = "NULLMGMTCLAS"
 
         if sms.get("disable_automatic_storage_class"):
-            nullstorclas = True if sms.get("disable_automatic_storage_class") else False
-            keywords.update(null_storage_class=nullstorclas)
+            sms.get("storage_class") = "NULLSTORCLAS"
 
         if len(sms.get("disable_automatic_class")) > 0:
             bypassacs = set_bypassacs_str(sms.get("disable_automatic_class"))
             keywords.update(bypass_acs=bypassacs)
+
+    if access:
+        if access.get("auth"):
+            keywords.update(ADMINISTRATOR="ADMINistrator")
+
+        if access.get("share"):
+            keywords.update(SHARE="SHAre")
 
     return keywords
 

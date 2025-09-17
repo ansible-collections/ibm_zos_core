@@ -19,7 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_started_task
-version_added: 1.16.0
+version_added: 2.0.0
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
 short_description: Perform operations on started tasks.
@@ -38,21 +38,21 @@ options:
           completes, if it is registered as an element of the automatic restart manager. If the job or
           task is not registered or if you do not specify this parameter, MVS will not automatically
           restart the job or task.
-          Only applicable when state is cancelled or forced, otherwise is ignored.
+        - Only applicable when state is cancelled or forced, otherwise is ignored.
     required: false
     type: bool
   asid:
     description:
         - When state is cancelled or stopped or forced, asid is the hexadecimal address space
           identifier of the work unit you want to cancel, stop or force.
-        - When state=displayed asid is the hexadecimal address space identifier of the work unit of
+        - When state=displayed, asid is the hexadecimal address space identifier of the work unit of
           the task you get details from.
     required: false
     type: str
   device_type:
     description:
         - Option device_type is the type of the output device (if any) associated with the task.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
   device_number:
@@ -60,14 +60,14 @@ options:
         - Option device_number is the number of the device to be started. A device number is 3 or 4
           hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit
           number.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
   dump:
     description:
         - A dump is to be taken. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP)
           depends on the JCL for the job.
-          Only applicable when state=cancelled otherwise ignored.
+        - Only applicable when state=cancelled otherwise ignored.
     required: false
     type: bool
   identifier_name:
@@ -83,7 +83,7 @@ options:
         - Option job_account specifies accounting data in the JCL JOB statement for the started
           task. If the source JCL was a job and has already accounting data, the value that is
           specified on this parameter overrides the accounting data in the source JCL.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
   job_name:
@@ -103,7 +103,7 @@ options:
         - Any appropriate keyword parameter that you specify to override the corresponding
           parameter in the cataloged procedure. The maximum length of each keyword=option is 66
           characters. No individual value within this field can be longer than 44 characters in length.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: dict
   member_name:
@@ -111,7 +111,7 @@ options:
         - Option member_name is a 1 - 8 character name of a member of a partitioned data set that
           contains the source JCL for the task to be started. The member can be either a job or a
           cataloged procedure.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
     aliases:
@@ -125,7 +125,8 @@ options:
     elements: str
   retry:
     description:
-    - I(retry) is applicable for only FORCE TCB.
+        - I(retry) is applicable for only FORCE TCB.
+        - Only applicable when state=forced otherwise ignored.
     required: false
     type: str
     choices:
@@ -136,6 +137,7 @@ options:
         - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
           a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
           on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
     choices:
@@ -143,23 +145,23 @@ options:
         - 'NO'
   state:
     description:
-      - The desired state the started task should be after the module is executed.
-        If state=started and the started task is not found on the managed node, no action is taken,
-        module completes successfully with changed=False.
-        If state is cancelled , stopped or forced and the started task is not running on the
-        managed node, no action is taken, module completes successfully with changed=False.
-        If state is modified and the started task is not running, not found or modification was not
-        done, the module will fail.
-        If state is displayed the module will return the started task details.
+        - The desired state the started task should be after the module is executed.
+        - If state=started and the started task is not found on the managed node, no action is taken,
+          module completes successfully with changed=False.
+        - If state is cancelled , stopped or forced and the started task is not running on the
+          managed node, no action is taken, module completes successfully with changed=False.
+        - If state is modified and the started task is not running, not found or modification was not
+          done, the module will fail.
+        - If state is displayed the module will return the started task details.
     required: True
     type: str
     choices:
-      - started
-      - displayed
-      - modified
-      - cancelled
-      - stopped
-      - forced
+        - started
+        - displayed
+        - modified
+        - cancelled
+        - stopped
+        - forced
   subsystem:
     description:
         - The name of the subsystem that selects the task for processing. The name must be 1 - 4
@@ -169,26 +171,27 @@ options:
     type: str
   tcb_address:
     description:
-    - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
+        - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
+        - Only applicable when state=forced otherwise ignored.
     required: false
     type: str
   volume_serial:
     description:
         - If devicetype is a tape or direct-access device, the volume serial number of the volume is
           mounted on the device.
-          Only applicable when state=started otherwise ignored.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
   userid:
     description:
         - The user ID of the time-sharing user you want to cancel or force.
-          Only applicable when state=cancelled or state=forced , otherwise ignored.
+        - Only applicable when state=cancelled or state=forced , otherwise ignored.
     required: false
     type: str
   verbose:
     description:
-        - When verbose=true return system logs that describe the task’s execution.
-          Using this option will can return a big response depending on system’s load, also it could
+        - When verbose=true return system logs that describe the task execution.
+          Using this option will can return a big response depending on system load, also it could
           surface other programs activity.
     required: false
     type: bool
@@ -359,17 +362,12 @@ tasks:
     cpu_time:
       description:
          The processor time used by the address space, including the initiator. This time does not include SRB time.
-         nnnnnnnn has one of these formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours:
-            sss.tttS
-            When time is less than 1000 seconds
-            hh.mm.ss
-            When time is at least 1000 seconds, but less than 100 hours
-            hhhhh.mm
-            When time is at least 100 hours
-            ********
-            When time exceeds 100000 hours
-            NOTAVAIL
-            When the TOD clock is not working
+         cpu_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+         sss.tttS when time is less than 1000 seconds
+         hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
+         hhhhh.mm when time is at least 100 hours
+         ******** when time exceeds 100000 hours
+         NOTAVAIL when the TOD clock is not working
       type: str
       sample: 000.008S
     dataspaces:
@@ -396,19 +394,15 @@ tasks:
       sample: N/A
     elapsed_time:
       description:
-         -> For address spaces other than system address spaces, the elapsed time since job select time.
-         -> For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
-         -> For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
-            sss.tttS
-            When time is less than 1000 seconds
-            hh.mm.ss
-            When time is at least 1000 seconds, but less than 100 hours
-            hhhhh.mm
-            When time is at least 100 hours
-            ********
-            When time exceeds 100000 hours
-            NOTAVAIL
-            When the TOD clock is not working
+         - For address spaces other than system address spaces, the elapsed time since job select time.
+         - For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
+         - For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
+            elapsed_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+            sss.tttS when time is less than 1000 seconds
+            hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
+            hhhhh.mm when time is at least 100 hours
+            ******** when time exceeds 100000 hours
+            NOTAVAIL when the TOD clock is not working
       type: str
       sample: 812.983S
     priority:
@@ -418,11 +412,10 @@ tasks:
       sample: 1
     proc_step_name:
       description:
-         One of the following:
-         ->   For APPC-initiated transactions, the user ID requesting the transaction.
-         ->   The name of a step within a cataloged procedure that was called by the step specified in field sss.
-         ->   Blank, if there is no cataloged procedure.
-         ->   The identifier of the requesting transaction program.
+         - For APPC-initiated transactions, the user ID requesting the transaction.
+         - The name of a step within a cataloged procedure that was called by the step specified in field sss.
+         - Blank, if there is no cataloged procedure.
+         - The identifier of the requesting transaction program.
       type: str
       sample: VLF
     program_event_recording:
@@ -462,7 +455,7 @@ tasks:
       description:
          The time when the started task started.
       type: str
-      sample: 2025-09-11 18:21:50.293644+00:00
+      sample: "2025-09-11 18:21:50.293644+00:00"
     system_management_control:
       description:
          Number of outstanding step-must-complete requests.
@@ -470,40 +463,38 @@ tasks:
       sample: 000
     task_identifier:
       description:
-         One of the following:
-         -> The name of a system address space.
-         -> The name of a step, for a job or attached APPC transaction program attached by an initiator.
-         -> The identifier of a task created by the START command.
-         -> The name of a step that called a cataloged procedure.
-         -> STARTING, if initiation of a started job, system task, or attached APPC transaction program is incomplete.
-         -> *MASTER*, for the master address space.
-         -> The name of an initiator address space.
+         - The name of a system address space.
+         - The name of a step, for a job or attached APPC transaction program attached by an initiator.
+         - The identifier of a task created by the START command.
+         - The name of a step that called a cataloged procedure.
+         - STARTING if initiation of a started job, system task, or attached APPC transaction program is incomplete.
+         - MASTER* for the master address space.
+         - The name of an initiator address space.
       type: str
       sample: SPROC
     task_name:
       description:
-         The name of the started task.
+         - The name of the started task.
       type: str
       sample: SAMPLE
     task_status:
       description:
-         The status of the task can be one of the following.
-          -> IN for swapped in.
-          -> OUT for swapped out, ready to run.
-          -> OWT for swapped out, waiting, not ready to run.
-          -> OU* for in process of being swapped out.
-          -> IN* for in process of being swapped in.
-          -> NSW for non-swappable.
+         - IN for swapped in.
+         - OUT for swapped out, ready to run.
+         - OWT for swapped out, waiting, not ready to run.
+         - OU* for in process of being swapped out.
+         - IN* for in process of being swapped in.
+         - NSW for non-swappable.
       type: str
       sample: NSW
     task_type:
       description:
-         S for started task.
+         - S for started task.
       type: str
       sample: S
     workload_manager:
       description:
-         The name of the workload currently associated with the address space.
+         - The name of the workload currently associated with the address space.
       type: str
       sample: SYSTEM
 verbose_output:

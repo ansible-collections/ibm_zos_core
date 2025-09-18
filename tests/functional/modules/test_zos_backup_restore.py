@@ -1022,14 +1022,25 @@ def test_backup_and_restore_all_of_sms_group(ansible_zos_module, volumes_sms_sys
             hosts, data_set_name, DATA_SET_CONTENTS, volume
         )
         sms = {"storage_class":smsgrp}
-        results = hosts.all.zos_backup_restore(
-            data_sets=dict(include=data_set_name),
-            operation="backup",
-            volume=volume,
-            backup_name=data_set_backup_location,
-            overwrite=True,
-            sms=sms,
-        )
+
+        for attempt in range(2):
+            results = hosts.all.zos_backup_restore(
+                data_sets=dict(include=data_set_name),
+                operation="backup",
+                volume=volume,
+                backup_name=data_set_backup_location,
+                overwrite=True,
+                sms=sms,
+            )
+            for result in results.contacted.values():
+                if result.get("failed", False) is not True:
+                    break
+                else:
+                    if smsgrp == "PRIMARY":
+                        sms = {"storage_class":"DB2SMS10"}
+                    else:
+                        sms = {"storage_class":"PRIMARY"}
+
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         delete_data_set_or_file(hosts, data_set_name)

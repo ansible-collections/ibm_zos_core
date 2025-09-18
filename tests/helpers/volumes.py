@@ -124,7 +124,7 @@ def get_volumes(ansible_zos_module, path):
                 storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in storage_online:
-        valid = validate_ds_creation_on_volume(hosts, vol)
+        valid = validate_ds_creation_on_volume(hosts, vol, 'seq')
         if valid:
             list_volumes.append(vol)
     if prefer_vols is not None:
@@ -220,7 +220,7 @@ def get_volume_and_unit(ansible_zos_module):
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
                 # The next creation of dataset is to validate if the volume will work properly for the test suite
-                valid = validate_ds_creation_on_volume(hosts, vol_w_info[3])
+                valid = validate_ds_creation_on_volume(hosts, vol_w_info[3], "pds")
                 # When is a valid volume is required to get the datasets present on the volume
                 if valid:
                     ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
@@ -272,19 +272,20 @@ def find_volume_with_sms_class(ansible_zos_module, volumes_on_system):
                     words = line.lstrip()
                     if words.startswith(vol):
                         sms_grp = words.strip().split()[-1]
-                        vols_sms.append([vol, sms_grp])
+                        if sms_grp != "PRIMARY":
+                            vols_sms.append([vol, sms_grp])
                         continue
     return vols_sms
 
 
-def validate_ds_creation_on_volume(ansible_zos_module, vol):
+def validate_ds_creation_on_volume(ansible_zos_module, vol, type):
     """
     Utility to validate the volumes we get from the system is available to create and delete datasets
     """
     valid = True
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name()
-    valid_creation = hosts.all.zos_data_set(name=dataset, type='pds', volumes=vol)
+    valid_creation = hosts.all.zos_data_set(name=dataset, type=type, volumes=vol)
     for valid in valid_creation.contacted.values():
         if valid.get("changed") == "false":
             valid = False

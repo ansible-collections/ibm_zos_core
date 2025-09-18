@@ -945,7 +945,6 @@ def set_adrdssu_keywords(sphere, sms=None, access=None):
           Value if sphere will be use on dictionary for VSAM.
         access : dict
           Dictionary of key values for management classes.
-
     Returns
     -------
         keywords : dict
@@ -973,6 +972,7 @@ def set_adrdssu_keywords(sphere, sms=None, access=None):
 
         if access.get("share"):
             keywords.update(SHARE="SHAre")
+
 
     return keywords
 

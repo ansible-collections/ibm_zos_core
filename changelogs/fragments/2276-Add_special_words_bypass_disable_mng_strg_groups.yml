@@ -2,7 +2,6 @@ breaking_changes:
   - zos_backup_restore - Add new dictionary option ``sms`` to specify how interact with the storage class.
     Option ``sms_storage_class`` is deprecated in favor of ``storage_class`` and is under new option ``sms`` being sms.storage_class.
     Option ``sms_management_class`` is deprecated in favor of ``management_class`` and is under new option ``sms`` being sms.management_class.
-    Adds ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2276)
 minor_changes:
   - zos_backup_restore - Adds ``disable_automatic_class`` to specify that automatic class selection routines will not be used to determine classes for provide list.

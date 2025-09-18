@@ -1040,7 +1040,8 @@ def test_backup_and_restore_all_of_sms_group(ansible_zos_module, volumes_sms_sys
                         sms = {"storage_class":"DB2SMS10"}
                     else:
                         sms = {"storage_class":"PRIMARY"}
-
+        if sms["storage_class"] not in {"DB2SMS10", "PRIMARY"}:
+            pytest.skip(f"Skipping test: unsupported storage_class '{sms["storage_class"]}'")
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         delete_data_set_or_file(hosts, data_set_name)

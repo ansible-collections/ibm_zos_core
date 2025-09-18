@@ -135,7 +135,6 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
-        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")

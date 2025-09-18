@@ -973,7 +973,6 @@ def set_adrdssu_keywords(sphere, sms=None, access=None):
         if access.get("share"):
             keywords.update(SHARE="SHAre")
 
-
     return keywords
 
 

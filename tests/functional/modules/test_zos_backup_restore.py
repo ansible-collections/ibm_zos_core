@@ -135,6 +135,7 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
+        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")
@@ -1365,3 +1366,41 @@ echo '  DEFINE ALTERNATEINDEX (NAME({alternate_index}) -
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, alternate_index)
         delete_data_set_or_file(hosts, backup_name)
+
+
+def test_backup_and_restore_of_auth_shr_group(ansible_zos_module, volumes_sms_systems):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_backup_location = get_tmp_ds_name()
+    try:
+        volumes = Volume_Handler(volumes_sms_systems)
+        volume, smsgrp = volumes.get_available_vol_with_sms()
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        delete_data_set_or_file(hosts, data_set_name)
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS, volume
+        )
+        results = hosts.all.zos_backup_restore(
+            data_sets=dict(include=data_set_name),
+            operation="backup",
+            backup_name=data_set_backup_location,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
+        delete_data_set_or_file(hosts, data_set_name)
+        access = {
+            "share":True,
+            "auth":True
+            }
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=data_set_backup_location,
+            overwrite=True,
+            access=access,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, data_set_name)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_backup_location)

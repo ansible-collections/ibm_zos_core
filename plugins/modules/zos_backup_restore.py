@@ -514,6 +514,15 @@ EXAMPLES = r"""
       include: user.vsam.**
     backup_name: /tmp/temp_backup.dzp
     index: true
+
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp
+        whether they exist or not and do so as authorized disabling any security checks.
+  zos_backup_restore:
+    operation: restore
+    backup_name: /tmp/temp_backup.dzp
+    access:
+      auth: true
+      share: true
 """
 
 RETURN = r"""
@@ -835,6 +844,8 @@ def backup(
         Specifies the tmp hlq to temporary datasets.
     sphere : dict
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
+    access : dict
+        Specifies keywords for share and administration permission.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -894,6 +905,8 @@ def restore(
         Specifies the tmp hlq to temporary datasets.
     sphere : dict
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
+    access : dict
+        Specifies keywords for share and administration permission.
 
     Raises
     ------
@@ -930,6 +943,8 @@ def set_adrdssu_keywords(sphere, sms=None, access=None):
           Dictionary of key value of management an storage class.
         sphere : bool
           Value if sphere will be use on dictionary for VSAM.
+        access : dict
+          Dictionary of key values for management classes.
 
     Returns
     -------

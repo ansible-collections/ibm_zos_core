@@ -81,6 +81,7 @@ options:
     - Choices are EOF or '*regex*'.
     - Default is EOF.
     required: false
+    aliases: ['after']
     type: str
   insertbefore:
     description:
@@ -92,6 +93,7 @@ options:
       at the end of the file.
     - Choices are BOF or '*regex*'.
     required: false
+    aliases: ['before']
     type: str
   marker_begin:
     description:
@@ -346,6 +348,14 @@ stderr:
   returned: failure
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+stdout_lines:
+    description: List of strings containing individual lines from stdout.
+    returned: failure
+    type: list
+stderr_lines:
+    description: List of strings containing individual lines from stderr.
+    returned: failure
+    type: list
 rc:
   description: The return code from ZOAU dmod when json.loads() fails to parse the result from dmod
   returned: failure
@@ -511,10 +521,12 @@ def main():
                 aliases=['content']
             ),
             insertafter=dict(
-                type='str'
+                type='str',
+                aliases=['after'],
             ),
             insertbefore=dict(
-                type='str'
+                type='str',
+                aliases=['before'],
             ),
             marker_begin=dict(
                 type='str',
@@ -560,8 +572,8 @@ def main():
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),
         marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK', required=False),
         block=dict(arg_type='str', default='', aliases=['content'], required=False),
-        insertafter=dict(arg_type='str', required=False),
-        insertbefore=dict(arg_type='str', required=False),
+        insertafter=dict(arg_type='str', required=False, aliases=['after'],),
+        insertbefore=dict(arg_type='str', required=False, aliases=['before'],),
         marker_begin=dict(arg_type='str', default='BEGIN', required=False),
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
@@ -572,7 +584,16 @@ def main():
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )
-    result = dict(changed=False, cmd='', found=0)
+    result = dict(
+        changed=False,
+        cmd='',
+        found=0,
+        stdout='',
+        stdout_lines=[],
+        stderr='',
+        stderr_lines=[],
+        rc=0,
+    )
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
@@ -665,19 +686,23 @@ def main():
         # The triple double quotes is required for special characters (/_) been scape
         ret = json.loads("""{0}""".format(stdout))
     except Exception:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+        result.update(
+            dict(
+                msg="ZOAU dmod return content is NOT in json format",
+                stdout=str(stdout),
+                stdout_lines=stdout.splitlines(),
+                stderr=str(stderr),
+                stderr_lines=stderr.splitlines(),
+                rc=rc
+            )
+        )
+        module.fail_json(**result)
 
     result['cmd'] = ret['data']['commands']
     result['changed'] = ret['data']['changed']
     result['found'] = ret['data']['found']
-    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
-    # That information will be given with 'changed' and 'found'
-    if len(stderr):
-        result['stderr'] = str(stderr)
-        result['rc'] = rc
+    result['stderr'] = str(stderr)
+    result['rc'] = rc
     module.exit_json(**result)
 
 

@@ -1,3 +1,0 @@
-trivial:
-  - zos_copy - Removed the need of MVS.MCSOPER.ZOAU profile in zos_copy.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2039).

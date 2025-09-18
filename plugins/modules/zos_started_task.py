@@ -542,7 +542,7 @@ def execute_command(operator_cmd, started_task_name, execute_display_before=Fals
         Tuple containing the RC, standard out, standard err of the
         query script and started task parameters.
     """
-    task_params = {}
+    task_params = []
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
     timeout_c = 100 * timeout_s
     if execute_display_before:
@@ -1289,6 +1289,7 @@ def run_module():
             stderr=str(err)
         )
     state = module.params.get('state')
+    userid = module.params.get('userid')
     wait_time_s = module.params.get('wait_time')
     verbose = module.params.get('verbose')
     kwargs = {}
@@ -1305,10 +1306,10 @@ def run_module():
     CANCELABLE: When force command used without using cancel command
     """
     start_errmsg = ['ERROR', 'INVALID PARAMETER']
-    stop_errmsg = ['NOT ACTIVE']
-    display_errmsg = ['NOT ACTIVE']
-    modify_errmsg = ['REJECTED', 'NOT ACTIVE']
-    cancel_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'DUPLICATE NAME FOUND']
+    stop_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
+    display_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
+    modify_errmsg = ['REJECTED', 'NOT ACTIVE', 'INVALID PARAMETER']
+    cancel_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'DUPLICATE NAME FOUND', 'NON-CANCELABLE']
     force_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'CANCELABLE', 'DUPLICATE NAME FOUND']
     err_msg = []
     kwargs = {}
@@ -1332,11 +1333,13 @@ def run_module():
         err_msg = stop_errmsg
         started_task_name, cmd = prepare_stop_command(module)
     elif state == "cancelled":
-        execute_display_before = True
+        if not userid:
+            execute_display_before = True
         err_msg = cancel_errmsg
         started_task_name, cmd = prepare_cancel_command(module)
     elif state == "forced":
-        execute_display_before = True
+        if not userid:
+            execute_display_before = True
         err_msg = force_errmsg
         started_task_name, cmd = prepare_force_command(module)
     elif state == "modified":

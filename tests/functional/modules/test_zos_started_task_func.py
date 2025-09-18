@@ -555,9 +555,9 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
         hosts.all.shell(
             cmd="drm {0}".format(data_set_name)
         )
-        # hosts.all.shell(
-        #     cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
-        # )
+        hosts.all.shell(
+            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+        )
 
 def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
     try:

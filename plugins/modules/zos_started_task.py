@@ -1303,6 +1303,7 @@ def run_module():
     REJECTED: When modify command is not supported by respective started task.
     NOT LOGGED ON: When invalid userid passed in command.
     DUPLICATE NAME FOUND: When multiple started tasks exist with same name.
+    NON-CANCELABLE: When cancel command can't stop job and force command is needed.
     CANCELABLE: When force command used without using cancel command
     """
     start_errmsg = ['ERROR', 'INVALID PARAMETER']

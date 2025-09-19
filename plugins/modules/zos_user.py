@@ -869,6 +869,8 @@ class UserHandler(RACFHandler):
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
         (('omvs', 'home'), 'length', ((0, 1023),)),
         (('omvs', 'program'), 'length', ((0, 1023),)),
+        (('omvs', 'nonshared_size'), 'format', ('[0-9]{1,8}[MGTP]',)),
+        (('omvs', 'shared_size'), 'format', ('[0-9]{1,8}[MGTP]',)),
         (('omvs', 'addr_space_size'), 'range', (10_485_760, 2_147_483_647, 0)),
         (('omvs', 'map_size'), 'range', (1, 16_777_216, 0)),
         (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
@@ -913,6 +915,28 @@ class UserHandler(RACFHandler):
         # name.
         if self.operation in ['delete', 'purge', 'list']:
             self.params = {}
+
+    def validate_params(self):
+        """Adds a couple of validations for omvs.nonshared_size and omvs.shared_size.
+
+        Raises
+        ------
+            ValueError: When a parameter has an invalid value.
+        """
+        super().validate_params()
+
+        if self.params.get('omvs') is not None:
+            if self.params['omvs'].get('nonshared_size') is not None:
+                nonshared_size = self.params['omvs']['nonshared_size']
+                nonshared_size = int(nonshared_size[:len(nonshared_size)-1])
+                if nonshared_size < 0 or nonshared_size > 16_777_215:
+                    raise ValueError('Value of omvs.nonshared_size is outside of its range.')
+
+            if self.params['omvs'].get('shared_size') is not None:
+                shared_size = self.params['omvs']['shared_size']
+                shared_size = int(shared_size[:len(shared_size)-1])
+                if shared_size < 1 or shared_size > 16_777_215:
+                    raise ValueError('Value of omvs.shared_size is outside of its range.')
 
     def execute_operation(self):
         """Given the operation and scope, it executes a RACF command.
@@ -1706,12 +1730,10 @@ def run_module():
                         'type': 'int',
                         'required': False
                     },
-                    # TODO: add validation for this one
                     'nonshared_size': {
                         'type': 'str',
                         'required': False
                     },
-                    # TODO: add validation for this one
                     'shared_size': {
                         'type': 'str',
                         'required': False

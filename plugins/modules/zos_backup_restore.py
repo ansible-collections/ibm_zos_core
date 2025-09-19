@@ -34,53 +34,53 @@ description:
     Conversely, dumps created with ADRDSSU and AMATERSE can be restored using this module.
 options:
   access:
-  description:
-    - Specifies how the module will access data sets and z/OS UNIX files when
-      performing a backup or restore operation.
-  type: dict
-  required: false
-  suboptions:
-    share:
-      description:
-        - Specifies that the module allow data set read access to other programs
-          while backing up or restoring.
-        - I(share) and C(full_volume) are mutually exclusive; you cannot use both.
-        - Option I(share)is conditionally supported for I(operation=backup) or
-          I(operation=restore).
-        - When I(operation=backup), and source backup is a VSAM data set, the
-          option is only supported for VSAM data sets which are not defined with
-          VSAM SHAREOPTIONS (1,3) or (1,4).
-          - When I(operation=restore), and restore target is a VSAM data set or
-          PDSE data set, this option is not supported. Both data set types will
-          be accessed exlusivly preventing reading or writing to the VSAM, PDSE,
-          or PDSE members.
-        - The SHAREOPTIONS for VSAM data sets.
-        - (1) the data set can be shared by multiple programs for read-only
-            processing, or a single program for read and write processing.
-        - (2) the data set can be accessed by multiple programs for read-only
-          processing, and can also be accessed by a program for write processing.
-        - (3) the data set can be shared by multiple programs where each
-          program is responsible for maintaining both read and write data integrity.
-        - (4) the data set can be shared by multiple programs where each program is
-          responsible for maintaining both read and write data integrity differing
-          from (3) in that I/O buffers are updated for each request.
-      type: bool
-      required: false
-      default: false
-    auth:
-      description:
-        - I(auth=true) allows you to act as an administrator, where it will disable
-          checking the current users privileges for z/OS UNIX files, data sets and
-          catalogs.
-        - This is option is supported both, I(operation=backup) and I(operation=restore).
-        - If you are not authorized to use this option, the module ends with an
-          error message.
-        - Some authorization checking for data sets is unavoidable, when when I(auth)
-          is specified because some checks are initiated by services and programs
-          invoked by this module which can not be bypassed.
-      type: bool
-      required: false
-      default: false
+    description:
+      - Specifies how the module will access data sets and z/OS UNIX files when
+        performing a backup or restore operation.
+    type: dict
+    required: false
+    suboptions:
+      share:
+        description:
+          - Specifies that the module allow data set read access to other programs
+            while backing up or restoring.
+          - I(share) and C(full_volume) are mutually exclusive; you cannot use both.
+          - Option I(share)is conditionally supported for I(operation=backup) or
+            I(operation=restore).
+          - When I(operation=backup), and source backup is a VSAM data set, the
+            option is only supported for VSAM data sets which are not defined with
+            VSAM SHAREOPTIONS (1,3) or (1,4).
+            - When I(operation=restore), and restore target is a VSAM data set or
+            PDSE data set, this option is not supported. Both data set types will
+            be accessed exlusivly preventing reading or writing to the VSAM, PDSE,
+            or PDSE members.
+          - The SHAREOPTIONS for VSAM data sets.
+          - (1) the data set can be shared by multiple programs for read-only
+              processing, or a single program for read and write processing.
+          - (2) the data set can be accessed by multiple programs for read-only
+            processing, and can also be accessed by a program for write processing.
+          - (3) the data set can be shared by multiple programs where each
+            program is responsible for maintaining both read and write data integrity.
+          - (4) the data set can be shared by multiple programs where each program is
+            responsible for maintaining both read and write data integrity differing
+            from (3) in that I/O buffers are updated for each request.
+        type: bool
+        required: false
+        default: false
+      auth:
+        description:
+          - I(auth=true) allows you to act as an administrator, where it will disable
+            checking the current users privileges for z/OS UNIX files, data sets and
+            catalogs.
+          - This is option is supported both, I(operation=backup) and I(operation=restore).
+          - If you are not authorized to use this option, the module ends with an
+            error message.
+          - Some authorization checking for data sets is unavoidable, when when I(auth)
+            is specified because some checks are initiated by services and programs
+            invoked by this module which can not be bypassed.
+        type: bool
+        required: false
+        default: false
   operation:
     description:
       - Used to specify the operation to perform.
@@ -516,7 +516,7 @@ EXAMPLES = r"""
     index: true
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp
-        whether they exist or not and do so as authorized disabling any security checks.
+    whether they exist or not and do so as authorized disabling any security checks.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp

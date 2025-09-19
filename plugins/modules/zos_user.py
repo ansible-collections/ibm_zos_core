@@ -813,14 +813,17 @@ class UserHandler(RACFHandler):
     filters = {
         'create': {
             'nested': [
-                ('general', 'custom_fields', ('add',))
+                ('general', 'custom_fields', ('add',)),
+                ('access', 'clauth', ('add',)),
+                ('access', 'category', ('add',)),
+                ('operator', 'msg_scope', ('add',))
             ],
             'flat': [
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
                 ('language', ('primary', 'secondary')),
                 ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
                 ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data')),
-                ('access', ('authority', 'universal_access', 'group_name', 'group_account', 'group_operations', 'default_group', 'clauth', 'auditor', 'roaudit', 'adsp_attribute', 'category', 'operator_card', 'maintenance_access', 'restricted', 'security_label', 'security_level', 'special')),
+                ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card', 'maintenance_access', 'restricted', 'security_label', 'security_level')),
                 ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display', 'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs', 'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs', 'responses')),
                 ('restrictions', ('days', 'time', 'resume', 'revoke'))
             ]
@@ -828,7 +831,9 @@ class UserHandler(RACFHandler):
         'update': {},
         'delete': {},
         'purge': {},
-        'list': {}
+        'list': {},
+        'connect': {},
+        'remove': {}
     }
 
     should_remove_empty_strings = {
@@ -836,7 +841,9 @@ class UserHandler(RACFHandler):
         'update': False,
         'delete': False,
         'purge': False,
-        'list': False
+        'list': False,
+        'connect': False,
+        'remove': False
     }
 
     # All empty lists indicate an operation that doesn't require any other
@@ -846,7 +853,9 @@ class UserHandler(RACFHandler):
         'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions'],
         'delete': [],
         'purge': [],
-        'list': []
+        'list': [],
+        'connect': ['connect'],
+        'remove': ['connect']
     }
 
     validations = [
@@ -918,6 +927,10 @@ class UserHandler(RACFHandler):
             rc, stdout, stderr, cmd = self._update_user()
         if self.operation == 'delete':
             rc, stdout, stderr, cmd = self._delete_user()
+        if self.operation == 'connect':
+            rc, stdout, stderr, cmd = self._connect_user()
+        if self.operation == 'remove':
+            rc, stdout, stderr, cmd = self._remove_user()
 
         self.cmd = cmd
         # Getting the base dictionary.
@@ -987,6 +1000,99 @@ class UserHandler(RACFHandler):
             tuple: RC, stdout and stderr from the RACF command, and the DELUSER command.
         """
         cmd = f'DELUSER ({self.name})'
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
+    def _connect_user(self):
+        """Builds and execute a CONNECT command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the CONNECT command.
+        """
+        cmd = f'CONNECT ({self.name}) '
+
+        connect = self.params.get('connect')
+
+        if connect.get('group_name') is not None:
+            cmd = f"{cmd} GROUP({connect['group_name']}) "
+        else:
+            return 1, "", "No group was provided for a connect operation.", cmd
+
+        if connect.get('authority') is not None:
+            cmd = f"{cmd}AUTHORITY({connect['authority']}) "
+        if connect.get('universal_access') is not None:
+            cmd = f"{cmd}UACC({connect['universal_access']}) "
+        if connect.get('group_account', False):
+            cmd = f"{cmd}GRPACC "
+        else:
+            cmd = f"{cmd}NOGRPACC "
+        if connect.get('group_operations', False):
+            cmd = f"{cmd}OPERATIONS "
+        else:
+            cmd = f"{cmd}NOOPERATIONS "
+        if connect.get('auditor', False):
+            cmd = f"{cmd}AUDITOR "
+        else:
+            cmd = f"{cmd}NOAUDITOR "
+        if connect.get('adsp_attribute', False):
+            cmd = f"{cmd}ADSP "
+        else:
+            cmd = f"{cmd}NOADSP "
+        if connect.get('special', False):
+            cmd = f"{cmd}SPECIAL "
+        else:
+            cmd = f"{cmd}NOSPECIAL "
+
+        if self.params.get('general') is not None:
+            if self.params['general'].get('owner') is not None:
+                cmd = f"{cmd} OWNER({self.params['general']['owner']})"
+
+        if self.params.get('restrictions') is not None:
+            restrictions = self.params['restrictions']
+            if restrictions.get('resume') is not None:
+                cmd = f"{cmd}RESUME({restrictions['resume']})"
+            elif restrictions.get('delete_resume', False):
+                cmd = f"{cmd}NORESUME "
+
+            if restrictions.get('revoke') is not None:
+                cmd = f"{cmd}REVOKE({restrictions['revoke']})"
+            elif restrictions.get('delete_revoke', False):
+                cmd = f"{cmd}NOREVOKE "
+
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
+    def _remove_user(self):
+        """Builds and execute a REMOVE command.
+
+        Returns
+        -------
+            tuple: RC, stdout and stderr from the RACF command, and the REMOVE command.
+        """
+        cmd = f'REMOVE ({self.name}) '
+
+        connect = self.params.get('connect')
+
+        if connect.get('group_name') is not None:
+            cmd = f"{cmd} GROUP({connect['group_name']}) "
+        else:
+            return 1, "", "No group was provided for a remove operation.", cmd
+
+        if self.params.get('general') is not None:
+            if self.params['general'].get('owner') is not None:
+                cmd = f"{cmd} OWNER({self.params['general']['owner']})"
+
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
         if rc == 0:
@@ -1406,47 +1512,6 @@ class UserHandler(RACFHandler):
 
         return cmd
 
-    # def _make_access_substring_connect(self):
-    #     """
-    #     """
-    #     cmd = ""
-    #     access = self.params.get('access')
-    #
-    #     if access is not None:
-    #         if access.get('authority') is not None:
-    #             cmd = f"{cmd}AUTHORITY({access['authority']}) "
-    #         if access.get('universal_access') is not None:
-    #             cmd = f"{cmd}UACC({access['universal_access']}) "
-    #
-    #             if access['authority'].get('add') is not None:
-    #                 custom_fields = general['custom_fields']['add']
-    #                 cmd = f'{cmd}CSDATA( '
-    #                 for field in custom_fields:
-    #                     cmd = f'{cmd}{field}({custom_fields[field]}) '
-    #                 cmd = f'{cmd}) '
-    #             elif general['custom_fields'].get('delete') is not None:
-    #                 custom_fields = general['custom_fields']['delete']
-    #                 cmd = f'{cmd}CSDATA( '
-    #                 for field in custom_fields:
-    #                     cmd = f'{cmd}NO{field.upper()} '
-    #                 cmd = f'{cmd}) '
-    #             elif general['custom_fields'].get('delete_block') is not None:
-    #                 cmd = f'{cmd}NOCSDATA '
-    #         if general.get('installation_data') is not None:
-    #             if general.get('installation_data') != "":
-    #                 cmd = f"{cmd}DATA('{general['installation_data']}') "
-    #             else:
-    #                 cmd = f"{cmd}NODATA "
-    #         if general.get('model') is not None:
-    #             if general.get('model') != "":
-    #                 cmd = f"{cmd}MODEL({general['model']}) "
-    #             else:
-    #                 cmd = f"{cmd}NOMODEL "
-    #         if general.get('owner') is not None and general.get('owner') != "":
-    #             cmd = f"{cmd}OWNER({general['owner']}) "
-    #
-    #     return cmd
-
 
 def get_racf_handler(module, module_params):
     """Returns the correct handler needed for the scope and operation given in a task.
@@ -1758,7 +1823,7 @@ def run_module():
                     }
                 }
             },
-            'access': {
+            'connect': {
                 'type': 'dict',
                 'required': False,
                 'options': {
@@ -1786,6 +1851,28 @@ def run_module():
                         'required': False,
                         'default': False
                     },
+                    'auditor': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'adsp_attribute': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'special': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    }
+                }
+
+            },
+            'access': {
+                'type': 'dict',
+                'required': False,
+                'options': {
                     'default_group': {
                         'type': 'str',
                         'required': False
@@ -1809,17 +1896,7 @@ def run_module():
                             },
                         }
                     },
-                    'auditor': {
-                        'type': 'bool',
-                        'required': False,
-                        'default': False
-                    },
                     'roaudit': {
-                        'type': 'bool',
-                        'required': False,
-                        'default': False
-                    },
-                    'adsp_attribute': {
                         'type': 'bool',
                         'required': False,
                         'default': False
@@ -1866,11 +1943,6 @@ def run_module():
                         'type': 'str',
                         'required': False
                     },
-                    'special': {
-                        'type': 'bool',
-                        'required': False,
-                        'default': False
-                    }
                 }
             },
             'operator': {
@@ -2143,7 +2215,7 @@ def run_module():
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         },
-        'access': {
+        'connect': {
             'arg_type': 'dict',
             'required': False,
             'options': {
@@ -2152,6 +2224,15 @@ def run_module():
                 'group_name': {'arg_type': 'str', 'required': False},
                 'group_account': {'arg_type': 'bool', 'required': False},
                 'group_operations': {'arg_type': 'bool', 'required': False},
+                'auditor': {'arg_type': 'bool', 'required': False},
+                'adsp_attribute': {'arg_type': 'bool', 'required': False},
+                'special': {'arg_type': 'bool', 'required': False},
+            }
+        },
+        'access': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
                 'default_group': {'arg_type': 'str', 'required': False},
                 'clauth': {
                     'arg_type': 'dict',
@@ -2161,9 +2242,7 @@ def run_module():
                         'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
                     }
                 },
-                'auditor': {'arg_type': 'bool', 'required': False},
                 'roaudit': {'arg_type': 'bool', 'required': False},
-                'adsp_attribute': {'arg_type': 'bool', 'required': False},
                 'category': {
                     'arg_type': 'dict',
                     'required': False,
@@ -2177,8 +2256,6 @@ def run_module():
                 'restricted': {'arg_type': 'bool', 'required': False},
                 'security_label': {'arg_type': 'str', 'required': False},
                 'security_level': {'arg_type': 'str', 'required': False},
-                'special': {'arg_type': 'bool', 'required': False},
-                'delete': {'arg_type': 'bool', 'required': False}
             }
         },
         'operator': {

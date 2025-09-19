@@ -364,7 +364,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
             "src":test_vsam,
             "dest":"/tmp/",
             "flat":True,
-            "is_binary":True
+            "binary":True
         }
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -424,7 +424,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
         "src":TEST_PDS_MEMBER,
         "dest":"/tmp/",
         "flat":True,
-        "is_binary":True
+        "binary":True
     }
     dest_path = "/tmp/" + extract_member_name(TEST_PDS_MEMBER)
     try:
@@ -434,7 +434,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
             assert result.get("data_set_type") == "Partitioned"
             assert result.get("module_stderr") is None
             assert result.get("dest") == dest_path
-            assert result.get("is_binary") is True
+            assert result.get("binary") is True
             assert os.path.exists(dest_path)
             assert os.path.isfile(dest_path)
             assert "msg" in result.keys()
@@ -460,7 +460,7 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
         "src":TEST_PS,
         "dest":"/tmp/",
         "flat":True,
-        "is_binary":True
+        "binary":True
     }
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -469,7 +469,7 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None
-            assert result.get("is_binary") is True
+            assert result.get("binary") is True
             assert os.path.exists(dest_path)
             assert "msg" in result.keys()
             assert result.get("src") is not None
@@ -490,7 +490,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
         "src":TEST_PDS,
         "dest":"/tmp/",
         "flat":True,
-        "is_binary":True
+        "binary":True
     }
     dest_path = "/tmp/" + TEST_PDS
     try:
@@ -499,7 +499,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Partitioned"
             assert result.get("module_stderr") is None
-            assert result.get("is_binary") is True
+            assert result.get("binary") is True
             assert os.path.exists(dest_path)
             assert os.path.isdir(dest_path)
             assert "msg" in result.keys()

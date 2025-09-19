@@ -1,0 +1,5 @@
+breaking_changes:
+  - zos_fetch - Option ``is_binary`` is replaced in favor of ``binary``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2290).
+  - zos_copy - Option ``is_binary`` is replaced in favor of ``binary``. Option ``is_executable`` is renamed to ``executable``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2290).

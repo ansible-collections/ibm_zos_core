@@ -145,14 +145,13 @@ options:
         - 'NO'
   state:
     description:
-        - The desired state the started task should be after the module is executed.
-        - If state=started and the started task is not found on the managed node, no action is taken,
-          module completes successfully with changed=False.
-        - If state is cancelled , stopped or forced and the started task is not running on the
-          managed node, no action is taken, module completes successfully with changed=False.
-        - If state is modified and the started task is not running, not found or modification was not
-          done, the module will fail.
-        - If state is displayed the module will return the started task details.
+        - I(state) should be the desired state of the started task after the module is executed.
+        - If state is started and the respective member is not present on the managed node, then error will be thrown with rc=1,
+          changed=false and stderr which contains error details.
+        - If state is cancelled , modified, displayed, stopped or forced and the started task is not running on the managed node, 
+          then error will be thrown with rc=1, changed=false and stderr contains error details.
+        - If state is displayed and the started task is running, then the module will return the started task details along with
+          changed=true.
     required: True
     type: str
     choices:
@@ -198,9 +197,9 @@ options:
     default: false
   wait_time:
     description:
-        - Option wait_time is the total time that module zos_started_tak will wait for a submitted
-          task. The time begins when the module is executed on the managed node. Default value of 0
-          means to wait the default amount of time supported by the opercmd utility.
+        - Option wait_time is the total time that module zos_started_task will wait for a submitted task in centiseconds.
+          The time begins when the module is executed on the managed node. Default value of 0 means to wait the default
+          amount of time supported by the opercmd utility.
     required: false
     default: 0
     type: int
@@ -1002,12 +1001,6 @@ def extract_keys(stdout):
                     key = keys[key]
                 if key in dsp_keys:
                     data_space[key] = value
-                # key_val = current_task.get(key.lower())
-                # if key_val:
-                #     if isinstance(key_val, str):
-                #         current_task[key.lower()] = [key_val, value]
-                #     elif isinstance(key_val, list):
-                #         current_task[key.lower()] = key_val + [value]
                 else:
                     current_task[key.lower()] = value
             if current_task.get("dataspaces"):

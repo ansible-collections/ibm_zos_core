@@ -256,7 +256,7 @@ class BetterArgHandler(object):
         return contents
 
     def _basic_dict_type(self, contents, resolve_dependencies):
-        """Resolver for str type arguments.
+        """Resolver for basic dict type arguments.
 
         Parameters
         ----------
@@ -359,7 +359,8 @@ class BetterArgHandler(object):
         return contents
 
     def _member_name_type(self, contents, resolve_dependencies):
-        """Resolver for data_set type arguments.
+        """Resolver for PDS/E member name type arguments. This is part of
+           zos_started_task member name validfation.
 
         Parameters
         ----------
@@ -391,7 +392,8 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _identifier_name_type(self, contents, resolve_dependencies):
-        """Resolver for data_set type arguments.
+        """Resolver for identifier name type arguments. This is part of
+           zos_started_task identifier name validation.
 
         Parameters
         ----------

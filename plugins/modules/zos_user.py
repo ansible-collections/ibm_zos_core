@@ -575,6 +575,9 @@ class RACFHandler():
         dfp = self.params.get('dfp')
 
         if dfp is not None:
+            if dfp.get('delete', False):
+                return "NODFP"
+
             cmd = f"{cmd}DFP("
 
             if dfp.get('data_app_id') is not None:
@@ -879,9 +882,9 @@ class UserHandler(RACFHandler):
         (('operator', 'cmd_system'), 'length', ((0, 8),)),
         (('operator', 'search_key'), 'length', ((0, 8),)),
         (('operator', 'msg_storage'), 'range', (1, 2000, 0)),
-        (('restrictions', 'time'), 'format', ('^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$', 'anytime')),
-        (('restrictions', 'resume'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{4})$',)),
-        (('restrictions', 'revoke'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{4})$',)),
+        (('restrictions', 'time'), 'format', ('^([01]?[0-9]|2[0-3])[0-5][0-9]:([01]?[0-9]|2[0-3])[0-5][0-9]$', 'anytime')),
+        (('restrictions', 'resume'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{2})$',)),
+        (('restrictions', 'revoke'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{2})$',)),
     ]
 
     def __init__(self, module, module_params):
@@ -933,21 +936,14 @@ class UserHandler(RACFHandler):
         """
         cmd = f'ADDUSER ({self.name})'
 
-        # TODO: add language
         cmd = f'{cmd} {self._make_general_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
-
-        # The OMVS block won't use the string methods since a group only uses one option
-        # from it.
-        omvs = self.params.get('omvs')
-        if omvs is not None:
-            if omvs.get('uid') == 'auto':
-                cmd = f'{cmd} OMVS(AUTOGID)'
-            elif omvs.get('uid') != 'none':
-                cmd = f"{cmd} OMVS(GID({omvs['custom_uid']})"
-                if omvs['uid'] == 'shared':
-                    cmd = f'{cmd}SHARED'
-                cmd = f'{cmd})'
+        cmd = f'{cmd} {self._make_language_substring()}'.strip()
+        cmd = f'{cmd} {self._make_tso_substring()}'.strip()
+        cmd = f'{cmd} {self._make_omvs_substring()}'.strip()
+        cmd = f'{cmd} {self._make_access_substring_creation()}'.strip()
+        cmd = f'{cmd} {self._make_restrictions_substring()}'.strip()
+        cmd = f'{cmd} {self._make_operator_substring()}'.strip()
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -964,7 +960,24 @@ class UserHandler(RACFHandler):
         -------
             tuple: RC, stdout and stderr from the RACF command, and the ALTUSER command.
         """
-        pass
+        cmd = f'ALTUSER ({self.name})'
+
+        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
+        cmd = f'{cmd} {self._make_language_substring()}'.strip()
+        cmd = f'{cmd} {self._make_tso_substring()}'.strip()
+        cmd = f'{cmd} {self._make_omvs_substring()}'.strip()
+        cmd = f'{cmd} {self._make_access_substring_creation()}'.strip()
+        cmd = f'{cmd} {self._make_restrictions_substring()}'.strip()
+        cmd = f'{cmd} {self._make_operator_substring()}'.strip()
+
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
 
     def _delete_user(self):
         """Builds and execute a DELUSER command.
@@ -981,6 +994,458 @@ class UserHandler(RACFHandler):
             self.entities_modified = [self.name]
 
         return rc, stdout, stderr, cmd
+
+    def _make_language_substring(self):
+        """Creates a string that defines the LANGUAGE block of a user profile.
+
+        Returns
+        -------
+            str: LANGUAGE parameters of a RACF command.
+        """
+        cmd = ""
+        language = self.params.get('language')
+
+        if language is not None:
+            if language.get('delete', False):
+                return "NOLANGUAGE"
+
+            cmd = f"{cmd}LANGUAGE("
+
+            if language.get('primary') is not None:
+                if language.get('primary') != "":
+                    cmd = f"{cmd} PRIMARY({language['primary']})"
+                else:
+                    cmd = f"{cmd} NOPRIMARY"
+            if language.get('secondary') is not None:
+                if language.get('secondary') != "":
+                    cmd = f"{cmd} SECONDARY({language['secondary']})"
+                else:
+                    cmd = f"{cmd} NOSECONDARY"
+
+            cmd = f"{cmd} )"
+
+        return cmd
+
+    def _make_omvs_substring(self):
+        """Creates a string that defines the OMVS (Unix System Services) block of
+        a user profile.
+
+        Returns
+        -------
+            str: OMVS parameters of a RACF command.
+        """
+        cmd = ""
+        omvs = self.params.get('omvs')
+
+        if omvs is not None:
+            if omvs.get('delete', False):
+                return "NOOMVS"
+
+            cmd = f"{cmd}OMVS("
+
+            if omvs.get('uid') == 'auto':
+                cmd = f'{cmd} AUTOUID'
+            elif omvs.get('uid') != 'none':
+                cmd = f"{cmd} UID({omvs['custom_uid']})"
+                if omvs['uid'] == 'shared':
+                    cmd = f'{cmd}SHARED'
+            else:
+                cmd = f'{cmd} NOUID'
+
+            if omvs.get('home') is not None:
+                if omvs.get('home') != "":
+                    cmd = f"{cmd} HOME({omvs['home']})"
+                else:
+                    cmd = f"{cmd} NOHOME"
+            if omvs.get('program') is not None:
+                if omvs.get('program') != "":
+                    cmd = f"{cmd} PROGRAM({omvs['program']})"
+                else:
+                    cmd = f"{cmd} NOPROGRAM"
+            if omvs.get('nonshared_size') is not None:
+                if omvs.get('nonshared_size') != "":
+                    cmd = f"{cmd} MEMLIMIT({omvs['nonshared_size']})"
+                else:
+                    cmd = f"{cmd} NOMEMLIMIT"
+            if omvs.get('shared_size') is not None:
+                if omvs.get('shared_size') != "":
+                    cmd = f"{cmd} SHMEMMAX({omvs['shared_size']})"
+                else:
+                    cmd = f"{cmd} NOSHMEMMAX"
+            if omvs.get('addr_space_size') is not None:
+                if omvs.get('addr_space_size') != 0:
+                    cmd = f"{cmd} ASSIZEMAX({omvs['addr_space_size']})"
+                else:
+                    cmd = f"{cmd} NOASSIZEMAX"
+            if omvs.get('map_size') is not None:
+                if omvs.get('map_size') != 0:
+                    cmd = f"{cmd} MMAPAREAMAX({omvs['map_size']})"
+                else:
+                    cmd = f"{cmd} NOMMAPAREAMAX"
+            if omvs.get('max_procs') is not None:
+                if omvs.get('max_procs') != 0:
+                    cmd = f"{cmd} PROCUSERMAX({omvs['max_procs']})"
+                else:
+                    cmd = f"{cmd} NOPROCUSERMAX"
+            if omvs.get('max_threads') is not None:
+                if omvs.get('max_threads') != -1:
+                    cmd = f"{cmd} THREADSMAX({omvs['max_threads']})"
+                else:
+                    cmd = f"{cmd} NOTHREADSMAX"
+            if omvs.get('max_cpu_time') is not None:
+                if omvs.get('max_cpu_time') != 0:
+                    cmd = f"{cmd} CPUTIMEMAX({omvs['max_cpu_time']})"
+                else:
+                    cmd = f"{cmd} NOCPUTIMEMAX"
+            if omvs.get('max_files') is not None:
+                if omvs.get('max_files') != 0:
+                    cmd = f"{cmd} FILEPROCMAX({omvs['max_files']})"
+                else:
+                    cmd = f"{cmd} NOFILEPROCMAX"
+
+            cmd = f"{cmd} )"
+
+        return cmd
+
+    def _make_tso_substring(self):
+        """Creates a string that defines the TSO block of a user profile.
+
+        Returns
+        -------
+            str: TSO parameters of a RACF command.
+        """
+        cmd = ""
+        tso = self.params.get('tso')
+
+        if tso is not None:
+            if tso.get('delete', False):
+                return "NOTSO"
+
+            cmd = f"{cmd}TSO("
+
+            if tso.get('account_num') is not None:
+                if tso.get('account_num') != "":
+                    cmd = f"{cmd} ACCTNUM({tso['account_num']})"
+                else:
+                    cmd = f"{cmd} NOACCTNUM"
+            if tso.get('logon_cmd') is not None:
+                if tso.get('logon_cmd') != "":
+                    cmd = f"{cmd} COMMAND({tso['logon_cmd']})"
+                else:
+                    cmd = f"{cmd} NOCOMMAND"
+            if tso.get('dest_id') is not None:
+                if tso.get('dest_id') != "":
+                    cmd = f"{cmd} DEST({tso['dest_id']})"
+                else:
+                    cmd = f"{cmd} NODEST"
+            if tso.get('hold_class') is not None:
+                if tso.get('hold_class') != "":
+                    cmd = f"{cmd} HOLDCLASS({tso['hold_class']})"
+                else:
+                    cmd = f"{cmd} NOHOLDCLASS"
+            if tso.get('job_class') is not None:
+                if tso.get('job_class') != "":
+                    cmd = f"{cmd} JOBCLASS({tso['job_class']})"
+                else:
+                    cmd = f"{cmd} NOJOBCLASS"
+            if tso.get('msg_class') is not None:
+                if tso.get('msg_class') != "":
+                    cmd = f"{cmd} MSGCLASS({tso['msg_class']})"
+                else:
+                    cmd = f"{cmd} NOMSGCLASS"
+            if tso.get('sysout_class') is not None:
+                if tso.get('sysout_class') != "":
+                    cmd = f"{cmd} SYS({tso['sysout_class']})"
+                else:
+                    cmd = f"{cmd} NOSYS"
+            if tso.get('region_size') is not None:
+                if tso.get('region_size') != -1:
+                    cmd = f"{cmd} SIZE({tso['region_size']})"
+                else:
+                    cmd = f"{cmd} NOSIZE"
+            if tso.get('max_region_size') is not None:
+                if tso.get('max_region_size') != -1:
+                    cmd = f"{cmd} MAXSIZE({tso['max_region_size']})"
+                else:
+                    cmd = f"{cmd} NOMAXSIZE"
+            if tso.get('logon_proc') is not None:
+                if tso.get('logon_proc') != "":
+                    cmd = f"{cmd} PROC({tso['logon_proc']})"
+                else:
+                    cmd = f"{cmd} NOPROC"
+            if tso.get('security_label') is not None:
+                if tso.get('security_label') != "":
+                    cmd = f"{cmd} SECLABEL({tso['security_label']})"
+                else:
+                    cmd = f"{cmd} NOSECLABEL"
+            if tso.get('unit_name') is not None:
+                if tso.get('unit_name') != "":
+                    cmd = f"{cmd} UNIT({tso['unit_name']})"
+                else:
+                    cmd = f"{cmd} NOUNIT"
+            if tso.get('user_data') is not None:
+                if tso.get('user_data') != "":
+                    cmd = f"{cmd} USERDATA({tso['user_data']})"
+                else:
+                    cmd = f"{cmd} NOUSERDATA"
+
+            cmd = f"{cmd} )"
+
+        return cmd
+
+    def _make_operator_substring(self):
+        """Creates a string that defines the OPERATOR block of a user profile.
+
+        Returns
+        -------
+            str: OPERATOR parameters of a RACF command.
+        """
+        cmd = ""
+        operator = self.params.get('operator')
+
+        if operator is not None:
+            if operator.get('delete', False):
+                return "NOOPERPARM"
+
+            cmd = f"{cmd}OPERPARM("
+
+            if operator.get('alt_group') is not None:
+                if operator.get('alt_group') != "":
+                    cmd = f"{cmd} ALTGRP({operator['account_num']})"
+                else:
+                    cmd = f"{cmd} NOALTGRP"
+            if operator.get('authority') is not None:
+                if operator.get('authority') != "delete":
+                    cmd = f"{cmd} AUTH({operator['authority']})"
+                else:
+                    cmd = f"{cmd} NOAUTH"
+            if operator.get('cmd_system') is not None:
+                if operator.get('cmd_system') != "":
+                    cmd = f"{cmd} CMDSYS({tso['cmd_system']})"
+                else:
+                    cmd = f"{cmd} NOCMDSYS"
+            if operator.get('search_key') is not None:
+                if operator.get('search_key') != "":
+                    cmd = f"{cmd} KEY({operator['search_key']})"
+                else:
+                    cmd = f"{cmd} NOKEY"
+            if operator.get('migration_id', False):
+                cmd = f"{cmd} MIGID(YES)"
+            else:
+                cmd = f"{cmd} MIGID(NO)"
+            # TODO: allow multiple choices
+            if operator.get('display') is not None:
+                if operator.get('display') != "delete":
+                    cmd = f"{cmd} MONITOR({operator['operator']})"
+                else:
+                    cmd = f"{cmd} NOMONITOR"
+            if operator.get('msg_level') is not None:
+                if operator.get('msg_level') != "delete":
+                    cmd = f"{cmd} LEVEL({operator['msg_level']})"
+                else:
+                    cmd = f"{cmd} NOLEVEL"
+            if operator.get('msg_format') is not None:
+                if operator.get('msg_format') != 'delete':
+                    cmd = f"{cmd} MFORM({operator['msg_format']})"
+                else:
+                    cmd = f"{cmd} NOMFORM"
+            if operator.get('msg_storage') is not None:
+                if operator.get('msg_storage') != 0:
+                    cmd = f"{cmd} STORAGE({operator['msg_storage']})"
+                else:
+                    cmd = f"{cmd} NOSTORAGE"
+            if operator.get('msg_scope') is not None:
+                if operator['msg_scope'].get('add') is not None:
+                    scopes = operator['msg_scope']['add']
+                    cmd = f'{cmd}ADDMSCOPE( '
+                    for scope in scopes:
+                        cmd = f'{cmd}{scope} '
+                    cmd = f'{cmd}) '
+                elif operator['msg_scope'].get('add') is not None:
+                    categories = access['category']['delete']
+                    cmd = f'{cmd}DELMSCOPE( '
+                    for scope in scopes:
+                        cmd = f'{cmd}{scope} '
+                    cmd = f'{cmd}) '
+                else:
+                    cmd = f'{cmd}NOMSCOPE'
+            if operator.get('automated_msgs', False):
+                cmd = f"{cmd} AUTO(YES)"
+            else:
+                cmd = f"{cmd} AUTO(NO)"
+            if operator.get('del_msgs') is not None:
+                if operator.get('del_msgs') != 'delete':
+                    cmd = f"{cmd} DOM({operator['del_msgs']})"
+                else:
+                    cmd = f"{cmd} NODOM"
+            if operator.get('hardcopy_msgs', False):
+                cmd = f"{cmd} HC(YES)"
+            else:
+                cmd = f"{cmd} HC(NO)"
+            if operator.get('internal_msgs', False):
+                cmd = f"{cmd} INTIDS(YES)"
+            else:
+                cmd = f"{cmd} INTIDS(NO)"
+            if operator.get('routing_msgs') is not None:
+                routes = operator['routing_msgs']
+                cmd = f'{cmd}ROUTCODE( '
+                for route in routes:
+                    cmd = f'{cmd}{route} '
+                cmd = f'{cmd}) '
+            if operator.get('undelivered_msgs', False):
+                cmd = f"{cmd} UD(YES)"
+            else:
+                cmd = f"{cmd} UD(NO)"
+            if operator.get('unknown_msgs', False):
+                cmd = f"{cmd} UNKNIDS(YES)"
+            else:
+                cmd = f"{cmd} UNKNIDS(NO)"
+            if operator.get('responses', False):
+                cmd = f"{cmd} LOGCMDRESP(YES)"
+            else:
+                cmd = f"{cmd} LOGCMDRESP(NO)"
+
+            cmd = f"{cmd} )"
+
+        return cmd
+
+    def _make_access_substring_creation(self):
+        """Creates a string that defines various parameters for a user profile.
+
+        Returns
+        -------
+            str: User create/alter parameters of a RACF command.
+        """
+        cmd = ""
+        access = self.params.get('access')
+
+        if access is not None:
+            if access.get('default_group') is not None:
+                cmd = f"{cmd}DFLTGRP({access['default_group']}) "
+            if access.get('clauth') is not None:
+                if access['clauth'].get('add') is not None:
+                    clauth = access['clauth']['add']
+                    cmd = f'{cmd}CLAUTH( '
+                    for class in clauth:
+                        cmd = f'{cmd}{class} '
+                    cmd = f'{cmd}) '
+                elif access['clauth'].get('delete') is not None:
+                    clauth = access['clauth']['delete']
+                    cmd = f'{cmd}NOCLAUTH( '
+                    for class in clauth:
+                        cmd = f'{cmd}{class} '
+                    cmd = f'{cmd}) '
+            if access.get('roaudit') is not None:
+                roaudit = "ROAUDIT" if access['roaudit'] else "NOROAUDIT"
+                cmd = f'{cmd}{roaudit} '
+            if access.get('category') is not None:
+                if access['category'].get('add') is not None:
+                    categories = access['category']['add']
+                    cmd = f'{cmd}ADDCATEGORY( '
+                    for category in categories:
+                        cmd = f'{cmd}{category} '
+                    cmd = f'{cmd}) '
+                elif access['category'].get('delete') is not None:
+                    categories = access['category']['delete']
+                    cmd = f'{cmd}DELCATEGORY( '
+                    for category in categories:
+                        cmd = f'{cmd}{category} '
+                    cmd = f'{cmd}) '
+            if access.get('operator_card') is not None:
+                op_card = "OIDCARD" if access['operator_card'] else "NOOIDCARD"
+                cmd = f'{cmd}{op_card} '
+            if access.get('maintenance_access') is not None:
+                operations = "OPERATIONS" if access['maintenance_access'] else "NOOPERATIONS"
+                cmd = f'{cmd}{operations} '
+            if access.get('restricted') is not None:
+                restricted = "RESTRICTED" if access['restricted'] else "NORESTRICTED"
+                cmd = f'{cmd}{restricted} '
+            if access.get('security_label') is not None:
+                if access.get('security_label') != "":
+                    cmd = f"{cmd}SECLABEL('{access['security_label']}') "
+                else:
+                    cmd = f"{cmd}NOSECLABEL "
+            if access.get('security_level') is not None:
+                if access.get('security_level') != "":
+                    cmd = f"{cmd}SECLEVEL('{access['security_level']}') "
+                else:
+                    cmd = f"{cmd}NOSECLEVEL "
+
+        return cmd
+
+    def _make_restrictions_substring(self):
+        """Creates a string that defines various parameters for how a user can
+        access a system.
+
+        Returns
+        -------
+            str: User parameters of a RACF command.
+        """
+        cmd = ""
+        restrictions = self.params.get('restrictions')
+
+        if restrictions is not None:
+            if restrictions.get('days') is not None or restrictions.get('time') is not None:
+                cmd = f"{cmd}WHEN( "
+                # TODO: change to allow multiple choices
+                if restrictions.get('days') is not None:
+                    cmd = f"{cmd}DAYS({restrictions['days']}) "
+                if restrictions.get('time') is not None:
+                    cmd = f"{cmd}TIME({restrictions['time']}) "
+                cmd = f"{cmd}) "
+
+            if restrictions.get('resume') is not None:
+                cmd = f"{cmd}RESUME({restrictions['resume']})"
+            elif restrictions.get('delete_resume', False):
+                cmd = f"{cmd}NORESUME "
+
+            if restrictions.get('revoke') is not None:
+                cmd = f"{cmd}REVOKE({restrictions['revoke']})"
+            elif restrictions.get('delete_revoke', False):
+                cmd = f"{cmd}NOREVOKE "
+
+        return cmd
+
+    # def _make_access_substring_connect(self):
+    #     """
+    #     """
+    #     cmd = ""
+    #     access = self.params.get('access')
+    #
+    #     if access is not None:
+    #         if access.get('authority') is not None:
+    #             cmd = f"{cmd}AUTHORITY({access['authority']}) "
+    #         if access.get('universal_access') is not None:
+    #             cmd = f"{cmd}UACC({access['universal_access']}) "
+    #
+    #             if access['authority'].get('add') is not None:
+    #                 custom_fields = general['custom_fields']['add']
+    #                 cmd = f'{cmd}CSDATA( '
+    #                 for field in custom_fields:
+    #                     cmd = f'{cmd}{field}({custom_fields[field]}) '
+    #                 cmd = f'{cmd}) '
+    #             elif general['custom_fields'].get('delete') is not None:
+    #                 custom_fields = general['custom_fields']['delete']
+    #                 cmd = f'{cmd}CSDATA( '
+    #                 for field in custom_fields:
+    #                     cmd = f'{cmd}NO{field.upper()} '
+    #                 cmd = f'{cmd}) '
+    #             elif general['custom_fields'].get('delete_block') is not None:
+    #                 cmd = f'{cmd}NOCSDATA '
+    #         if general.get('installation_data') is not None:
+    #             if general.get('installation_data') != "":
+    #                 cmd = f"{cmd}DATA('{general['installation_data']}') "
+    #             else:
+    #                 cmd = f"{cmd}NODATA "
+    #         if general.get('model') is not None:
+    #             if general.get('model') != "":
+    #                 cmd = f"{cmd}MODEL({general['model']}) "
+    #             else:
+    #                 cmd = f"{cmd}NOMODEL "
+    #         if general.get('owner') is not None and general.get('owner') != "":
+    #             cmd = f"{cmd}OWNER({general['owner']}) "
+    #
+    #     return cmd
 
 
 def get_racf_handler(module, module_params):
@@ -1296,25 +1761,6 @@ def run_module():
             'access': {
                 'type': 'dict',
                 'required': False,
-                'mutually_exclusive': [
-                    ('authority', 'delete'),
-                    ('universal_access', 'delete'),
-                    ('group_name', 'delete'),
-                    ('group_account', 'delete'),
-                    ('group_operations', 'delete'),
-                    ('default_group', 'delete'),
-                    ('clauth', 'delete'),
-                    ('auditor', 'delete'),
-                    ('roaudit', 'delete'),
-                    ('adsp_attribute', 'delete'),
-                    ('category', 'delete'),
-                    ('operator_card', 'delete'),
-                    ('maintenance_access', 'delete'),
-                    ('restricted', 'delete'),
-                    ('security_label', 'delete'),
-                    ('security_level', 'delete'),
-                    ('special', 'delete')
-                ],
                 'options': {
                     'authority': {
                         'type': 'str',
@@ -1424,10 +1870,6 @@ def run_module():
                         'type': 'bool',
                         'required': False,
                         'default': False
-                    },
-                    'delete': {
-                        'type': 'bool',
-                        'required': False
                     }
                 }
             },

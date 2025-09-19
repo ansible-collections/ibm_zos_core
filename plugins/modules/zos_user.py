@@ -265,6 +265,89 @@ def dynamic_dict(contents, dependencies):
     return contents
 
 
+def multiple_choice_display(contents, dependencies):
+    """Validates multiple choices for the operator.display option.
+
+    Parameters
+    ----------
+        contents: Union[str, list[str]]
+                 The contents of the choice argument.
+        dependencies: dict
+                     Any arguments this argument is dependent on.
+
+    Raises
+    -------
+        ValueError: str
+                   When an invalid argument provided.
+
+    Returns
+    -------
+        list: List containing each choice selected.
+    """
+    allowed_values = {
+        'jobnames',
+        'jobnamest',
+        'sess',
+        'sesst',
+        'status',
+        'delete'
+    }
+
+    if not contents:
+        return None
+    if not isinstance(contents, list):
+        contents = [contents]
+    for value in contents:
+        if value not in allowed_values:
+            raise ValueError(f'Invalid argument "{value}" for option operator.display.')
+    if 'delete' in contents and len(contents) > 1:
+            raise ValueError(f'Cannot specify "delete" with other values for option operator.display.')
+    return contents
+
+
+def multiple_choice_days(contents, dependencies):
+    """Validates multiple choices for the restrictions.days option.
+
+    Parameters
+    ----------
+        contents: Union[str, list[str]]
+                 The contents of the choice argument.
+        dependencies: dict
+                     Any arguments this argument is dependent on.
+
+    Raises
+    -------
+        ValueError: str
+                   When an invalid argument provided.
+
+    Returns
+    -------
+        list: List containing each choice selected.
+    """
+    allowed_values = {
+        'anyday',
+        'weekdays',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday'
+    }
+
+    if not contents:
+        return None
+    if not isinstance(contents, list):
+        contents = [contents]
+    for value in contents:
+        if value not in allowed_values:
+            raise ValueError(f'Invalid argument "{value}" for option restrictions.days.')
+    if 'anyday' in contents and len(contents) > 1:
+            raise ValueError(f'Cannot specify "anyday" with other values for option restrictions.days.')
+    return contents
+
+
 class RACFHandler():
     """Parent class for group and user RACF operations.
     """
@@ -1363,10 +1446,13 @@ class UserHandler(RACFHandler):
                 cmd = f"{cmd} MIGID(YES)"
             else:
                 cmd = f"{cmd} MIGID(NO)"
-            # TODO: allow multiple choices
             if operator.get('display') is not None:
-                if operator.get('display') != "delete":
-                    cmd = f"{cmd} MONITOR({operator['operator']})"
+                if "delete" not in operator['display']:
+                    options = operator['display']
+                    cmd = f'{cmd}MONITOR( '
+                    for option in options:
+                        cmd = f'{cmd}{option} '
+                    cmd = f'{cmd}) '
                 else:
                     cmd = f"{cmd} NOMONITOR"
             if operator.get('msg_level') is not None:
@@ -1517,9 +1603,11 @@ class UserHandler(RACFHandler):
         if restrictions is not None:
             if restrictions.get('days') is not None or restrictions.get('time') is not None:
                 cmd = f"{cmd}WHEN( "
-                # TODO: change to allow multiple choices
                 if restrictions.get('days') is not None:
-                    cmd = f"{cmd}DAYS({restrictions['days']}) "
+                    cmd = f"{cmd}DAYS( "
+                    for day in restrictions['days']:
+                        cmd = f"{cmd}{day} "
+                    cmd = f"{cmd}) "
                 if restrictions.get('time') is not None:
                     cmd = f"{cmd}TIME({restrictions['time']}) "
                 cmd = f"{cmd}) "
@@ -2013,12 +2101,11 @@ def run_module():
                         'required': False,
                         'default': False
                     },
-                    # TODO: allow multiple choices
-                    # TODO: default should be ['jobnames', 'sess']
                     'display': {
-                        'type': 'str',
+                        'type': 'raw',
                         'required': False,
-                        'choices': ['jobnames', 'jobnamest', 'sess', 'sesst', 'status', 'delete']
+                        'default': ['jobnames', 'sess']
+                        # 'choices': ['jobnames', 'jobnamest', 'sess', 'sesst', 'status', 'delete']
                     },
                     'msg_level': {
                         'type': 'str',
@@ -2113,7 +2200,6 @@ def run_module():
                     ('revoke', 'delete_revoke')
                 ],
                 'options': {
-                    # TODO: allow multiple
                     'days': {
                         'type': 'str',
                         'required': False,
@@ -2289,7 +2375,7 @@ def run_module():
                 'cmd_system': {'arg_type': 'str', 'required': False},
                 'search_key': {'arg_type': 'str', 'required': False},
                 'migration_id': {'arg_type': 'bool', 'required': False},
-                'display': {'arg_type': 'str', 'required': False},
+                'display': {'arg_type': multiple_choice_display, 'required': False},
                 'msg_level': {'arg_type': 'str', 'required': False},
                 'msg_format': {'arg_type': 'str', 'required': False},
                 'msg_storage': {'arg_type': 'int', 'required': False},
@@ -2317,7 +2403,7 @@ def run_module():
             'arg_type': 'dict',
             'required': False,
             'options': {
-                'days': {'arg_type': 'str', 'required': False},
+                'days': {'arg_type': multiple_choice_days, 'required': False},
                 'time': {'arg_type': 'str', 'required': False},
                 'resume': {'arg_type': 'str', 'required': False},
                 'delete_resume': {'arg_type': 'bool', 'required': False},

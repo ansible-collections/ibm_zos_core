@@ -148,7 +148,7 @@ options:
         - I(state) should be the desired state of the started task after the module is executed.
         - If state is started and the respective member is not present on the managed node, then error will be thrown with rc=1,
           changed=false and stderr which contains error details.
-        - If state is cancelled , modified, displayed, stopped or forced and the started task is not running on the managed node, 
+        - If state is cancelled , modified, displayed, stopped or forced and the started task is not running on the managed node,
           then error will be thrown with rc=1, changed=false and stderr contains error details.
         - If state is displayed and the started task is running, then the module will return the started task details along with
           changed=true.

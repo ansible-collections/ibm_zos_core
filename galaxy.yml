@@ -77,7 +77,6 @@ build_ignore:
   - .pytest_cache
   - .vscode
   - Jenkinsfile
-  - ac
   - ansible.cfg
   - changelogs
   - collections

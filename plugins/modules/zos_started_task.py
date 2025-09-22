@@ -1290,32 +1290,33 @@ def run_module():
     Below error messages are used to detrmine if response has any error.When
     response could have any of below error message has explained below.
 
-    ERROR: Response contains this keyword when JCL contains syntax error.
-    INVALID PARAMETER: When invalid parameter passed in command line.
-    NOT ACTIVE: When started task with the given job name is not active
+    JCL ERROR - IEE122I: Response contains this keyword when JCL contains syntax error.
+    INVALID PARAMETER - IEE535I: When invalid parameter passed in command line.
+    NOT ACTIVE - IEE341I: When started task with the given job name is not active
     REJECTED: When modify command is not supported by respective started task.
-    NOT LOGGED ON: When invalid userid passed in command.
-    DUPLICATE NAME FOUND: When multiple started tasks exist with same name.
-    NON-CANCELABLE: When cancel command can't stop job and force command is needed.
-    CANCELABLE: When force command used without using cancel command
+    NOT LOGGED ON - IEE324I: When invalid userid passed in command.
+    DUPLICATE NAME FOUND - IEE842I: When multiple started tasks exist with same name.
+    NON-CANCELABLE - IEE838I: When cancel command can't stop job and force command is needed.
+    CANCELABLE - IEE838I: When force command used without using cancel command
     """
-    start_errmsg = ['JCL ERROR', 'INVALID PARAMETER', 'DELIMITER ERROR', 'ERROR']
-    stop_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
-    display_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
-    modify_errmsg = ['REJECTED', 'NOT ACTIVE', 'INVALID PARAMETER']
-    cancel_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'DUPLICATE NAME FOUND', 'NON-CANCELABLE']
-    force_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'CANCELABLE', 'DUPLICATE NAME FOUND']
+    start_errmsg = ['IEE122I', 'IEE535I', 'IEE307I', 'ERROR']
+    stop_errmsg = ['IEE341I', 'IEE535I']
+    display_errmsg = ['IEE341I', 'IEE535I', 'NOT FOUND']
+    modify_errmsg = ['REJECTED', 'IEE341I', 'IEE535I', 'IEE311I']
+    cancel_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'IEE842I', 'NON-CANCELABLE']
+    force_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'CANCELABLE', 'IEE842I']
     error_details = {
-        'JCL ERROR': 'Member is missing in PROCLIB or JCL is invalid or issue with JCL execution.',
-        'INVALID PARAMETER': 'Command parameters are invalid.',
-        'DELIMITER ERROR': 'Command parameters are invalid.',
+        'IEE122I': 'Specified member is missing or PROC/JOB contains incorrect JCL statements.',
+        'IEE535I': 'A parameter on a command is not valid.',
+        'IEE307I': 'Command parameter punctuation is incorrect or parameter is not followed by a blank.',
         'ERROR': 'Member is missing in PROCLIB or JCL is invalid or issue with JCL execution.',
-        'NOT ACTIVE': 'Started task is not active',
+        'IEE341I': 'Started task is not active',
         'REJECTED': 'Started task is not accepting modification.',
-        'NOT LOGGED ON': 'TSO user session is not active.',
-        'DUPLICATE NAME FOUND': 'Multiple started tasks are running with same name.',
-        'NON-CANCELABLE': 'Started task can not be cancelled.',
-        'CANCELABLE': 'Started task should be cancelled.'
+        'IEE324I': 'The userid specified on the command is not currently active in the system..',
+        'IEE842I': 'More than one active job with the specified name exist.',
+        'NON-CANCELABLE': 'The task cannot be canceled. Use the FORCE ARM command.',
+        'CANCELABLE': 'The task can be canceled. Use the CANCEL command.',
+        'IEE311I': 'Required parameter is missing.'
     }
     err_msg = []
     kwargs = {}

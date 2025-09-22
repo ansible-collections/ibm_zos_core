@@ -1812,9 +1812,9 @@ def run_module():
         ZOSRawError: When an issue occurs attempting to run the desired program.
     """
     dd_name_base = dict(dd_name=dict(type="str", required=True))
-
     dd_data_set_base = dict(
         data_set_name=dict(type="str"),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -2079,6 +2079,7 @@ def parse_and_validate_args(params):
 
     dd_data_set_base = dict(
         data_set_name=dict(type="data_set", required=True),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -2739,14 +2740,16 @@ def get_dd_name_and_key(dd):
     """
     dd_name = ""
     key = ""
-    if dd.get("dd_data_set"):
+    dd_params = dd.get("dd_data_set")
+    if dd_params:
         dd_name = dd.get("dd_data_set").get("dd_name")
-        data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
-                                                            dd.get("dd_data_set").get("disposition"),
-                                                            dd.get("dd_data_set").get("type"))
-        dd.get("dd_data_set")["data_set_name"] = data_set_name
-        dd.get("dd_data_set")["disposition"] = disposition
-        key = "dd_data_set"
+        if not dd_params.get("raw"):
+            data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
+                                                                dd.get("dd_data_set").get("disposition"),
+                                                                dd.get("dd_data_set").get("type"))
+            dd.get("dd_data_set")["data_set_name"] = data_set_name
+            dd.get("dd_data_set")["disposition"] = disposition
+            key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
         key = "dd_unix"
@@ -2857,10 +2860,17 @@ def build_data_definition(dd):
     """
     data_definition = None
     if dd.get("dd_data_set"):
-        data_definition = RawDatasetDefinition(
-            **(dd.get("dd_data_set")))
-        if data_definition.backup:
-            backups.append(get_backups(data_definition.backup, dd.get("dd_data_set").get("data_set_name")))
+        dd_params = dd.get("dd_data_set")
+        if dd_params.get("raw"):
+            data_definition = "{0},raw".format(dd_params.get("data_set_name"))
+        else:
+            data_definition = RawDatasetDefinition(**dd_params)
+            if data_definition.backup:
+                backups.append(
+                    get_backups(
+                        data_definition.backup, dd_params.get("data_set_name")
+                    )
+                )
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(
             **(dd.get("dd_unix")))
@@ -3312,3 +3322,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+  

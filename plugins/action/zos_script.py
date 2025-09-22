@@ -93,7 +93,7 @@ class ActionModule(ActionBase):
                 src=script_path,
                 dest=tempfile_path,
                 replace=True,
-                is_binary=False,
+                binary=False,
                 encoding=module_args.get('encoding'),
                 use_template=module_args.get('use_template', False),
                 template_parameters=module_args.get('template_parameters', dict())

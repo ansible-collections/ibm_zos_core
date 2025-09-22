@@ -101,7 +101,7 @@ class ActionModule(ActionBase):
                     dest=dest,
                     dest_data_set=dest_data_set,
                     replace=force,
-                    is_binary=True,
+                    binary=True,
                 )
             )
             copy_task = self._task.copy()

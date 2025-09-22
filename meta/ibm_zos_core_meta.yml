@@ -1,5 +1,5 @@
 name: ibm_zos_core
-version: "1.15.0-beta.1"
+version: "1.15.0"
 managed_requirements:
     -
         name: "IBM Open Enterprise SDK for Python"

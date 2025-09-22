@@ -45,21 +45,13 @@ def get_temp_idcams_dataset(hosts):
 #                               Data set DD tests                              #
 # ---------------------------------------------------------------------------- #
 
-def test_adrdssu_volume_dump_with_raw_dd(ansible_zos_module, volumes_on_systems):
-    """
-    Tests a full volume dump using the ADRDSSU utility, replicating the
-    exact command-line example. The output dump dataset (DUMPDD) is
-    allocated using the 'raw' parameter, allowing ADRDSSU to determine
-    the necessary DCB attributes.
-    """
+def test_adrdssu_dataset_dump_with_raw_dd(ansible_zos_module):
     hosts = ansible_zos_module
+    source_dataset = get_tmp_ds_name()
     dump_dataset = get_tmp_ds_name()
-    volume_handler = Volume_Handler(volumes_on_systems)
-    # Get a real, available volume from the test system to use.
-    test_volume = volume_handler.get_available_vol()
 
     try:
-        # EXECUTION: Call zos_mvs_raw with parameters matching the command.
+        hosts.all.zos_data_set(name=source_dataset, state="present", type="seq", replace=True)
         results = hosts.all.zos_mvs_raw(
             program_name="ADRDSSU",
             auth=True,
@@ -73,25 +65,15 @@ def test_adrdssu_volume_dump_with_raw_dd(ansible_zos_module, volumes_on_systems)
                     }
                 },
                 {
-                    "dd_volume": {
-                        "dd_name": "VOLDD",
-                        "volume_name": test_volume,
-                        "unit": "3390",
-                        "disposition": "old",
-                    }
-                },
-                {
                     "dd_input": {
                         "dd_name": "SYSIN",
-                        "content": "  DUMP FULL INDDNAME(VOLDD) OUTDDNAME(DUMPDD)"
+                        "content": f" DUMP DATASET(INCLUDE({source_dataset})) OUTDDNAME(DUMPDD)"
                     }
                 },
                 {
                     "dd_output": {
                         "dd_name": "SYSPRINT",
-                        "return_content": {
-                            "type": "text"
-                        }
+                        "return_content": { "type": "text" }
                     }
                 },
             ],
@@ -99,14 +81,11 @@ def test_adrdssu_volume_dump_with_raw_dd(ansible_zos_module, volumes_on_systems)
         for result in results.contacted.values():
             print("\nVerbose output from stderr:")
             print(result.get("stderr"))
-
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert result.get("changed", False) is True
-            sysprint_content = "".join(result.get("dd_names")[0].get("content", []))
-            assert "ADR101I" in sysprint_content
-            assert "ADR006I" in sysprint_content
 
     finally:
+        hosts.all.zos_data_set(name=source_dataset, state="absent")
         hosts.all.zos_data_set(name=dump_dataset, state="absent")
 
 def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_systems):

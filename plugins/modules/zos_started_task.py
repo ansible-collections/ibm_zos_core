@@ -92,6 +92,8 @@ options:
           while starting it. If job_name is not specified, then member_name is used as job_name.
           Otherwise, job_name is the started task job name used to find and apply the state
           selected.
+        - When state is displayed or modified or cancelled or stopped or forced, job_name is the
+          started task name.
     required: false
     type: str
     aliases:
@@ -118,8 +120,8 @@ options:
         - member
   parameters:
     description:
-        - Program parameters passed to the started program, which might be a list in parentheses or
-          a string in single quotation marks
+        - Program parameters passed to the started program.
+        - Only applicable when state is started or modified otherwise ignored.
     required: false
     type: list
     elements: str
@@ -166,6 +168,7 @@ options:
         - The name of the subsystem that selects the task for processing. The name must be 1 - 4
           characters, which are defined in the IEFSSNxx parmlib member, and the subsystem must
           be active.
+        - Only applicable when state=started otherwise ignored.
     required: false
     type: str
   tcb_address:
@@ -300,7 +303,7 @@ msg:
     returned: failure or skipped
     type: str
     sample:
-      File /u/user/file.txt is already missing on the system, skipping script
+      Command parameters are invalid.
 rc:
     description:
     - The return code is 0 when command executed successfully.
@@ -521,7 +524,7 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=1, **kwargs):
+def execute_command(operator_cmd, started_task_name, execute_display_before=False, execute_display_after=False, timeout_s=0, **kwargs):
     """Execute operator command.
 
     Parameters
@@ -545,11 +548,8 @@ def execute_command(operator_cmd, started_task_name, execute_display_before=Fals
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
     timeout_c = 100 * timeout_s
     if execute_display_before:
-        task_params = execute_display_command(started_task_name, timeout_c)
+        task_params = execute_display_command(started_task_name)
     response = opercmd.execute(operator_cmd, timeout_c, **kwargs)
-
-    if execute_display_after:
-        task_params = execute_display_command(started_task_name, timeout_c)
 
     rc = response.rc
     stdout = response.stdout_response
@@ -557,7 +557,7 @@ def execute_command(operator_cmd, started_task_name, execute_display_before=Fals
     return rc, stdout, stderr, task_params
 
 
-def execute_display_command(started_task_name, timeout_s):
+def execute_display_command(started_task_name, timeout=0):
     """Execute operator display command.
 
     Parameters
@@ -573,7 +573,7 @@ def execute_display_command(started_task_name, timeout_s):
         List contains extracted parameters from display command output of started task
     """
     cmd = "d a," + started_task_name
-    display_response = opercmd.execute(cmd, timeout_s)
+    display_response = opercmd.execute(cmd, timeout)
     task_params = []
     if display_response.rc == 0 and display_response.stderr_response == "":
         task_params = extract_keys(display_response.stdout_response)
@@ -1299,12 +1299,24 @@ def run_module():
     NON-CANCELABLE: When cancel command can't stop job and force command is needed.
     CANCELABLE: When force command used without using cancel command
     """
-    start_errmsg = ['ERROR', 'INVALID PARAMETER']
+    start_errmsg = ['JCL ERROR', 'INVALID PARAMETER', 'DELIMITER ERROR', 'ERROR']
     stop_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
     display_errmsg = ['NOT ACTIVE', 'INVALID PARAMETER']
     modify_errmsg = ['REJECTED', 'NOT ACTIVE', 'INVALID PARAMETER']
     cancel_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'DUPLICATE NAME FOUND', 'NON-CANCELABLE']
     force_errmsg = ['NOT ACTIVE', 'NOT LOGGED ON', 'INVALID PARAMETER', 'CANCELABLE', 'DUPLICATE NAME FOUND']
+    error_details = {
+        'JCL ERROR': 'Member is missing in PROCLIB or JCL is invalid or issue with JCL execution.',
+        'INVALID PARAMETER': 'Command parameters are invalid.',
+        'DELIMITER ERROR': 'Command parameters are invalid.',
+        'ERROR': 'Member is missing in PROCLIB or JCL is invalid or issue with JCL execution.',
+        'NOT ACTIVE': 'Started task is not active',
+        'REJECTED': 'Started task is not accepting modification.',
+        'NOT LOGGED ON': 'TSO user session is not active.',
+        'DUPLICATE NAME FOUND': 'Multiple started tasks are running with same name.',
+        'NON-CANCELABLE': 'Started task can not be cancelled.',
+        'CANCELABLE': 'Started task should be cancelled.'
+    }
     err_msg = []
     kwargs = {}
 
@@ -1346,13 +1358,18 @@ def run_module():
     rc, out, err, task_params = execute_command(cmd, started_task_name, execute_display_before, execute_display_after, timeout_s=wait_time_s, **kwargs)
     isFailed = False
     system_logs = ""
-    if err != "" or any(msg in out for msg in err_msg):
+    msg = ""
+    found_msg = next((msg for msg in err_msg if msg in out), None)
+    if err != "" or found_msg:
         isFailed = True
     # Fetch system logs to validate any error occured in execution
     if not isFailed or verbose:
         system_logs = fetch_logs(cmd.upper(), wait_time_s)
-        if any(msg in system_logs for msg in err_msg):
-            isFailed = True
+        #  If sysout is not having error, then check system log as well to make sure no error occured
+        if not isFailed:
+            found_msg = next((msg for msg in err_msg if msg in system_logs), None)
+            if found_msg:
+                isFailed = True
     if not verbose:
         system_logs = ""
     current_state = ""
@@ -1360,6 +1377,7 @@ def run_module():
         if rc == 0:
             rc = 1
         changed = False
+        msg = error_details[found_msg]
         stdout = out
         stderr = err
         if err == "" or err is None:
@@ -1372,6 +1390,8 @@ def run_module():
         stderr = err
         if state == "displayed":
             task_params = extract_keys(out)
+        elif execute_display_after:
+            task_params = execute_display_command(started_task_name)
 
     result = dict()
 
@@ -1390,6 +1410,8 @@ def run_module():
         stderr_lines=stderr.split('\n'),
         verbose_output=system_logs
     )
+    if msg:
+        result['msg'] = msg
 
     module.exit_json(**result)
 

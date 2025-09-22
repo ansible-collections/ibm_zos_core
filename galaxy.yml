@@ -83,7 +83,6 @@ build_ignore:
   - collections
   - docs
   - importer_result.json
-  - scripts
   - test_config.yml
   - tests/*.ini
   - tests/*.py

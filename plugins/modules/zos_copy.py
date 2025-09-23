@@ -1681,10 +1681,31 @@ class USSCopyHandler(CopyHandler):
             else:
                 opts = dict()
                 opts["options"] = ""
-                logger.info("Copying using datasets.copy()")
+                logger.info("Copying using dcp ")
                 logger.info(f"Copying from {new_src} to {dest}")
-                datasets.copy(new_src, dest, **opts)
-                logger.info(f"Finalized datasets.copy()")
+                logger.info(f"Options are {opts}")
+                # datasets.copy(new_src, dest, **opts)
+                log_file = SingletonLogger().get_log_file_path()
+                import subprocess
+                with open(log_file, "w") as f:
+                    logger.info(f"Executing subprocess popen")
+                    process = subprocess.Popen(
+                        ["dcp", '-d', '-v', new_src, dest],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,  # Ensures output is in string format, not bytes
+                        bufsize=1   # Line-buffered
+                    )
+
+                    # Stream output line by line
+                    for line in process.stdout:
+                        f.write(line)
+                        f.flush()  # Ensure it's written immediately
+
+                    process.stdout.close()
+                    return_code = process.wait()
+                    logger.info(f"dcp return code: {return_code}")
+                logger.info(f"Finalized dcp ")
                 logger.info(f"Copying stat from {new_src} to {dest} following symlinks.")
                 shutil.copystat(new_src, dest, follow_symlinks=True)
                 logger.info(f"Finalized shutil.copystat")

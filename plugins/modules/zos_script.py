@@ -356,7 +356,7 @@ def run_module():
     removes = module.params.get('removes')
     remote_src = module.params.get('remote_src')
     script_permissions = None
-    temp_file = script_path if not remote_src else None
+    # temp_file = script_path if not remote_src else None
 
     result = dict()
 
@@ -431,8 +431,8 @@ def run_module():
 
         if script_rc != 0 or stderr:
             result['msg'] = 'The script terminated with an error'
-            if temp_file is not None:
-                os.remove(temp_file)
+            # if temp_file is not None:
+            #     os.remove(temp_file)
             module.fail_json(
                 **result
             )
@@ -448,9 +448,9 @@ def run_module():
         result["msg"] = ("The script terminated with an error: {0}".format(to_text(err)))
         module.exit_json(**result)
 
-    finally:
-        if temp_file is not None:
-            os.remove(temp_file)
+    # finally:
+    #     if temp_file is not None:
+    #         os.remove(temp_file)
 
     module.exit_json(**result)
 

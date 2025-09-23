@@ -1022,7 +1022,6 @@ def test_backup_and_restore_all_of_sms_group(ansible_zos_module, volumes_sms_sys
             hosts, data_set_name, DATA_SET_CONTENTS, volume
         )
         sms = {"storage_class":smsgrp}
-        
         for attempt in range(2):
             results = hosts.all.zos_backup_restore(
                 data_sets=dict(include=data_set_name),

@@ -650,7 +650,7 @@ def main():
             module.fail_json(msg="management_class and disable_automatic_management_class are mutually exclusive, only one can be use by operation.")
 
         if access and access.get("share") and full_volume:
-            module.fail_json(msg="access.share option is mutually exclusive with full_volume option.")
+            module.fail_json(msg="access.share cannot be used with full_volume. These options are mutually exclusive.")
 
         if operation == "backup":
             backup(

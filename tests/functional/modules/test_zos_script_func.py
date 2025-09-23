@@ -125,31 +125,13 @@ print(msg)
     return content
 
 
-# def create_python_script_stderr(msg, rc):
-#     """Returns a Python script that will write out to STDERR and return
-#     a given RC. The RC can be 0, but for testing it would be better if it
-#     was something else."""
-#     return f"""import sys
-# print('{msg}', file=sys.stderr)
-# exit({rc})
-# """
-
-
 def create_python_script_stderr(msg, rc):
     """Returns a Python script that will write out to STDERR and return
-    a given RC. It will also return a valid JSON object to stdout.
-    """
+    a given RC. The RC can be 0, but for testing it would be better if it
+    was something else."""
     return f"""import sys
-import json
 print('{msg}', file=sys.stderr)
-result = {{
-    "failed": True,
-    "msg": "{msg}",
-    "rc": {rc},
-    "changed": True
-}}
-print(json.dumps(result))
-sys.exit({rc})
+exit({rc})
 """
 
 

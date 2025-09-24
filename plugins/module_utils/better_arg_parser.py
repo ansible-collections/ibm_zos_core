@@ -360,7 +360,7 @@ class BetterArgHandler(object):
 
     def _member_name_type(self, contents, resolve_dependencies):
         """Resolver for PDS/E member name type arguments. This is part of
-           zos_started_task member name validfation.
+           zos_started_task member name validation.
 
         Parameters
         ----------

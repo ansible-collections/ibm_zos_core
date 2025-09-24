@@ -30,49 +30,49 @@ options:
   arm:
     description:
         - I(arm) indicates to execute normal task termination routines without causing address space destruction.
-        - Only applicable when state is forced, otherwise is ignored.
+        - Only applicable when I(state) is C(forced), otherwise ignored.
     required: false
     type: bool
   armrestart:
     description:
-        - Indicates that the batch job or started task should be automatically restarted after the cancel
+        - Indicates that the batch job or started task should be automatically restarted after CANCEL
           completes, if it is registered as an element of the automatic restart manager. If the job or
           task is not registered or if you do not specify this parameter, MVS will not automatically
           restart the job or task.
-        - Only applicable when state is cancelled or forced, otherwise is ignored.
+        - Only applicable when I(state) is C(cancelled) or C(forced), otherwise ignored.
     required: false
     type: bool
   asid:
     description:
-        - When state is cancelled or stopped or forced, asid is the hexadecimal address space
+        - When I(state) is C(cancelled), C(stopped) or C(forced), I(asid) is the hexadecimal address space
           identifier of the work unit you want to cancel, stop or force.
-        - Only applicable when state is stopped or cancelled or forced, otherwise is ignored.
+        - Only applicable when I(state) is C(stopped), C(cancelled), or C(forced), otherwise ignored.
     required: false
     type: str
   device_type:
     description:
-        - Option device_type is the type of the output device (if any) associated with the task.
-        - Only applicable when state is started otherwise ignored.
+        - Option I(device_type) is the type of the output device (if any) associated with the task.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   device_number:
     description:
-        - Option device_number is the number of the device to be started. A device number is 3 or 4
+        - Option I(device_number) is the number of the device to be started. A device number is 3 or 4
           hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit
           number.
-        - Only applicable when state=started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   dump:
     description:
         - A dump is to be taken. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP)
           depends on the JCL for the job.
-        - Only applicable when state is cancelled otherwise ignored.
+        - Only applicable when I(state) is C(cancelled), otherwise ignored.
     required: false
     type: bool
   identifier_name:
     description:
-        - Option identifier_name is the name that identifies the task. This name can be up to 8
+        - Option I(identifier_name) is the name that identifies the task. This name can be up to 8
           characters long. The first character must be alphabetical.
     required: false
     type: str
@@ -80,19 +80,19 @@ options:
         - identifier
   job_account:
     description:
-        - Option job_account specifies accounting data in the JCL JOB statement for the started
+        - Option I(job_account) specifies accounting data in the JCL JOB statement for the started
           task. If the source JCL was a job and has already accounting data, the value that is
           specified on this parameter overrides the accounting data in the source JCL.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   job_name:
     description:
-        - When state=started job_name is a name which should be assigned to a started task
-          while starting it. If job_name is not specified, then member_name is used as job_name.
-          Otherwise, job_name is the started task job name used to find and apply the state
+        - When I(state) is started, I(job_name) is a name which should be assigned to a started task
+          while starting it. If I(job_name) is not specified, then I(member_name) is used as I(job_name).
+          Otherwise, I(job_name) is the started task job name used to find and apply the state
           selected.
-        - When state is displayed or modified or cancelled or stopped or forced, job_name is the
+        - When I(state) is C(displayed), C(modified), C(cancelled), C(stopped), or C(forced), I(job_name) is the
           started task name.
     required: false
     type: str
@@ -105,15 +105,15 @@ options:
         - Any appropriate keyword parameter that you specify to override the corresponding
           parameter in the cataloged procedure. The maximum length of each keyword=option is 66
           characters. No individual value within this field can be longer than 44 characters in length.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: dict
   member_name:
     description:
-        - Option member_name is a 1 - 8 character name of a member of a partitioned data set that
+        - Option I(member_name) is a 1 - 8 character name of a member of a partitioned data set that
           contains the source JCL for the task to be started. The member can be either a job or a
           cataloged procedure.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
     aliases:
@@ -121,14 +121,14 @@ options:
   parameters:
     description:
         - Program parameters passed to the started program.
-        - Only applicable when state is started or modified otherwise ignored.
+        - Only applicable when I(state) is C(started) or C(modified), otherwise ignored.
     required: false
     type: list
     elements: str
   retry:
     description:
         - I(retry) is applicable for only FORCE TCB.
-        - Only applicable when state= is forced otherwise ignored.
+        - Only applicable when I(state) is C(forced), otherwise ignored.
     required: false
     type: str
     choices:
@@ -139,7 +139,7 @@ options:
         - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
           a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
           on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
     choices:
@@ -148,12 +148,12 @@ options:
   state:
     description:
         - I(state) should be the desired state of the started task after the module is executed.
-        - If state is started and the respective member is not present on the managed node, then error will be thrown with rc=1,
-          changed=false and stderr which contains error details.
-        - If state is cancelled , modified, displayed, stopped or forced and the started task is not running on the managed node,
-          then error will be thrown with rc=1, changed=false and stderr contains error details.
-        - If state is displayed and the started task is running, then the module will return the started task details along with
-          changed=true.
+        - If I(state) is C(started) and the respective member is not present on the managed node, then error will be thrown with C(rc=1),
+          C(changed=false) and I(stderr) which contains error details.
+        - If I(state) is C(cancelled), C(modified), C(displayed), C(stopped) or C(forced) and the started task is not running on the managed node,
+          then error will be thrown with C(rc=1), C(changed=false) and I(stderr) contains error details.
+        - If I(state) is C(displayed) and the started task is running, then the module will return the started task details along with
+          C(changed=true).
     required: True
     type: str
     choices:
@@ -168,39 +168,39 @@ options:
         - The name of the subsystem that selects the task for processing. The name must be 1 - 4
           characters, which are defined in the IEFSSNxx parmlib member, and the subsystem must
           be active.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   tcb_address:
     description:
         - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
-        - Only applicable when state is forced otherwise ignored.
+        - Only applicable when I(state) is C(forced), otherwise ignored.
     required: false
     type: str
   volume_serial:
     description:
-        - If devicetype is a tape or direct-access device, the volume serial number of the volume is
+        - If I(device_type) is a tape or direct-access device, the volume serial number of the volume is
           mounted on the device.
-        - Only applicable when state is started otherwise ignored.
+        - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   userid:
     description:
         - The user ID of the time-sharing user you want to cancel or force.
-        - Only applicable when state= is cancelled or forced , otherwise ignored.
+        - Only applicable when I(state) is C(cancelled) or C(forced), otherwise ignored.
     required: false
     type: str
   verbose:
     description:
-        - When verbose=true return system logs that describe the task execution.
-          Using this option will can return a big response depending on system load, also it could
+        - When C(verbose=true), return system logs that describe the task execution.
+          Using this option, can return a big response depending on system load, also it could
           surface other programs activity.
     required: false
     type: bool
     default: false
   wait_time:
     description:
-        - Option wait_time is the total time that module zos_started_task will wait for a submitted task in centiseconds.
+        - Option I(wait_time) is the total time that module zos_started_task will wait for a submitted task in centiseconds.
           The time begins when the module is executed on the managed node. Default value of 0 means to wait the default
           amount of time supported by the opercmd utility.
     required: false
@@ -324,13 +324,13 @@ stderr:
     - The STDERR from the command, may be empty.
   returned: changed
   type: str
-  sample: An error has ocurred.
+  sample: An error has occurred.
 stderr_lines:
   description:
     - List of strings containing individual lines from STDERR.
   returned: changed
   type: list
-  sample: ["An error has ocurred"]
+  sample: ["An error has occurred"]
 stdout:
   description:
     - The STDOUT from the command, may be empty.
@@ -380,7 +380,7 @@ tasks:
       sample: 000.008S
     dataspaces:
       description:
-         - The started task dataspaces details.
+         - The started task data spaces details.
       returned: success
       type: list
       elements: dict
@@ -405,7 +405,7 @@ tasks:
          - For address spaces other than system address spaces, the elapsed time since job select time.
          - For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
          - For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
-            elapsed_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+           elapsed_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
             sss.tttS when time is less than 1000 seconds
             hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
             hhhhh.mm when time is at least 100 hours
@@ -616,12 +616,6 @@ def validate_and_prepare_start_command(module):
     keyword_parameters_string = ""
     device = device_type if device_type else device_number
     # Validations
-    if device_number and device_type:
-        module.fail_json(
-            rc=5,
-            msg="device_number and device_type are mutually exclusive.",
-            changed=False
-        )
     if job_account and len(job_account) > 55:
         module.fail_json(
             rc=5,
@@ -895,12 +889,6 @@ def prepare_force_command(module):
         module.fail_json(
             rc=5,
             msg="The TCB address of the task should be exactly 6-digit hexadecimal.",
-            changed=False
-        )
-    if retry and not tcb_address:
-        module.fail_json(
-            rc=5,
-            msg="The RETRY parameter is valid with the TCB parameter only.",
             changed=False
         )
     if userid and armrestart:
@@ -1185,6 +1173,7 @@ def run_module():
         mutually_exclusive=[
             ['device_number', 'device_type']
         ],
+        required_by={'retry': ['tcb_address']},
         supports_check_mode=True
     )
 
@@ -1294,8 +1283,7 @@ def run_module():
     verbose = module.params.get('verbose')
     kwargs = {}
     """
-    Below error messages are used to detrmine if response has any error.When
-    response could have any of below error message has explained below.
+    Below error messages or error codes are used to determine if response has any error.
 
     JCL ERROR - IEE122I: Response contains this keyword when JCL contains syntax error.
     INVALID PARAMETER - IEE535I: When invalid parameter passed in command line.
@@ -1306,12 +1294,12 @@ def run_module():
     NON-CANCELABLE - IEE838I: When cancel command can't stop job and force command is needed.
     CANCELABLE - IEE838I: When force command used without using cancel command
     """
-    start_errmsg = ['IEE122I', 'IEE535I', 'IEE307I', 'ERROR']
-    stop_errmsg = ['IEE341I', 'IEE535I']
-    display_errmsg = ['IEE341I', 'IEE535I', 'NOT FOUND']
-    modify_errmsg = ['REJECTED', 'IEE341I', 'IEE535I', 'IEE311I']
-    cancel_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'IEE842I', 'NON-CANCELABLE']
-    force_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'CANCELABLE', 'IEE842I']
+    start_errmsg = ['IEE122I', 'IEE535I', 'IEE307I', 'ERROR', 'IEE708I']
+    stop_errmsg = ['IEE341I', 'IEE535I', 'IEE708I']
+    display_errmsg = ['IEE341I', 'IEE535I', 'NOT FOUND', 'IEE708I']
+    modify_errmsg = ['REJECTED', 'IEE341I', 'IEE535I', 'IEE311I', 'IEE708I']
+    cancel_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'IEE842I', 'NON-CANCELABLE', 'IEE708I']
+    force_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'CANCELABLE', 'IEE842I', 'IEE708I']
     error_details = {
         'IEE122I': 'Specified member is missing or PROC/JOB contains incorrect JCL statements.',
         'IEE535I': 'A parameter on a command is not valid.',
@@ -1323,7 +1311,8 @@ def run_module():
         'IEE842I': 'More than one active job with the specified name exist.',
         'NON-CANCELABLE': 'The task cannot be canceled. Use the FORCE ARM command.',
         'CANCELABLE': 'The task can be canceled. Use the CANCEL command.',
-        'IEE311I': 'Required parameter is missing.'
+        'IEE311I': 'Required parameter is missing.',
+        'IEE708I': 'The value of a keyword specified on a command is incorrect.'
     }
     err_msg = []
     kwargs = {}
@@ -1364,24 +1353,24 @@ def run_module():
     stdout = ""
     stderr = ""
     rc, out, err, task_params = execute_command(cmd, started_task_name, execute_display_before, timeout_s=wait_time_s, **kwargs)
-    isFailed = False
+    is_failed = False
     system_logs = ""
     msg = ""
     found_msg = next((msg for msg in err_msg if msg in out), None)
     if err != "" or found_msg:
-        isFailed = True
+        is_failed = True
     # Fetch system logs to validate any error occured in execution
-    if not isFailed or verbose:
+    if not is_failed or verbose:
         system_logs = fetch_logs(cmd.upper(), wait_time_s)
         #  If sysout is not having error, then check system log as well to make sure no error occured
-        if not isFailed:
+        if not is_failed:
             found_msg = next((msg for msg in err_msg if msg in system_logs), None)
             if found_msg:
-                isFailed = True
+                is_failed = True
     if not verbose:
         system_logs = ""
     current_state = ""
-    if isFailed:
+    if is_failed:
         if rc == 0:
             rc = 1
         changed = False

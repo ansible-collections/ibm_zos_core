@@ -1542,14 +1542,14 @@ class UserHandler(RACFHandler):
                 if access['clauth'].get('add') is not None:
                     clauth = access['clauth']['add']
                     cmd = f'{cmd}CLAUTH( '
-                    for class in clauth:
-                        cmd = f'{cmd}{class} '
+                    for auth_class in clauth:
+                        cmd = f'{cmd}{auth_class} '
                     cmd = f'{cmd}) '
                 elif access['clauth'].get('delete') is not None:
                     clauth = access['clauth']['delete']
                     cmd = f'{cmd}NOCLAUTH( '
-                    for class in clauth:
-                        cmd = f'{cmd}{class} '
+                    for auth_class in clauth:
+                        cmd = f'{cmd}{auth_class} '
                     cmd = f'{cmd}) '
             if access.get('roaudit') is not None:
                 roaudit = "ROAUDIT" if access['roaudit'] else "NOROAUDIT"

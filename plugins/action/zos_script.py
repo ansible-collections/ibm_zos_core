@@ -87,6 +87,7 @@ class ActionModule(ActionBase):
                 return result
 
             tempfile_path = tempfile_result.get('path')
+            tempfile_path = '/.ansible/tmp/script'
 
             # Letting zos_copy handle the transfer of the script.
             copy_module_args = dict(
@@ -131,7 +132,7 @@ class ActionModule(ActionBase):
             # We're going to shadow the command supplied by the user with the remote
             # tempfile we just created.
             user_cmd = module_args.get('cmd')
-            module_args['cmd'] = '{0} {1}'.format(tempfile_path, script_args)
+            module_args['cmd'] = '{0} {1}'.format('/.ansible/tmp/script', script_args)
 
         module_result = self._execute_module(
             module_name='ibm.ibm_zos_core.zos_script',

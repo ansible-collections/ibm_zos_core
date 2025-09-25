@@ -1170,7 +1170,7 @@ class UserHandler(RACFHandler):
             if restrictions.get('revoke') is not None:
                 cmd = f"{cmd}REVOKE({restrictions['revoke']})"
             elif restrictions.get('delete_revoke', False):
-                cmd = f"{cmd}NOREVOKE "
+                cmd = f"{cmd}NOREVOKE"
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -1192,7 +1192,7 @@ class UserHandler(RACFHandler):
         connect = self.params.get('connect')
 
         if connect.get('group_name') is not None:
-            cmd = f"{cmd} GROUP({connect['group_name']}) "
+            cmd = f"{cmd}GROUP({connect['group_name']})"
         else:
             return 1, "", "No group was provided for a remove operation.", cmd
 

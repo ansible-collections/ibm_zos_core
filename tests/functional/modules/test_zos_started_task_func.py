@@ -133,7 +133,7 @@ def test_start_task_with_invalid_volumeserial(ansible_zos_module):
     start_results = hosts.all.zos_started_task(
         state = "started",
         member_name = "SAMPLE",
-        volume_serial = "12345A"
+        volume = "12345A"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -158,7 +158,7 @@ def test_start_task_with_invalid_parameters(ansible_zos_module):
         state = "started",
         member_name = "SAMPLE",
         parameters = ["KEY1", "KEY2", "KEY3"],
-        volume_serial = "123456"
+        volume = "123456"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -395,7 +395,7 @@ def test_force_task_negative(ansible_zos_module):
     force_results = hosts.all.zos_started_task(
         state = "forced",
         job_name = "TESTER",
-        retry = "YES"
+        retry_force = True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
@@ -405,7 +405,7 @@ def test_force_task_negative(ansible_zos_module):
         state = "forced",
         job_name = "TESTER",
         tcb_address = "0006789",
-        retry = "YES"
+        retry_force = True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
@@ -416,7 +416,7 @@ def test_force_task_negative(ansible_zos_module):
         job_name = "TESTER",
         identifier = "SAMPLE",
         tcb_address = "000678",
-        retry = "YES"
+        retry_force = True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
@@ -426,7 +426,7 @@ def test_force_task_negative(ansible_zos_module):
         state = "forced",
         userid = "OMVSTEST",
         tcb_address = "000678",
-        retry = "YES",
+        retry_force = True,
         verbose=True
     )
     for result in force_results.contacted.values():
@@ -496,7 +496,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             state = "started",
             member = "SAMPLE",
             identifier = "TESTER",
-            reus_asid = "YES"
+            reus_asid = True
         )
         for result in start_results.contacted.values():
             assert result.get("changed") is True

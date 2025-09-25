@@ -35,10 +35,9 @@ options:
     type: bool
   armrestart:
     description:
-        - Indicates that the batch job or started task should be automatically restarted after CANCEL
-          completes, if it is registered as an element of the automatic restart manager. If the job or
-          task is not registered or if you do not specify this parameter, MVS will not automatically
-          restart the job or task.
+        - Indicates that the batch job or started task should be automatically restarted after CANCEL or FORCE
+          completes, if it is registered as an element of the automatic restart manager. If the job or task is
+          not registered or if you do not specify this parameter, MVS will not automatically restart the job or task.
         - Only applicable when I(state) is C(cancelled) or C(forced), otherwise ignored.
     required: false
     type: bool
@@ -51,21 +50,20 @@ options:
     type: str
   device_type:
     description:
-        - Option I(device_type) is the type of the output device (if any) associated with the task.
+        - Type of the output device (if any) associated with the task.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   device_number:
     description:
-        - Option I(device_number) is the number of the device to be started. A device number is 3 or 4
-          hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit
-          number.
+        - Number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must
+          precede a 4-digit number but is not before a 3-digit number.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   dump:
     description:
-        - A dump is to be taken. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP)
+        - Whether to perform a dump. The type of dump (SYSABEND, SYSUDUMP, or SYSMDUMP)
           depends on the JCL for the job.
         - Only applicable when I(state) is C(cancelled), otherwise ignored.
     required: false
@@ -80,9 +78,9 @@ options:
         - identifier
   job_account:
     description:
-        - Option I(job_account) specifies accounting data in the JCL JOB statement for the started
-          task. If the source JCL was a job and has already accounting data, the value that is
-          specified on this parameter overrides the accounting data in the source JCL.
+        - Specifies accounting data in the JCL JOB statement for the started task. If the source JCL
+          was a job and has already accounting data, the value that is specified on this parameter
+          overrides the accounting data in the source JCL.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
@@ -102,17 +100,16 @@ options:
         - task_name
   keyword_parameters:
     description:
-        - Any appropriate keyword parameter that you specify to override the corresponding
-          parameter in the cataloged procedure. The maximum length of each keyword=option is 66
-          characters. No individual value within this field can be longer than 44 characters in length.
+        - Any appropriate keyword parameter that you specify to override the corresponding parameter in the cataloged
+          procedure. The maximum length of each keyword=option pair is 66 characters. No individual value within this
+          field can be longer than 44 characters in length.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: dict
   member_name:
     description:
-        - Option I(member_name) is a 1 - 8 character name of a member of a partitioned data set that
-          contains the source JCL for the task to be started. The member can be either a job or a
-          cataloged procedure.
+        - Name of a member of a partitioned data set that contains the source JCL for the task to be started. The member
+          can be either a job or a cataloged procedure.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
@@ -125,26 +122,21 @@ options:
     required: false
     type: list
     elements: str
-  retry:
+  retry_force:
     description:
-        - I(retry) is applicable for only FORCE TCB.
+        - Indicates whether retry will be attempted on ABTERM(abnormal termination).
+        - I(tcb_address) is mandatory to use I(retry_force).
         - Only applicable when I(state) is C(forced), otherwise ignored.
     required: false
-    type: str
-    choices:
-        - 'YES'
-        - 'NO'
+    type: bool
   reus_asid:
     description:
-        - When REUSASID=YES is specified on the START command and REUSASID(YES) is specified in the DIAGxx parmlib member,
-          a reusable ASID is assigned to the address space created by the START command. If REUSASID=YES is not specified
-          on the START command or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
+        - When I(reus_asid) is C(True) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
+          to the address space created by the START command. If I(reus_asid) is not specified or REUSASID(NO) is specified in
+          DIAGxx, an ordinary ASID is assigned.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
-    type: str
-    choices:
-        - 'YES'
-        - 'NO'
+    type: bool
   state:
     description:
         - I(state) should be the desired state of the started task after the module is executed.
@@ -165,7 +157,7 @@ options:
         - forced
   subsystem:
     description:
-        - The name of the subsystem that selects the task for processing. The name must be 1 - 4
+        - The name of the subsystem that selects the task for processing. The name must be 1-4
           characters, which are defined in the IEFSSNxx parmlib member, and the subsystem must
           be active.
         - Only applicable when I(state) is C(started), otherwise ignored.
@@ -173,13 +165,13 @@ options:
     type: str
   tcb_address:
     description:
-        - I(tcb_address) is a 6-digit hexadecimal TCB address of the task to terminate.
+        - 6-digit hexadecimal TCB address of the task to terminate.
         - Only applicable when I(state) is C(forced), otherwise ignored.
     required: false
     type: str
-  volume_serial:
+  volume:
     description:
-        - If I(device_type) is a tape or direct-access device, the volume serial number of the volume is
+        - If I(device_type) is a tape or direct-access device, the serial number of the volume,
           mounted on the device.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
@@ -192,9 +184,9 @@ options:
     type: str
   verbose:
     description:
-        - When C(verbose=true), return system logs that describe the task execution.
-          Using this option, can return a big response depending on system load, also it could
-          surface other programs activity.
+        - When C(verbose=true), the module will return system logs that describe the task's execution.
+          This option can return a big response depending on system load, also it could surface other
+          program's activity.
     required: false
     type: bool
     default: false
@@ -405,7 +397,7 @@ tasks:
          - For address spaces other than system address spaces, the elapsed time since job select time.
          - For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
          - For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
-           elapsed_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+           elapsed_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
             sss.tttS when time is less than 1000 seconds
             hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
             hhhhh.mm when time is at least 100 hours
@@ -475,8 +467,8 @@ tasks:
          - The name of a step, for a job or attached APPC transaction program attached by an initiator.
          - The identifier of a task created by the START command.
          - The name of a step that called a cataloged procedure.
-         - STARTING if initiation of a started job, system task, or attached APPC transaction program is incomplete.
-         - MASTER* for the master address space.
+         - C(STARTING) if initiation of a started job, system task, or attached APPC transaction program is incomplete.
+         - C(*MASTER*) for the master address space.
          - The name of an initiator address space.
       type: str
       sample: SPROC
@@ -487,17 +479,22 @@ tasks:
       sample: SAMPLE
     task_status:
       description:
-         - IN for swapped in.
-         - OUT for swapped out, ready to run.
-         - OWT for swapped out, waiting, not ready to run.
-         - OU* for in process of being swapped out.
-         - IN* for in process of being swapped in.
-         - NSW for non-swappable.
+         - C(IN) for swapped in.
+         - C(OUT) for swapped out, ready to run.
+         - C(OWT) for swapped out, waiting, not ready to run.
+         - C(OU*) for in process of being swapped out.
+         - C(IN*) for in process of being swapped in.
+         - C(NSW) for non-swappable.
       type: str
       sample: NSW
     task_type:
       description:
-         - S for started task.
+         - C(S) for started task.
+         - C(A) for an attached APPC transaction program.
+         - C(I) for initiator address space.
+         - C(J) for job
+         - C(M) for mount
+         - C(*) for system address space
       type: str
       sample: S
     workload_manager:
@@ -609,9 +606,14 @@ def validate_and_prepare_start_command(module):
     parameters = module.params.get('parameters') or []
     device_type = module.params.get('device_type') or ""
     device_number = module.params.get('device_number') or ""
-    volume_serial = module.params.get('volume_serial') or ""
+    volume_serial = module.params.get('volume') or ""
     subsystem_name = module.params.get('subsystem')
-    reus_asid = module.params.get('reus_asid')
+    reus_asid = ''
+    if module.params.get('reus_asid') is not None:
+        if module.params.get('reus_asid'):
+            reus_asid = 'YES'
+        else:
+            reus_asid = 'NO'
     keyword_parameters = module.params.get('keyword_parameters')
     keyword_parameters_string = ""
     device = device_type if device_type else device_number
@@ -883,7 +885,12 @@ def prepare_force_command(module):
     armrestart = module.params.get('armrestart')
     userid = module.params.get('userid')
     tcb_address = module.params.get('tcb_address')
-    retry = module.params.get('retry')
+    retry = ''
+    if module.params.get('retry_force') is not None:
+        if module.params.get('retry_force'):
+            retry = 'YES'
+        else:
+            retry = 'NO'
     started_task_name = ""
     if tcb_address and len(tcb_address) != 6:
         module.fail_json(
@@ -1133,15 +1140,13 @@ def run_module():
                 'elements': 'str',
                 'required': False
             },
-            'retry': {
-                'type': 'str',
-                'required': False,
-                'choices': ['YES', 'NO']
+            'retry_force': {
+                'type': 'bool',
+                'required': False
             },
             'reus_asid': {
-                'type': 'str',
-                'required': False,
-                'choices': ['YES', 'NO']
+                'type': 'bool',
+                'required': False
             },
             'subsystem': {
                 'type': 'str',
@@ -1160,7 +1165,7 @@ def run_module():
                 'required': False,
                 'default': False
             },
-            'volume_serial': {
+            'volume': {
                 'type': 'str',
                 'required': False
             },
@@ -1173,7 +1178,7 @@ def run_module():
         mutually_exclusive=[
             ['device_number', 'device_type']
         ],
-        required_by={'retry': ['tcb_address']},
+        required_by={'retry_force': ['tcb_address']},
         supports_check_mode=True
     )
 
@@ -1234,12 +1239,12 @@ def run_module():
             'elements': 'str',
             'required': False
         },
-        'retry': {
-            'arg_type': 'str',
+        'retry_force': {
+            'arg_type': 'bool',
             'required': False
         },
         'reus_asid': {
-            'arg_type': 'str',
+            'arg_type': 'bool',
             'required': False
         },
         'subsystem': {
@@ -1258,7 +1263,7 @@ def run_module():
             'arg_type': 'bool',
             'required': False
         },
-        'volume_serial': {
+        'volume': {
             'arg_type': 'str',
             'required': False
         },

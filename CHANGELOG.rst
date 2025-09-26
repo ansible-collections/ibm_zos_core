@@ -4,17 +4,17 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
-v1.15.0-beta.1
-==============
+v1.15.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2025-07-30'
+Release Date: '2025-09-30'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
-the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
 Minor Changes
 -------------
@@ -54,6 +54,11 @@ New Modules
 - ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
 
 v1.14.1
+=======
+
+Release Summary
+---------------
+
 Release Date: '2025-07-03'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.

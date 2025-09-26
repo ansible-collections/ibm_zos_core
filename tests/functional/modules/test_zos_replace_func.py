@@ -356,7 +356,6 @@ def test_uss_after(ansible_zos_module):
             assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            print("result:")
             print(result)
             assert result.get("stdout") == TEST_AFTER
     finally:

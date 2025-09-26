@@ -51,12 +51,12 @@ class ActionModule(ActionBase):
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
-        force = _process_boolean(task_args.get('force'), default=True)
+        replace = _process_boolean(task_args.get('replace'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
-        is_binary = _process_boolean(task_args.get('is_binary'), default=False)
-        force_lock = _process_boolean(task_args.get('force_lock'), default=False)
+        binary = _process_boolean(task_args.get('binary'), default=False)
+        force = _process_boolean(task_args.get('force'), default=False)
         executable = _process_boolean(task_args.get('executable'), default=False)
         asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=True)
@@ -104,7 +104,7 @@ class ActionModule(ActionBase):
             msg = "'src' or 'content' is required"
             return self._exit_action(result, msg, failed=True)
 
-        if encoding and is_binary:
+        if encoding and binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
@@ -112,8 +112,8 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
-        if is_binary and asa_text:
-            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+        if binary and asa_text:
+            msg = "Both 'binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
         if executable and asa_text:
@@ -130,9 +130,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
-        if force_lock:
+        if force:
             display.warning(
-                msg="Using force_lock uses operations that are subject to race conditions and can lead to data loss, use with caution.")
+                msg="Using force uses operations that are subject to race conditions and can lead to data loss, use with caution.")
         template_dir = None
 
         if not remote_src:
@@ -293,7 +293,7 @@ class ActionModule(ActionBase):
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             rm_res = self._connection.exec_command(f"rm -rf {path}*")
 
-        if copy_res.get("note") and not force:
+        if copy_res.get("note") and not replace:
             result["note"] = copy_res.get("note")
             return result
 

@@ -778,6 +778,7 @@ def test_force_and_start_with_icsf_task(ansible_zos_module):
         task = "ICSF"
     )
     for result in display_results.contacted.values():
+        print(result)
         assert result.get("changed") is True
         assert result.get("rc") == 0
         assert result.get("stderr") == ""

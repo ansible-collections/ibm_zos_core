@@ -79,17 +79,14 @@ options:
   job_account:
     description:
         - Specifies accounting data in the JCL JOB statement for the started task. If the source JCL
-          was a job and has already accounting data, the value that is specified on this parameter
-          overrides the accounting data in the source JCL.
+          already had accounting data, the value that is specified on this parameter overrides it.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
   job_name:
     description:
-        - When I(state) is started, I(job_name) is a name which should be assigned to a started task
-          while starting it. If I(job_name) is not specified, then I(member_name) is used as I(job_name).
-          Otherwise, I(job_name) is the started task job name used to find and apply the state
-          selected.
+        - When I(state) is started, this is the name which should be assigned to a started task
+          while starting it. If I(job_name) is not specified, then I(member_name) is used as job's name.
         - When I(state) is C(displayed), C(modified), C(cancelled), C(stopped), or C(forced), I(job_name) is the
           started task name.
     required: false
@@ -158,7 +155,7 @@ options:
   subsystem:
     description:
         - The name of the subsystem that selects the task for processing. The name must be 1-4
-          characters, which are defined in the IEFSSNxx parmlib member, and the subsystem must
+          characters long, which are defined in the IEFSSNxx parmlib member, and the subsystem must
           be active.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
@@ -192,7 +189,7 @@ options:
     default: false
   wait_time:
     description:
-        - Option I(wait_time) is the total time that module zos_started_task will wait for a submitted task in centiseconds.
+        - Total time that the module will wait for a submitted task, measured in seconds.
           The time begins when the module is executed on the managed node. Default value of 0 means to wait the default
           amount of time supported by the opercmd utility.
     required: false
@@ -211,37 +208,37 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 EXAMPLES = r"""
-- name: Start a started task using member name.
+- name: Start a started task using a member in a partitioned data set.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
-- name: Start a started task using member name and identifier.
+- name: Start a started task using a member name and giving it an identifier.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     identifier: "SAMPLE"
-- name: Start a started task using member name and job.
+- name: Start a started task using both a member and a job name.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     job_name: "SAMPLE"
-- name: Start a started task using member name, job and enable verbose.
+- name: Start a started task and enable verbose output.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     job_name: "SAMPLE"
     verbose: True
-- name: Start a started task using member name, subsystem and enable reuse asid.
+- name: Start a started task specifying the subsystem and enabling a reusable ASID.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     subsystem: "MSTR"
     reus_asid: "YES"
-- name: Display a started task using started task name.
+- name: Display a started task using a started task name.
   zos_started_task:
     state: "displayed"
     task_name: "PROCAPP"
-- name: Display started tasks using matching regex.
+- name: Display all started tasks that begin with an s using a wildcard.
   zos_started_task:
     state: "displayed"
     task_name: "s*"
@@ -249,31 +246,31 @@ EXAMPLES = r"""
   zos_started_task:
     state: "displayed"
     task_name: "all"
-- name: Cancel a started tasks using task name.
+- name: Cancel a started task using task name.
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
-- name: Cancel a started tasks using task name and asid.
+- name: Cancel a started task using it's task name and ASID.
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
     asid: 0014
-- name: Cancel a started tasks using task name and asid.
+- name: Modify a started task's parameters.
   zos_started_task:
     state: "modified"
     task_name: "SAMPLE"
     parameters: ["XX=12"]
-- name: Stop a started task using task name.
+- name: Stop a started task using it's task name.
   zos_started_task:
     state: "stopped"
     task_name: "SAMPLE"
-- name: Stop a started task using task name, identifier and asid.
+- name: Stop a started task using it's task name, identifier and ASID.
   zos_started_task:
     state: "stopped"
     task_name: "SAMPLE"
     identifier: "SAMPLE"
     asid: 00A5
-- name: Force a started task using task name.
+- name: Force a started task using it's task name.
   zos_started_task:
     state: "forced"
     task_name: "SAMPLE"
@@ -307,7 +304,7 @@ rc:
   sample: 0
 state:
   description:
-    - The final state of the started task, after execution..
+    - The final state of the started task, after execution.
   returned: changed
   type: str
   sample: S SAMPLE
@@ -382,13 +379,14 @@ tasks:
             - Central address of the data space ASTE.
           type: str
           sample: 058F2180
-        dataspace_name:
+        data_space_name:
           description:
             - Data space name associated with the address space.
           type: str
           sample: CIRRGMAP
     domain_number:
       description:
+         - The z/OS system or sysplex domain where started task is running.
          - domain_number=N/A if the system is operating in goal mode.
       type: str
       sample: N/A
@@ -397,17 +395,17 @@ tasks:
          - For address spaces other than system address spaces, the elapsed time since job select time.
          - For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
          - For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
-           elapsed_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
-            sss.tttS when time is less than 1000 seconds
-            hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
-            hhhhh.mm when time is at least 100 hours
-            ******** when time exceeds 100000 hours
-            NOTAVAIL when the TOD clock is not working
+         - elapsed_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+           sss.tttS when time is less than 1000 seconds
+           hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
+           hhhhh.mm when time is at least 100 hours
+           ******** when time exceeds 100000 hours
+           NOTAVAIL when the TOD clock is not working
       type: str
       sample: 812.983S
     priority:
       description:
-         - The priority of a started task is determined by the Workload Manager (WLM), based on the service class and importance assigned to it.
+         - Priority of a started task, as determined by the Workload Manager (WLM), based on the service class and importance assigned to it.
       type: str
       sample: 1
     proc_step_name:
@@ -426,6 +424,7 @@ tasks:
       sample: NO
     program_name:
       description:
+         - The name of the program(load module) that created or is running in the started task's address space.
          - program_name=N/A if the system is operating in goal mode.
       type: str
       sample: N/A
@@ -437,7 +436,7 @@ tasks:
       sample: NO
     resource_group:
       description:
-         - The name of the resource group currently associated the service class. It can also be N/A if there is no resource group association.
+         - The name of the resource group currently associated with the service class. It can also be N/A if there is no resource group association.
       type: str
       sample: N/A
     server:
@@ -576,7 +575,7 @@ def execute_display_command(started_task_name, timeout=0):
     list
         List contains extracted parameters from display command output of started task
     """
-    cmd = "d a," + started_task_name
+    cmd = f"d a,{started_task_name}"
     display_response = opercmd.execute(cmd, timeout)
     task_params = []
     if display_response.rc == 0 and display_response.stderr_response == "":
@@ -603,7 +602,7 @@ def validate_and_prepare_start_command(module):
     identifier = module.params.get('identifier_name')
     job_name = module.params.get('job_name')
     job_account = module.params.get('job_account')
-    parameters = module.params.get('parameters') or []
+    parameters = module.params.get('parameters', [])
     device_type = module.params.get('device_type') or ""
     device_number = module.params.get('device_number') or ""
     volume_serial = module.params.get('volume') or ""
@@ -621,7 +620,7 @@ def validate_and_prepare_start_command(module):
     if job_account and len(job_account) > 55:
         module.fail_json(
             rc=5,
-            msg="job_account value should not exceed 55 characters.",
+            msg="The length of job_account exceeded 55 characters.",
             changed=False
         )
     if device_number:
@@ -629,13 +628,13 @@ def validate_and_prepare_start_command(module):
         if devnum_len not in (3, 5) or (devnum_len == 5 and not device_number.startswith("/")):
             module.fail_json(
                 rc=5,
-                msg="Invalid device_number.",
+                msg="device_number should be 3 or 4 characters long and preceded by / when it is 4 characters long.",
                 changed=False
             )
     if subsystem_name and len(subsystem_name) > 4:
         module.fail_json(
             rc=5,
-            msg="The subsystem_name must be 1 - 4 characters.",
+            msg="The subsystem_name must be 1-4 characters long.",
             changed=False
         )
     if keyword_parameters:
@@ -645,13 +644,13 @@ def validate_and_prepare_start_command(module):
             if key_len > 44 or value_len > 44 or key_len + value_len > 65:
                 module.fail_json(
                     rc=5,
-                    msg="The length of a keyword=option is exceeding 66 characters or length of an individual value is exceeding 44 characters."
+                    msg="The length of a keyword=option exceeded 66 characters or length of an individual value exceeded 44 characters."
                         + "key:{0}, value:{1}".format(key, value),
                     changed=False
                 )
             else:
                 if keyword_parameters_string:
-                    keyword_parameters_string = keyword_parameters_string + "," + f"{key}={value}"
+                    keyword_parameters_string = f"{keyword_parameters_string},{key}={value}"
                 else:
                     keyword_parameters_string = f"{key}={value}"
     if job_name:
@@ -659,17 +658,17 @@ def validate_and_prepare_start_command(module):
     elif member:
         started_task_name = member
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     else:
         module.fail_json(
             rc=5,
-            msg="member_name is missing which is mandatory.",
+            msg="member_name is missing which is mandatory to start a started task.",
             changed=False
         )
     if not member:
         module.fail_json(
             rc=5,
-            msg="member_name is missing which is mandatory.",
+            msg="member_name is missing which is mandatory to start a started task.",
             changed=False
         )
     if job_name and identifier:
@@ -681,29 +680,29 @@ def validate_and_prepare_start_command(module):
     parameters_updated = ""
     if parameters:
         if len(parameters) == 1:
-            parameters_updated = "'" + parameters[0] + "'"
+            parameters_updated = f"'{parameters[0]}'"
         else:
             parameters_updated = f"({','.join(parameters)})"
 
-    cmd = 'S ' + member
+    cmd = f"S {member}"
     if identifier:
-        cmd = cmd + "." + identifier
+        cmd = f"{cmd}.{identifier}"
     if parameters:
-        cmd = cmd + "," + device + "," + volume_serial + "," + parameters_updated
+        cmd = f"{cmd},{device},{volume_serial},{parameters_updated}"
     elif volume_serial:
-        cmd = cmd + "," + device + "," + volume_serial
+        cmd = f"{cmd},{device},{volume_serial}"
     elif device:
-        cmd = cmd + "," + device
+        cmd = f"{cmd},{device}"
     if job_name:
-        cmd = cmd + ",JOBNAME=" + job_name
+        cmd = f"{cmd},JOBNAME={job_name}"
     if job_account:
-        cmd = cmd + ",JOBACCT=" + job_account
+        cmd = f"{cmd},JOBACCT={job_account}"
     if subsystem_name:
-        cmd = cmd + ",SUB=" + subsystem_name
+        cmd = f"{cmd},SUB={subsystem_name}"
     if reus_asid:
-        cmd = cmd + ",REUSASID=" + reus_asid
+        cmd = f"{cmd},REUSASID={reus_asid}"
     if keyword_parameters_string:
-        cmd = cmd + "," + keyword_parameters_string
+        cmd = f"{cmd},{keyword_parameters_string}"
     return started_task_name, cmd
 
 
@@ -728,14 +727,14 @@ def prepare_display_command(module):
     if job_name:
         started_task_name = job_name
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     else:
         module.fail_json(
             rc=5,
-            msg="job_name is missing which is mandatory.",
+            msg="job_name is missing which is mandatory to display started task details.",
             changed=False
         )
-    cmd = 'D A,' + started_task_name
+    cmd = f"D A,{started_task_name}"
     return started_task_name, cmd
 
 
@@ -761,16 +760,16 @@ def prepare_stop_command(module):
     if job_name:
         started_task_name = job_name
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     else:
         module.fail_json(
             rc=5,
-            msg="job_name is missing which is mandatory.",
+            msg="job_name is missing which is mandatory to display started task details.",
             changed=False
         )
-    cmd = 'P ' + started_task_name
+    cmd = f"P {started_task_name}"
     if asid:
-        cmd = cmd + ',A=' + asid
+        cmd = f"{cmd},A={asid}"
     return started_task_name, cmd
 
 
@@ -796,20 +795,20 @@ def prepare_modify_command(module):
     if job_name:
         started_task_name = job_name
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     else:
         module.fail_json(
             rc=5,
-            msg="job_name is missing which is mandatory.",
+            msg="job_name is missing which is mandatory to display started task details.",
             changed=False
         )
     if parameters is None:
         module.fail_json(
             rc=5,
-            msg="parameters are mandatory.",
+            msg="parameters are mandatory while modifying a started task.",
             changed=False
         )
-    cmd = 'F ' + started_task_name + "," + ",".join(parameters)
+    cmd = f"F {started_task_name},{','.join(parameters)}"
     return started_task_name, cmd
 
 
@@ -838,9 +837,9 @@ def prepare_cancel_command(module):
     if job_name:
         started_task_name = job_name
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     elif userid:
-        started_task_name = "U=" + userid
+        started_task_name = f"U={userid}"
     else:
         module.fail_json(
             rc=5,
@@ -853,13 +852,13 @@ def prepare_cancel_command(module):
             msg="The ARMRESTART parameter is not valid with the U=userid parameter.",
             changed=False
         )
-    cmd = 'C ' + started_task_name
+    cmd = f"C {started_task_name}"
     if asid:
-        cmd = cmd + ',A=' + asid
+        cmd = f"{cmd},A={asid}"
     if dump:
-        cmd = cmd + ',DUMP'
+        cmd = f"{cmd},DUMP"
     if armrestart:
-        cmd = cmd + ',ARMRESTART'
+        cmd = f"{cmd},ARMRESTART"
     return started_task_name, cmd
 
 
@@ -907,26 +906,26 @@ def prepare_force_command(module):
     if job_name:
         started_task_name = job_name
         if identifier:
-            started_task_name = started_task_name + "." + identifier
+            started_task_name = f"{started_task_name}.{identifier}"
     elif userid:
-        started_task_name = "U=" + userid
+        started_task_name = f"U={userid}"
     else:
         module.fail_json(
             rc=5,
             msg="Both job_name and userid are missing, one of them is needed to cancel a task.",
             changed=False
         )
-    cmd = 'FORCE ' + started_task_name
+    cmd = f"FORCE {started_task_name}"
     if asid:
-        cmd = cmd + ',A=' + asid
+        cmd = f"{cmd},A={asid}"
     if arm:
-        cmd = cmd + ',ARM'
+        cmd = f"{cmd},ARM"
     if armrestart:
-        cmd = cmd + ',ARMRESTART'
+        cmd = f"{cmd},ARMRESTART"
     if tcb_address:
-        cmd = cmd + ',TCB=' + tcb_address
+        cmd = f"{cmd},TCB={tcb_address}"
     if retry:
-        cmd = cmd + ',RETRY=' + retry
+        cmd = f"{cmd},RETRY={retry}"
     return started_task_name, cmd
 
 
@@ -958,7 +957,7 @@ def extract_keys(stdout):
         'ASTE': 'data_space_address_entry',
         'ADDR SPACE ASTE': 'address_space_second_table_entry',
         'RGP': 'resource_group',
-        'DSPNAME': 'dataspace_name',
+        'DSPNAME': 'data_space_name',
         'DMN': 'domain_number',
         'AFF': 'affinity',
         'SRVR': 'server',
@@ -1310,6 +1309,7 @@ def run_module():
         'IEE535I': 'A parameter on a command is not valid.',
         'IEE307I': 'Command parameter punctuation is incorrect or parameter is not followed by a blank.',
         'ERROR': 'Member is missing in PROCLIB or JCL is invalid or issue with JCL execution.',
+        'NOT FOUND': 'Started task is not active',
         'IEE341I': 'Started task is not active',
         'REJECTED': 'Started task is not accepting modification.',
         'IEE324I': 'The userid specified on the command is not currently active in the system..',
@@ -1361,6 +1361,7 @@ def run_module():
     is_failed = False
     system_logs = ""
     msg = ""
+    # Find failure
     found_msg = next((msg for msg in err_msg if msg in out), None)
     if err != "" or found_msg:
         is_failed = True
@@ -1379,7 +1380,7 @@ def run_module():
         if rc == 0:
             rc = 1
         changed = False
-        msg = error_details[found_msg]
+        msg = error_details.get(found_msg, found_msg)
         stdout = out
         stderr = err
         if err == "" or err is None:

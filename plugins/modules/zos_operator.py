@@ -200,7 +200,7 @@ except Exception:
     opercmd = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
+def execute_command(operator_cmd, timeout=1.0, unit="s", preserve=False, *args, **kwargs):
     """
     Executes an operator command.
 
@@ -223,8 +223,12 @@ def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
         Return code, standard output, standard error and time elapsed from start to finish.
     """
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
-    timeout_c = 100 * timeout_s
-
+    if unit == "s":
+        timeout_c = int(timeout * 100)
+    elif unit == "cs":
+        timeout_c = int(timeout)
+    else:
+        raise ValueError("Invalid wait_time_unit: {0}".format(unit))
     start = timer()
     response = opercmd.execute(operator_cmd, timeout=timeout_c, preserve=preserve, *args, **kwargs)
     end = timer()
@@ -253,6 +257,7 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
+        wait_time_unit=dict(type="str", required=False, choices=["s", "cs"], default="s"),
         case_sensitive=dict(type="bool", required=False, default=False),
     )
 
@@ -295,6 +300,7 @@ def run_module():
         # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")
         result["wait_time_s"] = new_params.get("wait_time_s")
+        result["wait_time_unit"] = rc_message.get("wait_time_unit")
         result["changed"] = False
 
         # rc=0, something succeeded (the calling script ran),
@@ -370,6 +376,7 @@ def run_operator_command(params):
         kwargs.update({"debug": True})
 
     wait_s = params.get("wait_time_s")
+    unit = params.get("wait_time_unit", "s")
     cmdtxt = params.get("cmd")
     preserve = params.get("case_sensitive")
 
@@ -381,7 +388,7 @@ def run_operator_command(params):
         kwargs.update({"wait": True})
 
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, preserve=preserve, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, unit=unit, preserve=preserve, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)
@@ -393,6 +400,7 @@ def run_operator_command(params):
         "stderr": stderr,
         "call": cmdtxt,
         "elapsed": elapsed,
+        "wait_time_unit": unit,
     }
 
 

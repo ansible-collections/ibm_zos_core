@@ -102,7 +102,8 @@ options:
             required: false
           raw:
             description:
-              - "When I(raw=true, the module won't validate the data set. Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored."
+              - When I(raw=true), the module won't validate the data set.
+                All parameters like disposition, space, volumes, SMS, keys, and record settings are ignored.
             type: bool
             default: false
           type:
@@ -764,7 +765,8 @@ options:
                     required: false
                   raw:
                     description:
-                      - "When I(raw=true, the module won't validate the data set. Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored."
+                      - When I(raw=true), the module won't validate the data set.
+                        Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored.
                     type: bool
                     default: false
                   type:

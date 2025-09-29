@@ -239,7 +239,6 @@ class RawDatasetDefinition(DatasetDefinition):
         if raw:
             super().__init__(
             dataset_name=data_set_name,
-            # disposition=disposition,  # don’t force "shr"  when raw is true
             raw=True
             )
             return
@@ -315,7 +314,6 @@ class RawDatasetDefinition(DatasetDefinition):
         if self.raw:
             return f"{self.dataset_name},raw"
         return super().__str__()
-
 
 class RawFileDefinition(FileDefinition):
     """Wrapper around FileDefinition to contain information about

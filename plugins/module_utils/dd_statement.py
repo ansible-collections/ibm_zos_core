@@ -544,7 +544,6 @@ class DatasetDefinition(DataDefinition):
         self.raw = raw
         if not raw:
             if primary_unit and space_units.get(primary_unit.lower()) is not None:
-        # if primary_unit and space_units.get(primary_unit.lower()) is not None:
                 primary_unit = space_units.get(primary_unit.lower())
             if secondary_unit and space_units.get(secondary_unit.lower()) is not None:
                 secondary_unit = space_units.get(secondary_unit.lower())

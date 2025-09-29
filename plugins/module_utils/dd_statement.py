@@ -75,7 +75,6 @@ class DDStatement(object):
             mvscmd_string += self.definition.name
             if self.name.lower() != "steplib":
                 mvscmd_string += self.definition._build_arg_string()
-        print(f"[DEBUG] Built DD statement: {mvscmd_string}")
         return mvscmd_string
 
     def _assert_valid_definition(self):

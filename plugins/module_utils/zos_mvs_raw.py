@@ -59,7 +59,6 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-        print(f"[DEBUG] Backend command (unauthorized): {command}")
         rc, out, err = module.run_command(command, errors='replace')
         return MVSCmdResponse(rc, out, err)
 
@@ -90,7 +89,6 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-        print(f"[DEBUG] Backend command (authorized): {command}")
         rc, out, err = module.run_command(command, errors='replace')
         return MVSCmdResponse(rc, out, err)
 

@@ -59,6 +59,7 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
+        print(f"[DEBUG] Backend command (unauthorized): {command}")
         rc, out, err = module.run_command(command, errors='replace')
         return MVSCmdResponse(rc, out, err)
 
@@ -89,6 +90,7 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
+        print(f"[DEBUG] Backend command (authorized): {command}")
         rc, out, err = module.run_command(command, errors='replace')
         return MVSCmdResponse(rc, out, err)
 
@@ -164,6 +166,7 @@ class RawDatasetDefinition(DatasetDefinition):
         backup=None,
         return_content=None,
         tmphlq=None,
+        raw=False,
         **kwargs
     ):
         """
@@ -229,9 +232,17 @@ class RawDatasetDefinition(DatasetDefinition):
                    HLQ to be used for temporary datasets. Defaults to None.
         ----------
         """
+        self.raw = raw
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
         self.tmphlq = tmphlq
+        if raw:
+            super().__init__(
+            dataset_name=data_set_name,
+            # disposition=disposition,  # don’t force "shr"  when raw is true
+            raw=True
+            )
+            return
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -300,6 +311,10 @@ class RawDatasetDefinition(DatasetDefinition):
                 key_label2=key_label2,
                 key_encoding2=key_encoding2,
             )
+    def __str__(self):
+        if self.raw:
+            return f"{self.dataset_name},raw"
+        return super().__str__()
 
 
 class RawFileDefinition(FileDefinition):

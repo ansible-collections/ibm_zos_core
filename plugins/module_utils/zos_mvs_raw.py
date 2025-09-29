@@ -236,8 +236,8 @@ class RawDatasetDefinition(DatasetDefinition):
         self.tmphlq = tmphlq
         if raw:
             super().__init__(
-            dataset_name=data_set_name,
-            raw=True
+                dataset_name=data_set_name,
+                raw=True
             )
             return
         primary_unit = space_type
@@ -308,6 +308,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 key_label2=key_label2,
                 key_encoding2=key_encoding2,
             )
+
     def __str__(self):
         if self.raw:
             return f"{self.dataset_name},raw"

@@ -1392,6 +1392,26 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
+- name: Run ADRDSSU to dump a dataset
+  zos_mvs_raw:
+    program_name: ADRDSSU
+    auth: true
+    verbose: true
+    dds:
+      - dd_data_set:
+          dd_name: OUTDD
+          data_set_name: "USER.TEST.DUMP"
+          raw: true
+      - dd_input:
+          dd_name: SYSIN
+          content: |
+            DUMP DATASET(INCLUDE(USER.TEST.SOURCE)) -
+            OUTDDNAME(OUTDD)
+      - dd_output:
+          dd_name: SYSPRINT
+          return_content:
+            type: text
+
 - name: Full volume dump using ADDRDSU.
   zos_mvs_raw:
     program_name: adrdssu

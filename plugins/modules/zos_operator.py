@@ -346,6 +346,7 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
+        wait_time_unit=dict(arg_type="str", required=False),
         case_sensitive=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
@@ -388,7 +389,7 @@ def run_operator_command(params):
         kwargs.update({"wait": True})
 
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, unit=unit, preserve=preserve, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, unit=unit, preserve=preserve, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)

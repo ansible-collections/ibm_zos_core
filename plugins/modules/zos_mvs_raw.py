@@ -762,6 +762,11 @@ options:
                       - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
                     type: str
                     required: false
+                  raw:
+                    description:
+                      - "When I(raw=true, the module won't validate the data set. Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored."
+                    type: bool
+                    default: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).

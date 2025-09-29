@@ -100,6 +100,16 @@ options:
               - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
             type: str
             required: false
+          raw:
+            description:
+              - When I(raw=true), the module will not attempt to create or validate the data set.
+              - The program being executed will handle the data set allocation and attributes.
+              - When I(raw=true), the following parameters are not allowed: I(disposition_normal),
+                I(disposition_abnormal), I(space_type), I(space_primary), I(space_secondary), I(volumes),
+                I(sms_management_class), I(sms_storage_class), I(sms_data_class), I(block_size), I(directory_blocks),
+                I(key_label), I(type), I(encryption_key_1), I(encryption_key_2), I(key_length), I(key_offset), I(record_length), I(record_format).
+            type: bool
+            default: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -757,6 +767,17 @@ options:
                       - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
                     type: str
                     required: false
+                  raw:
+                    description:
+                      - When I(raw=true), the module will not attempt to create or validate the data set.
+                      - The program being executed will handle the data set allocation and attributes.
+                      - When I(raw=true), the following parameters are not allowed: I(disposition_normal),
+                        I(disposition_abnormal), I(space_type), I(space_primary), I(space_secondary), I(volumes),
+                        I(sms_management_class), I(sms_storage_class), I(sms_data_class), I(block_size),
+                        I(directory_blocks), I(key_label), I(type), I(encryption_key_1), I(encryption_key_2), 
+                        I(key_length), I(key_offset), I(record_length), I(record_format).
+                    type: bool
+                    default: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1301,6 +1322,9 @@ notes:
       addressed by APAR PH28089.
     - 3. When executing a program, refer to the programs documentation as each programs requirments
       can vary fom DDs, instream-data indentation and continuation characters.
+    - 3. Use the I(raw) parameter for data sets when the program being executed should handle
+      the data set allocation and attributes. This is common for utilities like ADRDSSU that
+      have specific requirements for data set characteristics.
 seealso:
 - module: zos_data_set
 """
@@ -1381,6 +1405,26 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: Run ADRDSSU with raw dataset for program-managed allocation
+  zos_mvs_raw:
+    program_name: ADRDSSU
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: DUMPDD
+          data_set_name: "OMVSADM.TEST.FULLDUMP"
+          raw: true
+      - dd_input:
+          dd_name: SYSIN
+          content: |
+            DUMP FULL -
+              INDDNAME(VOLDD) -
+              OUTDDNAME(DUMPDD)
+      - dd_output:
+          dd_name: SYSPRINT
+          return_content:
+            type: text
 
 - name: Full volume dump using ADDRDSU.
   zos_mvs_raw:

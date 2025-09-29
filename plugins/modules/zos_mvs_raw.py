@@ -766,7 +766,7 @@ options:
                   raw:
                     description:
                       - When I(raw=true), the module won't validate the data set.
-                        Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored.
+                        All parameters like disposition, space, volumes, SMS, keys, and record settings are ignored.
                     type: bool
                     default: false
                   type:

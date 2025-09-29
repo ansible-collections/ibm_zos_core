@@ -102,12 +102,7 @@ options:
             required: false
           raw:
             description:
-              - If true, the module will not create or validate the dataset.
-              - The program being executed will handle dataset allocation and attributes.
-              - When true, the following parameters are not allowed: disposition_normal, disposition_abnormal,
-                space_type, space_primary, space_secondary, volumes, sms_management_class, sms_storage_class,
-                sms_data_class, block_size, directory_blocks, key_label, type, encryption_key_1, encryption_key_2,
-                key_length, key_offset, record_length, record_format.
+              - "When I(raw=true, the module won't validate the data set. Some parameters like disposition, space, volumes, SMS, keys, and record settings are ignored."
             type: bool
             default: false
           type:

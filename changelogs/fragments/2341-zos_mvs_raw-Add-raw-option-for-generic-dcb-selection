@@ -1,0 +1,8 @@
+minor_changes:
+  - zos_mvs_raw - Added `raw` option: lets the MVS program create datasets with its own attributes, ignoring all supplied DCB, space, SMS, keys, and record settings.
+trivial:
+  - dd_statement - Internal updates to support the new `raw` option behavior.
+  - mvs_cmd_command - Internal updates to support the new `raw` option behavior and
+    pass it as an MVS command.
+  - test_adrdssu_dataset_dump_with_raw_dd - Added test case to verify `raw` dataset
+    support in `zos_mvs_raw` for ADRDSSU logical dumps.

@@ -1,8 +1,13 @@
 minor_changes:
-  - zos_mvs_raw - Added `raw` option: lets the MVS program create datasets with its own attributes, ignoring all supplied DCB, space, SMS, keys, and record settings.
+  - zos_mvs_raw - Added `raw` option: lets the MVS program create datasets with its own
+    attributes, ignoring all supplied DCB, space, SMS, keys, and record settings.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2341).
 trivial:
   - dd_statement - Internal updates to support the new `raw` option behavior.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2341).
   - mvs_cmd_command - Internal updates to support the new `raw` option behavior and
     pass it as an MVS command.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2341).
   - test_adrdssu_dataset_dump_with_raw_dd - Added test case to verify `raw` dataset
     support in `zos_mvs_raw` for ADRDSSU logical dumps.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2341).

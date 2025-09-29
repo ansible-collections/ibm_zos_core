@@ -97,6 +97,31 @@ def test_zos_operator_parallel_terminal(get_config):
         os.remove("inventory.yml")
         os.remove("playbook.yml")
 
+
+def test_zos_operator_with_centiseconds(ansible_zos_module):
+    """
+    Verify that wait_time_unit='cs' correctly interprets centiseconds.
+    For example, 500 cs = 5 seconds.
+    """
+    hosts = ansible_zos_module
+    wait_time_cs = 500  # 500 centiseconds = 5 seconds
+    results = hosts.all.zos_operator(
+        cmd="d u,all",
+        verbose=True,
+        wait_time_s=wait_time_cs,
+        wait_time_unit="cs",
+    )
+
+    for result in results.contacted.values():
+        assert result["rc"] == 0
+        assert result.get("changed") is True
+        assert result.get("content") is not None
+
+        # elapsed should be around 5 seconds, allow some tolerance
+        assert 3 <= result.get("elapsed") <= 10
+        assert result.get("wait_time_unit") == "cs"
+
+
 def test_zos_operator_various_command(ansible_zos_module):
     test_data = [
         ("d a", 0, True),

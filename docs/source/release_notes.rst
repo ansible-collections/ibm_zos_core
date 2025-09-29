@@ -6,13 +6,14 @@
 Releases
 ========
 
-Version 1.15.0-beta.1
+Version 1.15.0
 ==============
 
 Minor Changes
 -------------
 
 - ``zos_archive``
+
    - Adds support for encoding before archiving files.
    - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them.
    - Adds support for reverting the encoding of a source's files after archiving them.
@@ -67,6 +68,7 @@ New Modules
 
 Availability
 ------------
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 

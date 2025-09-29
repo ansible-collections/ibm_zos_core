@@ -952,8 +952,8 @@ class UserHandler(RACFHandler):
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
         (('omvs', 'home'), 'length', ((0, 1023),)),
         (('omvs', 'program'), 'length', ((0, 1023),)),
-        (('omvs', 'nonshared_size'), 'format', ('[0-9]{1,8}[MGTP]',)),
-        (('omvs', 'shared_size'), 'format', ('[0-9]{1,8}[MGTP]',)),
+        (('omvs', 'nonshared_size'), 'format', ('[0-9]{1,8}[mgtp]',)),
+        (('omvs', 'shared_size'), 'format', ('[0-9]{1,8}[mgtp]',)),
         (('omvs', 'addr_space_size'), 'range', (10_485_760, 2_147_483_647, 0)),
         (('omvs', 'map_size'), 'range', (1, 16_777_216, 0)),
         (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
@@ -1424,7 +1424,7 @@ class UserHandler(RACFHandler):
 
             if operator.get('alt_group') is not None:
                 if operator.get('alt_group') != "":
-                    cmd = f"{cmd} ALTGRP({operator['account_num']})"
+                    cmd = f"{cmd} ALTGRP({operator['alt_group']})"
                 else:
                     cmd = f"{cmd} NOALTGRP"
             if operator.get('authority') is not None:
@@ -1434,7 +1434,7 @@ class UserHandler(RACFHandler):
                     cmd = f"{cmd} NOAUTH"
             if operator.get('cmd_system') is not None:
                 if operator.get('cmd_system') != "":
-                    cmd = f"{cmd} CMDSYS({tso['cmd_system']})"
+                    cmd = f"{cmd} CMDSYS({operator['cmd_system']})"
                 else:
                     cmd = f"{cmd} NOCMDSYS"
             if operator.get('search_key') is not None:
@@ -1449,7 +1449,7 @@ class UserHandler(RACFHandler):
             if operator.get('display') is not None:
                 if "delete" not in operator['display']:
                     options = operator['display']
-                    cmd = f'{cmd}MONITOR( '
+                    cmd = f'{cmd} MONITOR( '
                     for option in options:
                         cmd = f'{cmd}{option} '
                     cmd = f'{cmd}) '
@@ -1504,7 +1504,7 @@ class UserHandler(RACFHandler):
                 cmd = f"{cmd} INTIDS(NO)"
             if operator.get('routing_msgs') is not None:
                 routes = operator['routing_msgs']
-                cmd = f'{cmd}ROUTCODE( '
+                cmd = f'{cmd} ROUTCODE( '
                 for route in routes:
                     cmd = f'{cmd}{route} '
                 cmd = f'{cmd}) '
@@ -1517,7 +1517,7 @@ class UserHandler(RACFHandler):
             else:
                 cmd = f"{cmd} UNKNIDS(NO)"
             if operator.get('responses', False):
-                cmd = f"{cmd} LOGCMDRESP(YES)"
+                cmd = f"{cmd} LOGCMDRESP(SYSTEM)"
             else:
                 cmd = f"{cmd} LOGCMDRESP(NO)"
 
@@ -1815,7 +1815,7 @@ def run_module():
                         'required': False
                     },
                     'program': {
-                        'type': 'int',
+                        'type': 'str',
                         'required': False
                     },
                     'nonshared_size': {
@@ -2201,9 +2201,8 @@ def run_module():
                 ],
                 'options': {
                     'days': {
-                        'type': 'str',
+                        'type': 'raw',
                         'required': False,
-                        'choices': ['anyday', 'weekdays', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
                         'default': 'anyday'
                     },
                     'time': {
@@ -2434,6 +2433,7 @@ def run_module():
     try:
         operation_handler.validate_params()
     except ValueError as err:
+        result = operation_handler.get_state()
         result['msg'] = str(err)
         module.fail_json(**result)
 

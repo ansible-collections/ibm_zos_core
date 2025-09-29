@@ -774,7 +774,7 @@ options:
                       - When I(raw=true), the following parameters are not allowed: I(disposition_normal),
                         I(disposition_abnormal), I(space_type), I(space_primary), I(space_secondary), I(volumes),
                         I(sms_management_class), I(sms_storage_class), I(sms_data_class), I(block_size),
-                        I(directory_blocks), I(key_label), I(type), I(encryption_key_1), I(encryption_key_2), 
+                        I(directory_blocks), I(key_label), I(type), I(encryption_key_1), I(encryption_key_2),
                         I(key_length), I(key_offset), I(record_length), I(record_format).
                     type: bool
                     default: false
@@ -1322,9 +1322,6 @@ notes:
       addressed by APAR PH28089.
     - 3. When executing a program, refer to the programs documentation as each programs requirments
       can vary fom DDs, instream-data indentation and continuation characters.
-    - 3. Use the I(raw) parameter for data sets when the program being executed should handle
-      the data set allocation and attributes. This is common for utilities like ADRDSSU that
-      have specific requirements for data set characteristics.
 seealso:
 - module: zos_data_set
 """

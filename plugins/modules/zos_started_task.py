@@ -305,31 +305,31 @@ rc:
 state:
   description:
     - The final state of the started task, after execution.
-  returned: changed
+  returned: success
   type: str
   sample: S SAMPLE
 stderr:
   description:
     - The STDERR from the command, may be empty.
-  returned: changed
+  returned: failure
   type: str
   sample: An error has occurred.
 stderr_lines:
   description:
     - List of strings containing individual lines from STDERR.
-  returned: changed
+  returned: failure
   type: list
   sample: ["An error has occurred"]
 stdout:
   description:
     - The STDOUT from the command, may be empty.
-  returned: changed
+  returned: success
   type: str
   sample: ISF031I CONSOLE OMVS0000 ACTIVATED.
 stdout_lines:
   description:
     - List of strings containing individual lines from STDOUT.
-  returned: changed
+  returned: success
   type: list
   sample: ["Allocation to SYSEXEC completed."]
 tasks:
@@ -503,9 +503,9 @@ tasks:
       sample: SYSTEM
 verbose_output:
   description:
-     - If C(verbose=true), the system log related to the started task executed state will be shown.
-  returned: changed
-  type: list
+     - If C(verbose=true), the system logs related to the started task executed state will be shown.
+  returned: success
+  type: str
   sample: NC0000000 ZOSMACHINE 25240 12:40:30.15 OMVS0000 00000210....
 """
 
@@ -534,10 +534,12 @@ def execute_command(operator_cmd, started_task_name, execute_display_before=Fals
     ----------
     operator_cmd : str
         Operator command.
+    started_task_name : str
+        Name of the started task.
+    execute_display_before: bool
+        Indicates whether display command need to be executed before actual command or not.
     timeout_s : int
         Timeout to wait for the command execution, measured in centiseconds.
-    *args : dict
-        Arguments for the command.
     **kwargs : dict
         More arguments for the command.
 
@@ -566,8 +568,8 @@ def execute_display_command(started_task_name, timeout=0):
     Parameters
     ----------
     started_task_name : str
-        The name of started task.
-    timeout_s : int
+        Name of the started task.
+    timeout : int
         Timeout to wait for the command execution, measured in centiseconds.
 
     Returns
@@ -588,7 +590,7 @@ def validate_and_prepare_start_command(module):
 
     Parameters
     ----------
-    start_parms : dict
+    module : dict
         The started task start command parameters.
 
     Returns
@@ -711,7 +713,7 @@ def prepare_display_command(module):
 
     Parameters
     ----------
-    display_parms : dict
+    module : dict
         The started task display command parameters.
 
     Returns
@@ -743,7 +745,7 @@ def prepare_stop_command(module):
 
     Parameters
     ----------
-    stop_parms : dict
+    module : dict
         The started task stop command parameters.
 
     Returns
@@ -778,7 +780,7 @@ def prepare_modify_command(module):
 
     Parameters
     ----------
-    modify_parms : dict
+    module : dict
         The started task modify command parameters.
 
     Returns
@@ -817,7 +819,7 @@ def prepare_cancel_command(module):
 
     Parameters
     ----------
-    cancel_parms : dict
+    module : dict
         The started task modify command parameters.
 
     Returns
@@ -996,7 +998,7 @@ def extract_keys(stdout):
         elif current_task:
             data_space = {}
             for match in kv_pattern.finditer(line):
-                dsp_keys = ['dataspace_name', 'data_space_address_entry']
+                dsp_keys = ['data_space_name', 'data_space_address_entry']
                 key, value = match.groups()
                 if key in keys:
                     key = keys[key]
@@ -1050,11 +1052,13 @@ def fetch_logs(command, timeout):
     ----------
     command : string
         The comand which need to be checked in system logs
+    timeout: int
+        The timeout value passed in input.
 
     Returns
     -------
-    list
-        The list of logs from SYSLOG
+    str
+        Logs from SYSLOG
     """
     time_mins = timeout // 60 + 1
     option = '-t' + str(time_mins)

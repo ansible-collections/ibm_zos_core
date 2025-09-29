@@ -100,6 +100,16 @@ options:
               - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
             type: str
             required: false
+          raw:
+            description:
+              - If true, the module will not create or validate the dataset.
+              - The program being executed will handle dataset allocation and attributes.
+              - When true, the following parameters are not allowed: disposition_normal, disposition_abnormal,
+                space_type, space_primary, space_secondary, volumes, sms_management_class, sms_storage_class,
+                sms_data_class, block_size, directory_blocks, key_label, type, encryption_key_1, encryption_key_2,
+                key_length, key_offset, record_length, record_format.
+            type: bool
+            default: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).

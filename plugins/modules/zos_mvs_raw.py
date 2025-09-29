@@ -1815,6 +1815,7 @@ def run_module():
 
     dd_data_set_base = dict(
         data_set_name=dict(type="str"),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -2079,6 +2080,7 @@ def parse_and_validate_args(params):
 
     dd_data_set_base = dict(
         data_set_name=dict(type="data_set", required=True),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -2741,9 +2743,11 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
+        raw_flag = dd.get("dd_data_set").get("raw", False)
         data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
                                                             dd.get("dd_data_set").get("disposition"),
-                                                            dd.get("dd_data_set").get("type"))
+                                                            dd.get("dd_data_set").get("type"),
+                                                            raw=raw_flag)
         dd.get("dd_data_set")["data_set_name"] = data_set_name
         dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"
@@ -2793,7 +2797,7 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset, disposition, type):
+def resolve_data_set_names(dataset, disposition, type, raw=False):
     """Resolve cases for data set names as relative gds or positive
       that could be accepted if disposition is new.
       Parameters
@@ -2811,11 +2815,12 @@ def resolve_data_set_names(dataset, disposition, type):
       str
           The disposition base on the system
     """
+    if raw:
+        return dataset, disposition or "shr"
     if disposition:
         disp = disposition
     else:
         disp = "shr"
-
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
@@ -2841,6 +2846,33 @@ def resolve_data_set_names(dataset, disposition, type):
         return dataset, disp
 
 
+def validate_raw_parameter(dd_params):
+    """Validate that when raw=true, no other dataset parameters are specified."""
+    if dd_params.get('raw'):
+        # Parameters that should not be used with raw=true
+        incompatible_params = [
+            'disposition_normal', 'disposition_abnormal',
+            'space_type', 'space_primary', 'space_secondary', 'volumes',
+            'sms_management_class', 'sms_storage_class', 'sms_data_class',
+            'block_size', 'directory_blocks', 'key_label', 'type',
+            'encryption_key_1', 'encryption_key_2', 'key_length', 'key_offset',
+            'record_length', 'record_format'
+        ]
+
+        specified_params = []
+        for param in incompatible_params:
+            if dd_params.get(param) is not None:
+                specified_params.append(param)
+
+        if specified_params:
+            raise ValueError(
+                "The following parameters cannot be used when 'raw=true': {}. "
+                "When using raw datasets, the program determines all dataset attributes. "
+                "Either remove these parameters or set raw=false.".format(
+                    ', '.join(specified_params))
+            )
+
+
 def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
@@ -2857,6 +2889,7 @@ def build_data_definition(dd):
     """
     data_definition = None
     if dd.get("dd_data_set"):
+        validate_raw_parameter(dd.get("dd_data_set"))
         data_definition = RawDatasetDefinition(
             **(dd.get("dd_data_set")))
         if data_definition.backup:

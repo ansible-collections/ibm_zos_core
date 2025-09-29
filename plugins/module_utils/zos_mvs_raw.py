@@ -314,6 +314,7 @@ class RawDatasetDefinition(DatasetDefinition):
             return f"{self.dataset_name},raw"
         return super().__str__()
 
+
 class RawFileDefinition(FileDefinition):
     """Wrapper around FileDefinition to contain information about
     desired return contents.

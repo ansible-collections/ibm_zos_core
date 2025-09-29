@@ -63,7 +63,7 @@ device_type
 
 
 device_number
-  Number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit number.
+  Number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must precede a 4-digit number but not a 3-digit number.
 
   Only applicable when *state* is ``started``, otherwise ignored.
 
@@ -354,21 +354,21 @@ rc
 state
   The final state of the started task, after execution.
 
-  | **returned**: changed
+  | **returned**: success
   | **type**: str
   | **sample**: S SAMPLE
 
 stderr
   The STDERR from the command, may be empty.
 
-  | **returned**: changed
+  | **returned**: failure
   | **type**: str
   | **sample**: An error has occurred.
 
 stderr_lines
   List of strings containing individual lines from STDERR.
 
-  | **returned**: changed
+  | **returned**: failure
   | **type**: list
   | **sample**:
 
@@ -381,14 +381,14 @@ stderr_lines
 stdout
   The STDOUT from the command, may be empty.
 
-  | **returned**: changed
+  | **returned**: success
   | **type**: str
   | **sample**: ISF031I CONSOLE OMVS0000 ACTIVATED.
 
 stdout_lines
   List of strings containing individual lines from STDOUT.
 
-  | **returned**: changed
+  | **returned**: success
   | **type**: list
   | **sample**:
 
@@ -430,7 +430,7 @@ tasks
   cpu_time
     The processor time used by the address space, including the initiator. This time does not include SRB time.
 
-    cpu_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours. sss.tttS when time is less than 1000 seconds hh.mm.ss when time is at least 1000 seconds, but less than 100 hours hhhhh.mm when time is at least 100 hours ******** when time exceeds 100000 hours NOTAVAIL when the TOD clock is not working
+    cpu_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours. sss.tttS when time is less than 1000 seconds hh.mm.ss when time is at least 1000 seconds, but less than 100 hours hhhhh.mm when time is at least 100 hours ******** when time exceeds 100000 hours NOTAVAIL when the TOD clock is not working
 
     | **type**: str
     | **sample**: 000.008S
@@ -609,13 +609,9 @@ tasks
 
 
 verbose_output
-  If ``verbose=true``, the system log related to the started task executed state will be shown.
+  If ``verbose=true``, the system logs related to the started task executed state will be shown.
 
-  | **returned**: changed
-  | **type**: list
-  | **sample**:
-
-    .. code-block:: json
-
-        "NC0000000 ZOSMACHINE 25240 12:40:30.15 OMVS0000 00000210...."
+  | **returned**: success
+  | **type**: str
+  | **sample**: NC0000000 ZOSMACHINE 25240 12:40:30.15 OMVS0000 00000210....
 

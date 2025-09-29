@@ -57,7 +57,7 @@ options:
   device_number:
     description:
         - Number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must
-          precede a 4-digit number but is not before a 3-digit number.
+          precede a 4-digit number but not a 3-digit number.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
@@ -359,7 +359,7 @@ tasks:
     cpu_time:
       description:
          - The processor time used by the address space, including the initiator. This time does not include SRB time.
-         - cpu_time has one of these below formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
+         - cpu_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
            sss.tttS when time is less than 1000 seconds
            hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
            hhhhh.mm when time is at least 100 hours

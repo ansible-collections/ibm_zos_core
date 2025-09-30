@@ -38,6 +38,12 @@ SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
     SECURITY
 """
 
+TEXT_TO_KEEP = """USER NO 1
+    TICKET SERVICE 20
+    MOUNT FILESYSTEM('SYS1.TEST.ZFS')
+    YPE(ZFS) MODE(RDWR) AUTOMOVE
+"""
+
 SHELL_EXECUTABLE = "/bin/sh"
 
 
@@ -295,6 +301,75 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
 
         for result in result_cat.contacted.values():
             assert srcfn in result.get("stdout")
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.shell(
+            cmd="drm " + dest,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
+def test_basic_mount_with_persistent_keep_dataset(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
+
+    tmp_file_filename = "/tmp/testfile.txt"
+
+    hosts.all.shell(
+        cmd="touch {0}".format(tmp_file_filename)
+    )
+
+    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=TEXT_TO_KEEP)
+
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO1)"
+
+    hosts.all.shell(
+        cmd="dtouch -tpdse {0}".format(dest)
+    )
+
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        binary=True,
+        remote_src=True,
+    )
+
+    try:
+        mount_result = hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="mounted",
+            persistent=dict(name=dest_path),
+        )
+
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("changed") is True
+
+        result_cat = hosts.all.shell(
+            cmd="dcat '{0}'".format(dest_path),
+        )
+
+        for result in result_cat.contacted.values():
+            print(result)
+            assert srcfn in result.get("stdout")
+            assert "USER NO 1" in result.get("stdout")
     finally:
         hosts.all.zos_mount(
             src=srcfn,

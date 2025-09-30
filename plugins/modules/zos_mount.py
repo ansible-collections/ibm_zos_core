@@ -663,11 +663,14 @@ def get_str_to_keep(dataset, src):
 
     decode_list = [codecs.decode(record, "cp1047") for record in dataset_content]
 
-    for record in decode_list:
+    # Use enumerate to avoid cases when dataset have content before so required to return
+    # all the content.
+    for idx, record in enumerate(decode_list):
         if pattern.match(record) is not None:
-            line_counter += 1
+            line_counter = idx + 1
             break
-        line_counter += 1
+    else:
+        return decode_list
 
     begin_block_code = line_counter
     for line in reversed(decode_list[:line_counter]):
@@ -1048,30 +1051,24 @@ def run_module(module, arg_def):
                 stderr=str(res_args),
             )
 
-        bk_ds = datasets.tmp_name(high_level_qualifier=tmphlq)
-        datasets.create(name=bk_ds, dataset_type="SEQ")
-
         new_str = get_str_to_keep(dataset=name, src=src)
+        modified_str = [line for line in new_str if line.strip() or line.lstrip()]
 
         rc_write = 0
 
         try:
-            for line in new_str:
-                rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
-                if rc_write != 0:
-                    raise Exception("Non zero return code from datasets.write.")
+            # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
+            with zoau_io.zopen(f"//'{name}'", "w", recfm="*") as ds:
+                pass
+            full_text = "\n".join(modified_str)
+            rc_write = datasets.write(dataset_name=name, content=full_text, append=True, force=True)
+            if rc_write != 0:
+                raise Exception("Non zero return code from datasets.write.")
         except Exception as e:
-            datasets.delete(dataset=bk_ds)
             module.fail_json(
                 msg="Unable to write on persistent data set {0}. {1}".format(name, e),
                 stderr=str(res_args),
             )
-
-        try:
-            datasets.delete(dataset=name)
-            datasets.copy(source=bk_ds, target=name)
-        finally:
-            datasets.delete(dataset=bk_ds)
 
         if will_mount:
             d = datetime.today()

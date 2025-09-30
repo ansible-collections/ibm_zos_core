@@ -826,7 +826,7 @@ EXAMPLES = r"""
 """
 RETURN = r"""
 data_sets:
-  description: The data set names, including temporary generated data set names, in the order provided to the module.
+  description: The affected data set, including temporary generated data set, in the order provided to the module.
   returned: always
   type: list
   elements: str
@@ -1853,13 +1853,13 @@ def parse_and_validate_args(params):
     }
     return parsed_args
 
-def build_return_schema( data_set_params):
+def build_return_schema(data_set_list):
     """ Builds return values schema with empty values.
 
         Parameters
         ----------
-        data_set_params : dict
-            Dictionary containing all params used in data set creation.
+        data_set_list : dict
+            List of data sets.
 
         Returns
         -------
@@ -1892,10 +1892,9 @@ def build_return_schema( data_set_params):
     }
 
 
-    data_sets = [ data_set_schema.copy() | data_set for data_set in data_set_params ]
+    data_sets = [ data_set_schema.copy() | data_set.attributes for data_set in data_set_list ]
     result = {
       "data_sets": data_sets,
-      "changed": False,
       "msg": "",
       "failed": False
     }
@@ -2077,7 +2076,7 @@ def run_module():
             default=False
         ),
     )
-    result = dict(changed=False, message="", names=[])
+    result = dict(changed=False, message="")
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
@@ -2112,6 +2111,8 @@ def run_module():
             if module.params.get("record_format") is not None:
                 del module.params["record_format"]
 
+    data_set_list = []
+
     if not module.check_mode:
         try:
             # Update the dictionary for use by better arg parser by adding the
@@ -2120,8 +2121,6 @@ def run_module():
             module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
-            # Build return schema from the data set param list
-            result["names"] = build_return_schema(data_set_param_list)
 
             for data_set_params in data_set_param_list:
                 # this returns MVSDataSet, Member or GenerationDataGroup
@@ -2134,7 +2133,10 @@ def run_module():
                     force=data_set_params.get("force"),
                     noscratch=data_set_params.get("noscratch"),
                 )
+                data_set_list.append(data_set)
                 result["changed"] = result["changed"] or current_changed
+            # Build return schema from the data set param list
+            result.update(build_return_schema(data_set_list))
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
     module.exit_json(**result)

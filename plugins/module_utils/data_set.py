@@ -222,7 +222,7 @@ class DataSet(object):
 
         if not present:
             try:
-                DataSet.create(**arguments)
+                changed, data_set = DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
@@ -237,10 +237,10 @@ class DataSet(object):
         if present:
             if not replace:
                 return changed
-            DataSet.replace(**arguments)
+            changed, data_set = DataSet.replace(**arguments)
         if type.upper() == "ZFS":
             DataSet.format_zfs(name)
-        return True
+        return changed, data_set
 
     @staticmethod
     def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False):
@@ -1249,7 +1249,8 @@ class DataSet(object):
         """
         arguments = locals()
         DataSet.delete(name)
-        DataSet.create(**arguments)
+        changed, data_set = DataSet.create(**arguments)
+        return changed, data_set
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -1417,7 +1418,7 @@ class DataSet(object):
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         changed = data_set is not None
-        return changed
+        return changed, data_set
 
     @staticmethod
     def delete(name, noscratch=False):
@@ -2723,7 +2724,8 @@ class MVSDataSet():
             "tmp_hlq": tmp_hlq,
             "force": force,
         }
-        rc = DataSet.ensure_present(**arguments)
+        rc, data_set = DataSet.ensure_present(**arguments)
+        self.merge_attributes_from_zoau_data_set(data_set)
         self.set_state("present")
         return rc
 
@@ -2843,6 +2845,39 @@ class MVSDataSet():
             raise ValueError(f"State {self.state} not supported for MVSDataset class.")
         return True
 
+    def merge_attributes_from_zoau_data_set(self, zoau_data_set):
+        self.name = zoau_data_set.name
+        self.organization = zoau_data_set.organization.lower()
+        self.record_format = zoau_data_set.record_format.lower()
+        self.record_length = zoau_data_set.record_length
+        self.volumes = zoau_data_set.volume.lower()
+        self.block_size = zoau_data_set.block_size
+        self.total_space = zoau_data_set.total_space
+        self.used_space = zoau_data_set.used_space
+        self.last_referenced = zoau_data_set.last_referenced
+        self.type = zoau_data_set.type.lower()
+
+    @property
+    def attributes(self):
+        data_set_attributes = {
+        "name": self.name,
+        "state": self.state,
+        "type": self.data_set_type,
+        "space_primary": self.space_primary,
+        "space_secondary": self.space_secondary,
+        "space_type": self.space_type,
+        "record_format": self.record_format,
+        "sms_storage_class": self.sms_storage_class,
+        "sms_data_class": self.sms_data_class,
+        "sms_management_class": self.sms_management_class,
+        "record_length": self.record_length,
+        "block_size": self.block_size,
+        "directory_blocks": self.directory_blocks,
+        "key_offset": self.key_offset,
+        "key_length": self.key_length,
+        "volumes": self.volumes,
+        }
+        return data_set_attributes
 
 class Member():
     """Represents a member on z/OS.
@@ -2947,8 +2982,7 @@ class GenerationDataGroup():
         self.data_set_type = "gdg"
         self.raw_name = name
         self.gdg = None
-        # Removed escaping since is not needed by the GDG python api.
-        # self.name = DataSet.escape_data_set_name(self.name)
+        self.state = 'present'
 
     @staticmethod
     def _validate_gdg_name(name):
@@ -2977,6 +3011,7 @@ class GenerationDataGroup():
             fifo=self.fifo,
         )
         self.gdg = gdg
+        self.state = 'present'
         return True
 
     def ensure_present(self, replace):
@@ -3097,6 +3132,20 @@ class GenerationDataGroup():
             gdg_view.clear()
         return True
 
+    @property
+    def attributes(self):
+        data_set_attributes = {
+        "name": self.name,
+        "state": self.state,
+        "type": self.data_set_type,
+        "empty": self.empty,
+        "extended": self.extended,
+        "fifo": self.fifo,
+        "limit": self.limit,
+        "purge": self.purge,
+        "scratch": self.scratch,
+        }
+        return data_set_attributes
 
 def is_member(data_set):
     """Determine whether the input string specifies a data set member.

@@ -204,6 +204,7 @@ class DataSet(object):
         arguments.pop("replace", None)
         present = False
         changed = False
+        data_set = None
         if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
         # Validate volume conflicts when:
@@ -236,7 +237,7 @@ class DataSet(object):
                     raise
         if present:
             if not replace:
-                return changed
+                return changed, data_set
             changed, data_set = DataSet.replace(**arguments)
         if type.upper() == "ZFS":
             DataSet.format_zfs(name)
@@ -2725,7 +2726,8 @@ class MVSDataSet():
             "force": force,
         }
         rc, data_set = DataSet.ensure_present(**arguments)
-        self.merge_attributes_from_zoau_data_set(data_set)
+        if data_set is not None:
+            self.merge_attributes_from_zoau_data_set(data_set)
         self.set_state("present")
         return rc
 
@@ -2846,16 +2848,13 @@ class MVSDataSet():
         return True
 
     def merge_attributes_from_zoau_data_set(self, zoau_data_set):
+        # print(zoau_data_set)
         self.name = zoau_data_set.name
-        self.organization = zoau_data_set.organization.lower()
-        self.record_format = zoau_data_set.record_format.lower()
+        self.record_format = zoau_data_set.record_format and zoau_data_set.record_format.lower()
         self.record_length = zoau_data_set.record_length
-        self.volumes = zoau_data_set.volume.lower()
+        self.volumes = zoau_data_set.volume and zoau_data_set.volume.lower()
         self.block_size = zoau_data_set.block_size
-        self.total_space = zoau_data_set.total_space
-        self.used_space = zoau_data_set.used_space
-        self.last_referenced = zoau_data_set.last_referenced
-        self.type = zoau_data_set.type.lower()
+        self.type = zoau_data_set.type and zoau_data_set.type.lower()
 
     @property
     def attributes(self):

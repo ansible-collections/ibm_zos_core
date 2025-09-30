@@ -2135,7 +2135,7 @@ def run_module():
                 )
                 data_set_list.append(data_set)
                 result["changed"] = result["changed"] or current_changed
-            # Build return schema from the data set param list
+            # Build return schema from created data sets.
             result.update(build_return_schema(data_set_list))
         except Exception as e:
             module.fail_json(msg=repr(e), **result)

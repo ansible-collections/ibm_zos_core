@@ -427,7 +427,7 @@ def create_trace_dataset(name, member=False):
                                         space_type="K", space_primary="42000", space_secondary="25000")
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
+        rc, zoau_data_set = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
                                              space_type="K", space_primary="42000", space_secondary="25000")
 
     return rc

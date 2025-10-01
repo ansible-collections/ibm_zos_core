@@ -171,6 +171,37 @@ options:
           - This option is mutually exclusive with every other option in this section.
         type: bool
         required: false
+  language:
+    description:
+      - Options that set the preferred national languages for a user profile.
+      - These options will override the system-wide defaults.
+    required: false
+    type: dict
+    suboptions:
+      primary:
+        description:
+          - User's primary language.
+          - Value should be either a 3 character-long language code or an
+            installation-defined name of up to 24 characters.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      secondary:
+        description:
+          - User's secondary language.
+          - Value should be either a 3 character-long language code or an
+            installation-defined name of up to 24 characters.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      delete:
+        description:
+          - Delete the whole LANGUAGE block from the profile.
+          - This option is only valid when updating user profiles, it will be ignored
+            when creating one.
+          - This option is mutually exclusive with every other option in this section.
+        type: bool
+        required: false
   omvs:
     description:
       - Attributes for how Unix System Services should work under a profile.
@@ -193,6 +224,88 @@ options:
         description:
           - Specifies the profile's UID.
           - A number between 0 and 2,147,483,647.
+        type: int
+        required: false
+      home:
+        description:
+          - Path name for the z/OS Unix System Services home directory.
+          - Maximum length of 1023 characters.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      program:
+        description:
+          - Path of the shell program to use when the user logs in.
+          - Maximum length of 1023 characters.
+          - An empty string will delete this field from the profile.
+        type: str
+        required: false
+      nonshared_size:
+        description:
+          - Maximum number of bytes of nonshared memory that can be allocated
+            by the user.
+          - Must be a number between 0 and 16,777,215 subfixed by one of the
+            following units: m (megabytes), g (gigabytes), t (terabytes) or
+            p (petabytes).
+          - An empty string will delete the current limit set.
+        type: str
+        required: false
+      shared_size:
+        description:
+          - Maximum number of bytes of shared memory that can be allocated
+            by the user.
+          - Must be a number between 1 and 16,777,215 subfixed by one of the
+            following units: m (megabytes), g (gigabytes), t (terabytes) or
+            p (petabytes).
+          - An empty string will delete the current limit set.
+        type: str
+        required: false
+      addr_space_size:
+        description:
+          - Address space region size in bytes.
+          - Value between 10,485,760 and 2,147,483,647.
+          - A value of 0 will delete this field from the profile.
+        type: int
+        required: false
+      map_size:
+        description:
+          - Maximum amount of data space storage that can be allocated by
+            the user.
+          - This option represents the number of memory pages, not bytes,
+            available.
+          - Value between 1 and 16,777,216.
+          - A value of 0 will delete this field from the profile.
+        type: int
+        required: false
+      max_procs:
+        description:
+          - Maximum number of processes the user is allowed to have active
+            at the same time.
+          - Value between 3 and 32,767.
+          - A value of 0 will delete this field from the profile.
+        type: int
+        required: false
+      max_threads:
+        description:
+          - Maximum number of threads the user can have concurrently active.
+          - Value between 0 and 100,000.
+          - A value of -1 will delete this field from the profile.
+        type: int
+        required: false
+      max_cpu_time:
+        description:
+          - Specifies the RLIMIT_CPU hard limit. Indicates the cpu-time that a
+            user process is allowed to use.
+          - Value between 7 and 2,147,483,647 seconds.
+          - A value of 0 will delete this field from the profile.
+        type: int
+        required: false
+      max_files:
+        description:
+          - Maximum number of files the user is allowed to have concurrently
+            active or open.
+          - Value between 3 and 524,287.
+          - A value of 0 will delete this field from the profile.
         type: int
         required: false
       delete:

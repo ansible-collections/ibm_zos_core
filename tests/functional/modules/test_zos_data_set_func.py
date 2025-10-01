@@ -134,9 +134,9 @@ def retrieve_data_set_names(results):
     """ Retrieve system generated data set names """
     data_set_names = []
     for result in results.contacted.values():
-        if len(result.get("names", [])) > 0:
-            for name in result.get("names"):
-                data_set_names.append(name)
+        if len(result.get("data_sets", [])) > 0:
+            for data_set in result.get("data_sets"):
+                data_set_names.append(data_set.get("name"))
     return data_set_names
 
 def print_results(results):
@@ -974,8 +974,8 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-            for dsname in result.get("names"):
-                assert dsname[:7] == tmphlq
+            for ds in result.get("data_sets"):
+                assert ds.get("name")[:7] == tmphlq
     finally:
         if dsname:
             hosts.all.zos_data_set(name=default_data_set_name, state="absent")

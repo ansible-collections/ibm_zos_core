@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_mount - Module previously deleted the persistent dataset and then rewrote the content regardless of whether a pattern match occurre
+    Fix now ensures to only delete content only is triggered when a pattern match is detected.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2347).

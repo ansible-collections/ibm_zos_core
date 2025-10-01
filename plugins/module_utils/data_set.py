@@ -2933,6 +2933,15 @@ class Member():
         rc = DataSet.ensure_member_present(self.name, replace, tmphlq=tmphlq)
         return rc
 
+    @property
+    def attributes(self):
+        member_attributes = {
+            "name": self.name,
+            "parent_data_set_type": self.parent_data_set_type,
+            "data_set_type": self.data_set_type,
+        }
+        return member_attributes
+
 
 class GenerationDataGroup():
     """Represents a Generation Data Group base in z/OS.

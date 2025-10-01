@@ -401,13 +401,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        binary=True,
-    )
-    # Make it readable at console
-    hosts.all.shell(
-        cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin="",
     )
 
     # Dump the values of the file once copied to the target(s)
@@ -431,7 +424,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        binary=True,
         remote_src=True,
     )
 
@@ -450,25 +442,16 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
                 marker=["bpxtablemarker - try this", "second line of marker"],
             ),
         )
-        # copying from dataset to make editable copy on target
-        test_tmp_file_filename = tmp_file_filename + "-a"
 
-        hosts.all.zos_copy(
-            src=dest_path,
-            dest=test_tmp_file_filename,
-            binary=True,
-            remote_src=True,
-        )
         results = hosts.all.shell(
-            cmd="cat " + test_tmp_file_filename, executable=SHELL_EXECUTABLE, stdin=""
+            cmd="dcat '{0}'".format(dest_path),
         )
-        data = ""
-        for result in results.values():
+
+        for result in results.contacted.values():
             print("\nbcb-postmount result: {0}\n".format(result.get("stdout")))
             data += result.get("stdout")
 
         print("\n====================================================\n")
-
         for result in mount_result.values():
             assert result.get("rc") == 0
             assert result.get("changed") is True
@@ -489,7 +472,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
         )
 
         hosts.all.file(path=tmp_file_filename, state="absent")
-        hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
         hosts.all.shell(cmd=f"drm {dest}")
 

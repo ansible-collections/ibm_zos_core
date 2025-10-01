@@ -663,14 +663,11 @@ def get_str_to_keep(dataset, src):
 
     decode_list = [codecs.decode(record, "cp1047") for record in dataset_content]
 
-    # Use enumerate to avoid cases when dataset have content before so required to return
-    # all the content.
-    for idx, record in enumerate(decode_list):
+    for record in decode_list:
         if pattern.match(record) is not None:
-            line_counter = idx + 1
+            line_counter += 1
             break
-    else:
-        return decode_list
+        line_counter += 1
 
     begin_block_code = line_counter
     for line in reversed(decode_list[:line_counter]):
@@ -1052,23 +1049,25 @@ def run_module(module, arg_def):
             )
 
         new_str = get_str_to_keep(dataset=name, src=src)
-        modified_str = [line for line in new_str if line.strip() or line.lstrip()]
 
-        rc_write = 0
+        if new_str:
+            modified_str = [line for line in new_str if line.strip() or line.lstrip()]
 
-        try:
-            # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-            with zoau_io.zopen(f"//'{name}'", "w", recfm="*") as ds:
-                pass
-            full_text = "\n".join(modified_str)
-            rc_write = datasets.write(dataset_name=name, content=full_text, append=True, force=True)
-            if rc_write != 0:
-                raise Exception("Non zero return code from datasets.write.")
-        except Exception as e:
-            module.fail_json(
-                msg="Unable to write on persistent data set {0}. {1}".format(name, e),
-                stderr=str(res_args),
-            )
+            rc_write = 0
+
+            try:
+                # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
+                with zoau_io.zopen(f"//'{name}'", "w", "cp1047", recfm="*") as ds:
+                    pass
+                full_text = "\n".join(modified_str)
+                rc_write = datasets.write(dataset_name=name, content=full_text, append=True, force=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
+            except Exception as e:
+                module.fail_json(
+                    msg="Unable to write on persistent data set {0}. {1}".format(name, e),
+                    stderr=str(res_args),
+                )
 
         if will_mount:
             d = datetime.today()

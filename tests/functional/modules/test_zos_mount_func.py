@@ -38,10 +38,10 @@ SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
     SECURITY
 """
 
-TEXT_TO_KEEP = """USER NO 1
-    TICKET SERVICE 20
-    MOUNT FILESYSTEM('SYS1.TEST.ZFS')
-    YPE(ZFS) MODE(RDWR) AUTOMOVE
+TEXT_TO_KEEP = """/* Service path                                                    */
+MOUNT FILESYSTEM('{0}')
+    TYPE(ZFS) MODE(RDWR) AUTOMOVE
+    MOUNTPOINT('/Service')
 """
 
 SHELL_EXECUTABLE = "/bin/sh"
@@ -333,10 +333,10 @@ def test_basic_mount_with_persistent_keep_dataset(ansible_zos_module, volumes_on
         cmd="touch {0}".format(tmp_file_filename)
     )
 
-    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=TEXT_TO_KEEP)
-
     dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"
+
+    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=TEXT_TO_KEEP.format(srcfn))
 
     hosts.all.shell(
         cmd="dtouch -tpdse {0}".format(dest)
@@ -369,7 +369,7 @@ def test_basic_mount_with_persistent_keep_dataset(ansible_zos_module, volumes_on
         for result in result_cat.contacted.values():
             print(result)
             assert srcfn in result.get("stdout")
-            assert "USER NO 1" in result.get("stdout")
+            assert "Service path" in result.get("stdout")
     finally:
         hosts.all.zos_mount(
             src=srcfn,

@@ -232,6 +232,9 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
+            assert len(result.get("data_sets")) > 0
+            assert result.get("data_sets")[0].get("name") is not None
+            assert result.get("data_sets")[0].get("type") is not None
         # uncatalog the data set
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         for result in results.contacted.values():
@@ -1022,6 +1025,13 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert len(result.get("data_sets")) > 0
+            assert result.get("data_sets")[0].get("empty") is not None
+            assert result.get("data_sets")[0].get("extended") is not None
+            assert result.get("data_sets")[0].get("fifo") is not None
+            assert result.get("data_sets")[0].get("limit") is not None
+            assert result.get("data_sets")[0].get("purge") is not None
+            assert result.get("data_sets")[0].get("scratch") is not None
         results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
         for result in results.contacted.values():
             assert result.get("changed") is True

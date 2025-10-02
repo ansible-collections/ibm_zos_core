@@ -316,6 +316,111 @@ options:
           - This option is mutually exclusive with every other option in this section.
         type: bool
         required: false
+  tso:
+    description:
+      -
+    required: false
+    type: dict
+    suboptions:
+  connect:
+    description:
+      -
+    required: false
+    type: dict
+    suboptions:
+  access:
+    description:
+      - Options that set different security attributes in a user profile.
+    required: false
+    type: dict
+    suboptions:
+      default_group:
+        description:
+          - RACF's default group for the user profile.
+        type: str
+        required: false
+      clauth:
+        description:
+          - Classes in which a user is allowed to define profiles to RACF for protection.
+        type: dict
+        required: false
+        suboptions:
+          add:
+            description:
+              - Adds classes to the profile.
+            type: list
+            elements: str
+            required: false
+          delete:
+            description:
+              - Removes classes from the profile.
+            type: list
+            elements: str
+            required: false
+      roaudit:
+        description:
+          - Whether a user should have full responsibility for auditing the use of system
+            resources.
+        type: bool
+        required: false
+      category:
+        description:
+          - Security categories that the profile should have.
+        type: dict
+        required: false
+        suboptions:
+          add:
+            description:
+              - Adds security categories to the profile.
+            type: list
+            elements: str
+            required: false
+          delete:
+            description:
+              - Removes security categories from the profile.
+            type: list
+            elements: str
+            required: false
+      operator_card:
+        description:
+          - Whether a user must supply an operator identification card when logging in.
+        type: bool
+        required: false
+      maintenance_access:
+        description:
+          - Whether the user has authorization to do maintenance operations on all
+            RACF-protected DASD data sets, tape volumes, and DASD volumes.
+        type: bool
+        required: false
+      restricted:
+        description:
+          - Whether to give the profile the RESTRICTED attribute.
+        type: bool
+        required: false
+      security_label:
+        description:
+          - Security label applied to the profile.
+          - Empty value deletes this field.
+        type: str
+        required: false
+      security_level:
+        description:
+          - Security level applied to the profile.
+          - Empty value deletes this field.
+        type: str
+        required: false
+  operator:
+    description:
+      -
+    required: false
+    type: dict
+    suboptions:
+  restrictions:
+    description:
+      -
+    required: false
+    type: dict
+    suboptions:
 
 attributes:
   action:
@@ -338,6 +443,42 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
+operation:
+    description: Operation that was performed by the module.
+    returned: always
+    type: str
+    sample: create
+racf_command:
+    description: Full command string that was executed with tsocmd.
+    returned: success
+    type: str
+    sample: "DELUSER (user)"
+num_entities_modified:
+    description: Number of profiles and references modified by the operation.
+    returned: always
+    type: int
+    sample: 1
+entities_modified:
+    description: List of all profiles and references modified by the operation.
+    returned: success
+    type: list
+    elements: str
+    sample: ['user']
+database_dumped:
+    description: Whether the module used IRRRID00 to dump the RACF database.
+    returned: always
+    type: bool
+    sample: false
+dump_kept:
+    description: Whether the RACF database dump was kept on the managed node.
+    returned: always
+    type: bool
+    sample: false
+dump_name:
+    description: Name of the database containing the output from the IRRRID00 utility.
+    returned: success
+    type: str
+    sample: USER.BACKUP.RACF.DATABASE
 """
 
 import copy

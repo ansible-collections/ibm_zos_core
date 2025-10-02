@@ -1033,7 +1033,7 @@ class MVSUnarchive(Unarchive):
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
     def _get_include_data_sets_cmd(self):

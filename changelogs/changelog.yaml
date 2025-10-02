@@ -855,6 +855,20 @@ releases:
     - 2196-fix-copy-permission-issues.yml
     - v1.14.1_summary.yml
     release_date: '2025-07-01'
+  1.15.0:
+    changes:
+      release_summary: 'Release Date: ''2025-09-30''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - v1.15.0_summary.yml
+    release_date: '2025-09-22'
   1.15.0-beta.1:
     changes:
       bugfixes:

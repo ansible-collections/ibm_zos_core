@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          pip install ansible-core==2.18.9
+          pip install ansible==11.9.0
           pip install ansible-doc-extractor
 
       - name: Run ac-module-doc

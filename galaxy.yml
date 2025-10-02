@@ -77,13 +77,11 @@ build_ignore:
   - .pytest_cache
   - .vscode
   - Jenkinsfile
-  - ac
   - ansible.cfg
   - changelogs
   - collections
   - docs
   - importer_result.json
-  - scripts
   - test_config.yml
   - tests/*.ini
   - tests/*.py
@@ -102,3 +100,4 @@ build_ignore:
   - venv*
   - ansible_collections
   - '*.log'
+  - '*.sh'

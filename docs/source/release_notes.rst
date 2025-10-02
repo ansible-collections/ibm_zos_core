@@ -6,8 +6,8 @@
 Releases
 ========
 
-Version 1.15.0-beta.1
-=====================
+Version 1.15.0
+==============
 
 Minor Changes
 -------------
@@ -68,6 +68,7 @@ New Modules
 
 Availability
 ------------
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 

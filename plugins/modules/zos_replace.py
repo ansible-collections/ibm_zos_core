@@ -97,7 +97,7 @@ options:
       - If specified, it enables the module to interpret options I(after), I(before) and I(regexp) as a literal rather than a regular expression.
       - Option I(literal) uses any combination of V(after), V(before) and V(regexp).
       - To interpret one option as a literal, use I(literal=regexp), I(literal=after) or I(literal=before).
-      - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before']).
+      - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before'])
     required: false
     default: []
     type: raw

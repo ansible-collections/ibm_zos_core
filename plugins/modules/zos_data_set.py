@@ -890,7 +890,6 @@ data_sets:
       description:
         - The number of directory blocks to allocate to the data set.
       type: int
-      required: false
       returned: always
     key_offset:
       description: The key offset used when creating a KSDS data set.

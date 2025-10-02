@@ -1853,6 +1853,7 @@ def parse_and_validate_args(params):
     }
     return parsed_args
 
+
 def build_return_schema(data_set_list):
     """ Builds return values schema with empty values.
 
@@ -1867,38 +1868,38 @@ def build_return_schema(data_set_list):
             Dictionary used to return values at execution finalization.
     """
     data_set_schema = {
-      "name": "",
-      "state": "",
-      "type": "",
-      "space_primary": "",
-      "space_secondary": "",
-      "space_type": "",
-      "record_format": "",
-      "sms_storage_class": "",
-      "sms_data_class": "",
-      "sms_management_class": "",
-      "record_length": "",
-      "block_size": "",
-      "directory_blocks": "",
-      "key_offset": "",
-      "key_length": "",
-      "empty": "",
-      "extended": "",
-      "fifo": "",
-      "limit": "",
-      "purge": "",
-      "scratch": "",
-      "volumes": [],
+        "name": "",
+        "state": "",
+        "type": "",
+        "space_primary": "",
+        "space_secondary": "",
+        "space_type": "",
+        "record_format": "",
+        "sms_storage_class": "",
+        "sms_data_class": "",
+        "sms_management_class": "",
+        "record_length": "",
+        "block_size": "",
+        "directory_blocks": "",
+        "key_offset": "",
+        "key_length": "",
+        "empty": "",
+        "extended": "",
+        "fifo": "",
+        "limit": "",
+        "purge": "",
+        "scratch": "",
+        "volumes": [],
     }
 
-
-    data_sets = [ data_set_schema.copy() | data_set.attributes for data_set in data_set_list ]
+    data_sets = [data_set_schema.copy() | data_set.attributes for data_set in data_set_list]
     result = {
-      "data_sets": data_sets,
-      "msg": "",
-      "failed": False
+        "data_sets": data_sets,
+        "msg": "",
+        "failed": False
     }
     return result
+
 
 def run_module():
     """Runs the module.

@@ -2859,24 +2859,25 @@ class MVSDataSet():
     @property
     def attributes(self):
         data_set_attributes = {
-        "name": self.name,
-        "state": self.state,
-        "type": self.data_set_type,
-        "space_primary": self.space_primary,
-        "space_secondary": self.space_secondary,
-        "space_type": self.space_type,
-        "record_format": self.record_format,
-        "sms_storage_class": self.sms_storage_class,
-        "sms_data_class": self.sms_data_class,
-        "sms_management_class": self.sms_management_class,
-        "record_length": self.record_length,
-        "block_size": self.block_size,
-        "directory_blocks": self.directory_blocks,
-        "key_offset": self.key_offset,
-        "key_length": self.key_length,
-        "volumes": self.volumes,
+            "name": self.name,
+            "state": self.state,
+            "type": self.data_set_type,
+            "space_primary": self.space_primary,
+            "space_secondary": self.space_secondary,
+            "space_type": self.space_type,
+            "record_format": self.record_format,
+            "sms_storage_class": self.sms_storage_class,
+            "sms_data_class": self.sms_data_class,
+            "sms_management_class": self.sms_management_class,
+            "record_length": self.record_length,
+            "block_size": self.block_size,
+            "directory_blocks": self.directory_blocks,
+            "key_offset": self.key_offset,
+            "key_length": self.key_length,
+            "volumes": self.volumes,
         }
         return data_set_attributes
+
 
 class Member():
     """Represents a member on z/OS.
@@ -3143,17 +3144,18 @@ class GenerationDataGroup():
     @property
     def attributes(self):
         data_set_attributes = {
-        "name": self.name,
-        "state": self.state,
-        "type": self.data_set_type,
-        "empty": self.empty,
-        "extended": self.extended,
-        "fifo": self.fifo,
-        "limit": self.limit,
-        "purge": self.purge,
-        "scratch": self.scratch,
+            "name": self.name,
+            "state": self.state,
+            "type": self.data_set_type,
+            "empty": self.empty,
+            "extended": self.extended,
+            "fifo": self.fifo,
+            "limit": self.limit,
+            "purge": self.purge,
+            "scratch": self.scratch,
         }
         return data_set_attributes
+
 
 def is_member(data_set):
     """Determine whether the input string specifies a data set member.

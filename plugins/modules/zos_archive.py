@@ -57,6 +57,7 @@ options:
         type: str
         required: false
         default: gz
+        aliases: [type]
         choices:
           - bz2
           - gz
@@ -70,6 +71,7 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
+        aliases: [options]
         suboptions:
           terse_pack:
             description:
@@ -86,6 +88,7 @@ options:
             choices:
               - pack
               - spack
+            aliases: [spack]
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -105,6 +108,7 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
+            aliases: [adrdssus]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -1874,15 +1878,18 @@ def run_module():
                     name=dict(
                         type='str',
                         default='gz',
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                        aliases=['type']
                     ),
                     format_options=dict(
                         type='dict',
                         required=False,
+                        aliases=['options'],
                         options=dict(
                             terse_pack=dict(
                                 type='str',
                                 choices=['pack', 'spack'],
+                                aliases=['spack'],
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1890,6 +1897,7 @@ def run_module():
                             use_adrdssu=dict(
                                 type='bool',
                                 default=False,
+                                aliases=['adrdssu'],
                             )
                         ),
                     ),
@@ -1969,16 +1977,19 @@ def run_module():
                 name=dict(
                     type='str',
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=["type"],
                 ),
                 format_options=dict(
                     type='dict',
                     required=False,
+                    aliases=["options"],
                     options=dict(
                         terse_pack=dict(
                             type='str',
                             required=False,
                             choices=['pack', 'spack'],
+                            aliases=["spack"],
                         ),
                         xmit_log_data_set=dict(
                             type='str',
@@ -1987,6 +1998,7 @@ def run_module():
                         use_adrdssu=dict(
                             type='bool',
                             default=False,
+                            aliases=["adrdssu"],
                         )
                     ),
                     default=dict(
@@ -2051,6 +2063,20 @@ def run_module():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+
+        if module.params.get('format') is not None and module.params.get('format').get('name') is not None:
+            module.warn("The 'name' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'type' instead.")
+        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None:
+            module.warn("The 'format_options' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'options' instead.")
+        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None and module.params.get('format').get('format_options').get("terse_pack") is not None:
+            module.warn("The 'terse_pack' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'spack' instead.")
+        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None and module.params.get('format').get('format_options').get("use_adrdssu")is not None:
+            module.warn("The 'use_adrdssu' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'adrdssu' instead.")
+
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))

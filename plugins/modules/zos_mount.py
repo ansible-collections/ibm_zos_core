@@ -117,6 +117,7 @@ options:
                       This is usually BPXPRMxx or a copy.
                 required: True
                 type: str
+                aliases: [name]
             backup:
                 description:
                     - Creates a backup file or backup data set for
@@ -160,6 +161,7 @@ options:
                 type: list
                 elements: str
                 required: False
+                aliases: [marker]
     unmount_opts:
         description:
             - Describes how the unmount will be performed.
@@ -754,6 +756,15 @@ def run_module(module, arg_def):
 
     if persistent:
         data_store = persistent.get("data_store").upper()
+
+        if data_store:
+            module.warn("The 'data_store' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'name' instead.")
+
+        if persistent.get("comment") is not None:
+            module.warn("The 'comment' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'marker' instead.")
+
         comment = persistent.get("comment")
         backup = persistent.get("backup")
         if backup:
@@ -1133,10 +1144,11 @@ def main():
                     data_store=dict(
                         type="str",
                         required=True,
+                        aliases=["name"]
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", elements="str", required=False),
+                    comment=dict(type="list", elements="str", required=False, aliases=["marker"]),
                 ),
             ),
             unmount_opts=dict(
@@ -1193,10 +1205,10 @@ def main():
             arg_type="dict",
             required=False,
             options=dict(
-                data_store=dict(arg_type="str", required=True),
+                data_store=dict(arg_type="str", required=True, aliases=["name"]),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
-                comment=dict(arg_type="list", elements="str", required=False),
+                comment=dict(arg_type="list", elements="str", required=False, aliases=["marker"]),
             ),
         ),
         unmount_opts=dict(

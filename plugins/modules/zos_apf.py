@@ -113,6 +113,7 @@ options:
             the APF list.
         required: True
         type: str
+        aliases: [target]
       marker:
         description:
           - The marker line template.
@@ -439,6 +440,7 @@ def main():
                     data_set_name=dict(
                         type='str',
                         required=True,
+                        aliases=["target"],
                     ),
                     marker=dict(
                         type='str',
@@ -503,7 +505,7 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                data_set_name=dict(arg_type='str', required=True),
+                data_set_name=dict(arg_type='str', required=True, aliases=["target"]),
                 marker=dict(arg_type='str', required=False, default='/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */'),
                 backup=dict(arg_type='bool', default=False),
                 backup_name=dict(arg_type='str', required=False, default=None),
@@ -534,6 +536,11 @@ def main():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+
+        if module.params.get('data_set_name') is not None:
+            module.warn("The 'data_set_name' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'target' instead.")
+
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

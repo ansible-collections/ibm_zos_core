@@ -62,6 +62,7 @@ options:
         (e.g "JESJCL", "?")
     type: str
     required: false
+    aliases: [dd_name]
   sysin_dd:
     description:
       - Whether to include SYSIN DDs as part of the output.
@@ -507,7 +508,7 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        ddname=dict(type="str", required=False, aliases=["dd_name"]),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -517,7 +518,7 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        ddname=dict(type="str", required=False, aliases=["dd_name"]),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -530,6 +531,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    if module.params.get(ddname) is not None:
+        module.warn("The 'ddname' parameter is deprecated and will be use as alias in a 2.0.0 release.\n"
+                        "Please use 'dd_name' instead.")
 
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")

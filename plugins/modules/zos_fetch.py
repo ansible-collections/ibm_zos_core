@@ -83,6 +83,7 @@ options:
     required: false
     default: "false"
     type: bool
+    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
@@ -849,7 +850,7 @@ def run_module():
             dest=dict(required=True, type="path"),
             fail_on_missing=dict(required=False, default=True, type="bool"),
             flat=dict(required=False, default=False, type="bool"),
-            is_binary=dict(required=False, default=False, type="bool"),
+            is_binary=dict(required=False, default=False, type="bool", aliases=["binary"]),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
@@ -872,7 +873,7 @@ def run_module():
         src=dict(arg_type="data_set_or_path", required=True),
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
-        is_binary=dict(arg_type="bool", required=False, default=False),
+        is_binary=dict(arg_type="bool", required=False, default=False, aliases=["binary"]),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
@@ -907,6 +908,11 @@ def run_module():
 
     fetch_handler = FetchHandler(module)
     try:
+
+        if module.params.get("is_binary") is not None:
+            module.warn("The 'is_binary' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'binary' instead.")
+
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:

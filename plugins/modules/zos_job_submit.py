@@ -50,6 +50,7 @@ options:
     required: false
     default: data_set
     type: str
+    aliases: [remote_src]
     choices:
       - data_set
       - uss
@@ -63,6 +64,7 @@ options:
     required: false
     default: 10
     type: int
+    aliases: [wait_time]
     description:
       - Option I(wait_time_s) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
@@ -948,6 +950,7 @@ def run_module():
             type="str",
             default="data_set",
             choices=["data_set", "uss", "local"],
+            aliases=["remote_src"]
         ),
         encoding=dict(
             type="dict",
@@ -967,7 +970,7 @@ def run_module():
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
-        wait_time_s=dict(type="int", default=10),
+        wait_time_s=dict(type="int", default=10, wait_time=["wait_time"]),
         max_rc=dict(type="int", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
@@ -1019,6 +1022,7 @@ def run_module():
             arg_type="str",
             default="data_set",
             choices=["data_set", "uss", "local"],
+            aliases=["remote_src"]
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
@@ -1027,7 +1031,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=10),
+        wait_time_s=dict(arg_type="int", required=False, default=10, aliases=["wait_time"]),
         max_rc=dict(arg_type="int", required=False),
     )
 
@@ -1041,6 +1045,15 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
+
+    if module.params.get("location") is not None:
+        module.warn("The 'location' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'remote_src' instead. Logic will change to set if the document with the job is" \
+                        "on the controller or the node")
+
+    if module.params.get("wait_time_s") is not None:
+        module.warn("The 'wait_time_s' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'wait_time' instead.")
 
     # Extract values from set module options
     location = parsed_args.get("location")

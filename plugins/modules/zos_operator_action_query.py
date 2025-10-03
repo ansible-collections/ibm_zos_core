@@ -90,6 +90,7 @@ options:
         required: False
         type: bool
         default: False
+        aliases: [literal]
 seealso:
 - module: zos_operator
 
@@ -267,7 +268,12 @@ def run_module():
             required=False,
             options=dict(
                 filter=dict(type="str", required=True),
-                use_regex=dict(default=False, type="bool", required=False)
+                use_regex=dict(
+                    default=False,
+                    type="bool",
+                    required=False,
+                    aliases=["literal"]
+                    )
             )
         )
     )
@@ -276,6 +282,10 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
+        if module.params.get('use_regex') is not None:
+            module.warn("The 'use_regex' parameter is deprecated and will be removed in a 2.0.0 release.\n"
+                        "Please use 'literal' instead. On 2.0.0 version will work on reverse logic being" \
+                        "False to use as regex.")
         new_params = parse_params(module.params)
 
         kwargs = {}

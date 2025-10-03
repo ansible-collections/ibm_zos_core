@@ -103,7 +103,7 @@ options:
           raw:
             description:
               - Create a new data set and let the MVS program assign its own default DCB attributes.
-              - When C(raw=true) all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
+              - When C(raw=true), all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
               - Using C(raw) option is not possible for all programs, use this for cases where the MVS program that is called is able to assign
                 its own default dataset attribute.
             type: bool

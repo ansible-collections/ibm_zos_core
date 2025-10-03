@@ -599,10 +599,57 @@ options:
         required: false
   restrictions:
     description:
-      -
+      - Attributes that determine the days and times a user is
+        allowed to login.
     required: false
     type: dict
     suboptions:
+      days:
+        description:
+          - Days of the week that a user is allowed to login.
+          - Multiple choices are allowed.
+          - Valid values are C(anyday), C(weekdays), C(monday), C(tuesday),
+            C(wednesday), C(thursday), C(friday), C(saturday) and C(sunday).
+        type: list
+        elements: str
+        required: false
+      time:
+        description:
+          - Daily time period when the user is allowed to login.
+          - The value for this option must be in the format HHMM:HHMM.
+          - This field uses a 24-hour format.
+          - This field also accepts the value C(anytime) to indicate a
+            user is free to login at any time of the day.
+        type: str
+        required: false
+      resume:
+        description:
+          - Date when the user is allowed access to a system again.
+          - The value for this option must be in the format MM/DD/YY,
+            where C(YY) are the last two digits of the year.
+        type: str
+        required: false
+      delete_resume:
+        description:
+          - Delete the resume field from the profile.
+          - This option is only valid when connecting a user to a group.
+          - This option is mutually exclusive with I(resume).
+        type: bool
+        required: false
+      revoke:
+        description:
+          - Date when the user is forbidden access to a system.
+          - The value for this option must be in the format MM/DD/YY,
+            where C(YY) are the last two digits of the year.
+        type: str
+        required: false
+      delete_revoke:
+        description:
+          - Delete the revoke field from the profile.
+          - This option is only valid when connecting a user to a group.
+          - This option is mutually exclusive with I(revoke).
+        type: bool
+        required: false
 
 attributes:
   action:

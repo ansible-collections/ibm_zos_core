@@ -1398,7 +1398,7 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
-- name: Run ADRDSSU to dump a dataset (raw)
+- name: Run ADRDSSU to dump a dataset without having to specify the DCB attributes for dd_data_set by using raw option.
   zos_mvs_raw:
     program_name: ADRDSSU
     auth: true

@@ -411,10 +411,192 @@ options:
         required: false
   operator:
     description:
-      -
+      - Attributes used when a user establishes an extended MCS
+        console session.
     required: false
     type: dict
     suboptions:
+      alt_group:
+        description:
+          - Console group used in recovery.
+          - Must be between 1 and 8 characters in length.
+          - Empty value deletes this field.
+        type: str
+        required: false
+      authority:
+        description:
+          - Console's authority to issue operator commands.
+          - C(delete) will remove the field from the profile.
+        type: str
+        required: false
+        choices:
+          - master
+          - all
+          - info
+          - cons
+          - io
+          - sys
+          - delete
+      cmd_system:
+        description:
+          - System to which commands from this console are to
+            be sent.
+          - Must be between 1 and 8 characters in length.
+          - Empty value deletes this field.
+        type: str
+        required: false
+      search_key:
+        description:
+          - Name used to display information for all consoles
+            with the specified key by using the MVS command
+            C(DISPLAY CONSOLES,KEY).
+          - Must be between 1 and 8 characters in length.
+          - Empty value deletes this field.
+        type: str
+        required: false
+      migration_id:
+        description:
+          - Whether a 1-byte migration ID should be assigned to
+            this console.
+        type: bool
+        required: false
+      display:
+        description:
+          - Which information should be displayed when monitoring
+            jobs, TSO sessions, or data set status.
+          - Possible values are C(jobnames), C(jobnamest), C(sess),
+            C(sesst), C(status) and C(delete).
+          - Multiple choices are allowed.
+          - C(delete) will remove this field from the profile.
+        type: str
+        required: false
+        default: ['jobnames', 'sess']
+      msg_level:
+        description:
+          - Specifies the messages that this console is to receive.
+          - C(delete) will remove this field from the profile.
+        type: str
+        required: false
+        choices:
+          - nb
+          - all
+          - r
+          - i
+          - ce
+          - e
+          - in
+          - delete
+      msg_format:
+        description:
+          - Format in which messages are displayed at the console.
+          - C(delete) will remove this field from the profile.
+        type: str
+        required: false
+        choices:
+          - j
+          - m
+          - s
+          - t
+          - x
+          - delete
+      msg_storage:
+        description:
+          - Specifies the amount of storage in the TSO/E user's address
+            space that can be used for message queuing to the console.
+          - Its value can be a number between 1 and 2,000.
+          - A value of 0 deletes this field.
+        type: int
+        required: false
+      msg_scope:
+        description:
+          - Systems from which this console can receive messages that
+            are not directed to a specific console.
+        type: dict
+        required: false
+        suboptions:
+          add:
+            description:
+              - Add new systems to this field.
+            type: list
+            elements: str
+            required: false
+          remove:
+            description:
+              - Removes systems from this field.
+            type: list
+            elements: str
+            required: false
+          delete:
+            description:
+              - Deletes this field from the profile.
+              - Mutually exclusive with the rest of the options
+                in this section.
+            type: bool
+            required: false
+      automated_msgs:
+        description:
+          - Whether the extended console can receive messages
+            that have been automated by the MFP.
+        type: bool
+        required: false
+      del_msgs:
+        description:
+          - Which delete operator message (DOM) requests the
+            console can receive.
+          - C(delete) will remove the field from the profile.
+        type: str
+        required: false
+        choices:
+          - normal
+          - all
+          - none
+          - delete
+      hardcopy_msgs:
+        description:
+          - Whether the console should receive all messages
+            that are directed to hardcopy.
+        type: bool
+        required: false
+      internal_msgs:
+        description:
+          - Whether the console should receive messages that
+            are directed to console ID zero.
+        type: bool
+        required: false
+      routing_msgs:
+        description:
+          - Specifies the routing codes of messages this
+            operator is to receive.
+          - C(ALL) can be specified to receive all codes. Conversely,
+            C(NONE) can be used to receive none.
+        type: list
+        elements: str
+        required: false
+      undelivered_msgs:
+        description:
+          - Whether the console should receive undelivered
+            messages.
+        type: bool
+        required: false
+      unknown_msgs:
+        description:
+          - Whether the console should receive messages that
+            are directed to unknown console IDs.
+        type: bool
+        required: false
+      responses:
+        description:
+          - Whether command responses should be logged.
+        type: bool
+        required: false
+      delete:
+        description:
+          - Delete the whole OPERPARM block from the profile.
+          - This option is only valid when updating profiles, it will be ignored
+            when creating one.
+          - This option is mutually exclusive with every other option in this section.
+        type: bool
+        required: false
   restrictions:
     description:
       -

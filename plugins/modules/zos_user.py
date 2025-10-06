@@ -425,10 +425,68 @@ options:
         required: false
   connect:
     description:
-      -
+      - Options that configure what a user can do inside a group that is connected to.
+      - These options are only used when C(operation=connect) and they are ignored
+        otherwise.
     required: false
     type: dict
     suboptions:
+      authority:
+        description:
+          - Level of group authority given to a user profile.
+        type: str
+        required: false
+        choices:
+          - use
+          - create
+          - connect
+          - join
+      universal_access:
+        description:
+          - Level of universal access authority given to a user profile.
+        type: str
+        required: false
+        choices:
+          - alter
+          - control
+          - update
+          - read
+          - none
+      group_name:
+        description:
+          - Group to which the user will be connected to.
+          - The rest of the options in this block will affect this group.
+          - If not supplied, RACF will use a default group. It is recommended to specify
+            this option when trying to connect a user to a group.
+        type: str
+        required: false
+      group_account:
+        description:
+          - Whether the user's protected data sets are accessible to other users in the group.
+        type: bool
+        required: false
+      group_operations:
+        description:
+          - Whether a user should have the group-OPERATIONS attribute when connected to a group.
+        type: bool
+        required: false
+      auditor:
+        description:
+          - Whether a user should have auditor privileges for the group it is connected to.
+        type: bool
+        required: false
+      adsp_attribute:
+        description:
+          - Whether to give a user the ADSP attribute, which tells RACF to automatically protect
+            data sets it creates with discrete profiles.
+        type: bool
+        required: false
+      special:
+        description:
+          - Whether to give a user profile the SPECIAL attribute.
+          - This attribute lets a user change attributes of other profiles. Use with caution.
+        type: bool
+        required: false
   access:
     description:
       - Options that set different security attributes in a user profile.

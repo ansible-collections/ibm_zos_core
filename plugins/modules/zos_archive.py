@@ -1328,7 +1328,7 @@ class MVSArchive(Archive):
         if space_type is None:
             arguments.update(space_type="m")
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
     def create_dest_ds(self, name):

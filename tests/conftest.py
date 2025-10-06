@@ -39,6 +39,7 @@ def pytest_addoption(parser):
     Add CLI options and modify options for pytest-ansible where needed.
     Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
     will always return true because a default will be returned.
+    New option have been added to the execution of the command to allow the become method.
     """
     parser.addoption(
         "--zinventory",
@@ -53,6 +54,36 @@ def pytest_addoption(parser):
         action="store",
         default=None,
         help="Str - dictionary with values {'host': 'ibm.com', 'user': 'root', 'zoau': '/usr/lpp/zoau', 'pyz': '/usr/lpp/IBM/pyz'}",
+    )
+    parser.addoption(
+        "--user_adm",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--user_method",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--ansible_promp",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--password",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--ssh_key",
+        action="store",
+        default=None,
+        help="Str "
     )
 
 
@@ -222,3 +253,21 @@ def get_config(request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
     yield path
+
+@pytest.fixture(scope="function")
+def get_config_raw(request):
+    """ Call the pytest-ansible plugin to check the options on user manager test cases."""
+    path = request.config.getoption("--zinventory-raw")
+    yield path
+
+@pytest.fixture(scope='session')
+def get_config_for_become(request):
+    """ Return as a dict the values to be used on the test cases for become method"""
+    become_config = {
+        "user" : request.config.option.user_adm,
+        "method" : request.config.option.user_method,
+        "promp" : request.config.option.ansible_promp,
+        "key" : request.config.option.password,
+        "ssh_key" : request.config.option.ssh_key
+    }
+    return become_config

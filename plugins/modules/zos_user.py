@@ -318,10 +318,25 @@ options:
         required: false
   tso:
     description:
-      -
+      - Attributes for how TSO should handle a user profile.
     required: false
     type: dict
     suboptions:
+      account_num:
+        description:
+          - User's default TSO account number when logging in.
+          - Value between 3 and 524,287.
+          - A value of 0 will delete this field from the profile.
+        type: int
+        required: false
+      delete:
+        description:
+          - Delete the whole TSO block from the profile.
+          - This option is only valid when updating profiles, it will be ignored
+            when creating one.
+          - This option is mutually exclusive with every other option in this section.
+        type: bool
+        required: false
   connect:
     description:
       -
@@ -669,6 +684,148 @@ seealso:
 """
 
 EXAMPLES = r"""
+- name: Create a new group profile using RACF defaults.
+  zos_user:
+    name: newgrp
+    operation: create
+    scope: group
+
+- name: Create a new group profile using another group as a model and setting its owner.
+  zos_user:
+    name: newgrp
+    operation: create
+    scope: group
+    general:
+      model: oldgrp
+      owner: admin
+
+- name: Create a new group profile and set group attributes.
+  zos_user:
+    name: newgrp
+    operation: create
+    scope: group
+    group:
+      superior_group: sys1
+      terminal_access: true
+      universal_group: false
+
+- name: Update a group profile to change its installation data and remove custom fields.
+  zos_user:
+    name: usergrp
+    operation: update
+    scope: group
+    general:
+      installation_data: New installation data
+      custom_fields:
+        delete_block: true
+
+- name: Create a user using RACF defaults.
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+
+- name: Create a user using another profile as a model.
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    general:
+      model: olduser
+
+- name: Create a user and set how Unix System Services should behave when it logs in.
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    omvs:
+      uid: auto
+      home: /u/newuser
+      program: /bin/sh
+      nonshared_size: '10g'
+      shared_size: '10g'
+      addr_space_size: 10485760
+      map_size: 2056
+      max_procs: 16
+      max_threads: 150
+      max_cpu_time: 4096
+      max_files: 4096
+
+- name: Create a user and set access permissions to it.
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    access:
+      default_group: usergrp
+      roaudit: true
+      operator_card: false
+      maintenance_access: true
+      restricted: false
+    restrictions:
+      days:
+        - monday
+        - tuesday
+        - wednesday
+      time: anytime
+
+- name: Update a user profile to change its TSO attributes and owner.
+  zos_user:
+    name: user
+    operation: create
+    scope: user
+    general:
+      owner: admin
+    tso:
+      hold_class: K
+      job_class: K
+      msg_class: K
+      sysout_class: K
+      region_size: 2048
+      max_region_size: 4096
+
+- name: Connect a user to a group using RACF defaults.
+  zos_user:
+    name: user
+    operation: connect
+    scope: user
+    connect:
+      group_name: usergrp
+
+- name: Connect a user to a group and give it special permissions.
+  zos_user:
+    name: user
+    operation: connect
+    scope: user
+    connect:
+      group_name: usergrp
+      authority: connect
+      universal_access: alter
+      group_account: true
+      group_operations: true
+      auditor: true
+      adsp_attribute: true
+      special: true
+
+- name: Remove a user from a group.
+  zos_user:
+    name: user
+    operation: remove
+    scope: user
+    connect:
+      group_name: usergrp
+
+- name: Delete a user from the RACF database.
+  zos_user:
+    name: user
+    operation: delete
+    scope: user
+
+- name: Delete group from the RACF database.
+  zos_user:
+    name: usergrp
+    operation: delete
+    scope: group
 """
 
 RETURN = r"""

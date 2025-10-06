@@ -329,6 +329,92 @@ options:
           - A value of 0 will delete this field from the profile.
         type: int
         required: false
+      logon_cmd:
+        description:
+          - Command that needs to be run during TSO/E logon.
+          - Maximum length of 80 characters.
+          - This option keeps case.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      logon_proc:
+        description:
+          - User's default logon procedure.
+          - The value for this field is 1 to 8 alphanumeric characters.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      dest_id:
+        description:
+          - Default destination to which the user can route dynamically allocated SYSOUT
+            data sets.
+          - The value for this field is 1 to 7 alphanumeric characters.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      hold_class:
+        description:
+          - User's default hold class.
+          - This option consists of 1 alphanumeric character.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      job_class:
+        description:
+          - User's default job class.
+          - This option consists of 1 alphanumeric character.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      msg_class:
+        description:
+          - User's default message class.
+          - This option consists of 1 alphanumeric character.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      sysout_class:
+        description:
+          - User's default SYSOUT class.
+          - This option consists of 1 alphanumeric character.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      region_size:
+        description:
+          - Minimum region size if the user does not request a region size at logon.
+          - A value between 0 and 2,096,128.
+          - A value of -1 deletes this field.
+        type: int
+        required: false
+      max_region_size:
+        description:
+          - Maximum region size that the user can request at logon.
+          - A value between 0 and 2,096,128.
+          - A value of -1 deletes this field.
+        type: int
+        required: false
+      security_label:
+        description:
+          - User's security label if the user specifies one on the TSO logon panel.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      unit_name:
+        description:
+          - Default name of a device or group of devices that a procedure uses for
+            allocations.
+          - The value for this field is 1 to 8 alphanumeric characters.
+          - An empty value deletes this field.
+        type: str
+        required: false
+      user_data:
+        description:
+          - Optional installation data defined for the user profile.
+          - Must be 4 EBCDIC characters.
+          - An empty value deletes this field.
+        type: str
+        required: false
       delete:
         description:
           - Delete the whole TSO block from the profile.

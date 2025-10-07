@@ -537,9 +537,13 @@ def main():
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
 
-        if module.params.get('data_set_name') is not None:
-            module.warn("The 'data_set_name' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'target' instead.")
+        persistent_param = module.params.get('persistent', {})
+
+        if persistent_param.get('data_set_name') is not None:
+            module.deprecate(
+                msg="The 'persistent.data_set_name' parameter will be deprecated. Please use 'persistent.target' instead.",
+                version="2.0.0",
+            )
 
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))

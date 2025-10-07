@@ -267,8 +267,10 @@ def run_module():
     try:
 
         if module.params.get('wait_time_s') is not None:
-            module.warn("The 'wait_time_s' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'wait time' instead. And option 'time_unit' will be added to set cs o seconds.")
+            module.deprecate(
+                msg="The 'wait_time_s' parameter will be deprecated. Please use 'wait_time' instead. And option 'time_unit' will be added to set cs o seconds.",
+                version="2.0.0",
+            )
 
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)

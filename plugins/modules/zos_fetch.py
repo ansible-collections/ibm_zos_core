@@ -861,6 +861,13 @@ def run_module():
 
     src = module.params.get("src")
     hlq = None
+
+    if module.params.get('is_binary') is not None:
+        module.deprecate(
+            msg="The 'is_binary' parameter will be deprecated. Please use 'binary' instead.",
+            version="2.0.0",
+        )
+
     if module.params.get("use_qualifier"):
         hlq = datasets.get_hlq()
         module.params["src"] = hlq + "." + src
@@ -905,14 +912,8 @@ def run_module():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
     fetch_handler = FetchHandler(module)
     try:
-
-        if module.params.get("is_binary") is not None:
-            module.warn("The 'is_binary' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'binary' instead.")
-
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:

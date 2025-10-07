@@ -1262,8 +1262,10 @@ def run_module(module):
     vsam_migrated_types = set()
 
     if pds_paths is not None:
-        module.warn("The 'pds_pattern' parameter and aliases is deprecated and will be removed in a 2.0.0 release.\n"
-                        "On 2.0.0 version to serach for an specific member required regex isnide ().")
+        module.deprecate(
+            msg="The 'pds_pattern' parameter and aliases is deprecated and will be removed. Onnew version to serach for an specific member required regex isnide ()",
+            version="2.0.0",
+        )
 
     for type in resource_type:
         if type in vsam_types:

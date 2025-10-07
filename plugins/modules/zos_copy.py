@@ -4214,14 +4214,22 @@ def main():
         )
 
     if module.params.get("force") is not None:
-        module.warn("The 'force' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'replace' instead.")
+        module.deprecate(
+            msg="The 'force' parameter will be deperecated. Please use 'replace' instead.",
+            version="2.0.0",
+        )
+
     if module.params.get("force_lock") is not None:
-        module.warn("The 'force_lock' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "For the 2.0.0 version please use 'force' instead.")
+        module.deprecate(
+            msg="The 'force_lock' parameter will be deperecated. For the 2.0.0 version please use 'force' instead.",
+            version="2.0.0",
+        )
+
     if module.params.get("is_binary") is not None:
-        module.warn("The 'is_binary' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'binary' instead.")
+        module.deprecate(
+            msg="The 'is_binary' parameter wil be deprecated. Please use 'binary' instead.",
+            version="2.0.0",
+        )
 
     res_args = conv_path = None
     try:

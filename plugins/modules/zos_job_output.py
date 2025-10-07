@@ -532,15 +532,17 @@ def run_module():
             stderr=str(err)
         )
 
-    if module.params.get(ddname) is not None:
-        module.warn("The 'ddname' parameter is deprecated and will be use as alias in a 2.0.0 release.\n"
-                        "Please use 'dd_name' instead.")
-
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
     ddname = module.params.get("ddname")
     sysin = module.params.get("sysin_dd")
+
+    if ddname is not None:
+        module.deprecate(
+            msg="The 'ddname' parameter is deprecated and will be use as alias. Please use 'dd_name' instead.",
+            version="2.0.0",
+        )
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner")

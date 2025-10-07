@@ -1,5 +1,5 @@
 minor_changes:
-  - zos_apf - Adds new aliases ``target`` for ``data_set_nam``  and warning message that will be deprecated on 2.0.0.
+  - zos_apf - Adds new aliases ``target`` for ``data_set_name``  and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
   - zos_archive - Adds new aliases ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
   - zos_archive - Adds new aliases ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
@@ -22,7 +22,7 @@ minor_changes:
   - zos_mount - Adds new aliases ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0.
   - zos_mount - Adds new aliases ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
-  - zos_operator - Adds new aliases ``wait_time_s`` for ``wait_time`` and warning message that will be deprecated on 2.0.0.
+  - zos_operator - Adds new aliases ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
   - zos_operator_action_query - Adds new aliases ``literal`` for ``use_regex`` and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).

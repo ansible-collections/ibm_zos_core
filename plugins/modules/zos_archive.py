@@ -57,7 +57,6 @@ options:
         type: str
         required: false
         default: gz
-        aliases: [type]
         choices:
           - bz2
           - gz
@@ -1879,7 +1878,6 @@ def run_module():
                         type='str',
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                        aliases=['type']
                     ),
                     format_options=dict(
                         type='dict',
@@ -1978,7 +1976,6 @@ def run_module():
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                    aliases=["type"],
                 ),
                 format_options=dict(
                     type='dict',
@@ -2057,27 +2054,41 @@ def run_module():
         original_message='',
         message=''
     )
+
+    format_param = module.params.get('format', {})
+
+    if format_param.get('name') is not None:
+        module.deprecate(
+            msg="The 'format.name' parameter will be deperecated. On 2.0.0 version use 'format.type' instead.",
+            version="2.0.0",
+        )
+
+    if format_param.get('format_options') is not None:
+        module.deprecate(
+            msg="The 'format.format_options' parameter will be deperecated. Use 'format.options' instead.",
+            version="2.0.0",
+        )
+
+        format_options = format_param['format_options']
+
+        if format_options.get('terse_pack') is not None:
+            module.deprecate(
+                msg="The 'format.format_options.terse_pack' parameter will be deperecated. Use 'format.format_options.spack' instead.",
+                version="2.0.0",
+            )
+
+        if format_options.get('use_adrdssu') is not None:
+            module.deprecate(
+                msg="The 'format.format_options.use_adrdssu' parameter will be deperecated. Use 'format.format_options.adrdssu' instead.",
+                version="2.0.0",
+            )
+
     if module.check_mode:
         module.exit_json(**result)
 
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
-
-        if module.params.get('format') is not None and module.params.get('format').get('name') is not None:
-            module.warn("The 'name' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'type' instead.")
-        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None:
-            module.warn("The 'format_options' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'options' instead.")
-        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None and module.params.get('format').get('format_options').get("terse_pack") is not None:
-            module.warn("The 'terse_pack' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'spack' instead.")
-        if module.params.get('format') is not None and module.params.get('format').get('format_options') is not None and module.params.get('format').get('format_options').get("use_adrdssu")is not None:
-            module.warn("The 'use_adrdssu' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'adrdssu' instead.")
-
-        module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

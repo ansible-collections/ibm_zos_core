@@ -129,6 +129,12 @@ class ActionModule(ActionBase):
             self._task.args.get("validate_checksum"), default=True
         )
 
+        if is_binary is not None:
+            display.deprecated(
+                msg="The 'is_binary' parameter will be deprecated. Use 'binary' instead.",
+                version="2.0.0"
+                )
+
         # ********************************************************** #
         #                 Parameter checks                           #
         # ********************************************************** #

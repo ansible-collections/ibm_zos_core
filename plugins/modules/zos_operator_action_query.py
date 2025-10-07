@@ -282,10 +282,12 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
-        if module.params.get('use_regex') is not None:
-            module.warn("The 'use_regex' parameter is deprecated and will be removed in a 2.0.0 release.\n"
-                        "Please use 'literal' instead. On 2.0.0 version will work on reverse logic being" \
-                        "False to use as regex.")
+        if module.params.get('message_filter') is not None:
+            if module.params.get('message_filter').get('use_regex') is not None:
+                module.deprecate(
+                    msg="The 'use_regex' parameter will be deprecated. Please use 'literal' instead. On new version will work on reverse logic being False to use as regex.",
+                    version="2.0.0",
+                )
         new_params = parse_params(module.params)
 
         kwargs = {}

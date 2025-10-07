@@ -4217,18 +4217,21 @@ def main():
         module.deprecate(
             msg="The 'force' parameter will be deperecated. Please use 'replace' instead.",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     if module.params.get("force_lock") is not None:
         module.deprecate(
             msg="The 'force_lock' parameter will be deperecated. For the 2.0.0 version please use 'force' instead.",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     if module.params.get("is_binary") is not None:
         module.deprecate(
             msg="The 'is_binary' parameter wil be deprecated. Please use 'binary' instead.",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     res_args = conv_path = None

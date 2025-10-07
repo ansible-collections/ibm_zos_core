@@ -542,6 +542,7 @@ def run_module():
         module.deprecate(
             msg="The 'ddname' parameter is deprecated and will be use as alias. Please use 'dd_name' instead.",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     if not job_id and not job_name and not owner:

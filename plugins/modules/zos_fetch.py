@@ -866,6 +866,7 @@ def run_module():
         module.deprecate(
             msg="The 'is_binary' parameter will be deprecated. Please use 'binary' instead.",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     if module.params.get("use_qualifier"):

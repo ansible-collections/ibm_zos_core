@@ -1782,12 +1782,14 @@ def run_module():
             module.deprecate(
                 msg="The 'format.name' parameter will be deperecated. On 2.0.0 version use 'format.type' instead.",
                 version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
             )
 
         if format_param.get('format_options') is not None:
             module.deprecate(
                 msg="The 'format.format_options' parameter will be deperecated. Use 'format.options' instead.",
                 version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
             )
 
         format_options = format_param['format_options']
@@ -1796,6 +1798,7 @@ def run_module():
             module.deprecate(
                 msg="The 'format.format_options.use_adrdssu' parameter will be deperecated. Use 'format.format_options.adrdssu' instead.",
                 version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
             )
 
         module.params = parsed_args

@@ -1266,6 +1266,7 @@ def run_module(module):
             msg="The 'pds_pattern' parameter and aliases is deprecated and will be removed \
             On new version to serach for an specific member required regex isnide ()",
             version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     for type in resource_type:

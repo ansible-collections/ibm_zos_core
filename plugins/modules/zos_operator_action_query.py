@@ -288,6 +288,7 @@ def run_module():
                     msg="The 'use_regex' parameter will be deprecated. Please use 'literal' instead.\
                         On new version will work on reverse logic being False to use as regex.",
                     version="2.0.0",
+                    collection_name='ibm.ibm_zos_core',
                 )
         new_params = parse_params(module.params)
 

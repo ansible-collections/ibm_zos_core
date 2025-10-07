@@ -132,7 +132,8 @@ class ActionModule(ActionBase):
         if is_binary is not None:
             display.deprecated(
                 msg="The 'is_binary' parameter will be deprecated. Use 'binary' instead.",
-                version="2.0.0"
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
             )
 
         # ********************************************************** #

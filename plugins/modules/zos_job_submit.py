@@ -970,7 +970,7 @@ def run_module():
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
-        wait_time_s=dict(type="int", default=10, wait_time=["wait_time"]),
+        wait_time_s=dict(type="int", default=10, aliases=["wait_time"]),
         max_rc=dict(type="int", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(

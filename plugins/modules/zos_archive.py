@@ -107,7 +107,7 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
-            aliases: [adrdssus]
+            aliases: [adrdssu]
   dest:
     description:
       - The remote absolute path or data set where the archive should be

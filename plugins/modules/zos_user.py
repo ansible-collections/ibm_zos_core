@@ -244,8 +244,8 @@ options:
         description:
           - Maximum number of bytes of nonshared memory that can be allocated
             by the user.
-          - Must be a number between 0 and 16,777,215 subfixed by one of the
-            following units: m (megabytes), g (gigabytes), t (terabytes) or
+          - Must be a number between 0 and 16,777,215 subfixed by a unit.
+          - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
           - An empty string will delete the current limit set.
         type: str
@@ -254,8 +254,8 @@ options:
         description:
           - Maximum number of bytes of shared memory that can be allocated
             by the user.
-          - Must be a number between 1 and 16,777,215 subfixed by one of the
-            following units: m (megabytes), g (gigabytes), t (terabytes) or
+          - Must be a number between 1 and 16,777,215 subfixed by a unit.
+          - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
           - An empty string will delete the current limit set.
         type: str
@@ -820,8 +820,6 @@ attributes:
   check_mode:
     support: full
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
-
-notes:
 
 seealso:
   - module: zos_tso_command
@@ -1958,6 +1956,7 @@ class UserHandler(RACFHandler):
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
+        # TODO: change this to include group.
         if rc == 0:
             self.num_entities_modified = 1
             self.entities_modified = [self.name]
@@ -1986,6 +1985,7 @@ class UserHandler(RACFHandler):
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
+        # TODO: change this to include group.
         if rc == 0:
             self.num_entities_modified = 1
             self.entities_modified = [self.name]

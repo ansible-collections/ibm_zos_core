@@ -133,7 +133,7 @@ class ActionModule(ActionBase):
             display.deprecated(
                 msg="The 'is_binary' parameter will be deprecated. Use 'binary' instead.",
                 version="2.0.0"
-                )
+            )
 
         # ********************************************************** #
         #                 Parameter checks                           #

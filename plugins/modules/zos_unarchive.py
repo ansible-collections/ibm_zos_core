@@ -1791,7 +1791,7 @@ def run_module():
             )
 
         format_options = format_param['format_options']
-    
+
         if format_options.get('use_adrdssu') is not None:
             module.deprecate(
                 msg="The 'format.format_options.use_adrdssu' parameter will be deperecated. Use 'format.format_options.adrdssu' instead.",

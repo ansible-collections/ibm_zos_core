@@ -759,8 +759,8 @@ def run_module(module, arg_def):
 
         if data_store:
             module.deprecate(
-              msg="The 'data_store' parameter will be deprecated. Please use 'name' instead.",
-              version="2.0.0",
+                msg="The 'data_store' parameter will be deprecated. Please use 'name' instead.",
+                version="2.0.0",
             )
 
         comment = persistent.get("comment")
@@ -768,8 +768,8 @@ def run_module(module, arg_def):
 
         if comment is not None:
             module.deprecate(
-              msg="The 'comment' parameter will be deprecated. Please use 'marker' instead.",
-              version="2.0.0",
+                msg="The 'comment' parameter will be deprecated. Please use 'marker' instead.",
+                version="2.0.0",
             )
 
         if backup:

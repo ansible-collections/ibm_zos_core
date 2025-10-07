@@ -273,7 +273,7 @@ def run_module():
                     type="bool",
                     required=False,
                     aliases=["literal"]
-                    )
+                )
             )
         )
     )
@@ -285,7 +285,8 @@ def run_module():
         if module.params.get('message_filter') is not None:
             if module.params.get('message_filter').get('use_regex') is not None:
                 module.deprecate(
-                    msg="The 'use_regex' parameter will be deprecated. Please use 'literal' instead. On new version will work on reverse logic being False to use as regex.",
+                    msg="The 'use_regex' parameter will be deprecated. Please use 'literal' instead.\
+                        On new version will work on reverse logic being False to use as regex.",
                     version="2.0.0",
                 )
         new_params = parse_params(module.params)

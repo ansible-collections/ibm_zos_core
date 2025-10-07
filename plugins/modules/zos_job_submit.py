@@ -1048,7 +1048,7 @@ def run_module():
 
     if module.params.get("location") is not None:
         module.deprecate(
-            msg="The 'location' parameter will be drpecated Please use 'remote_src' instead. Logic will change to set if the document with the job is \
+            msg="The 'location' parameter will be deprecated Please use 'remote_src' instead. Logic will change to set if the document with the job is \
                 on the controller or the node",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',

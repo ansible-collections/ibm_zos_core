@@ -268,7 +268,7 @@ def run_module():
 
         if module.params.get('wait_time_s') is not None:
             module.deprecate(
-                msg="The 'wait_time_s' parameter will be deprecated. Please use 'wait_time' instead. And option 'time_unit' will be added to set cs o seconds.",
+                msg="The 'wait_time_s' parameter will be deprecated. Please use 'wait_time' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )

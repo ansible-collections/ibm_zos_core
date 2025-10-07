@@ -1780,7 +1780,7 @@ def run_module():
 
         if format_param.get('name') is not None:
             module.deprecate(
-                msg="The 'format.name' parameter will be deperecated. On 2.0.0 version use 'format.type' instead.",
+                msg="The 'format.name' parameter will be deperecated. For the next version use 'format.type' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )

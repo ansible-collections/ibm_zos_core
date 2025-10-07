@@ -286,7 +286,7 @@ def run_module():
             if module.params.get('message_filter').get('use_regex') is not None:
                 module.deprecate(
                     msg="The 'use_regex' parameter will be deprecated. Please use 'literal' instead.\
-                        On new version will work on reverse logic being False to use as regex.",
+                        New version will use false to mean regex will be used.",
                     version="2.0.0",
                     collection_name='ibm.ibm_zos_core',
                 )

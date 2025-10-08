@@ -17,11 +17,11 @@ Synopsis
 --------
 
 - The following operations can be performed using the module on the started tasks:
-  - start
-  - display 
-  - modify
-  - cancel
-  - force and stop 
+   - start
+   - display 
+   - modify
+   - cancel
+   - force and stop 
 
 
 Parameters

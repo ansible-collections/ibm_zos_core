@@ -87,7 +87,7 @@ options:
             choices:
               - pack
               - spack
-            aliases: [spack]
+            aliases=['spack']
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -1887,7 +1887,7 @@ def run_module():
                             terse_pack=dict(
                                 type='str',
                                 choices=['pack', 'spack'],
-                                aliases=['spack'],
+                                aliases=['spack']
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1895,7 +1895,7 @@ def run_module():
                             use_adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['adrdssu'],
+                                aliases=['adrdssu']
                             )
                         ),
                     ),
@@ -1986,7 +1986,7 @@ def run_module():
                             type='str',
                             required=False,
                             choices=['pack', 'spack'],
-                            aliases=["spack"],
+                            aliases=['spack']
                         ),
                         xmit_log_data_set=dict(
                             type='str',
@@ -1995,7 +1995,7 @@ def run_module():
                         use_adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=["adrdssu"],
+                            aliases=['adrdssu']
                         )
                     ),
                     default=dict(
@@ -2059,30 +2059,30 @@ def run_module():
 
     if format_param.get('name') is not None:
         module.deprecate(
-            msg="The 'format.name' parameter will be deperecated. On 2.0.0 version use 'format.type' instead.",
+            msg="The 'format.name' parameter will be deprecated. On new version use 'format.type' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )
 
     if format_param.get('format_options') is not None:
         module.deprecate(
-            msg="The 'format.format_options' parameter will be deperecated. Use 'format.options' instead.",
+            msg="The 'format.format_options' parameter will be deprecated. Use 'format.options' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )
 
-        format_options = format_param['format_options']
+        optopms_deprecate = format_param['format_options']
 
-        if format_options.get('terse_pack') is not None:
+        if optopms_deprecate.get('terse_pack') is not None:
             module.deprecate(
-                msg="The 'format.format_options.terse_pack' parameter will be deperecated. Use 'format.format_options.spack' instead.",
+                msg="The 'format.format_options.terse_pack' parameter will be deprecated. On new version use 'format.format_options.spack' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )
 
-        if format_options.get('use_adrdssu') is not None:
+        if optopms_deprecate.get('use_adrdssu') is not None:
             module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' parameter will be deperecated. Use 'format.format_options.adrdssu' instead.",
+                msg="The 'format.format_options.use_adrdssu' parameter will be deprecated. On new version use 'format.format_options.adrdssu' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )
@@ -2093,6 +2093,7 @@ def run_module():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

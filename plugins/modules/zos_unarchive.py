@@ -64,7 +64,6 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
-        aliases: [options]
         suboptions:
           xmit_log_data_set:
             description:
@@ -85,7 +84,6 @@ options:
                 a portable format after using C(xmit) or C(terse).
             type: bool
             default: False
-            aliases: [adrdssu]
           dest_volumes:
             description:
               - When I(use_adrdssu=True), specify the volume the data sets
@@ -1604,7 +1602,6 @@ def run_module():
                     format_options=dict(
                         type='dict',
                         required=False,
-                        aliases=['options'],
                         options=dict(
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1617,7 +1614,6 @@ def run_module():
                             use_adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['adrdssu']
                             )
                         )
                     ),
@@ -1710,7 +1706,6 @@ def run_module():
                 format_options=dict(
                     type='dict',
                     required=False,
-                    aliases=['options'],
                     options=dict(
                         xmit_log_data_set=dict(
                             type='str',
@@ -1723,7 +1718,6 @@ def run_module():
                         use_adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['adrdssu']
                         ),
                     ),
                     default=dict(xmit_log_data_set=""),
@@ -1776,30 +1770,7 @@ def run_module():
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
 
-        format_param = module.params.get('format', {})
 
-        if format_param.get('name') is not None:
-            module.deprecate(
-                msg="The 'format.name' parameter will be deperecated. For the next version use 'format.type' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        if format_param.get('format_options') is not None:
-            module.deprecate(
-                msg="The 'format.format_options' parameter will be deperecated. Use 'format.options' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        format_options = format_param['format_options']
-
-        if format_options.get('use_adrdssu') is not None:
-            module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' parameter will be deperecated. Use 'format.format_options.adrdssu' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
 
         module.params = parsed_args
     except ValueError as err:

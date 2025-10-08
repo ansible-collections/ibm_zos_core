@@ -315,6 +315,8 @@ class ActionModule(ActionBase):
                     host=self._play_context.remote_addr)
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             self._connection.exec_command(f"rm -rf {path}*")
+            display.vvv(u"{0} ibm_zos_copy Finalize temp dir removal from remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+            host=self._play_context.remote_addr)
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -343,6 +345,8 @@ class ActionModule(ActionBase):
                     host=self._play_context.remote_addr)
             return result
 
+        display.vvv(u"{0} ibm_zos_copy Finalize run and update result ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
+                    host=self._play_context.remote_addr)
         return _update_result(is_binary, copy_res, self._task.args, original_src)
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):

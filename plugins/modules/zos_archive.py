@@ -87,7 +87,7 @@ options:
             choices:
               - pack
               - spack
-            aliases=['spack']
+            aliases: [spack]
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.

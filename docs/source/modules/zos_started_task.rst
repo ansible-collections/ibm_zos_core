@@ -8,7 +8,6 @@ zos_started_task -- Perform operations on started tasks.
 ========================================================
 
 
-
 .. contents::
    :local:
    :depth: 1

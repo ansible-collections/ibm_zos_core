@@ -125,7 +125,7 @@ volume_serial
 
 
 verbose
-  Return System logs that describe task's execution. The generated system logs contains information about the steps performed by the task.
+  The generated system logs contains information about the steps performed by the task.
 
   | **required**: False
   | **type**: bool

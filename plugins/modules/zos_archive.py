@@ -65,6 +65,7 @@ options:
           - terse
           - xmit
           - pax
+        aliases: [type]
       format_options:
         description:
           - Options specific to a compression format.
@@ -1878,6 +1879,7 @@ def run_module():
                         type='str',
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                        aliases=['type'],
                     ),
                     format_options=dict(
                         type='dict',
@@ -1976,6 +1978,7 @@ def run_module():
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=['type'],
                 ),
                 format_options=dict(
                     type='dict',
@@ -2059,7 +2062,7 @@ def run_module():
 
     if format_param.get('name') is not None:
         module.deprecate(
-            msg="The 'format.name' parameter will be deprecated. On new version use 'format.type' instead.",
+            msg="The 'format.name' parameter will be deprecated. Please use 'format.type' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

@@ -1604,7 +1604,7 @@ def run_module():
                     format_options=dict(
                         type='dict',
                         required=False,
-                        aliases=['options']
+                        aliases=['options'],
                         options=dict(
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1710,7 +1710,7 @@ def run_module():
                 format_options=dict(
                     type='dict',
                     required=False,
-                    aliases=['options']
+                    aliases=['options'],
                     options=dict(
                         xmit_log_data_set=dict(
                             type='str',

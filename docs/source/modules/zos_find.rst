@@ -68,6 +68,8 @@ excludes
 
   If the pattern is a regular expression, it must match the full data set name.
 
+  To exclude members, the regular expression or pattern must be enclosed in parentheses. This expression can be used alongside a pattern to exclude data set names.
+
   | **required**: False
   | **type**: list
   | **elements**: str
@@ -79,8 +81,6 @@ patterns
   The patterns restrict the list of data sets or members to be returned to those names that match at least one of the patterns specified. Multiple patterns can be specified using a list.
 
   This parameter expects a list, which can be either comma separated or YAML.
-
-  If ``pds_patterns`` is provided, ``patterns`` must be member patterns.
 
   When searching for members within a PDS/PDSE, pattern can be a regular expression.
 
@@ -100,18 +100,6 @@ size
 
   | **required**: False
   | **type**: str
-
-
-pds_patterns
-  List of PDS/PDSE to search. Wildcard is possible.
-
-  Required when searching for data set members.
-
-  Valid only for ``nonvsam`` resource types. Otherwise ignored.
-
-  | **required**: False
-  | **type**: list
-  | **elements**: str
 
 
 resource_type
@@ -228,6 +216,22 @@ Examples
 .. code-block:: yaml+jinja
 
    
+   - name: Exclude all members starting with characters 'TE' in a given list datasets patterns
+     zos_find:
+       excludes: '(^te.*)'
+       patterns:
+         - IMSTEST.TEST.*
+         - IMSTEST.USER.*
+         - USER.*.LIB
+
+   - name: Exclude datasets that includes 'DATA' and members starting with characters 'MEM' in a given list datasets patterns
+     zos_find:
+       excludes: '^.*DATA.*(^MEM.*)'
+       patterns:
+         - IMSTEST.*.TEST
+         - IMSTEST.*.*
+         - USER.*.LIB
+
    - name: Find all data sets with HLQ 'IMS.LIB' or 'IMSTEST.LIB' that contain the word 'hello'
      zos_find:
        patterns:
@@ -247,14 +251,6 @@ Examples
        patterns: 'IMS.LIB.*'
        contains: 'hello'
        excludes: '.*TEST'
-
-   - name: Find all members starting with characters 'TE' in a given list of PDS patterns
-     zos_find:
-       patterns: '^te.*'
-       pds_patterns:
-         - IMSTEST.TEST.*
-         - IMSTEST.USER.*
-         - USER.*.LIB
 
    - name: Find all data sets greater than 2MB and allocated in one of the specified volumes
      zos_find:

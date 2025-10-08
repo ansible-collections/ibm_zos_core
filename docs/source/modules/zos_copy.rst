@@ -37,7 +37,7 @@ asa_text
 
   If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
 
-  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
+  This option is only valid for text files. If ``binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
 
   | **required**: False
   | **type**: bool
@@ -109,7 +109,7 @@ dest
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 
-  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32720, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
+  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32720, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
   If ``src`` is a file and ``dest`` a partitioned data set, ``dest`` does not need to include a member in its value, the module can automatically compute the resulting member name from ``src``.
 
@@ -136,7 +136,7 @@ encoding
 
   If ``encoding`` is not provided, the module determines which local and remote charsets to convert the data from and to. Note that this is only done for text data and not binary data.
 
-  Only valid if ``is_binary`` is false.
+  Only valid if ``binary`` is false.
 
   | **required**: False
   | **type**: dict
@@ -166,7 +166,7 @@ tmp_hlq
   | **type**: str
 
 
-force
+replace
   If set to ``true`` and the remote file or data set ``dest`` is empty, the ``dest`` will be reused.
 
   If set to ``true`` and the remote file or data set ``dest`` is NOT empty, the ``dest`` will be deleted and recreated with the ``src`` data set attributes, otherwise it will be recreated with the ``dest`` data set attributes.
@@ -182,12 +182,12 @@ force
   | **default**: False
 
 
-force_lock
-  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass DISP=SHR and continue with the copy operation.
+force
+  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force`` to bypass DISP=SHR and continue with the copy operation.
 
   If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
 
-  Using ``force_lock`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
+  Using ``force`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
 
   If a data set member has aliases, and is not a program object, copying that member to a dataset that is in use will result in the aliases not being preserved in the target dataset. When this scenario occurs the module will fail.
 
@@ -206,12 +206,12 @@ ignore_sftp_stderr
   | **default**: True
 
 
-is_binary
+binary
   If set to ``true``, indicates that the file or data set to be copied is a binary file or data set.
 
-  When *is_binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
+  When *binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
 
-  Use *is_binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
+  Use *binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
 
   | **required**: False
   | **type**: bool
@@ -794,7 +794,7 @@ Examples
      zos_copy:
        src: /path/to/binary/file
        dest: HLQ.SAMPLE.PDSE(MEMBER)
-       is_binary: true
+       binary: true
 
    - name: Copy a sequential data set to a PDS member
      zos_copy:
@@ -820,14 +820,14 @@ Examples
        src: HLQ.SAMPLE.PDSE
        dest: HLQ.EXISTING.PDSE
        remote_src: true
-       force: true
+       replace: true
 
    - name: Copy PDS member to a new PDS member. Replace if it already exists
      zos_copy:
        src: HLQ.SAMPLE.PDSE(SRCMEM)
        dest: HLQ.NEW.PDSE(DESTMEM)
        remote_src: true
-       force: true
+       replace: true
 
    - name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
      zos_copy:
@@ -1118,7 +1118,7 @@ state
 note
   A note to the user after module terminates.
 
-  | **returned**: When ``force=true`` and ``dest`` exists
+  | **returned**: When ``replace=true`` and ``dest`` exists
   | **type**: str
   | **sample**: No data was copied
 

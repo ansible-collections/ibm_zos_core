@@ -74,7 +74,7 @@ flat
   | **default**: false
 
 
-is_binary
+binary
   Specifies if the file being fetched is a binary.
 
   | **required**: False
@@ -173,7 +173,7 @@ Examples
        src: SOME.PDS.DATASET
        dest: /tmp/
        flat: true
-       is_binary: true
+       binary: true
 
    - name: Fetch a UNIX file and don't validate its checksum
      zos_fetch:
@@ -257,8 +257,10 @@ Return Values
 -------------
 
 
-file
+src
   The source file path or data set on the remote machine.
+
+  If the source is not found, then src will be empty.
 
   | **returned**: success
   | **type**: str
@@ -271,7 +273,7 @@ dest
   | **type**: str
   | **sample**: /tmp/SOME.DATA.SET
 
-is_binary
+binary
   Indicates the transfer mode that was used to fetch.
 
   | **returned**: success
@@ -296,17 +298,10 @@ data_set_type
   | **type**: str
   | **sample**: PDSE
 
-note
-  Notice of module failure when ``fail_on_missing`` is false.
-
-  | **returned**: failure and fail_on_missing=false
-  | **type**: str
-  | **sample**: The data set USER.PROCLIB does not exist. No data was fetched.
-
 msg
-  Message returned on failure.
+  Any important messages from the module.
 
-  | **returned**: failure
+  | **returned**: always
   | **type**: str
   | **sample**: The source 'TEST.DATA.SET' does not exist or is uncataloged.
 

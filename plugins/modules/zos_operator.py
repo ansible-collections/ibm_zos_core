@@ -265,7 +265,6 @@ def run_module():
         module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
-
         if module.params.get('wait_time_s') is not None:
             module.deprecate(
                 msg="The 'wait_time_s' parameter will be deprecated. Please use 'wait_time' instead.",

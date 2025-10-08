@@ -16,10 +16,12 @@ zos_started_task -- Perform operations on started tasks.
 
 Synopsis
 --------
-- start, display, modify, cancel, force and stop a started task
-
-
-
+- The following operations can be performed using the module on the started tasks:
+  - start
+  - display 
+  - modify
+  - cancel
+  - force and stop 
 
 
 Parameters
@@ -27,7 +29,7 @@ Parameters
 
 
 asid
-  *asid* is a unique address space identifier which gets assigned to each running started task.
+  *asid* is an unique address space identifier which gets assigned to each running started task.
 
   | **required**: False
   | **type**: str
@@ -41,28 +43,28 @@ device_type
 
 
 device_number
-  *device_number* is the number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must precede a 4-digit number but is not before a 3-digit number.
+  *device_number* is the number of the device that is started. A device number is 3 or 4 hexadecimal digits. Ensure that you must precede a slash (/) for a 4-digit number but not for a 3-digit number.
 
   | **required**: False
   | **type**: str
 
 
 identifier_name
-  *identifier_name* is the name that identifies the task to be started. This name can be up to 8 characters long. The first character must be alphabetical.
+  *identifier_name* is the name that identifies the task to be started. This name can be up to 8 characters long. Ensure that the first character is alphabetical.
 
   | **required**: False
   | **type**: str
 
 
 job_account
-  *job_account* specifies accounting data in the JCL JOB statement for the started task. If the source JCL was a job and has already accounting data, the value that is specified on this parameter overrides the accounting data in the source JCL.
+  *job_account* specifies the accounting data in the JCL JOB statement for the started task. If the source JCL was a job and has already accounting data, the value that is specified on this parameter overrides the accounting data in the source JCL.
 
   | **required**: False
   | **type**: str
 
 
 job_name
-  *job_name* is a name which should be assigned to a started task while starting it. If job_name is not specified, then member_name is used as job_name.
+  *job_name* is a name that is assigned to a started task when you start the task. If job_name is not specified, then member_name is used as job_name.
 
   | **required**: False
   | **type**: str
@@ -94,7 +96,7 @@ operation
 
 
 parameters
-  Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
+  The program parameters are passed to the started program, which can be a list in parentheses or a string in single quotation marks.
 
   | **required**: False
   | **type**: str
@@ -116,14 +118,14 @@ subsystem_name
 
 
 volume_serial
-  If devicetype is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
+  If device type is a tape or direct-access device, the volume serial number of the volume is mounted on the device.
 
   | **required**: False
   | **type**: str
 
 
 verbose
-  Return System logs that describe the task's execution.
+  Return System logs that describe task's execution. The generated system logs contains information about the steps performed by the task.
 
   | **required**: False
   | **type**: bool
@@ -131,7 +133,7 @@ verbose
 
 
 wait_time_s
-  Option *wait_time_s* is the total time that module `zos_started_tak <./zos_started_task.html>`_ will wait for a submitted task. The time begins when the module is executed on the managed node.
+  The option *wait_time_s* is the total time that the module `zos_started_tak <./zos_started_task.html>`_ waits for a submitted task. The time begins when the module is ran on the managed node.
 
   | **required**: False
   | **type**: int

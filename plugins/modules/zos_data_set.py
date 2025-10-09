@@ -2076,7 +2076,7 @@ def run_module():
             default=False
         ),
     )
-    result = dict(changed=False, message="")
+    result = dict(changed=False)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 

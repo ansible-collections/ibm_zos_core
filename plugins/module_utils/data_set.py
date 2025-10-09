@@ -1859,8 +1859,12 @@ class DataSet(object):
                 # Fail if we are trying to resolve a future generation.
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
-            generations = gdg.generations()
-            gds = generations[rel_generation - 1]
+            generations = gdg.generations
+            creations = len(generations) - 1
+            if rel_generation == 0:
+                gds = generations[creations]
+            else:
+                gds = generations[creations - 1]
         except Exception:
             raise GDSNameResolveError(relative_name)
 

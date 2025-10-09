@@ -473,6 +473,28 @@ def generate_executable_uss(hosts, dir, src, src_jcl_call):
         assert  "Hello World" in str(stdout)
 
 
+def get_zoa_version(ansible_zos_module):
+    cmd_str = "zoaversion"
+    version_results = ansible_zos_module.all.shell(cmd=cmd_str)
+    zoa_version = None
+    for result in version_results.contacted.values():
+        output = result.get("stdout")
+        if output:
+            match = re.search(r'v(\d+\.\d+\.\d+\.\d+)', output)
+            if match:
+                zoa_version = match.group(1)
+    return zoa_version
+
+
+def use_mls_alias_supported(ansible_zos_module):
+    version = get_zoa_version(ansible_zos_module)
+    if not version:
+        return False
+
+    major, minor, patch, *_ = map(int, version.split("."))
+    return (major, minor, patch) >= (1, 4, 0)
+
+
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_file=True, binary=False, is_remote=False),
@@ -3722,8 +3744,15 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib_aliases)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib_aliases)
+
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -3738,8 +3767,12 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            assert expected_mls_str in stdout
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, pgm_mem)
+                assert expected_mls_str in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+                assert expected_mls_str in stdout
 
         # execute pgms to validate copy
         validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
@@ -3876,8 +3909,14 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib_aliases)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib_aliases)
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -3892,8 +3931,15 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            assert expected_mls_str in stdout
+            print(f"mls output for {mls_cmd}:\n{stdout}")
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, pgm_mem)
+                print(f"Expected mls str: {expected_mls_str}")
+                assert expected_mls_str in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+                print(f"Expected mls str: {expected_mls_str}")
+                assert expected_mls_str in stdout
 
         # execute pgms to validate copy
         validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
@@ -4063,8 +4109,14 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib_aliases)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib_aliases)
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -4081,11 +4133,18 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
-            assert expected_mls_str in stdout
-            assert expected_mls_str2 in stdout
-
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, pgm_mem)
+                print(f"Expected mls str: {expected_mls_str}")
+                expected_mls_str2 = "{0}   alias  {1}".format(pgm2_mem_alias, pgm2_mem)
+                print(f"Expected mls str2: {expected_mls_str2}")
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+                expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
         # verify pgms remain executable
         pgm_output_map = {
             (dest_lib, pgm_mem, COBOL_PRINT_STR),
@@ -4423,8 +4482,14 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib_aliases)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib_aliases)
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -4441,10 +4506,16 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
-            assert expected_mls_str in stdout
-            assert expected_mls_str2 in stdout
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, pgm_mem)
+                expected_mls_str2 = "{0}   alias  {1}".format(pgm2_mem_alias, pgm2_mem)
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+                expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
 
         # verify pgms remain executable
         pgm_output_map = {
@@ -6401,8 +6472,14 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
             assert result.get("dest_created") is not None
             assert result.get("src") is not None
 
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib)
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -6410,10 +6487,16 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
-            assert expected_mls_str in stdout
-            assert expected_mls_str2 in stdout
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, pgm_mem)
+                expected_mls_str2 = "{0}   alias  {1}".format(pgm2_mem_alias, pgm2_mem)
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+                expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+                assert expected_mls_str in stdout
+                assert expected_mls_str2 in stdout
 
         # verify pgms remain executable
         pgm_output_map = {
@@ -6638,8 +6721,15 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member_with_pound(ansible_zos_mo
             cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
+        alias_supported = False
+        if use_mls_alias_supported(ansible_zos_module):
+            alias_supported = True
+            mls_cmd = "mls -A {0}".format(dest_lib_aliases)
+        else:
+            mls_cmd = "mls {0}".format(dest_lib_aliases)
+
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=mls_cmd,
             executable=SHELL_EXECUTABLE
         )
 
@@ -6654,8 +6744,12 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member_with_pound(ansible_zos_mo
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(dest_pgm_mem.replace("£", "$"), pgm_mem_alias)
-            assert expected_mls_str in stdout
+            if alias_supported:
+                expected_mls_str = "{0}   alias  {1}".format(pgm_mem_alias, dest_pgm_mem.replace("£", "$"))
+                assert expected_mls_str in stdout
+            else:
+                expected_mls_str = "{0} ALIAS({1})".format(dest_pgm_mem.replace("£", "$"), pgm_mem_alias)
+                assert expected_mls_str in stdout
 
         # execute pgms to validate copy
         validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=dest_pgm_mem.replace("£", "$"), expected_output_str=COBOL_PRINT_STR)

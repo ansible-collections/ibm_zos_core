@@ -1,0 +1,5 @@
+trivial:
+   - test_zos_copy_func - Enhanced test_zos_copy_func to support alias validation using mls -A when available (ZOA ≥ 1.4.0),
+     and updated assertions to handle both legacy and modern alias formats.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2364).
+

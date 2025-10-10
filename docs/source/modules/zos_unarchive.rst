@@ -52,7 +52,7 @@ format
   | **type**: dict
 
 
-  name
+  type
     The compression format used while archiving.
 
     | **required**: True
@@ -60,7 +60,7 @@ format
     | **choices**: bz2, gz, tar, zip, terse, xmit, pax
 
 
-  format_options
+  options
     Options specific to a compression format.
 
     | **required**: False
@@ -80,7 +80,7 @@ format
       | **type**: str
 
 
-    use_adrdssu
+    adrdssu
       If set to true, the ``zos_unarchive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
 
       | **required**: False
@@ -89,7 +89,7 @@ format
 
 
     dest_volumes
-      When *use_adrdssu=True*, specify the volume the data sets will be written to.
+      When *adrdssu=True*, specify the volume the data sets will be written to.
 
       If no volume is specified, storage management rules will be used to determine the volume where the file will be unarchived.
 
@@ -424,14 +424,14 @@ Examples
      zos_unarchive:
        src: "./files/archive_folder_test.tar"
        format:
-         name: tar
+         type: tar
 
    # use include
    - name: Unarchive a bzip file selecting only a file to unpack.
      zos_unarchive:
        src: "/tmp/test.bz2"
        format:
-         name: bz2
+         type: bz2
        include:
          - 'foo.txt'
 
@@ -440,7 +440,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
+         type: terse
        exclude:
          - USER.ARCHIVE.TEST1
          - USER.ARCHIVE.TEST2
@@ -450,16 +450,16 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE(0)"
        format:
-         name: terse
+         type: terse
 
    # List option
    - name: List content from XMIT
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.XMIT"
        format:
-         name: xmit
-         format_options:
-           use_adrdssu: true
+         type: xmit
+         options:
+           adrdssu: true
        list: true
 
    # Encoding example
@@ -467,7 +467,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
+         type: terse
        encoding:
          from: IBM-1047
          to: ISO8859-1
@@ -476,7 +476,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
+         type: terse
        encoding:
          from: IBM-1047
          to: ISO8859-1

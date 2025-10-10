@@ -110,7 +110,7 @@ literal
 
   To interpret one option as a literal, use *literal=regexp*, *literal=after* or *literal=before*.
 
-  To interpret multiple options as a literal, use a list such as ``['after', 'before']`` or ``['regex', 'after', 'before']``
+  To interpret multiple options as a literal, use a list such as ``['after', 'before']`` or ``['regex', 'after', 'before']``.
 
   | **required**: False
   | **type**: raw

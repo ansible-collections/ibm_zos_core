@@ -44,28 +44,10 @@ armrestart
   | **type**: bool
 
 
-asid
-  When *state* is ``cancelled``, ``stopped`` or ``forced``, *asid* is the hexadecimal address space identifier of the work unit you want to cancel, stop or force.
+asidx
+  When *state* is ``cancelled``, ``stopped`` or ``forced``, *asidx* is the hexadecimal address space identifier of the work unit you want to cancel, stop or force.
 
   Only applicable when *state* is ``stopped``, ``cancelled``, or ``forced``, otherwise ignored.
-
-  | **required**: False
-  | **type**: str
-
-
-device_type
-  Type of the output device (if any) associated with the task.
-
-  Only applicable when *state* is ``started``, otherwise ignored.
-
-  | **required**: False
-  | **type**: str
-
-
-device_number
-  Number of the device to be started. A device number is 3 or 4 hexadecimal digits. A slash (/) must precede a 4-digit number but not a 3-digit number.
-
-  Only applicable when *state* is ``started``, otherwise ignored.
 
   | **required**: False
   | **type**: str
@@ -133,17 +115,6 @@ parameters
   | **elements**: str
 
 
-retry_force
-  Indicates whether retry will be attempted on ABTER:ref:`abnormal termination <abnormal termination_module>`.
-
-  *tcb_address* is mandatory to use *retry_force*.
-
-  Only applicable when *state* is ``forced``, otherwise ignored.
-
-  | **required**: False
-  | **type**: bool
-
-
 reus_asid
   When *reus_asid* is ``True`` and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned to the address space created by the START command. If *reus_asid* is not specified or REUSASID(NO) is specified in DIAGxx, an ordinary ASID is assigned.
 
@@ -176,19 +147,10 @@ subsystem
   | **type**: str
 
 
-tcb_address
-  6-digit hexadecimal TCB address of the task to terminate.
+task_id
+  The started task id starts with STC.
 
-  Only applicable when *state* is ``forced``, otherwise ignored.
-
-  | **required**: False
-  | **type**: str
-
-
-volume
-  If *device_type* is a tape or direct-access device, the serial number of the volume, mounted on the device.
-
-  Only applicable when *state* is ``started``, otherwise ignored.
+  Only applicable when *state* is ``displayed``, ``modified``, ``cancelled``, ``stopped``, or ``forced``, otherwise ignored.
 
   | **required**: False
   | **type**: str
@@ -271,6 +233,10 @@ Examples
      zos_started_task:
        state: "displayed"
        task_name: "PROCAPP"
+   - name: Display a started task using a started task id.
+     zos_started_task:
+       state: "displayed"
+       task_id: "STC00012"
    - name: Display all started tasks that begin with an s using a wildcard.
      zos_started_task:
        state: "displayed"
@@ -283,30 +249,47 @@ Examples
      zos_started_task:
        state: "cancelled"
        task_name: "SAMPLE"
+   - name: Cancel a started task using a started task id.
+     zos_started_task:
+       state: "cancelled"
+       task_id: "STC00093"
    - name: Cancel a started task using it's task name and ASID.
      zos_started_task:
        state: "cancelled"
        task_name: "SAMPLE"
-       asid: 0014
+       asidx: 0014
    - name: Modify a started task's parameters.
      zos_started_task:
        state: "modified"
        task_name: "SAMPLE"
        parameters: ["XX=12"]
+   - name: Modify a started task's parameters using a started task id.
+     zos_started_task:
+       state: "modified"
+       task_id: "STC00034"
+       parameters: ["XX=12"]
    - name: Stop a started task using it's task name.
      zos_started_task:
        state: "stopped"
        task_name: "SAMPLE"
+   - name: Stop a started task using a started task id.
+     zos_started_task:
+       state: "stopped"
+       task_id: "STC00087"
    - name: Stop a started task using it's task name, identifier and ASID.
      zos_started_task:
        state: "stopped"
        task_name: "SAMPLE"
        identifier: "SAMPLE"
-       asid: 00A5
+       asidx: 00A5
    - name: Force a started task using it's task name.
      zos_started_task:
        state: "forced"
        task_name: "SAMPLE"
+   - name: Force a started task using it's task id.
+     zos_started_task:
+       state: "forced"
+       task_id: "STC00065"
 
 
 
@@ -346,7 +329,11 @@ rc
 
   The return code is 1 when opercmd throws any error.
 
+  The return code is 4 when task_id format is invalid.
+
   The return code is 5 when any parameter validation failed.
+
+  The return code is 8 when started task is not found using task_id.
 
   | **returned**: changed
   | **type**: int
@@ -407,21 +394,7 @@ tasks
   | **type**: list
   | **elements**: dict
 
-  address_space_second_table_entry
-    The control block used to manage memory for a started task
-
-    | **type**: str
-    | **sample**: 03E78500
-
-  affinity
-    The identifier of the processor, for up to any four processors, if the job requires the services of specific processors.
-
-    affinity=NONE means the job can run on any processor.
-
-    | **type**: str
-    | **sample**: NONE
-
-  asid
+  asidx
     Address space identifier (ASID), in hexadecimal.
 
     | **type**: str
@@ -435,34 +408,6 @@ tasks
     | **type**: str
     | **sample**: 000.008S
 
-  dataspaces
-    The started task data spaces details.
-
-    | **returned**: success
-    | **type**: list
-    | **elements**: dict
-
-    data_space_address_entry
-      Central address of the data space ASTE.
-
-      | **type**: str
-      | **sample**: 058F2180
-
-    data_space_name
-      Data space name associated with the address space.
-
-      | **type**: str
-      | **sample**: CIRRGMAP
-
-
-  domain_number
-    The z/OS system or sysplex domain where started task is running.
-
-    domain_number=N/A if the system is operating in goal mode.
-
-    | **type**: str
-    | **sample**: N/A
-
   elapsed_time
     For address spaces other than system address spaces, the elapsed time since job select time.
 
@@ -475,75 +420,17 @@ tasks
     | **type**: str
     | **sample**: 812.983S
 
-  priority
-    Priority of a started task, as determined by the Workload Manager (WLM), based on the service class and importance assigned to it.
-
-    | **type**: str
-    | **sample**: 1
-
-  proc_step_name
-    For APPC-initiated transactions, the user ID requesting the transaction.
-
-    The name of a step within a cataloged procedure that was called by the step specified in field sss.
-
-    Blank, if there is no cataloged procedure.
-
-    The identifier of the requesting transaction program.
-
-    | **type**: str
-    | **sample**: VLF
-
-  program_event_recording
-    YES if A PER trap is active in the address space.
-
-    NO if No PER trap is active in the address space.
-
-    | **type**: str
-
-  program_name
-    The name of the program(load module) that created or is running in the started task's address space.
-
-    program_name=N/A if the system is operating in goal mode.
-
-    | **type**: str
-    | **sample**: N/A
-
-  queue_scan_count
-    YES if the address space has been quiesced.
-
-    NO if the address space is not quiesced.
-
-    | **type**: str
-
-  resource_group
-    The name of the resource group currently associated with the service class. It can also be N/A if there is no resource group association.
-
-    | **type**: str
-    | **sample**: N/A
-
-  server
-    YES if the address space is a server.
-
-    No if the address space is not a server.
-
-    | **type**: str
-
-  started_class_list
-    The name of the service class currently associated with the address space.
-
-    | **type**: str
-    | **sample**: SYSSTC
-
   started_time
     The time when the started task started.
 
     | **type**: str
     | **sample**: 2025-09-11 18:21:50.293644+00:00
 
-  system_management_control
-    Number of outstanding step-must-complete requests.
+  task_id
+    The started task id.
 
     | **type**: str
+    | **sample**: STC00018
 
   task_identifier
     The name of a system address space.
@@ -568,44 +455,6 @@ tasks
 
     | **type**: str
     | **sample**: SAMPLE
-
-  task_status
-    ``IN`` for swapped in.
-
-    ``OUT`` for swapped out, ready to run.
-
-    ``OWT`` for swapped out, waiting, not ready to run.
-
-    ``OU*`` for in process of being swapped out.
-
-    ``IN*`` for in process of being swapped in.
-
-    ``NSW`` for non-swappable.
-
-    | **type**: str
-    | **sample**: NSW
-
-  task_type
-    ``S`` for started task.
-
-    ``A`` for an attached APPC transaction program.
-
-    ``I`` for initiator address space.
-
-    ``J`` for job
-
-    ``M`` for mount
-
-    ``*`` for system address space
-
-    | **type**: str
-    | **sample**: S
-
-  workload_manager
-    The name of the workload currently associated with the address space.
-
-    | **type**: str
-    | **sample**: SYSTEM
 
 
 verbose_output

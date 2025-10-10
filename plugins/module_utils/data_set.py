@@ -1860,13 +1860,7 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations
-            if rel_generation == 0:
-                # Get las generation
-                gds = generations[-1]
-            else:
-                # This is teh case for -1 creation and avoid
-                creations = len(generations) - 2
-                gds = generations[creations]
+            gds = generations[rel_generation - 1]
         except Exception:
             raise GDSNameResolveError(relative_name)
 

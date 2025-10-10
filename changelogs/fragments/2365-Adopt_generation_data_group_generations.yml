@@ -1,0 +1,9 @@
+minor_changes:
+  - module_utils/data_set - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
+  - module_utils/copy - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
+  - modules/zos_copy - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
+  - modules/zos_fetch - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2365)

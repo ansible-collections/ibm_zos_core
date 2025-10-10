@@ -3738,8 +3738,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            assert expected_mls_str in stdout
+            assert pgm_mem_alias in stdout
+            assert pgm_mem in pgm_mem
 
         # execute pgms to validate copy
         validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)

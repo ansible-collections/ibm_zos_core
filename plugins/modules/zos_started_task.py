@@ -1059,7 +1059,7 @@ def parse_time(ts_str):
             h, m = map(int, hm_match.groups())
             return timedelta(hours=h, minutes=m)
     except Exception:
-        pass
+        return ""
     return ""
 
 

@@ -377,30 +377,24 @@ tasks:
     cpu_time:
       description:
          - The processor time used by the address space, including the initiator. This time does not include SRB time.
-         - cpu_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
-           sss.tttS when time is less than 1000 seconds
-           hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
-           hhhhh.mm when time is at least 100 hours
-           ******** when time exceeds 100000 hours
-           NOTAVAIL when the TOD clock is not working
+         - I(cpu_time) format is hhhhh.mm.ss.SSS(hours.minutes.seconds.milliseconds).
+         - C(********) when time exceeds 100000 hours.
+         - C(NOTAVAIL) when the TOD clock is not working.
       type: str
-      sample: 000.008S
+      sample: 00000.00.00.003
     elapsed_time:
       description:
-         - For address spaces other than system address spaces, the elapsed time since job select time.
-         - For system address spaces created before master scheduler initialization, the elapsed time since master scheduler initialization.
-         - For system address spaces created after master scheduler initialization, the elapsed time since system address space creation.
-         - elapsed_time has one of following formats, where ttt is milliseconds, sss or ss is seconds, mm is minutes, and hh or hhhhh is hours.
-           sss.tttS when time is less than 1000 seconds
-           hh.mm.ss when time is at least 1000 seconds, but less than 100 hours
-           hhhhh.mm when time is at least 100 hours
-           ******** when time exceeds 100000 hours
-           NOTAVAIL when the TOD clock is not working
+         - The processor time used by the address space, including the initiator. This time does not include SRB time.
+         - I(elapsed_time) format is hhhhh.mm.ss.SSS(hours.minutes.seconds.milliseconds).
+         - C(********) when time exceeds 100000 hours.
+         - C(NOTAVAIL) when the TOD clock is not working.
       type: str
-      sample: 812.983S
+      sample: 00003.20.23.013
     started_time:
       description:
          - The time when the started task started.
+         - C(********) when time exceeds 100000 hours.
+         - C(NOTAVAIL) when the TOD clock is not working.
       type: str
       sample: "2025-09-11 18:21:50.293644+00:00"
     task_id:
@@ -489,7 +483,7 @@ def execute_command(operator_cmd, started_task_name, asidx, execute_display_befo
     return rc, stdout, stderr, task_params
 
 
-def execute_display_command(started_task_name, asidx=None, before_time=None, timeout=0):
+def execute_display_command(started_task_name, asidx=None, task_params_before=None, timeout=0):
     """Execute operator display command.
 
     Parameters
@@ -498,8 +492,8 @@ def execute_display_command(started_task_name, asidx=None, before_time=None, tim
         Name of the started task.
     asidx : string
         The HEX adress space identifier.
-    before_time: datetime
-        The timestamp when operation started.
+    task_params_before: list
+        List of started task details which have same started task name.
     timeout : int
         Timeout to wait for the command execution, measured in centiseconds.
 
@@ -512,7 +506,7 @@ def execute_display_command(started_task_name, asidx=None, before_time=None, tim
     display_response = opercmd.execute(cmd, timeout)
     task_params = []
     if display_response.rc == 0 and display_response.stderr_response == "":
-        task_params = extract_keys(display_response.stdout_response, asidx, before_time)
+        task_params = extract_keys(display_response.stdout_response, asidx, task_params_before)
     return task_params
 
 
@@ -587,11 +581,13 @@ def validate_and_prepare_start_command(module):
                 else:
                     keyword_parameters_string = f"{key}={value}"
     if job_name:
-        started_task_name = job_name
+        started_task_name = f"{job_name}.{job_name}"
     elif member:
         started_task_name = member
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
+        else:
+            started_task_name = f"{started_task_name}.{started_task_name}"
     else:
         module.fail_json(
             rc=5,
@@ -685,6 +681,8 @@ def prepare_display_command(module):
     -------
     started_task_name
         The name of started task.
+    asidx
+        The address space identifier value, in hexadecimal.
     cmd
         The display command in string format.
     """
@@ -721,7 +719,7 @@ def prepare_stop_command(module, started_task=None, asidx=None, duplicate_tasks=
     started_task: string
         The started task name.
     asidx : string
-        The HEX adress space identifier.
+        The address space identifier value, in hexadecimal.
     duplicate_tasks: bool
         Indicates if duplicate tasks are running.
 
@@ -742,6 +740,8 @@ def prepare_stop_command(module, started_task=None, asidx=None, duplicate_tasks=
         started_task_name = job_name
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
+        else:
+            started_task_name = f"{started_task_name}.{started_task_name}"
     else:
         module.fail_json(
             rc=5,
@@ -781,6 +781,8 @@ def prepare_modify_command(module, started_task=None):
         started_task_name = job_name
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
+        else:
+            started_task_name = f"{started_task_name}.{started_task_name}"
     else:
         module.fail_json(
             rc=5,
@@ -807,7 +809,7 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
     started_task: string
         The started task name.
     asidx : string
-        The HEX adress space identifier.
+        The address space identifier value, in hexadecimal.
     duplicate_tasks: bool
         Indicates if duplicate tasks are running.
 
@@ -831,6 +833,8 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
         started_task_name = job_name
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
+        else:
+            started_task_name = f"{started_task_name}.{started_task_name}"
     elif userid:
         started_task_name = f"U={userid}"
     else:
@@ -865,7 +869,7 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
     started_task: string
         The started task name.
     asidx : string
-        The HEX adress space identifier.
+        The address space identifier value, in hexadecimal.
     duplicate_tasks: bool
         Indicates if duplicate tasks are running.
 
@@ -908,6 +912,8 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
         started_task_name = job_name
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
+        else:
+            started_task_name = f"{started_task_name}.{started_task_name}"
     elif userid:
         started_task_name = f"U={userid}"
     else:
@@ -930,7 +936,7 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
     return started_task_name, cmd
 
 
-def extract_keys(stdout, asidx=None, before_time=None):
+def extract_keys(stdout, asidx=None, task_params_before=None):
     """Extracts keys and values from the given stdout
 
     Parameters
@@ -938,9 +944,9 @@ def extract_keys(stdout, asidx=None, before_time=None):
     stdout : string
         The started task display command output
     asidx : string
-        The HEX adress space identifier.
-    before_time: datetime
-        The timestamp when operation started.
+        The address space identifier value, in hexadecimal.
+    task_params_before: list
+        List of started task details which have same started task name.
 
     Returns
     -------
@@ -956,24 +962,31 @@ def extract_keys(stdout, asidx=None, before_time=None):
     lines = stdout.strip().split('\n')
     tasks = []
     current_task = {}
-    aste_key = "ADDR SPACE ASTE"
     task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
-    kv_pattern = re.compile(rf'({re.escape(aste_key)}|\S+)=(\S+)')
+    kv_pattern = re.compile(r'(\S+)=(\S+)')
     for line in lines[5:]:
         line = line.strip()
         match_firstline = task_header_regex.search(line)
         if len(line.split()) >= 5 and match_firstline:
             if current_task:
+                current_task['started_time'] = ""
                 el_time = current_task.get('elapsed_time')
                 if el_time:
+                    current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
                     current_task['started_time'] = calculate_start_time(el_time)
                 if asidx:
                     if asidx == current_task.get('asidx'):
                         tasks.append(current_task)
                         current_task = {}
                         break
-                elif before_time:
-                    if before_time < datetime.fromisoformat(current_task.get('started_time')):
+                elif task_params_before:
+                    current_asid = current_task.get('asidx')
+                    task_exists_before = False
+                    for task in task_params_before:
+                        if task.get('asidx') == current_asid:
+                            task_exists_before = True
+                            break
+                    if not task_exists_before:
                         tasks.append(current_task)
                 else:
                     tasks.append(current_task)
@@ -992,14 +1005,25 @@ def extract_keys(stdout, asidx=None, before_time=None):
                     key = keys[key]
                     current_task[key.lower()] = value
     if current_task:
+        current_task['started_time'] = ""
         el_time = current_task.get('elapsed_time')
         if el_time:
+            current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
             current_task['started_time'] = calculate_start_time(el_time)
+        cpu_time = current_task.get('cpu_time')
+        if cpu_time:
+            current_task['cpu_time'] = convert_cpu_time(cpu_time) or current_task['cpu_time']
         if asidx:
             if asidx == current_task.get('asidx'):
                 tasks.append(current_task)
-        elif before_time:
-            if before_time < datetime.fromisoformat(current_task.get('started_time')):
+        elif task_params_before:
+            current_asid = current_task.get('asidx')
+            task_exists_before = False
+            for task in task_params_before:
+                if task.get('asidx') == current_asid:
+                    task_exists_before = True
+                    break
+            if not task_exists_before:
                 tasks.append(current_task)
         else:
             tasks.append(current_task)
@@ -1019,20 +1043,24 @@ def parse_time(ts_str):
     timestamp
         Transformed timestamp
     """
-    # Case 1: Duration like "000.005seconds"
-    sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
-    if sec_match:
-        return timedelta(seconds=float(sec_match.group(1)))
-    # Case 2: hh.mm.ss
-    hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
-    if hms_match:
-        h, m, s = map(int, hms_match.groups())
-        return timedelta(hours=h, minutes=m, seconds=s)
-    # Case 3: hhhhh.mm
-    hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
-    if hm_match:
-        h, m = map(int, hm_match.groups())
-        return timedelta(hours=h, minutes=m)
+    try:
+        # Case 1: Duration like "000.005seconds"
+        sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
+        if sec_match:
+            return timedelta(seconds=float(sec_match.group(1)))
+        # Case 2: hh.mm.ss
+        hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
+        if hms_match:
+            h, m, s = map(int, hms_match.groups())
+            return timedelta(hours=h, minutes=m, seconds=s)
+        # Case 3: hhhhh.mm
+        hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
+        if hm_match:
+            h, m = map(int, hm_match.groups())
+            return timedelta(hours=h, minutes=m)
+    except Exception:
+        pass
+    return ""
 
 
 def calculate_start_time(ts_str):
@@ -1043,6 +1071,25 @@ def calculate_start_time(ts_str):
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         return f"{now - parsed}"
+    return ""
+
+
+def convert_cpu_time(ts_str):
+    parsed = parse_time(ts_str)
+    if parsed is None:
+        return ""
+    # If it's a timedelta (duration), subtract from now → absolute datetime
+    if isinstance(parsed, timedelta):
+        total_seconds = int(parsed.total_seconds())
+        milliseconds = int(parsed.microseconds / 1000)
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        # Format: HHHHH.MM.SS.SSS
+        return f"{hours:05}.{minutes:02}.{seconds:02}.{milliseconds:03}"
+    return ""
 
 
 def fetch_logs(command, timeout):
@@ -1314,7 +1361,7 @@ def run_module():
     duplicate_tasks = False
     started_task_name_from_id = ""
     task_info = []
-    if task_id and state != "displayed":
+    if task_id and state != "displayed" and state != "started":
         task_name, asidx = fetch_task_name_and_asidx(module, task_id)
         task_params = execute_display_command(task_name)
         if len(task_params) > 1:
@@ -1344,7 +1391,7 @@ def run_module():
     start_errmsg = ['IEE122I', 'IEE535I', 'IEE307I', 'ERROR', 'IEE708I']
     stop_errmsg = ['IEE341I', 'IEE535I', 'IEE708I']
     display_errmsg = ['IEE341I', 'IEE535I', 'NOT FOUND', 'IEE708I']
-    modify_errmsg = ['REJECTED', 'IEE341I', 'IEE535I', 'IEE311I', 'IEE708I']
+    modify_errmsg = ['REJECTED', 'IEE341I', 'IEE535I', 'IEE311I', 'IEE708I', 'ISF302E']
     cancel_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'IEE842I', 'NON-CANCELABLE', 'IEE708I']
     force_errmsg = ['IEE341I', 'IEE324I', 'IEE535I', 'CANCELABLE', 'IEE842I', 'IEE708I']
     error_details = {
@@ -1360,7 +1407,8 @@ def run_module():
         'NON-CANCELABLE': 'The task cannot be canceled. Use the FORCE ARM command.',
         'CANCELABLE': 'The task can be canceled. Use the CANCEL command.',
         'IEE311I': 'Required parameter is missing.',
-        'IEE708I': 'The value of a keyword specified on a command is incorrect.'
+        'IEE708I': 'The value of a keyword specified on a command is incorrect.',
+        'ISF302E': 'Parameters are invalid.'
     }
     err_msg = []
     kwargs = {}
@@ -1369,14 +1417,14 @@ def run_module():
         kwargs.update({"wait": True})
 
     cmd = ""
-    before_time = None
+    task_params_before = []
     execute_display_before = False
     execute_display_after = False
     if state == "started":
-        before_time = datetime.now().astimezone()
         err_msg = start_errmsg
         execute_display_after = True
         started_task_name, cmd = validate_and_prepare_start_command(module)
+        task_params_before = execute_display_command(started_task_name)
     elif state == "displayed":
         err_msg = display_errmsg
         started_task_name, asidx, cmd = prepare_display_command(module)
@@ -1441,7 +1489,7 @@ def run_module():
         if state == "displayed":
             task_params = extract_keys(out, asidx)
         elif execute_display_after:
-            task_params = execute_display_command(started_task_name, asidx, before_time)
+            task_params = execute_display_command(started_task_name, asidx, task_params_before)
 
     result = dict()
 

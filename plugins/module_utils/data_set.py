@@ -1860,7 +1860,7 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations
-            gds = generations[rel_generation - 1]
+            gds = generations[rel_generation]
         except Exception:
             raise GDSNameResolveError(relative_name)
 

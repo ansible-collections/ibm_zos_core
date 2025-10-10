@@ -37,7 +37,7 @@ system
   | **type**: str
 
 
-message_id
+msg_id
   Return outstanding messages requiring operator action awaiting a reply for a particular message identifier.
 
   If the message identifier is not specified, all outstanding messages for all message identifiers are returned.
@@ -59,7 +59,7 @@ job_name
   | **type**: str
 
 
-message_filter
+msg_filter
   Return outstanding messages requiring operator action awaiting a reply that match a regular expression (regex) filter.
 
   If the message filter is not specified, all outstanding messages are returned regardless of their content.
@@ -69,7 +69,7 @@ message_filter
 
 
   filter
-    Specifies the substring or regex to match to the outstanding messages, see *use_regex*.
+    Specifies the substring or regex to match to the outstanding messages, see *literal*.
 
     All special characters in a filter string that are not a regex are escaped.
 
@@ -81,16 +81,16 @@ message_filter
     | **type**: str
 
 
-  use_regex
+  literal
     Indicates that the value for *filter* is a regex or a string to match.
 
-    If False, the module assumes that *filter* is not a regex and matches the *filter* substring on the outstanding messages.
+    If False, the module creates a regex from the *filter* string and matches it to the outstanding messages.
 
-    If True, the module creates a regex from the *filter* string and matches it to the outstanding messages.
+    If True, the module assumes that *filter* is not a regex and matches the *filter* substring on the outstanding messages.
 
     | **required**: False
     | **type**: bool
-    | **default**: False
+    | **default**: True
 
 
 
@@ -126,11 +126,11 @@ Examples
 
    - name: Display all outstanding messages whose message id begin with dsi*
      zos_operator_action_query:
-         message_id: dsi*
+         msg_id: dsi*
 
    - name: Display all outstanding messages that have the text IMS READY in them
      zos_operator_action_query:
-         message_filter:
+         msg_filter:
              filter: IMS READY
 
    - name: Display all outstanding messages where the job name begins with 'mq',
@@ -138,11 +138,11 @@ Examples
            pattern 'IMS'
      zos_operator_action_query:
          job_name: mq*
-         message_id: dsi*
+         msg_id: dsi*
          system: mv29
-         message_filter:
+         msg_filter:
              filter: ^.*IMS.*$
-             use_regex: true
+             literal: true
 
 
 
@@ -172,14 +172,14 @@ changed
 count
   The total number of outstanding messages.
 
-  | **returned**: on success
+  | **returned**: always
   | **type**: int
   | **sample**: 12
 
 actions
   The list of the outstanding messages.
 
-  | **returned**: success
+  | **returned**: always
   | **type**: list
   | **elements**: dict
   | **sample**:
@@ -190,8 +190,8 @@ actions
             {
                 "job_id": "STC01537",
                 "job_name": "IM5HCONN",
-                "message_id": "HWSC0000I",
-                "message_text": "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN",
+                "msg_id": "HWSC0000I",
+                "msg_txt": "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN",
                 "number": "001",
                 "system": "MV27",
                 "type": "R"
@@ -199,8 +199,8 @@ actions
             {
                 "job_id": "STC01533",
                 "job_name": "IM5HCTRL",
-                "message_id": "DFS3139I",
-                "message_text": "*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H",
+                "msg_id": "DFS3139I",
+                "msg_txt": "*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H",
                 "number": "002",
                 "system": "MV27",
                 "type": "R"
@@ -235,8 +235,8 @@ actions
     | **type**: str
     | **sample**: STC01537
 
-  message_text
-    Content of the outstanding message requiring operator action awaiting a reply. If *message_filter* is set, *message_text* will be filtered accordingly.
+  msg_txt
+    Content of the outstanding message requiring operator action awaiting a reply. If *msg_filter* is set, *msg_txt* will be filtered accordingly.
 
     | **returned**: success
     | **type**: str
@@ -249,7 +249,7 @@ actions
     | **type**: str
     | **sample**: IM5HCONN
 
-  message_id
+  msg_id
     Message identifier for outstanding message requiring operator action awaiting a reply.
 
     | **returned**: success

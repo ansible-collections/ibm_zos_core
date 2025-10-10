@@ -152,6 +152,7 @@ class BetterArgHandler(object):
         # TODO: determine if we should optionally allow top-level args to be passed
         self.type_handlers = {
             "dict": self._dict_type,
+            "basic_dict": self._basic_dict_type,
             "list": self._list_type,
             "str": self._str_type,
             "bool": self._bool_type,
@@ -160,6 +161,8 @@ class BetterArgHandler(object):
             "data_set": self._data_set_type,
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
+            "member_name": self._member_name_type,
+            "identifier_name": self._identifier_name_type,
             "qualifier": self._qualifier_type,
             "qualifier_or_empty": self._qualifier_or_empty_type,
             "qualifier_pattern": self._qualifier_pattern_type,
@@ -252,6 +255,32 @@ class BetterArgHandler(object):
         self._assert_mutually_exclusive(contents)
         return contents
 
+    def _basic_dict_type(self, contents, resolve_dependencies):
+        """Resolver for basic dict type arguments.
+
+        Parameters
+        ----------
+        contents : dict
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        dict
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not isinstance(contents, dict):
+            raise ValueError('Invalid argument "{0}" for type "dict".'.format(contents))
+        return contents
+
     def _str_type(self, contents, resolve_dependencies):
         """Resolver for str type arguments.
 
@@ -328,6 +357,72 @@ class BetterArgHandler(object):
         if not isinstance(contents, bool):
             raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
         return contents
+
+    def _member_name_type(self, contents, resolve_dependencies):
+        """Resolver for PDS/E member name type arguments. This is part of
+           zos_started_task member name validation.
+
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not fullmatch(
+            r"^[A-Z$#@]{1}[A-Z0-9$#@]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "member_name".'.format(contents)
+            )
+        return str(contents)
+
+    def _identifier_name_type(self, contents, resolve_dependencies):
+        """Resolver for identifier name type arguments. This is part of
+           zos_started_task identifier name validation.
+
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not fullmatch(
+            r"^[A-Z]{1}[A-Z0-9$#@]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "identifier_name".'.format(contents)
+            )
+        return str(contents)
 
     def _path_type(self, contents, resolve_dependencies):
         """Resolver for path type arguments.
@@ -1108,12 +1203,6 @@ class BetterArgParser(object):
             aliases = {}
         arg_aliases.append(arg_name)
         for alternate_name in arg_aliases:
-            if aliases.get(alternate_name, arg_name) != arg_name:
-                raise ValueError(
-                    'Conflicting aliases "{0}" and "{1}" found for name "{2}"'.format(
-                        aliases.get(alternate_name), alternate_name, arg_name
-                    )
-                )
             aliases[alternate_name] = arg_name
         return aliases
 

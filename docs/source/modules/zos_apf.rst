@@ -106,7 +106,7 @@ tmp_hlq
 
 
 persistent
-  Add/remove persistent entries to or from *data_set_name*
+  Add/remove persistent entries to or from *target*
 
   ``library`` will not be persisted or removed if ``persistent=None``
 
@@ -114,7 +114,7 @@ persistent
   | **type**: dict
 
 
-  data_set_name
+  target
     The data set name used for persisting or removing a ``library`` from the APF list.
 
     | **required**: True
@@ -138,7 +138,7 @@ persistent
 
 
   backup
-    Creates a backup file or backup data set for *data_set_name*, including the timestamp information to ensure that you retrieve the original APF list defined in *data_set_name*".
+    Creates a backup file or backup data set for *target*, including the timestamp information to ensure that you retrieve the original APF list defined in *target*".
 
     *backup_name* can be used to specify a backup file name if *backup=true*.
 
@@ -152,7 +152,7 @@ persistent
   backup_name
     Specify the USS file name or data set name for the destination backup.
 
-    If the source *data_set_name* is a USS file or path, the backup_name name must be a file or path name, and the USS file or path must be an absolute path name.
+    If the source *target* is a USS file or path, the backup_name name must be a file or path name, and the USS file or path must be an absolute path name.
 
     If the source is an MVS data set, the backup_name must be an MVS data set name.
 
@@ -241,18 +241,18 @@ Examples
        library: SOME.SEQUENTIAL.DATASET
        force_dynamic: true
        persistent:
-         data_set_name: SOME.PARTITIONED.DATASET(MEM)
+         target: SOME.PARTITIONED.DATASET(MEM)
    - name: Remove a library from the APF list and persistence
      zos_apf:
        state: absent
        library: SOME.SEQUENTIAL.DATASET
        volume: T12345
        persistent:
-         data_set_name: SOME.PARTITIONED.DATASET(MEM)
+         target: SOME.PARTITIONED.DATASET(MEM)
    - name: Batch libraries with custom marker, persistence for the APF list
      zos_apf:
        persistent:
-         data_set_name: "SOME.PARTITIONED.DATASET(MEM)"
+         target: "SOME.PARTITIONED.DATASET(MEM)"
          marker: "/* {mark} PROG001 USR0010 */"
        batch:
          - library: SOME.SEQ.DS1
@@ -304,12 +304,31 @@ stdout
   | **returned**: always
   | **type**: str
 
+stdout_lines
+  List of strings containing individual lines from STDOUT.
+
+  | **returned**: always
+  | **type**: list
+
 stderr
   The error messages from ZOAU command apfadm
 
   | **returned**: always
   | **type**: str
   | **sample**: BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list.
+
+stderr_lines
+  List of strings containing individual lines from STDERR.
+
+  | **returned**: always
+  | **type**: list
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list."
+        ]
 
 rc
   The return code from ZOAU command apfadm

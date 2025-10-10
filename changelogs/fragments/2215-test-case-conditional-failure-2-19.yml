@@ -1,0 +1,19 @@
+minor_changes:
+   - zos_job_output - Adds support to query SYSIN DDs from a job with new option input.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2215)
+trivial:
+   - test_zos_copy_func.py - modified test case `test_job_script_async`
+     to resolve porting issues to ansible 2.19.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2215).
+
+   - test_zos_job_submit_func.py - modified test case `test_job_submit_async`
+     to resolve porting issues to ansible 2.19.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2215).
+
+   - test_zos_script_func.py - modified test case `test_job_script_async`
+     to resolve porting issues to ansible 2.19.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2215).
+
+   - test_zos_unarchive_func.py - modified test case `test_zos_unarchive_async`
+     to resolve porting issues to ansible 2.19.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2215).

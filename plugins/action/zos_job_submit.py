@@ -45,16 +45,16 @@ class ActionModule(ActionBase):
         module_args = self._task.args.copy()
 
         use_template = _process_boolean(module_args.get("use_template"))
-        location = module_args.get("location")
-        if use_template and location != "local":
+        remote_src = module_args.get("remote_src")
+        if use_template and remote_src:
             result.update(dict(
                 failed=True,
                 changed=False,
-                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'local'".format(location)
+                msg="Use of Jinja2 templates is only valid for local files. remote_src is set to '{0}' but should be False".format(remote_src)
             ))
             return result
 
-        if location == "local":
+        if not remote_src:
 
             source = self._task.args.get("src", None)
 
@@ -150,7 +150,7 @@ class ActionModule(ActionBase):
                     src=source_full,
                     dest=dest_file,
                     mode="0666",
-                    force=True,
+                    replace=True,
                     encoding=module_args.get('encoding'),
                     remote_src=False,
                 )

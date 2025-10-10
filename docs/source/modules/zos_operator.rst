@@ -51,18 +51,27 @@ verbose
   | **default**: False
 
 
-wait_time_s
+wait_time
   Set maximum time in seconds to wait for the commands to execute.
 
   When set to 0, the system default is used.
 
   This option is helpful on a busy system requiring more time to execute commands.
 
-  Setting *wait* can instruct if execution should wait the full *wait_time_s*.
+  Setting *wait* can instruct if execution should wait the full *wait_time*.
 
   | **required**: False
   | **type**: int
   | **default**: 1
+
+
+time_unit
+  Set the ``wait_time`` unit of time, which can be ``s`` (seconds) or ``cs`` (centiseconds).
+
+  | **required**: False
+  | **type**: str
+  | **default**: s
+  | **choices**: s, cs
 
 
 case_sensitive
@@ -111,11 +120,17 @@ Examples
    - name: Execute operator command to show jobs, always waiting 5 seconds for response
      zos_operator:
        cmd: 'd a,all'
-       wait_time_s: 5
+       wait_time: 5
 
    - name: Display the system symbols and associated substitution texts.
      zos_operator:
        cmd: 'D SYMBOLS'
+
+   - name: Execute an operator command to show device status and allocation wait 10 centiseconds.
+     zos_operator:
+       cmd: 'd u'
+       wait_time : 10
+       time_unit : 'cs'
 
 
 
@@ -150,7 +165,7 @@ cmd
   | **sample**: d u,all
 
 elapsed
-  The number of seconds that elapsed waiting for the command to complete.
+  The number of seconds or centiseconds that elapsed waiting for the command to complete.
 
   | **returned**: always
   | **type**: float
@@ -160,12 +175,19 @@ elapsed
 
         51.53
 
-wait_time_s
-  The maximum time in seconds to wait for the commands to execute.
+wait_time
+  The maximum time in the time_unit set to wait for the commands to execute.
 
   | **returned**: always
   | **type**: int
   | **sample**: 5
+
+time_unit
+  The time unit set for wait_time.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: s
 
 content
   The resulting text from the command submitted.

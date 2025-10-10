@@ -1,0 +1,4 @@
+breaking_changes:
+  - zos_job_query - Option ``message_filter`` is deprecated in favor of ``msg_filter``. Option ``message_id`` is deprecated in favor of ``msg_id``.
+    Return value ``message_id`` is deprecated in favor of ``msg_id``. Return value ``message_text`` is deprecated in favor of ``msg_txt``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2218).

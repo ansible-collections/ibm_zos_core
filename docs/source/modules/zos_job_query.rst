@@ -138,6 +138,11 @@ changed
 
   | **returned**: always
   | **type**: bool
+  | **sample**:
+
+    .. code-block:: json
+
+        true
 
 jobs
   The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
@@ -158,12 +163,13 @@ jobs
                 "creation_time": "12:13:00",
                 "execution_node": "STL1",
                 "execution_time": "00:00:02",
-                "job_class": "K",
+                "job_class": "STC",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
                 "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 1,
+                "program_name": "BPXBATCH",
                 "queue_position": 3,
                 "ret_code": "null",
                 "subsystem": "STL1",
@@ -184,10 +190,13 @@ jobs
                 "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 0,
+                "program_name": "null",
                 "queue_position": 0,
                 "ret_code": {
                     "code": "null",
-                    "msg": "CANCELED"
+                    "msg": "CANCELED",
+                    "msg_code": "null",
+                    "msg_txt": "CANCELED"
                 },
                 "subsystem": "STL1",
                 "svc_class": "E",
@@ -274,13 +283,7 @@ jobs
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": "",
-                  "steps": [
-                      {
-                          "step_cc": 0,
-                          "step_name": "STEP0001"
-                      }
-                  ]
+                  "msg_txt": ""
               }
           }
 
@@ -324,6 +327,36 @@ jobs
 
         | **type**: int
 
+
+
+  steps
+    Series of JCL steps that were executed and their return codes.
+
+    | **type**: list
+    | **elements**: dict
+    | **sample**:
+
+      .. code-block:: json
+
+          {
+              "steps": [
+                  {
+                      "step_cc": 0,
+                      "step_name": "STEP0001"
+                  }
+              ]
+          }
+
+    step_name
+      Name of the step shown as "was executed" in the DD section.
+
+      | **type**: str
+      | **sample**: STEP0001
+
+    step_cc
+      The CC returned for this step in the DD section.
+
+      | **type**: int
 
 
   job_class
@@ -380,7 +413,7 @@ jobs
     | **sample**: 00:00:10
 
 
-message
+msg
   Message returned on failure.
 
   | **returned**: failure

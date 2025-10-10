@@ -701,6 +701,9 @@ def main():
     result['cmd'] = ret['data']['commands']
     result['changed'] = ret['data']['changed']
     result['found'] = ret['data']['found']
+    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+    # That information will be given with 'changed' and 'found'
+    # if len(stderr):
     result['stderr'] = str(stderr)
     result['rc'] = rc
     module.exit_json(**result)

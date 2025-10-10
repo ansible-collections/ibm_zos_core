@@ -39,7 +39,7 @@ JCL_FILE_CONTENTS_SYSIN = """//SYSINS  JOB (T043JM,JM00,1,0,0,0),'SYSINS - JRM',
 //LISTCAT EXEC PGM=IDCAMS,REGION=4M                        
 //SYSPRINT DD   SYSOUT=*                                   
 //SYSIN DD   *                                             
-     LISTCAT ENTRIES('{0}') ALL           
+     LISTCAT ENTRIES('TEST.DATASET.JCL') ALL           
 /*                                                         
 //
 """
@@ -328,29 +328,33 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
-        data_set_name = get_tmp_ds_name()
-        hosts.all.shell(cmd=f"dtouch -tseq '{data_set_name}'")
+        hosts.all.zos_data_set(
+                    name="TEST.DATASET.JCL",
+                    type="PS",
+                    state="present"
+                )
         hosts.all.shell(
-            cmd=f"echo {quote(JCL_FILE_CONTENTS_SYSIN.format(data_set_name))} > {TEMP_PATH}/SYSIN"
+            cmd=f"echo {quote(JCL_FILE_CONTENTS_SYSIN)} > {TEMP_PATH}/SYSIN"
         )
         result = hosts.all.zos_job_submit(
-            src=f"{TEMP_PATH}/SYSIN", remote_src=True, volume=None
+            src=f"{TEMP_PATH}/SYSIN", location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
-        sysin = True
+        sysin = "True"
         results = hosts.all.zos_job_output(job_name="SYSINS", sysin_dd=sysin)
         for result in results.contacted.values():
-            assert result.get("changed") is True
+            print(result)
+            assert result.get("changed") is False
             for job in result.get("jobs"):
-                assert len(job.get("dds")) >= 1
+                assert len(job.get("ddnames")) >= 1
                 sysin_found = False
-                for ddname_entry in job.get("dds"):
-                    if ddname_entry.get("dd_name") == "SYSIN":
+                for ddname_entry in job.get("ddnames"):
+                    if ddname_entry.get("ddname") == "SYSIN":
                         sysin_found = True
                         break
                 assert sysin_found
     finally:
-        hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        hosts.all.zos_data_set(name="TEST.DATASET.JCL", state="absent")
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 

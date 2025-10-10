@@ -1071,7 +1071,8 @@ def run_module():
 
             result["duration"] = duration
             job_msg = job_output_txt[0].get("ret_code", {}).get("msg")
-            if duration >= wait_time and job_msg != "HOLD":
+
+            if duration >= wait_time_s and job_msg != "HOLD":
                 result["failed"] = True
                 result["changed"] = False
                 _msg = ("The JCL submitted with job id {0} but appears to be a long "
@@ -1128,8 +1129,8 @@ def run_module():
                         # so further analyze the
                         # JESJCL DD to figure out if its a TYPRUN job
 
-                        job_dd_names = job_output_txt[0].get("dds")
-                        jes_jcl_dd = search_dictionaries("dd_name", "JESJCL", job_dd_names)
+                        job_dd_names = job_output_txt[0].get("ddnames")
+                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
 
                         # Its possible jobs don't have a JESJCL which are active and this would
                         # mean the job had TYPRUN=COPY.

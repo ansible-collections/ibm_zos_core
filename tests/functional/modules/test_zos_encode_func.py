@@ -363,7 +363,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
         mvs_ps = get_tmp_ds_name()
         hosts.all.zos_data_set(name=mvs_ps, state="present", type="seq")
         hosts.all.zos_copy(content=TEST_DATA, dest=mvs_ps)
-        hosts.all.zos_copy(content="test", dest=uss_dest_file)
+        hosts.all.copy(content="test", dest=uss_dest_file)
         results = hosts.all.zos_encode(
             src=mvs_ps,
             dest=uss_dest_file,
@@ -478,7 +478,7 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
             name=mvs_pds_member, type="member", state="present"
         )
         hosts.all.zos_copy(content=TEST_DATA, dest=mvs_pds_member)
-        hosts.all.zos_copy(content="test", dest=uss_dest_file)
+        hosts.all.copy(content="test", dest=uss_dest_file)
         results = hosts.all.zos_encode(
             src=mvs_pds_member,
             dest=uss_dest_file,

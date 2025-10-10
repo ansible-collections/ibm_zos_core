@@ -5430,8 +5430,21 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
         cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + dest_path + " is_remote=" + str(
             options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
 
-        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
-        output = result.read().decode()
+        process = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = process.communicate()
+
+        # Check the combined output for the verbosity message and potential errors.
+        output = stdout.decode(errors='ignore') + stderr.decode(errors='ignore')
+        
+        if process.returncode != 0 and options["verbosity_level"] > 0:
+             print(f"\nAnsible command failed. Return code: {process.returncode}")
+             print(f"--- STDERR ---\n{stderr.decode(errors='ignore')}")
+             print(f"--- STDOUT ---\n{stdout.decode(errors='ignore')}")
 
         if options["verbosity_level"] != 0:
             assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)

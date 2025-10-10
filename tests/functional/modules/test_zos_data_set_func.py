@@ -1187,7 +1187,7 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
         results = hosts.all.zos_data_set(
             name=dataset,
             state='absent',
-            noscratch=True
+            scratch=False,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -1213,6 +1213,7 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
             name=dataset,
             state='absent',
             volumes=volume
+
         )
         for result in vtoc_check_and_delete.contacted.values():
             # This assertion proves the data set existed on the volume's VTOC.
@@ -1228,81 +1229,62 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
 
 def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on_systems):
     """
-    Tests that the 'noscratch: true' sub-option works correctly when used inside a
-    batch list to uncatalog multiple data sets.
+    Tests that the 'scratch: False' (noscratch=True) sub-option works correctly when used inside a
+    batch list to uncatalog multiple data sets. Ensures:
+    - Data sets are removed from the catalog but remain on the volume (VTOC)
+    - Second deletion with 'volumes' confirms presence on VTOC
     """
     hosts = ansible_zos_module
     volume = Volume_Handler(volumes_on_systems).get_available_vol()
-    
-    # Define two separate data sets for the batch operation
+    # Define two temporary dataset names
     dataset_1 = get_tmp_ds_name()
     dataset_2 = get_tmp_ds_name()
 
     try:
         # --- Arrange ---
-        # Create both data sets in a preliminary batch operation so they exist
+        # Create both data sets in a batch
         setup_results = hosts.all.zos_data_set(
             batch=[
-                {'name': dataset_1, 'type': 'seq', 'state': 'present', 'volumes': volume},
-                {'name': dataset_2, 'type': 'seq', 'state': 'present', 'volumes': volume}
+                {'name': dataset_1, 'state': 'present', 'volumes': [volume]},
+                {'name': dataset_2, 'state': 'present', 'volumes': [volume]}
             ]
         )
         for result in setup_results.contacted.values():
             assert result.get("changed") is True
 
         # --- Act ---
-        # Run the main test: a batch uncatalog where both items use noscratch
+        # Run batch uncatalog with 'scratch: False'
         act_results = hosts.all.zos_data_set(
             batch=[
-                {'name': dataset_1, 'state': 'absent', 'noscratch': True},
-                {'name': dataset_2, 'state': 'absent', 'noscratch': True}
+                {'name': dataset_1, 'state': 'absent', 'scratch': False},
+                {'name': dataset_2, 'state': 'absent', 'scratch': False}
             ]
         )
-        # # Assert on the main action results
         for result in act_results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(
-            name=dataset_1,
-            state='absent',
-        )
-        for result in results.contacted.values():
-            assert result.get("changed") is False
-        results = hosts.all.zos_data_set(
-            name=dataset_2,
-            state='absent',
-        )
-        for result in results.contacted.values():
-            assert result.get("changed") is False
-        
-        # # --- Verification Assertions ---
-        # Assert 2: Verify the data set is STILL on the volume's VTOC.
-        # This is the crucial second half of the test.
-        # We can do this by trying to delete it again, but specifying the volume.
-        # If this delete reports "changed: true", it's proof that it found and
-        # deleted the uncataloged data set from the VTOC.
-        
-        vtoc_check_and_delete = hosts.all.zos_data_set(
-            name=dataset_1,
-            state='absent',
-            volumes=volume
-        )
-        for result in vtoc_check_and_delete.contacted.values():
-            # This assertion proves the data set existed on the volume's VTOC
-            assert result.get("changed") is True
-        
-        vtoc_check_and_delete = hosts.all.zos_data_set(
-            name=dataset_2,
-            state='absent',
-            volumes=volume
-        )
-        for result in vtoc_check_and_delete.contacted.values():
-            # This assertion proves the data set existed on the volume's VTOC
-            assert result.get("changed") is True
+
+        # --- Assert 1: Ensure they are uncataloged ---
+        for dataset in [dataset_1, dataset_2]:
+            check_result = hosts.all.zos_data_set(
+                name=dataset,
+                state='absent',
+            )
+            for result in check_result.contacted.values():
+                assert result.get("changed") is False  # Already uncataloged
+
+        # --- Assert 2: Check presence on VTOC and delete from disk ---
+        for dataset in [dataset_1, dataset_2]:
+            vtoc_result = hosts.all.zos_data_set(
+                name=dataset,
+                state='absent',
+                volumes=[volume]  # Provide volume to locate uncataloged DS
+            )
+            for result in vtoc_result.contacted.values():
+                assert result.get("changed") is True  # Proves it was still on VTOC
     finally:
         # --- Cleanup ---
-        # Ensure both data sets are fully deleted from the volume's VTOC.
-        # This is critical because the test's main action leaves them on disk.
+        # Ensure no residual data sets left on the volume
         hosts.all.zos_data_set(
             batch=[
                 {'name': dataset_1, 'state': 'absent', 'volumes': [volume]},

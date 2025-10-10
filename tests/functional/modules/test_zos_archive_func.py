@@ -536,7 +536,7 @@ def test_mvs_archive_single_dataset(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -635,7 +635,7 @@ def test_mvs_archive_single_dataset_adrdssu(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -717,6 +717,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
 
             # Changed to using the exact data set name in dls
             # because using wildcards would fail.
@@ -797,7 +798,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
             assert result.get("dest") == archive_data_set
             for ds in target_ds_list:
                 assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
 
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
@@ -875,6 +876,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
                     assert exclude not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
 
             cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
@@ -1033,6 +1035,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
                     assert ds.get("name") not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
 
             cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
@@ -1128,6 +1131,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
 
             cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
@@ -1312,7 +1316,7 @@ def test_mvs_archive_single_dataset_encoding(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:

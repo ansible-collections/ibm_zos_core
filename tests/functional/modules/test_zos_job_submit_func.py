@@ -1630,6 +1630,9 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
             r'The job was run with TYPRUN=COPY.',
             repr(rc.get("msg_txt"))
         )
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == 'TYPRUN=COPY'
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):

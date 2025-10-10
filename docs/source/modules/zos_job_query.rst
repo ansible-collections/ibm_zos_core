@@ -171,20 +171,9 @@ jobs
                 "priority": 1,
                 "program_name": "BPXBATCH",
                 "queue_position": 3,
-                "ret_code": {
-                    "code": "0",
-                    "msg": "CC",
-                    "msg_code": "0000",
-                    "msg_txt": "CC"
-                },
-                "steps": [
-                    {
-                        "step_cc": 0,
-                        "step_name": "STEP0001"
-                    }
-                ],
+                "ret_code": "null",
                 "subsystem": "STL1",
-                "svc_class": "null",
+                "svc_class": "?",
                 "system": "STL1"
             },
             {
@@ -209,7 +198,6 @@ jobs
                     "msg_code": "null",
                     "msg_txt": "CANCELED"
                 },
-                "steps": [],
                 "subsystem": "STL1",
                 "svc_class": "E",
                 "system": "STL1"
@@ -264,11 +252,11 @@ jobs
     | **type**: str
     | **sample**: STL1
 
-  origin_node
-    Origin node that submitted the job.
+  cpu_time
+    Sum of the CPU time used by each job step, in microseconds.
 
-    | **type**: str
-    | **sample**: STL1
+    | **type**: int
+    | **sample**: 5
 
   execution_node
     Execution node that picked the job and executed it.
@@ -276,11 +264,11 @@ jobs
     | **type**: str
     | **sample**: STL1
 
-  cpu_time
-    Sum of the CPU time used by each job step, in microseconds.
+  origin_node
+    Origin node that submitted the job.
 
-    | **type**: int
-    | **sample**: 5
+    | **type**: str
+    | **sample**: STL1
 
   ret_code
     Return code output collected from job log.

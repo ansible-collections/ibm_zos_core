@@ -139,7 +139,7 @@ jobs
                 "class": "R",
                 "content_type": "JOB",
                 "cpu_time": 1414,
-                "dds": [
+                "ddnames": [
                     {
                         "byte_count": "775",
                         "content": [
@@ -263,12 +263,6 @@ jobs
                     "msg_code": "0000",
                     "msg_txt": ""
                 },
-                "steps": [
-                    {
-                        "step_cc": 0,
-                        "step_name": "STEP0001"
-                    }
-                ],
                 "subsystem": "STL1",
                 "system": "STL1"
             }

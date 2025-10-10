@@ -199,6 +199,22 @@ options:
       - If I(operation=backup) and if I(dataset=False) then option I(terse) must be True.
     type: bool
     default: True
+  sms_storage_class:
+    description:
+      - When I(operation=backup), enables compression of partitioned data sets using system-level
+        compression features. If supported, this may utilize zEDC hardware compression.
+      - This option can reduce the size of the temporary dataset generated during backup operations
+        either before the AMATERSE step when I(terse) is True or the resulting backup
+        when I(terse) is False.
+    type: bool
+    default: False
+  terse:
+    description:
+      - When I(operation=backup), executes an AMATERSE step to compress and pack the temporary data set
+        for the backup. This creates a backup with a format suitable for transferring off-platform.
+      - If I(operation=backup) and if I(dataset=False) then option I(terse) must be True.
+    type: bool
+    default: True
   sms:
     description:
       - Specifies how System Managed Storage (SMS) interacts with the storage class
@@ -605,17 +621,8 @@ def main():
         overwrite=dict(type="bool", default=False),
         compress=dict(type="bool", default=False),
         terse=dict(type="bool", default=True),
-        sms=dict(
-            type='dict',
-            required=False,
-            options=dict(
-                storage_class=dict(type="str", required=False),
-                management_class=dict(type="str", required=False),
-                disable_automatic_class=dict(type="list", elements="str", required=False, default=[]),
-                disable_automatic_storage_class=dict(type="bool", required=False, default=False),
-                disable_automatic_management_class=dict(type="bool", required=False, default=False),
-            )
-        ),
+        sms_storage_class=dict(type="str", required=False),
+        sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
@@ -637,7 +644,8 @@ def main():
         overwrite = params.get("overwrite")
         compress = params.get("compress")
         terse = params.get("terse")
-        sms = params.get("sms")
+        sms_storage_class = params.get("sms_storage_class")
+        sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
@@ -768,17 +776,8 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         compress=dict(type="bool", default=False),
         terse=dict(type="bool", default=True),
-        sms=dict(
-            type='dict',
-            required=False,
-            options=dict(
-                storage_class=dict(type=sms_type, required=False),
-                management_class=dict(type=sms_type, required=False),
-                disable_automatic_class=dict(type="list", elements="str", required=False, default=[]),
-                disable_automatic_storage_class=dict(type="bool", required=False),
-                disable_automatic_management_class=dict(type="bool", required=False),
-            )
-        ),
+        sms_storage_class=dict(type=sms_type, required=False),
+        sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
@@ -842,10 +841,7 @@ def backup(
         Specifies how System Managed Storage (SMS) interacts with the storage class.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    sphere : dict
-        Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
-    access : dict
-        Specifies keywords for share and administration permission.
+
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -1274,8 +1270,14 @@ def to_dzip_args(**kwargs):
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
 
-    if kwargs.get("compress"):
+    if kwargs.get("compress") is not None:
         zoau_args["compress"] = kwargs.get("compress")
+
+    if kwargs.get("terse") is not None:
+        zoau_args["terse"] = kwargs.get("terse")
+
+    if kwargs.get("sms_storage_class"):
+        zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
 
     if kwargs.get("terse"):
         zoau_args["terse"] = kwargs.get("terse")

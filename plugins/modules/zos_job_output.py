@@ -62,7 +62,6 @@ options:
         (e.g "JESJCL", "?")
     type: str
     required: false
-    aliases: [ ddname ]
   sysin_dd:
     description:
       - Whether to include SYSIN DDs as part of the output.
@@ -97,7 +96,7 @@ EXAMPLES = r"""
     job_id: "STC*"
     job_name: "*"
     owner: "IBMUSER"
-    dd_name: "?"
+    ddname: "?"
 
 - name: Query a job's output including SYSIN DDs
   zos_job_output:
@@ -508,7 +507,7 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-        dd_name=dict(type="str", required=False, aliases=['ddname']),
+        ddname=dict(type="str", required=False),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -518,7 +517,7 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        dd_name=dict(type="str", required=False, aliases=['ddname']),
+        ddname=dict(type="str", required=False),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -538,7 +537,7 @@ def run_module():
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
-    dd_name = module.params.get("dd_name")
+    ddname = module.params.get("ddname")
     sysin = module.params.get("sysin_dd")
 
     if not job_id and not job_name and not owner:
@@ -546,13 +545,8 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name, sysin=sysin)
-        for job in results["jobs"]:
-            if "job_not_found" in job:
-                results["changed"] = False
-                del job['job_not_found']
-            else:
-                results["changed"] = True
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname, sysin=sysin)
+        results["changed"] = False
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
             msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",

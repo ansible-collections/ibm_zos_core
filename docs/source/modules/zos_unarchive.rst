@@ -52,7 +52,7 @@ format
   | **type**: dict
 
 
-  type
+  name
     The compression format used while archiving.
 
     | **required**: True
@@ -80,7 +80,7 @@ format
       | **type**: str
 
 
-    adrdssu
+    use_adrdssu
       If set to true, the ``zos_unarchive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
 
       | **required**: False
@@ -467,7 +467,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         type: terse
+         name: terse
        encoding:
          from: IBM-1047
          to: ISO8859-1
@@ -476,7 +476,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         type: terse
+         name: terse
        encoding:
          from: IBM-1047
          to: ISO8859-1

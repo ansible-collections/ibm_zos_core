@@ -252,6 +252,14 @@ Examples
        contains: 'hello'
        excludes: '.*TEST'
 
+   - name: Find all members starting with characters 'TE' in a given list of PDS patterns
+     zos_find:
+       patterns: '^te.*'
+       pds_patterns:
+         - IMSTEST.TEST.*
+         - IMSTEST.USER.*
+         - USER.*.LIB
+
    - name: Find all data sets greater than 2MB and allocated in one of the specified volumes
      zos_find:
        patterns: 'USER.*'

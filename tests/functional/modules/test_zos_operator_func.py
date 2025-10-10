@@ -61,6 +61,41 @@ INVENTORY = """all:
       ansible_user: {2}
       ansible_python_interpreter: {3}"""
 
+def test_zos_operator_parallel_terminal(get_config):
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
+            zoau,
+            cut_python_path,
+            python_version
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), inventory))
+        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+            inventory,
+            playbook,
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")
 
 def test_zos_operator_various_command(ansible_zos_module):
     test_data = [
@@ -117,6 +152,7 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
         if any('DUMP COMMAND' in str for str in result.get("content")):
             transparency = True
         assert transparency
+
 
 
 def test_zos_operator_positive_path(ansible_zos_module):
@@ -250,54 +286,3 @@ def test_response_come_back_complete(ansible_zos_module):
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
-
-
-def test_operator_sentiseconds(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="d a", time_unit="cs", wait_time=100)
-    for result in results.contacted.values():
-        assert result.get("rc") == 0
-        assert result.get("changed") is True
-        assert result.get("msg", False) is False
-        assert result.get("cmd") is not None
-        assert result.get("elapsed") is not None
-        assert result.get("wait_time") is not None
-        assert result.get("time_unit") == "cs"
-        assert result.get("content") is not None
-
-
-def test_zos_operator_parallel_terminal(get_config):
-    path = get_config
-    with open(path, 'r') as file:
-        enviroment = yaml.safe_load(file)
-    ssh_key = enviroment["ssh_key"]
-    hosts = enviroment["host"].upper()
-    user = enviroment["user"].upper()
-    python_path = enviroment["python_path"]
-    cut_python_path = python_path[:python_path.find('/bin')].strip()
-    zoau = enviroment["environment"]["ZOAU_ROOT"]
-    python_version = cut_python_path.split('/')[2]
-
-    try:
-        playbook = "playbook.yml"
-        inventory = "inventory.yml"
-        os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
-            zoau,
-            cut_python_path,
-            python_version
-        )), playbook))
-        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
-            hosts,
-            ssh_key,
-            user,
-            python_path
-        )), inventory))
-        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
-            inventory,
-            playbook,
-        )
-        stdout = os.system(command)
-        assert stdout == 0
-    finally:
-        os.remove("inventory.yml")
-        os.remove("playbook.yml")

@@ -250,7 +250,6 @@ template_parameters
     | **default**: \\n
     | **choices**: \\n, \\r, \\r\\n
 
-
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 
@@ -582,6 +581,7 @@ jobs
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
                 "origin_node": "STL1",
+                "owner": "OMVSADM",
                 "priority": 1,
                 "program_name": "IEBGENER",
                 "queue_position": 3,

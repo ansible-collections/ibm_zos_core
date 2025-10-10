@@ -494,6 +494,32 @@ Examples
          skip_encoding:
            - "USER.ARCHIVE2.TEST"
 
+   - name: Encode the source data set into Latin-1 before archiving into a terse data set
+     zos_archive:
+       src: "USER.ARCHIVE.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+
+   - name: Encode and archive multiple data sets but skip encoding for a few.
+     zos_archive:
+       src:
+         - "USER.ARCHIVE1.TEST"
+         - "USER.ARCHIVE2.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+         format_options:
+           use_adrdssu: true
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+         skip_encoding:
+           - "USER.ARCHIVE2.TEST"
+
 
 
 

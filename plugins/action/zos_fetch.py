@@ -39,7 +39,7 @@ SUPPORTED_DS_TYPES = frozenset({
 display = Display()
 
 
-def _update_result(result, src, dest, ds_type="USS", is_binary=False):
+def _update_result(result, src, dest, ds_type="USS", binary=False):
     """ Helper function to update output result with the provided values """
     data_set_types = {
         "PS": "Sequential",
@@ -60,7 +60,7 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
             "src": src,
             "dest": dest,
             "data_set_type": data_set_types[ds_type],
-            "is_binary": is_binary,
+            "binary": binary,
         }
     )
     return updated_result
@@ -122,7 +122,7 @@ class ActionModule(ActionBase):
         encoding = self._task.args.get('encoding', None)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         fail_on_missing = _process_boolean(self._task.args.get('fail_on_missing'), default=True)
-        is_binary = _process_boolean(self._task.args.get('is_binary'))
+        binary = _process_boolean(self._task.args.get('binary'))
         ignore_sftp_stderr = _process_boolean(
             self._task.args.get("ignore_sftp_stderr"), default=True
         )
@@ -193,7 +193,7 @@ class ActionModule(ActionBase):
             result = dict(
                 src="",
                 dest="",
-                is_binary=False,
+                binary=False,
                 checksum="",
                 changed=False,
                 data_set_type="",
@@ -208,7 +208,7 @@ class ActionModule(ActionBase):
             # Populate it with the modules response
             result["src"] = fetch_res.get("src")
             result["dest"] = fetch_res.get("dest")
-            result["is_binary"] = fetch_res.get("is_binary", False)
+            result["binary"] = fetch_res.get("binary", False)
             result["checksum"] = fetch_res.get("checksum")
             result["changed"] = fetch_res.get("changed", False)
             result["data_set_type"] = fetch_res.get("data_set_type")
@@ -334,7 +334,7 @@ class ActionModule(ActionBase):
                     result.update(fetch_content)
                     return result
 
-                if validate_checksum and ds_type != "GDG" and ds_type != "PO" and not is_binary:
+                if validate_checksum and ds_type != "GDG" and ds_type != "PO" and not binary:
                     new_checksum = _get_file_checksum(dest)
                     result["changed"] = local_checksum != new_checksum
                     result["checksum"] = new_checksum
@@ -362,7 +362,7 @@ class ActionModule(ActionBase):
 
         finally:
             self._remote_cleanup(remote_path, ds_type, encoding)
-        return _update_result(result, src, dest, ds_type, is_binary=is_binary)
+        return _update_result(result, src, dest, ds_type, binary=binary)
 
     def _transfer_remote_content(
         self, dest, remote_path, src_type, ignore_stderr=False

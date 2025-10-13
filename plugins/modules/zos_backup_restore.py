@@ -33,6 +33,54 @@ description:
     backups can be restored to systems where Ansible and ZOAU are not available.
     Conversely, dumps created with ADRDSSU and AMATERSE can be restored using this module.
 options:
+  access:
+    description:
+      - Specifies how the module will access data sets and z/OS UNIX files when
+        performing a backup or restore operation.
+    type: dict
+    required: false
+    suboptions:
+      share:
+        description:
+          - Specifies that the module allow data set read access to other programs
+            while backing up or restoring.
+          - I(share) and C(full_volume) are mutually exclusive; you cannot use both.
+          - Option I(share)is conditionally supported for I(operation=backup) or
+            I(operation=restore).
+          - When I(operation=backup), and source backup is a VSAM data set, the
+            option is only supported for VSAM data sets which are not defined with
+            VSAM SHAREOPTIONS (1,3) or (1,4).
+            - When I(operation=restore), and restore target is a VSAM data set or
+            PDSE data set, this option is not supported. Both data set types will
+            be accessed exlusivly preventing reading or writing to the VSAM, PDSE,
+            or PDSE members.
+          - The SHAREOPTIONS for VSAM data sets.
+          - (1) the data set can be shared by multiple programs for read-only
+              processing, or a single program for read and write processing.
+          - (2) the data set can be accessed by multiple programs for read-only
+            processing, and can also be accessed by a program for write processing.
+          - (3) the data set can be shared by multiple programs where each
+            program is responsible for maintaining both read and write data integrity.
+          - (4) the data set can be shared by multiple programs where each program is
+            responsible for maintaining both read and write data integrity differing
+            from (3) in that I/O buffers are updated for each request.
+        type: bool
+        required: false
+        default: false
+      auth:
+        description:
+          - I(auth=true) allows you to act as an administrator, where it will disable
+            checking the current users privileges for z/OS UNIX files, data sets and
+            catalogs.
+          - This is option is supported both, I(operation=backup) and I(operation=restore).
+          - If you are not authorized to use this option, the module ends with an
+            error message.
+          - Some authorization checking for data sets is unavoidable, when when I(auth)
+            is specified because some checks are initiated by services and programs
+            invoked by this module which can not be bypassed.
+        type: bool
+        required: false
+        default: false
   operation:
     description:
       - Used to specify the operation to perform.
@@ -151,26 +199,70 @@ options:
       - If I(operation=backup) and if I(dataset=False) then option I(terse) must be True.
     type: bool
     default: True
-  sms_storage_class:
+  sms:
     description:
-      - When I(operation=restore), specifies the storage class to use. The storage class will
-        also be used for temporary data sets created during restore process.
-      - When I(operation=backup), specifies the storage class to use for temporary data sets
-        created during backup process.
-      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
-        system's Automatic Class Selection (ACS) routines will be used.
-    type: str
-    required: False
-  sms_management_class:
-    description:
-      - When I(operation=restore), specifies the management class to use. The management class
-        will also be used for temporary data sets created during restore process.
-      - When I(operation=backup), specifies the management class to use for temporary data sets
-        created during backup process.
-      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
-        system's Automatic Class Selection (ACS) routines will be used.
-    type: str
-    required: False
+      - Specifies how System Managed Storage (SMS) interacts with the storage class
+        and management class when either backup or restore operations are occurring.
+      - Storage class contains performance and availability attributes related to the storage occupied by the data set.
+        A data set that has a storage class assigned to it is defined as an 'SMS-managed' data set.
+      - Management class contains the data set attributes related to the migration and backup of the data set and the
+        expiration date of the data set. A management class can be assigned only to a data set that also has a
+        storage class assigned.
+    type: dict
+    required: false
+    suboptions:
+      storage_class:
+        description:
+          - When I(operation=restore), specifies the storage class to use. The storage class will
+            also be used for temporary data sets created during restore process.
+          - When I(operation=backup), specifies the storage class to use for temporary data sets
+            created during backup process.
+          - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
+            system's Automatic Class Selection (ACS) routines will be used.
+        type: str
+        required: False
+      management_class:
+        description:
+          - When I(operation=restore), specifies the management class to use. The management class
+            will also be used for temporary data sets created during restore process.
+          - When I(operation=backup), specifies the management class to use for temporary data sets
+            created during backup process.
+          - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
+            system's Automatic Class Selection (ACS) routines will be used.
+        type: str
+        required: False
+      disable_automatic_class:
+        description:
+          - Specifies that the automatic class selection (ACS) routines will not be
+            used to determine the target data set class names for the provided list.
+          - The list must contain fully or partially qualified data set names.
+          - To include all selected data sets, "**" in a list.
+          - You must have READ access to RACF FACILITY class profile
+            `STGADMIN.ADR.RESTORE.BYPASSACS` to use this option.
+        type: list
+        elements: str
+        required: false
+        default: []
+      disable_automatic_storage_class:
+        description:
+          - Specifies that automatic class selection (ACS) routines will not be used
+            to determine the source data set storage class.
+          - Enabling I(disable_automatic_storage_class) ensures ACS is null.
+          - I(storage_class) and I(disable_automatic_storage_class) are mutually exclusive; you cannot use both.
+          - The combination of I(disable_automatic_storage_class) and C(disable_automatic_class=[dsn,dsn1,...])
+            ensures the selected data sets will not be SMS-managed.
+        type: bool
+        required: false
+        default: false
+      disable_automatic_management_class:
+        description:
+          - Specifies that automatic class selection (ACS) routines will not be used
+            to determine the source data set management class.
+          - Enabling I(disable_automatic_storage_class) ensures ACS is null.
+          - I(management_class) and I(disable_automatic_management_class) are mutually exclusive; you cannot use both.
+        type: bool
+        required: false
+        default: false
   space:
     description:
       - If I(operation=backup), specifies the amount of space to allocate for the backup.
@@ -385,11 +477,37 @@ EXAMPLES = r"""
     operation: restore
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
-    sms_storage_class: DB2SMS10
-    sms_management_class: DB2SMS10
+    sms:
+      storage_class: DB2SMS10
+      management_class: DB2SMS10
+
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Disable for all datasets SMS storage and management classes data sets.
+  zos_backup_restore:
+    operation: restore
+    volume: MYVOL2
+    backup_name: /tmp/temp_backup.dzp
+    sms:
+      disable_automatic_class:
+        - "**"
+      disable_automatic_storage_class: true
+      disable_automatic_management_class: true
+
+- name: Restore data sets from backup stored in the MVS file MY.BACKUP.DZP
+    Disable for al some datasets SMS storage and management classes data sets.
+  zos_backup_restore:
+    operation: restore
+    volume: MYVOL2
+    backup_name: MY.BACKUP.DZP
+    sms:
+      disable_automatic_class:
+        - "ANSIBLE.TEST.**"
+        - "**.ONE.**"
+      disable_automatic_storage_class: true
+      disable_automatic_management_class: true
 
 - name: Backup all data sets matching the pattern USER.VSAM.** to z/OS UNIX
-     file /tmp/temp_backup.dzp and ensure the VSAM alternate index are preserved.
+    file /tmp/temp_backup.dzp and ensure the VSAM alternate index are preserved.
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -397,7 +515,16 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     index: true
 
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp
+    whether they exist or not and do so as authorized disabling any security checks.
+  zos_backup_restore:
+    operation: restore
+    backup_name: /tmp/temp_backup.dzp
+    access:
+      auth: true
+      share: true
 """
+
 RETURN = r"""
 changed:
   description:
@@ -451,6 +578,14 @@ def main():
     """
     result = dict(changed=False, message="", backup_name="")
     module_args = dict(
+        access=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                share=dict(type='bool', default=False),
+                auth=dict(type='bool', default=False)
+            )
+        ),
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
         data_sets=dict(
             required=False,
@@ -470,8 +605,17 @@ def main():
         overwrite=dict(type="bool", default=False),
         compress=dict(type="bool", default=False),
         terse=dict(type="bool", default=True),
-        sms_storage_class=dict(type="str", required=False),
-        sms_management_class=dict(type="str", required=False),
+        sms=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                storage_class=dict(type="str", required=False),
+                management_class=dict(type="str", required=False),
+                disable_automatic_class=dict(type="list", elements="str", required=False, default=[]),
+                disable_automatic_storage_class=dict(type="bool", required=False, default=False),
+                disable_automatic_management_class=dict(type="bool", required=False, default=False),
+            )
+        ),
         hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
@@ -493,18 +637,20 @@ def main():
         overwrite = params.get("overwrite")
         compress = params.get("compress")
         terse = params.get("terse")
-        sms_storage_class = params.get("sms_storage_class")
-        sms_management_class = params.get("sms_management_class")
+        sms = params.get("sms")
         hlq = params.get("hlq")
         tmp_hlq = params.get("tmp_hlq")
-
-        # 2.0 redesign extra ADRDSSU keywords
         sphere = params.get("index")
+        access = params.get('access')
 
-        # extra keyword supported by ZOAU but not part of their signature.
-        keywords = {}
-        if sphere:
-            keywords.update(sphere=None)
+        if sms and bool(sms.get("storage_class")) and sms.get("disable_automatic_storage_class"):
+            module.fail_json(msg="storage_class and disable_automatic_storage_class are mutually exclusive, only one can be use by operation.")
+
+        if sms and bool(sms.get("management_class")) and sms.get("disable_automatic_management_class"):
+            module.fail_json(msg="management_class and disable_automatic_management_class are mutually exclusive, only one can be use by operation.")
+
+        if access and access.get("share") and full_volume:
+            module.fail_json(msg="access.share cannot be used with full_volume. These options are mutually exclusive.")
 
         if operation == "backup":
             backup(
@@ -520,10 +666,10 @@ def main():
                 recover=recover,
                 space=space,
                 space_type=space_type,
-                sms_storage_class=sms_storage_class,
-                sms_management_class=sms_management_class,
+                sms=sms,
                 tmp_hlq=tmp_hlq,
-                keywords=keywords,
+                sphere=sphere,
+                access=access,
             )
         else:
             restore(
@@ -538,10 +684,10 @@ def main():
                 hlq=hlq,
                 space=space,
                 space_type=space_type,
-                sms_storage_class=sms_storage_class,
-                sms_management_class=sms_management_class,
+                sms=sms,
                 tmp_hlq=tmp_hlq,
-                keywords=keywords,
+                sphere=sphere,
+                access=access,
             )
         result["backup_name"] = backup_name
         result["changed"] = True
@@ -585,6 +731,14 @@ def parse_and_validate_args(params):
         The updated params after additional parsing and validation.
     """
     arg_defs = dict(
+        access=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                share=dict(type='bool', default=False),
+                auth=dict(type='bool', default=False)
+            )
+        ),
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
         data_sets=dict(
             required=False,
@@ -614,8 +768,17 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         compress=dict(type="bool", default=False),
         terse=dict(type="bool", default=True),
-        sms_storage_class=dict(type=sms_type, required=False),
-        sms_management_class=dict(type=sms_type, required=False),
+        sms=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                storage_class=dict(type=sms_type, required=False),
+                management_class=dict(type=sms_type, required=False),
+                disable_automatic_class=dict(type="list", elements="str", required=False, default=[]),
+                disable_automatic_storage_class=dict(type="bool", required=False),
+                disable_automatic_management_class=dict(type="bool", required=False),
+            )
+        ),
         hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
@@ -642,10 +805,10 @@ def backup(
     recover,
     space,
     space_type,
-    sms_storage_class,
-    sms_management_class,
+    sms,
     tmp_hlq,
-    keywords,
+    sphere,
+    access,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -675,14 +838,14 @@ def backup(
         Specifies the amount of space to allocate for the backup.
     space_type : str
         The unit of measurement to use when defining data set space.
-    sms_storage_class : str
-        Specifies the storage class to use.
-    sms_management_class : str
-        Specifies the management class to use.
+    sms : dict
+        Specifies how System Managed Storage (SMS) interacts with the storage class.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    keywords : dict
+    sphere : dict
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
+    access : dict
+        Specifies keywords for share and administration permission.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -701,10 +864,10 @@ def restore(
     hlq,
     space,
     space_type,
-    sms_storage_class,
-    sms_management_class,
+    sms,
     tmp_hlq,
-    keywords,
+    sphere,
+    access,
 ):
     """Restore data sets or a volume from the backup.
 
@@ -736,14 +899,14 @@ def restore(
         created during the restore process.
     space_type : str
         The unit of measurement to use when defining data set space.
-    sms_storage_class : str
-        Specifies the storage class to use.
-    sms_management_class : str
-        Specifies the management class to use.
+    sms : dict
+        Specifies how System Managed Storage (SMS) interacts with the storage class.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    keywords : dict
+    sphere : dict
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
+    access : dict
+        Specifies keywords for share and administration permission.
 
     Raises
     ------
@@ -769,6 +932,70 @@ def restore(
         raise zoau_exceptions.ZOAUException(
             "{0}, RC={1}".format(output, rc)
         )
+
+
+def set_adrdssu_keywords(sphere, sms=None, access=None):
+    """Set the values for special keywords, dunzip use key value for most special words.
+
+    Parameters
+    ----------
+        sms : dict
+          Dictionary of key value of management an storage class.
+        sphere : bool
+          Value if sphere will be use on dictionary for VSAM.
+        access : dict
+          Dictionary of key values for management classes.
+    Returns
+    -------
+        keywords : dict
+          Dictionary with key value paris.
+    """
+    keywords = {}
+
+    if sphere:
+        keywords.update(sphere=None)
+
+    if sms:
+        if sms.get("disable_automatic_management_class"):
+            sms["management_class"] = "NULLMGMTCLAS"
+
+        if sms.get("disable_automatic_storage_class"):
+            sms["storage_class"] = "NULLSTORCLAS"
+
+        if len(sms.get("disable_automatic_class")) > 0:
+            bypassacs = set_bypassacs_str(sms.get("disable_automatic_class"))
+            keywords.update(bypass_acs=bypassacs)
+
+    if access:
+        if access.get("auth"):
+            keywords.update(ADMINISTRATOR="ADMINistrator")
+
+        if access.get("share"):
+            keywords.update(SHARE="SHAre")
+
+    return keywords
+
+
+def set_bypassacs_str(ds):
+    """_summary_
+
+    Parameters
+    ----------
+        ds : list
+          List of datasets to be use.
+
+    Returns
+    -------
+        str : Datasets on str format.
+    """
+    datasets = ""
+    if len(ds) > 0:
+        for dataset in ds:
+            if dataset == "**":
+                return "**"
+            datasets += f"{datasets} "
+
+    return datasets
 
 
 def get_real_rc(output):
@@ -1053,12 +1280,6 @@ def to_dzip_args(**kwargs):
     if kwargs.get("terse"):
         zoau_args["terse"] = kwargs.get("terse")
 
-    if kwargs.get("sms_storage_class"):
-        zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
-
-    if kwargs.get("sms_management_class"):
-        zoau_args["management_class_name"] = kwargs.get("sms_management_class")
-
     if kwargs.get("space"):
         size = str(kwargs.get("space"))
         if kwargs.get("space_type"):
@@ -1068,8 +1289,18 @@ def to_dzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
-    if kwargs.get("keywords"):
-        zoau_args["keywords"] = kwargs.get("keywords")
+    sms = kwargs.get("sms")
+    keywords = set_adrdssu_keywords(sphere=kwargs.get("sphere"), sms=sms)
+
+    if sms:
+        if sms.get("storage_class"):
+            zoau_args["storage_class_name"] = sms.get("storage_class")
+
+        if sms.get("management_class"):
+            zoau_args["management_class_name"] = sms.get("management_class")
+
+    if keywords:
+        zoau_args["keywords"] = keywords
 
     return zoau_args
 
@@ -1110,12 +1341,6 @@ def to_dunzip_args(**kwargs):
         zoau_args["overwrite"] = kwargs.get("overwrite")
 
     sms_specified = False
-    if kwargs.get("sms_storage_class"):
-        zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
-
-    if kwargs.get("sms_management_class"):
-        zoau_args["management_class_name"] = kwargs.get("sms_management_class")
-
     if sms_specified:
         zoau_args["sms_for_tmp"] = True
 
@@ -1134,8 +1359,36 @@ def to_dunzip_args(**kwargs):
         zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))
         zoau_args["keep_original_hlq"] = False
 
-    if kwargs.get("keywords"):
-        zoau_args["keywords"] = kwargs.get("keywords")
+    sms = kwargs.get("sms")
+    access = kwargs.get("access")
+    keywords = set_adrdssu_keywords(sphere=kwargs.get("sphere"))
+
+    if sms:
+        if sms.get("sms_storage_class"):
+            zoau_args["storage_class_name"] = sms.get("storage_class")
+
+        if sms.get("sms_management_class"):
+            zoau_args["management_class_name"] = sms.get("management_class")
+
+        if sms.get("disable_automatic_management_class"):
+            zoau_args["null_management_class"] = sms.get("disable_automatic_management_class")
+
+        if sms.get("disable_automatic_storage_class"):
+            zoau_args["null_storage_class"] = sms.get("disable_automatic_storage_class")
+
+        if len(sms.get("disable_automatic_class")) > 0:
+            bypassacs = set_bypassacs_str(ds=sms.get("disable_automatic_class"))
+            zoau_args["bypass_acs"] = bypassacs
+
+    if access:
+        if access.get("auth"):
+            zoau_args['admin'] = access.get("auth")
+
+        if access.get("share"):
+            zoau_args['share'] = access.get("share")
+
+    if keywords:
+        zoau_args["keywords"] = keywords
 
     return zoau_args
 

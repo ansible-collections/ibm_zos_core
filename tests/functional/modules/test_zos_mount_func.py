@@ -38,6 +38,12 @@ SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
     SECURITY
 """
 
+TEXT_TO_KEEP = """/* Service path                                                    */
+MOUNT FILESYSTEM('{0}')
+    TYPE(ZFS) MODE(RDWR) AUTOMOVE
+    MOUNTPOINT('/Service')
+"""
+
 SHELL_EXECUTABLE = "/bin/sh"
 
 
@@ -198,7 +204,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        is_binary=True,
+        binary=True,
     )
     hosts.all.shell(
         cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
@@ -214,7 +220,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
+        binary=True,
         remote_src=True,
     )
 
@@ -271,7 +277,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
+        binary=True,
         remote_src=True,
     )
 
@@ -315,6 +321,75 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
             stdin="",
         )
 
+def test_basic_mount_with_persistent_keep_dataset(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
+
+    tmp_file_filename = "/tmp/testfile.txt"
+
+    hosts.all.shell(
+        cmd="touch {0}".format(tmp_file_filename)
+    )
+
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO1)"
+
+    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=TEXT_TO_KEEP.format(srcfn))
+
+    hosts.all.shell(
+        cmd="dtouch -tpdse {0}".format(dest)
+    )
+
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        binary=True,
+        remote_src=True,
+    )
+
+    try:
+        mount_result = hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="mounted",
+            persistent=dict(name=dest_path),
+        )
+
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("changed") is True
+
+        result_cat = hosts.all.shell(
+            cmd="dcat '{0}'".format(dest_path),
+        )
+
+        for result in result_cat.contacted.values():
+            print(result)
+            assert srcfn in result.get("stdout")
+            assert "Service path" in result.get("stdout")
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.shell(
+            cmd="drm " + dest,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
 def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
@@ -326,13 +401,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        is_binary=True,
-    )
-    # Make it readable at console
-    hosts.all.shell(
-        cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin="",
     )
 
     # Dump the values of the file once copied to the target(s)
@@ -356,7 +424,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        is_binary=True,
         remote_src=True,
     )
 
@@ -375,25 +442,16 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
                 marker=["bpxtablemarker - try this", "second line of marker"],
             ),
         )
-        # copying from dataset to make editable copy on target
-        test_tmp_file_filename = tmp_file_filename + "-a"
 
-        hosts.all.zos_copy(
-            src=dest_path,
-            dest=test_tmp_file_filename,
-            is_binary=True,
-            remote_src=True,
-        )
         results = hosts.all.shell(
-            cmd="cat " + test_tmp_file_filename, executable=SHELL_EXECUTABLE, stdin=""
+            cmd="dcat '{0}'".format(dest_path),
         )
-        data = ""
-        for result in results.values():
+
+        for result in results.contacted.values():
             print("\nbcb-postmount result: {0}\n".format(result.get("stdout")))
             data += result.get("stdout")
 
         print("\n====================================================\n")
-
         for result in mount_result.values():
             assert result.get("rc") == 0
             assert result.get("changed") is True
@@ -414,7 +472,6 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
         )
 
         hosts.all.file(path=tmp_file_filename, state="absent")
-        hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
         hosts.all.shell(cmd=f"drm {dest}")
 

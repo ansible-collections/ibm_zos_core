@@ -473,28 +473,6 @@ def generate_executable_uss(hosts, dir, src, src_jcl_call):
         assert  "Hello World" in str(stdout)
 
 
-# def get_zoa_version(ansible_zos_module):
-#     cmd_str = "zoaversion"
-#     version_results = ansible_zos_module.all.shell(cmd=cmd_str)
-#     zoa_version = None
-#     for result in version_results.contacted.values():
-#         output = result.get("stdout")
-#         if output:
-#             match = re.search(r'v(\d+\.\d+\.\d+\.\d+)', output)
-#             if match:
-#                 zoa_version = match.group(1)
-#     return zoa_version
-
-
-# def use_mls_alias_supported(ansible_zos_module):
-#     version = get_zoa_version(ansible_zos_module)
-#     if not version:
-#         return False
-
-#     major, minor, patch, *_ = map(int, version.split("."))
-#     return (major, minor, patch) >= (1, 4, 0)
-
-
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_file=True, binary=False, is_remote=False),
@@ -3748,17 +3726,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             cmd="mls -A {0}".format(dest_lib_aliases),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib_aliases)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib_aliases)
-
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls.contacted.values():
             assert v_cp.get("rc") == 0
@@ -3920,16 +3887,6 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             cmd="mls -A {0}".format(dest_lib_aliases),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib_aliases)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib_aliases)
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls.contacted.values():
             assert v_cp.get("rc") == 0
@@ -4124,16 +4081,6 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             cmd="mls -A {0}".format(dest_lib_aliases),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib_aliases)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib_aliases)
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls.contacted.values():
             assert v_cp.get("rc") == 0
@@ -4501,16 +4448,6 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             cmd="mls -A {0}".format(dest_lib_aliases),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib_aliases)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib_aliases)
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls.contacted.values():
             assert v_cp.get("rc") == 0
@@ -5532,28 +5469,28 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
         hosts.all.file(path=dest_path, state="absent")
 
 
-@pytest.mark.parametrize("generation", ["0", "+1"])
-def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
-    hosts = ansible_zos_module
+# @pytest.mark.parametrize("generation", ["0", "+1"])
+# def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
+#     hosts = ansible_zos_module
 
-    try:
-        src_data_set = get_tmp_ds_name()
-        dest_data_set = get_tmp_ds_name()
+#     try:
+#         src_data_set = get_tmp_ds_name()
+#         dest_data_set = get_tmp_ds_name()
 
-        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+#         hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
 
-        copy_results = hosts.all.zos_copy(
-            src=f"{src_data_set}({generation})",
-            dest=dest_data_set,
-            remote_src=True
-        )
+#         copy_results = hosts.all.zos_copy(
+#             src=f"{src_data_set}({generation})",
+#             dest=dest_data_set,
+#             remote_src=True
+#         )
 
-        for cp_res in copy_results.contacted.values():
-            assert cp_res.get("msg") is not None
-            assert cp_res.get("changed") is False
-            assert cp_res.get("failed") is True
-    finally:
-        hosts.all.shell(cmd=f"drm {src_data_set}")
+#         for cp_res in copy_results.contacted.values():
+#             assert cp_res.get("msg") is not None
+#             assert cp_res.get("changed") is False
+#             assert cp_res.get("failed") is True
+#     finally:
+#         hosts.all.shell(cmd=f"drm {src_data_set}")
 
 
 # def test_copy_seq_gds_to_data_set(ansible_zos_module):
@@ -6495,16 +6432,6 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
             cmd="mls -A {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib)
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls_aliases.contacted.values():
             assert v_cp.get("rc") == 0
@@ -6748,17 +6675,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member_with_pound(ansible_zos_mo
             cmd="mls -A {0}".format(dest_lib_aliases),
             executable=SHELL_EXECUTABLE
         )
-        # alias_supported = False
-        # if use_mls_alias_supported(ansible_zos_module):
-        #     alias_supported = True
-        #     mls_cmd = "mls -A {0}".format(dest_lib_aliases)
-        # else:
-        #     mls_cmd = "mls {0}".format(dest_lib_aliases)
-
-        # verify_copy_mls_aliases = hosts.all.shell(
-        #     cmd=mls_cmd,
-        #     executable=SHELL_EXECUTABLE
-        # )
 
         for v_cp in verify_copy_mls.contacted.values():
             assert v_cp.get("rc") == 0

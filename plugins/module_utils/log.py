@@ -30,7 +30,7 @@ class SingletonLogger:
             cls._instance._initialize_logger()
         return cls._instance
 
-    def _initialize_logger(self, log_file_path):
+    def _initialize_logger(self):
         """
         Initialize the logger configuration.
 
@@ -42,8 +42,8 @@ class SingletonLogger:
         self.logger.setLevel(logging.INFO)
 
         if not self.logger.handlers:
-            stream_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
+            stream_handler = logging.StreamHandler()
+            formatter = logging.Formatter("AnsibleCoreLogger %(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
             stream_handler.setFormatter(formatter)
             self.logger.addHandler(stream_handler)
 
@@ -68,6 +68,6 @@ class SingletonLogger:
             # logger and another the handler, the logger might log certain
             # message but if the handler is not configured to the same level
             # the message won't show up.
-            logger.setLevel(logging.DEBUG)
+            self.logger.setLevel(logging.DEBUG)
         return self.logger
 

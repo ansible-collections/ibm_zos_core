@@ -224,7 +224,8 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    backup as Backup
+    backup as Backup,
+    zoau_version_checker,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -665,9 +666,14 @@ def run_module():
                 pass
             content = [line.rstrip() for line in full_text]
             full_text = "\n".join(content)
-            rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
-            if rc_write != 0:
-                raise Exception("Non zero return code from datasets.write.")
+            if zoau_version_checker.is_zoau_version_higher_than("1.4.0"):
+                rc_write = datasets.write(dataset_name=src, content=full_text)
+                if rc_write is not None:
+                    raise Exception("Non zero return code from datasets.write.")
+            else:
+                rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
         except Exception as e:
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",

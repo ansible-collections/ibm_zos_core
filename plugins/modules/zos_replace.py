@@ -665,7 +665,7 @@ def run_module():
                 pass
             content = [line.rstrip() for line in full_text]
             full_text = "\n".join(content)
-            rc_write = datasets.write(dataset_name=src, content=full_text, append=True)
+            rc_write = datasets.write(dataset_name=src, content=full_text)
             if rc_write is not None:
                 raise Exception("None was not returned from datasets.write.")
         except Exception as e:
@@ -722,4 +722,3 @@ def main():
 
 if __name__ == '__main__':
     main()
- 

@@ -667,7 +667,7 @@ def run_module():
             full_text = "\n".join(content)
             rc_write = datasets.write(dataset_name=src, content=full_text, append=True)
             if rc_write is not None:
-                raise Exception("Non zero return code from datasets.write.")
+                raise Exception("None was not returned from datasets.write.")
         except Exception as e:
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",

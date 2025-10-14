@@ -531,7 +531,7 @@ def open_file(file, encoding, uss):
     else:
         with zoau_io.RecordIO(f"//'{file}'") as dataset_read:
             dataset_content = dataset_read.readrecords()
-        decode_list = [codecs.decode(record, encoding) for record in dataset_content]
+        decode_list = [codecs.decode(record, encoding).rstrip() for record in dataset_content]
 
     return decode_list
 

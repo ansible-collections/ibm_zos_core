@@ -2819,10 +2819,7 @@ def resolve_data_set_names(dataset, disposition, type):
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
-                if type:
-                    return str(datasets.create(dataset, type).name), "shr"
-                else:
-                    return str(datasets.create(dataset, "seq").name), "shr"
+              return str(datasets.create(dataset).name), "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:

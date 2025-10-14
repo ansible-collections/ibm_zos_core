@@ -1263,7 +1263,7 @@ def run_module(module):
 
     if pds_paths is not None:
         module.deprecate(
-            msg="The 'pds_pattern' parameter and aliases is deprecated and will be removed \
+            msg="The 'pds_pattern' option and its aliases are deprecated and will be removed. \
             On newer versions, to search for a specific member put a regex between parenthesis",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',

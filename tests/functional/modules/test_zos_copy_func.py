@@ -1440,7 +1440,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
         if backup_name_result:
             hosts.all.file(path=backup_name_result, state="absent")
 
-
+# [Enabler] zos_copy test case failing in SPS test_copy_file_insufficient_read_permission_fails #2366
 @pytest.mark.uss
 def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
@@ -5468,7 +5468,7 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
     finally:
         hosts.all.file(path=dest_path, state="absent")
 
-# All test cases is commented out due to issues with GDS #2280
+# All gds test cases is commented out due to issues with GDS #2280
 # @pytest.mark.parametrize("generation", ["0", "+1"])
 # def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
 #     hosts = ansible_zos_module

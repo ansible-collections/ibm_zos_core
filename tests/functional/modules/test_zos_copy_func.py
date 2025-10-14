@@ -3346,9 +3346,8 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
     dict(type="seq", replace=False),
     dict(type="seq", replace=True),
     dict(type="pds", replace=False),
-    # two arguments are commented out due to error EDC5140I Broken pipe #2042
-    # dict(type="pds", replace=True),
-    # dict(type="pdse", replace=False),
+    dict(type="pds", replace=True),
+    dict(type="pdse", replace=False),
     dict(type="pdse", replace=True)
 ])
 def test_copy_data_set_to_existing_member(ansible_zos_module, args):

@@ -5468,7 +5468,7 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
     finally:
         hosts.all.file(path=dest_path, state="absent")
 
-
+# All test cases is commented out due to issues with GDS #2280
 # @pytest.mark.parametrize("generation", ["0", "+1"])
 # def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
 #     hosts = ansible_zos_module

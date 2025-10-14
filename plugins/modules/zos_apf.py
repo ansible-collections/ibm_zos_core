@@ -541,7 +541,7 @@ def main():
 
         if persistent_param.get('data_set_name') is not None:
             module.deprecate(
-                msg="The 'persistent.data_set_name' parameter will be deprecated. Please use 'persistent.target' instead.",
+                msg="The 'persistent.data_set_name' option will be deprecated. Please use 'persistent.target' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )

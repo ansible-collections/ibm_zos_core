@@ -70,4 +70,3 @@ class SingletonLogger:
             # the message won't show up.
             self.logger.setLevel(logging.DEBUG)
         return self.logger
-

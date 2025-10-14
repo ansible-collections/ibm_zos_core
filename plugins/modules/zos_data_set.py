@@ -291,22 +291,17 @@ options:
     default: false
   scratch:
     description:
-      - Sets the I(scratch) attribute for Generation Data Groups.
-      - Specifies what action is to be taken for a generation data set located on disk
+      - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+      - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+      - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
+        This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+      - When C(state=present) option B(scratch) sets the I(scratch) attribute for Generation Data Groups and is
+        ignored for any other data set type.
+      - When C(state=present) and C(type=GDG) specifies what action is to be taken for a generation data set located on disk
         volumes when the data set is uncataloged from the GDG base as a result of
         EMPTY/NOEMPTY processing.
     type: bool
     required: false
-    default: false
-  noscratch:
-    description:
-      - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-        The Data Set Control Block is not removed from the VTOC.
-      - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-    type: bool
-    required: false
-    default: false
   volumes:
     description:
       - >
@@ -584,15 +579,6 @@ options:
         type: bool
         required: false
         default: false
-      noscratch:
-        description:
-          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-          - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-            The Data Set Control Block is not removed from the VTOC.
-          - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-        type: bool
-        required: false
-        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -627,13 +613,13 @@ options:
         default: false
       scratch:
         description:
-          - Sets the I(scratch) attribute for Generation Data Groups.
-          - Specifies what action is to be taken for a generation data set located on disk
-            volumes when the data set is uncataloged from the GDG base as a result of
-            EMPTY/NOEMPTY processing.
+          - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+          - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+          - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
+            This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+          - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
         type: bool
         required: false
-        default: false
       volumes:
         description:
           - >
@@ -755,8 +741,9 @@ EXAMPLES = r"""
 - name: Uncatalog a data set but do not remove it from the volume.
   zos_data_set:
     name: someds.name.here
+    type: seq
     state: absent
-    noscratch: true
+    scratch: false
 
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:
@@ -1461,7 +1448,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     elif state == "absent" and data_set.data_set_type == "member":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_absent(force=force)
+        changed = data_set.ensure_absent(force=force, noscratch=noscratch)
     elif state == "absent":
         changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
     elif state == "cataloged":
@@ -1592,8 +1579,7 @@ def parse_and_validate_args(params):
                 ),
                 scratch=dict(
                     type="bool",
-                    required=False,
-                    default=False
+                    required=False
                 ),
                 extended=dict(
                     type="bool",
@@ -1606,11 +1592,6 @@ def parse_and_validate_args(params):
                     default=False
                 ),
                 force=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
-                noscratch=dict(
                     type="bool",
                     required=False,
                     default=False,
@@ -1685,7 +1666,7 @@ def parse_and_validate_args(params):
         limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1701,11 +1682,6 @@ def parse_and_validate_args(params):
             default=None
         ),
         force=dict(
-            type="bool",
-            required=False,
-            default=False,
-        ),
-        noscratch=dict(
             type="bool",
             required=False,
             default=False,
@@ -1735,6 +1711,16 @@ def parse_and_validate_args(params):
         key: value for key, value in parsed_args.items() if value is not None
     }
     return parsed_args
+
+
+def determine_scratch(data_set_params):
+    scratch = data_set_params.get("scratch")
+    if scratch is None:
+        if data_set_params.get("type") == "gdg" and data_set_params.get("state") == "present":
+            scratch = False
+        elif data_set_params.get("state") == "absent":
+            scratch = True
+    return scratch
 
 
 def run_module():
@@ -1813,16 +1799,11 @@ def run_module():
                 limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False, default=False),
                 purge=dict(type="bool", required=False, default=False),
-                scratch=dict(type="bool", required=False, default=False),
+                scratch=dict(type="bool", required=False,),
                 extended=dict(type="bool", required=False, default=False),
                 fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
-                noscratch=dict(
                     type="bool",
                     required=False,
                     default=False,
@@ -1888,7 +1869,7 @@ def run_module():
         limit=dict(type="int", required=False, no_log=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1903,11 +1884,6 @@ def run_module():
             default=None
         ),
         force=dict(
-            type="bool",
-            required=False,
-            default=False
-        ),
-        noscratch=dict(
             type="bool",
             required=False,
             default=False
@@ -1959,6 +1935,7 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
+                data_set_params["noscratch"] = not determine_scratch(data_set_params)
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(

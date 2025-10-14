@@ -55,7 +55,7 @@ format
   | **type**: dict
 
 
-  name
+  type
     The compression format to use.
 
     | **required**: False
@@ -64,15 +64,15 @@ format
     | **choices**: bz2, gz, tar, zip, terse, xmit, pax
 
 
-  format_options
+  options
     Options specific to a compression format.
 
     | **required**: False
     | **type**: dict
 
 
-    terse_pack
-      Compression option for use with the terse format, *name=terse*.
+    spack
+      Compression option for use with the terse format, *type=terse*.
 
       Pack will compress records in a data set so that the output results in lossless data compression.
 
@@ -81,8 +81,8 @@ format
       Spack will produce smaller output and take approximately 3 times longer than pack compression.
 
       | **required**: False
-      | **type**: str
-      | **choices**: pack, spack
+      | **type**: bool
+      | **default**: True
 
 
     xmit_log_data_set
@@ -98,7 +98,7 @@ format
       | **type**: str
 
 
-    use_adrdssu
+    adrdssu
       If set to true, the ``zos_archive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before using ``xmit`` or ``terse``.
 
       | **required**: False
@@ -339,6 +339,46 @@ force
   | **default**: False
 
 
+encoding
+  Specifies the character encoding conversion to be applied to the source files before archiving.
+
+  Supported character sets rely on the charset conversion utility ``iconv`` version the most common character sets are supported.
+
+  After conversion the files are stored in same location and name as src and the same src is taken in consideration for archive.
+
+  Source files will be converted to the new encoding and will not be restored to their original encoding.
+
+  If encoding fails for any file in a set of multiple files, an exception will be raised and archiving will be skipped.
+
+  The original files in ``src`` will be converted. The module will revert the encoding conversion after a successful archive, but no backup will be created. If you need to encode using a backup and then archive take a look at `zos_encode <./zos_encode.html>`_ module.
+
+  | **required**: False
+  | **type**: dict
+
+
+  from
+    The character set of the source *src*.
+
+    | **required**: False
+    | **type**: str
+
+
+  to
+    The destination *dest* character set for the files to be written as.
+
+    | **required**: False
+    | **type**: str
+
+
+  skip_encoding
+    List of names to skip encoding before archiving. This is only used if *encoding* is set, otherwise is ignored.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+
+
+
 
 
 Attributes
@@ -367,7 +407,7 @@ Examples
        src: /tmp/archive/foo.txt
        dest: /tmp/archive/foo_archive_test.tar
        format:
-         name: tar
+         type: tar
 
    # Archive multiple files
    - name: Archive list of files into a zip
@@ -377,7 +417,7 @@ Examples
          - /tmp/archive/bar.txt
        dest: /tmp/archive/foo_bar_archive_test.zip
        format:
-       name: zip
+       type: zip
 
    # Archive one data set into terse
    - name: Archive data set into a terse
@@ -385,7 +425,7 @@ Examples
        src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
+         type: terse
 
    # Use terse with different options
    - name: Archive data set into a terse, specify pack algorithm and use adrdssu
@@ -393,10 +433,10 @@ Examples
        src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
-         format_options:
-           terse_pack: "spack"
-           use_adrdssu: true
+         type: terse
+         options:
+           spack: true
+           adrdssu: true
 
    # Use a pattern to store
    - name: Archive data set pattern using xmit
@@ -405,7 +445,7 @@ Examples
        exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
        dest: "USER.ARCHIVE.RESULT.XMIT"
        format:
-         name: xmit
+         type: xmit
 
    - name: Archive multiple GDSs into a terse
      zos_archive:
@@ -415,18 +455,70 @@ Examples
          - "USER.GDG(-2)"
        dest: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
-         format_options:
-           use_adrdssu: true
+         type: terse
+         options:
+           adrdssu: true
 
    - name: Archive multiple data sets into a new GDS
      zos_archive:
        src: "USER.ARCHIVE.*"
        dest: "USER.GDG(+1)"
        format:
+         type: terse
+         options:
+           adrdssu: true
+
+   - name: Encode the source data set into Latin-1 before archiving into a terse data set
+     zos_archive:
+       src: "USER.ARCHIVE.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         type: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+
+   - name: Encode and archive multiple data sets but skip encoding for a few.
+     zos_archive:
+       src:
+         - "USER.ARCHIVE1.TEST"
+         - "USER.ARCHIVE2.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         type: terse
+         options:
+           adrdssu: true
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+         skip_encoding:
+           - "USER.ARCHIVE2.TEST"
+
+   - name: Encode the source data set into Latin-1 before archiving into a terse data set
+     zos_archive:
+       src: "USER.ARCHIVE.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+
+   - name: Encode and archive multiple data sets but skip encoding for a few.
+     zos_archive:
+       src:
+         - "USER.ARCHIVE1.TEST"
+         - "USER.ARCHIVE2.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
          name: terse
          format_options:
            use_adrdssu: true
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+         skip_encoding:
+           - "USER.ARCHIVE2.TEST"
 
 
 
@@ -437,7 +529,7 @@ Notes
 .. note::
    This module does not perform a send or transmit operation to a remote node. If you want to transport the archive you can use zos_fetch to retrieve to the controller and then zos_copy or zos_unarchive for copying to a remote or send to the remote and then unpack the archive respectively.
 
-   When packing and using ``use_adrdssu`` flag the module will take up to two times the space indicated in ``dest_data_set``.
+   When packing and using ``adrdssu`` flag the module will take up to two times the space indicated in ``dest_data_set``.
 
    tar, zip, bz2 and pax are archived using python ``tarfile`` library which uses the latest version available for each format, for compatibility when opening from system make sure to use the latest available version for the intended format.
 
@@ -457,6 +549,12 @@ See Also
 Return Values
 -------------
 
+
+dest
+  The remote absolute path or data set where the archive was created.
+
+  | **returned**: always
+  | **type**: str
 
 state
   The state of the input ``src``.
@@ -512,5 +610,23 @@ expanded_exclude_sources
   The list of matching exclude paths from the exclude option.
 
   | **returned**: always
+  | **type**: list
+
+encoded
+  List of files or data sets that were successfully encoded.
+
+  | **returned**: success
+  | **type**: list
+
+failed_on_encoding
+  List of files or data sets that were failed while encoding.
+
+  | **returned**: success
+  | **type**: list
+
+skipped_encoding_targets
+  List of files or data sets that were skipped while encoding.
+
+  | **returned**: success
   | **type**: list
 

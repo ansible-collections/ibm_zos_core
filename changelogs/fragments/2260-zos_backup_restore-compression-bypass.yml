@@ -1,0 +1,8 @@
+minor_changes:
+   - zos_backup_restore - Adds ``compress`` option to enable compression of partitioned data sets
+     using hardware compression if available.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2260)
+
+   - zos_backup_restore - Adds ``terse`` option to modify the behavior of executing an AMATERSE
+     step to compress the temporary data set for the backup.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2260)

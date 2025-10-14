@@ -256,7 +256,7 @@ class BetterArgHandler(object):
         return contents
 
     def _basic_dict_type(self, contents, resolve_dependencies):
-        """Resolver for str type arguments.
+        """Resolver for basic dict type arguments.
 
         Parameters
         ----------
@@ -280,7 +280,7 @@ class BetterArgHandler(object):
         if not isinstance(contents, dict):
             raise ValueError('Invalid argument "{0}" for type "dict".'.format(contents))
         return contents
-    
+
     def _str_type(self, contents, resolve_dependencies):
         """Resolver for str type arguments.
 
@@ -359,7 +359,8 @@ class BetterArgHandler(object):
         return contents
 
     def _member_name_type(self, contents, resolve_dependencies):
-        """Resolver for data_set type arguments.
+        """Resolver for PDS/E member name type arguments. This is part of
+           zos_started_task member name validation.
 
         Parameters
         ----------
@@ -391,7 +392,8 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _identifier_name_type(self, contents, resolve_dependencies):
-        """Resolver for data_set type arguments.
+        """Resolver for identifier name type arguments. This is part of
+           zos_started_task identifier name validation.
 
         Parameters
         ----------
@@ -1201,12 +1203,6 @@ class BetterArgParser(object):
             aliases = {}
         arg_aliases.append(arg_name)
         for alternate_name in arg_aliases:
-            if aliases.get(alternate_name, arg_name) != arg_name:
-                raise ValueError(
-                    'Conflicting aliases "{0}" and "{1}" found for name "{2}"'.format(
-                        aliases.get(alternate_name), alternate_name, arg_name
-                    )
-                )
             aliases[alternate_name] = arg_name
         return aliases
 

@@ -89,6 +89,12 @@ state
   If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
 
 
+  If *state=present*, the data set is already cataloged and *volumes* is provided, the module will compare the volumes where it is cataloged against the provided *volumes*. If they don't match, the module will fail with an error indicating the data set is cataloged on a different volume. To resolve this, you must first uncatalog the data set before creating it on the new volume.
+
+
+  If *state=present*, the data set is already cataloged, *volumes* is provided, and the volumes match exactly, no action is taken and the module completes successfully with *changed=False*.
+
+
   | **required**: False
   | **type**: str
   | **default**: present
@@ -299,6 +305,18 @@ scratch
   Sets the *scratch* attribute for Generation Data Groups.
 
   Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
+noscratch
+  When ``state=absent``, specifies whether to keep the data set's entry in the VTOC.
+
+  If ``noscratch=True``, the data set is uncataloged but not physically removed from the volume. The Data Set Control Block is not removed from the VTOC.
+
+  This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
 
   | **required**: False
   | **type**: bool
@@ -592,6 +610,18 @@ batch
     | **default**: False
 
 
+  noscratch
+    When ``state=absent``, specifies whether to keep the data set's entry in the VTOC.
+
+    If ``noscratch=True``, the data set is uncataloged but not physically removed from the volume. The Data Set Control Block is not removed from the VTOC.
+
+    This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
   extended
     Sets the *extended* attribute for Generation Data Groups.
 
@@ -776,6 +806,12 @@ Examples
      zos_data_set:
        name: someds.name.here
        state: absent
+
+   - name: Uncatalog a data set but do not remove it from the volume.
+     zos_data_set:
+       name: someds.name.here
+       state: absent
+       noscratch: true
 
    - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
      zos_data_set:

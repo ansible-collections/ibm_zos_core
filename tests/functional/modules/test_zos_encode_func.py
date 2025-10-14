@@ -245,6 +245,10 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
             assert result.get("dest") == uss_dest_file
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_file}")
         for result in tag_results.contacted.values():
@@ -274,6 +278,9 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
             assert result.get("dest") == uss_dest_path
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_path}/{path.basename(uss_file)}")
         for result in tag_results.contacted.values():
@@ -306,6 +313,9 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             assert result.get("dest") == uss_dest_path
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_path}")
         for result in tag_results.contacted.values():
@@ -338,6 +348,9 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
             assert result.get("dest") == mvs_ps
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
     finally:
         hosts.all.file(path=uss_file, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -349,7 +362,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         hosts.all.zos_data_set(name=mvs_ps, state="present", type="seq")
-        hosts.all.copy(content=TEST_DATA, dest=mvs_ps)
+        hosts.all.zos_copy(content=TEST_DATA, dest=mvs_ps)
         hosts.all.copy(content="test", dest=uss_dest_file)
         results = hosts.all.zos_encode(
             src=mvs_ps,
@@ -365,6 +378,9 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
             assert result.get("dest") == uss_dest_file
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == TO_ENCODING
+            assert result.get("encoding").get("from") == FROM_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_file}")
         for result in tag_results.contacted.values():
@@ -397,6 +413,9 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
             assert result.get("dest") == mvs_ps
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
     finally:
         hosts.all.file(path=uss_file, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -435,6 +454,9 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
             assert result.get("dest") == mvs_pds_member
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
     finally:
         hosts.all.file(path=uss_file, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -455,7 +477,7 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
         hosts.all.zos_data_set(
             name=mvs_pds_member, type="member", state="present"
         )
-        hosts.all.copy(content=TEST_DATA, dest=mvs_pds_member)
+        hosts.all.zos_copy(content=TEST_DATA, dest=mvs_pds_member)
         hosts.all.copy(content="test", dest=uss_dest_file)
         results = hosts.all.zos_encode(
             src=mvs_pds_member,
@@ -471,6 +493,9 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
             assert result.get("dest") == uss_dest_file
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == TO_ENCODING
+            assert result.get("encoding").get("from") == FROM_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_file}")
         for result in tag_results.contacted.values():
@@ -509,6 +534,10 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
             assert result.get("dest") == mvs_ps
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
+
         hosts.all.file(path=uss_dest_path, state="directory")
         results = hosts.all.zos_encode(
             src=mvs_ps,
@@ -524,6 +553,9 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
             assert result.get("dest") == uss_dest_path
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_path}")
         for result in tag_results.contacted.values():
@@ -559,6 +591,9 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
         assert result.get("dest") == mvs_pds_member
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+        assert isinstance(result.get("encoding"), dict)
+        assert result.get("encoding").get("to") == TO_ENCODING
+        assert result.get("encoding").get("from") == FROM_ENCODING
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
 
@@ -575,10 +610,11 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         results = hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
@@ -595,6 +631,9 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             assert result.get("dest") == mvs_vs
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
     finally:
         hosts.all.file(path=temp_jcl_path, state="absent")
         hosts.all.file(path=uss_file, state="absent")
@@ -623,6 +662,9 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             assert result.get("dest") == uss_dest_file
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == TO_ENCODING
+            assert result.get("encoding").get("from") == FROM_ENCODING
 
         tag_results = hosts.all.shell(cmd=f"ls -T {uss_dest_file}")
         for result in tag_results.contacted.values():
@@ -658,6 +700,10 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
         assert result.get("dest") == mvs_ps
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+        assert isinstance(result.get("encoding"), dict)
+        assert result.get("encoding").get("to") == TO_ENCODING
+        assert result.get("encoding").get("from") == FROM_ENCODING
+
     hosts.all.zos_data_set(name=mvs_vs, state="absent")
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
 
@@ -691,6 +737,10 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
         assert result.get("dest") == mvs_pds_member
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+        assert result.get("encoding") is not None
+        assert isinstance(result.get("encoding"), dict)
+        assert result.get("encoding").get("to") == TO_ENCODING
+        assert result.get("encoding").get("from") == FROM_ENCODING
     hosts.all.zos_data_set(name=mvs_vs, state="absent")
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
 
@@ -707,7 +757,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         results = hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
         for result in results.contacted.values():
             assert result.get("jobs") is not None
@@ -728,6 +778,10 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             assert result.get("dest") == mvs_vs
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
     finally:
         hosts.all.file(path=temp_jcl_path, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -755,6 +809,10 @@ def test_uss_encoding_conversion_src_with_special_chars(ansible_zos_module):
             assert result.get("backup_name") is None
             assert result.get("changed") is True
             assert result.get("msg") is None
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == TO_ENCODING
+            assert result.get("encoding").get("from") == FROM_ENCODING
 
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
@@ -813,6 +871,10 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         )
         for enc_res in encode_res.contacted.values():
             assert enc_res.get("backup_name")[:6] == tmphlq
+            assert enc_res.get("encoding") is not None
+            assert isinstance(enc_res.get("encoding"), dict)
+            assert enc_res.get("encoding").get("to") == FROM_ENCODING
+            assert enc_res.get("encoding").get("from") == TO_ENCODING
             contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(enc_res.get("backup_name")))
             hosts.all.file(path=temp_jcl_path, state="absent")
             hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -873,7 +935,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd=f"echo {quote(KSDS_CREATE_JCL.format(mvs_vs))} > {temp_jcl_path}/SAMPLE"
         )
         hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
         hosts.all.file(path=temp_jcl_path, state="absent")
         # submit JCL to populate KSDS
@@ -882,7 +944,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd=f"echo {quote(KSDS_REPRO_JCL.format(mvs_vs.upper()))} > {temp_jcl_path}/SAMPLE"
         )
         hosts.all.zos_job_submit(
-            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", remote_src=True, wait_time=30
         )
 
         hosts.all.zos_encode(
@@ -958,6 +1020,10 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
         backup_name = None
         for result in results.contacted.values():
             backup_name = result.get("backup_name")
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
         assert backup_name
         contents = hosts.all.shell(cmd=f"cat {backup_name}file1")
         content1 = ""
@@ -1026,6 +1092,10 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         backup_name = None
         for result in results.contacted.values():
             backup_name = result.get("backup_name")
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == FROM_ENCODING
+            assert result.get("encoding").get("from") == TO_ENCODING
 
         results = hosts.all.shell(cmd=f"ls -la {backup_name[:-4]}*")
         for result in results.contacted.values():
@@ -1058,6 +1128,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         for content in enc_ds.contacted.values():
             assert content.get("backup_name") is not None
             assert content.get("backup_name") == backup_data_set
+            assert content.get("encoding") is not None
+            assert isinstance(content.get("encoding"), dict)
+            assert content.get("encoding").get("to") == TO_ENCODING
+            assert content.get("encoding").get("from") == FROM_ENCODING
 
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         enc_ds = hosts.all.zos_encode(
@@ -1074,6 +1148,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
             assert content.get("msg") is not None
             assert content.get("backup_name") is not None
             assert content.get("backup_name") == backup_data_set
+            assert content.get("encoding") is not None
+            assert isinstance(content.get("encoding"), dict)
+            assert content.get("encoding").get("to") == TO_ENCODING
+            assert content.get("encoding").get("from") == INVALID_ENCODING
     finally:
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
@@ -1101,6 +1179,10 @@ def test_gdg_encoding_conversion_src_with_invalid_generation(ansible_zos_module,
             assert "not cataloged" in result.get("msg")
             assert result.get("backup_name") is None
             assert result.get("changed") is False
+            assert result.get("encoding") is not None
+            assert isinstance(result.get("encoding"), dict)
+            assert result.get("encoding").get("to") == TO_ENCODING
+            assert result.get("encoding").get("from") == FROM_ENCODING
     finally:
         hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
         hosts.all.shell(cmd=f"drm {ds_name}")

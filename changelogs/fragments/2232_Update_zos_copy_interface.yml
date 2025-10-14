@@ -1,0 +1,6 @@
+breaking_changes:
+  - zos_copy - Option ``force_lock`` is deprecated in favor of ``force`` for using datasets on dsp=shr.
+    Option ``force`` is deprecated in favor of ``replace`` for cases you want to replace a dest already exists.
+    Option ``executable`` is deprecated in favor of ``is_executable``.
+    Now return value ``dest_created`` is always return with bool value.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2232).

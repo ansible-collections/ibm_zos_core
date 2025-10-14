@@ -18,132 +18,138 @@ plugins:
     zos_apf:
       description: Add or remove libraries to Authorized Program Facility (APF)
       name: zos_apf
-      namespace: ''
+      namespace: ""
       version_added: 1.3.0
     zos_archive:
       description: Archive files and data sets on z/OS.
       name: zos_archive
-      namespace: ''
+      namespace: ""
       version_added: 1.7.0
     zos_backup_restore:
       description: Backup and restore data sets and volumes
       name: zos_backup_restore
-      namespace: ''
+      namespace: ""
       version_added: 1.3.0
     zos_blockinfile:
       description: Manage block of multi-line textual data on z/OS
       name: zos_blockinfile
-      namespace: ''
+      namespace: ""
       version_added: 1.3.0
     zos_copy:
       description: Copy data to z/OS
       name: zos_copy
-      namespace: ''
+      namespace: ""
       version_added: 1.2.0
     zos_data_set:
       description: Manage data sets
       name: zos_data_set
-      namespace: ''
+      namespace: ""
       version_added: 1.3.0
     zos_encode:
       description: Perform encoding operations.
       name: zos_encode
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_fetch:
       description: Fetch data from z/OS
       name: zos_fetch
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_find:
       description: Find matching data sets
       name: zos_find
-      namespace: ''
+      namespace: ""
       version_added: 1.3.0
     zos_gather_facts:
       description: Gather z/OS system facts.
       name: zos_gather_facts
-      namespace: ''
+      namespace: ""
       version_added: 1.5.0
     zos_job_output:
       description: Display job output
       name: zos_job_output
-      namespace: ''
+      namespace: ""
       version_added: 1.0.0
     zos_job_query:
       description: Query job status
       name: zos_job_query
-      namespace: ''
+      namespace: ""
       version_added: 1.0.0
     zos_job_submit:
       description: Submit JCL
       name: zos_job_submit
-      namespace: ''
+      namespace: ""
       version_added: 1.0.0
     zos_lineinfile:
       description: Manage textual data on z/OS
       name: zos_lineinfile
-      namespace: ''
+      namespace: ""
       version_added: 1.2.0
     zos_mount:
       description: Mount a z/OS file system.
       name: zos_mount
-      namespace: ''
+      namespace: ""
       version_added: 1.4.0
     zos_mvs_raw:
       description: Run a z/OS program.
       name: zos_mvs_raw
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_operator:
       description: Execute operator command
       name: zos_operator
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_operator_action_query:
       description: Display messages requiring action
       name: zos_operator_action_query
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_ping:
       description: Ping z/OS and check dependencies.
       name: zos_ping
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
+    zos_replace:
+      description: Replace all instances of a pattern within a file or data set.
+      name: zos_replace
+      namespace: ""
+      version_added: 1.15.0
     zos_script:
       description: Run scripts in z/OS
       name: zos_script
-      namespace: ''
+      namespace: ""
       version_added: 1.8.0
     zos_stat:
-      description: Retrieve facts from MVS data sets, USS files, aggregates and generation
+      description:
+        Retrieve facts from MVS data sets, USS files, aggregates and generation
         data groups
       name: zos_stat
-      namespace: ''
+      namespace: ""
       version_added: 1.14.0
     zos_tso_command:
       description: Execute TSO commands
       name: zos_tso_command
-      namespace: ''
+      namespace: ""
       version_added: 1.1.0
     zos_unarchive:
       description: Unarchive files and data sets in z/OS.
       name: zos_unarchive
-      namespace: ''
+      namespace: ""
       version_added: 1.7.0
     zos_volume_init:
       description: Initialize volumes or minidisks.
       name: zos_volume_init
-      namespace: ''
+      namespace: ""
       version_added: 1.6.0
     zos_zfs_resize:
       description: Resize a zfs data set.
       name: zos_zfs_resize
-      namespace: ''
+      namespace: ""
       version_added: 1.13.0
   netconf: {}
   shell: {}
   strategy: {}
   test: {}
   vars: {}
-version: 1.14.1
+version: 1.15.0

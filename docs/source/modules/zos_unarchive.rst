@@ -53,14 +53,14 @@ format
 
 
   name
-    The compression format to use.
+    The compression format used while archiving.
 
     | **required**: True
     | **type**: str
     | **choices**: bz2, gz, tar, zip, terse, xmit, pax
 
 
-  format_options
+  options
     Options specific to a compression format.
 
     | **required**: False
@@ -81,7 +81,7 @@ format
 
 
     use_adrdssu
-      If set to true, the ``zos_archive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
+      If set to true, the ``zos_unarchive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
 
       | **required**: False
       | **type**: bool
@@ -89,7 +89,7 @@ format
 
 
     dest_volumes
-      When *use_adrdssu=True*, specify the volume the data sets will be written to.
+      When *adrdssu=True*, specify the volume the data sets will be written to.
 
       If no volume is specified, storage management rules will be used to determine the volume where the file will be unarchived.
 
@@ -357,6 +357,46 @@ remote_src
   | **default**: False
 
 
+encoding
+  Specifies the character encoding conversion to be applied to the destination files after unarchiving.
+
+  Supported character sets rely on the charset conversion utility ``iconv`` version the most common character sets are supported.
+
+  After conversion the files are stored in same location as they were unarchived to under the same original name. No backup of the original unconverted files is there as for that unarchive can be executed again without encoding params on same source archive files.
+
+  Destination files will be converted to the new encoding and will not be restored to their original encoding.
+
+  If encoding fails for any file in a set of multiple files, an exception will be raised and the name of the file skipped will be provided completing the task successfully with rc code 0.
+
+  Encoding does not check if the file is already present or not. It works on the file/files successfully unarchived.
+
+  | **required**: False
+  | **type**: dict
+
+
+  from
+    The character set of the source *src*.
+
+    | **required**: False
+    | **type**: str
+
+
+  to
+    The destination *dest* character set for the files to be written as.
+
+    | **required**: False
+    | **type**: str
+
+
+  skip_encoding
+    List of names to skip encoding after unarchiving. This is only used if *encoding* is set, otherwise is ignored.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+
+
+
 
 
 Attributes
@@ -384,14 +424,14 @@ Examples
      zos_unarchive:
        src: "./files/archive_folder_test.tar"
        format:
-         name: tar
+         type: tar
 
    # use include
    - name: Unarchive a bzip file selecting only a file to unpack.
      zos_unarchive:
        src: "/tmp/test.bz2"
        format:
-         name: bz2
+         type: bz2
        include:
          - 'foo.txt'
 
@@ -400,7 +440,7 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.TRS"
        format:
-         name: terse
+         type: terse
        exclude:
          - USER.ARCHIVE.TEST1
          - USER.ARCHIVE.TEST2
@@ -410,17 +450,38 @@ Examples
      zos_unarchive:
        src: "USER.ARCHIVE(0)"
        format:
-         name: terse
+         type: terse
 
    # List option
    - name: List content from XMIT
      zos_unarchive:
        src: "USER.ARCHIVE.RESULT.XMIT"
        format:
-         name: xmit
-         format_options:
-           use_adrdssu: true
+         type: xmit
+         options:
+           adrdssu: true
        list: true
+
+   # Encoding example
+   - name: Encode the destination data set into Latin-1 after unarchiving.
+     zos_unarchive:
+       src: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+
+   - name: Encode the destination data set into Latin-1 after unarchiving.
+     zos_unarchive:
+       src: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+         skip_encoding:
+           - USER.ARCHIVE.TEST1
 
 
 
@@ -473,4 +534,22 @@ missing
 
   | **returned**: success
   | **type**: str
+
+encoded
+  List of files or data sets that were successfully encoded.
+
+  | **returned**: success
+  | **type**: list
+
+failed_on_encoding
+  List of files or data sets that were failed while encoding.
+
+  | **returned**: success
+  | **type**: list
+
+skipped_encoding_targets
+  List of files or data sets that were skipped while encoding.
+
+  | **returned**: success
+  | **type**: list
 

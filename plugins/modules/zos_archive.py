@@ -2078,14 +2078,14 @@ def run_module():
 
         if optopms_deprecate.get('terse_pack') is not None:
             module.deprecate(
-                msg="The 'format.format_options.terse_pack' parameter will be deprecated. On new version use 'format.format_options.spack' instead.",
+                msg="The 'format.format_options.terse_pack' option will be deprecated. On new version use 'format.format_options.spack' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )
 
         if optopms_deprecate.get('use_adrdssu') is not None:
             module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' parameter will be deprecated. On new version use 'format.format_options.adrdssu' instead.",
+                msg="The 'format.format_options.use_adrdssu' option will be deprecated. On new version use 'format.format_options.adrdssu' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )

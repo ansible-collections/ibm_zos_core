@@ -864,7 +864,7 @@ def run_module():
 
     if module.params.get('is_binary') is not None:
         module.deprecate(
-            msg="The 'is_binary' parameter will be deprecated. Please use 'binary' instead.",
+            msg="The 'is_binary' option will be deprecated. Please use 'binary' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

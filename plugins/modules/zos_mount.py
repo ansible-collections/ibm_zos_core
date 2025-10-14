@@ -759,7 +759,7 @@ def run_module(module, arg_def):
 
         if data_store:
             module.deprecate(
-                msg="The 'data_store' parameter will be deprecated. Please use 'name' instead.",
+                msg="The 'data_store' option will be deprecated. Please use 'name' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )
@@ -769,7 +769,7 @@ def run_module(module, arg_def):
 
         if comment is not None:
             module.deprecate(
-                msg="The 'comment' parameter will be deprecated. Please use 'marker' instead.",
+                msg="The 'comment' option will be deprecated. Please use 'marker' instead.",
                 version="2.0.0",
                 collection_name='ibm.ibm_zos_core',
             )

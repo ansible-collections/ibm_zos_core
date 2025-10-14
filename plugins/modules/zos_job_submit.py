@@ -1048,7 +1048,7 @@ def run_module():
 
     if module.params.get("location") is not None:
         module.deprecate(
-            msg="The 'location' parameter will be deprecated Please use 'remote_src' instead. Logic will change to set if the document with the job is \
+            msg="The 'location' option will be deprecated Please use 'remote_src' instead. Logic will change to set if the document with the job is \
                 on the controller or the node",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
@@ -1056,7 +1056,7 @@ def run_module():
 
     if module.params.get("wait_time_s") is not None:
         module.deprecate(
-            msg="The 'wait_time_s' parameter will be deprecated. Please use 'wait_time' instead.",
+            msg="The 'wait_time_s' option will be deprecated. Please use 'wait_time' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

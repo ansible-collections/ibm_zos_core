@@ -303,7 +303,7 @@ BACKUP_OPTIONS = ["SEQ", "MEM"]
 
 def set_uss_environment(ansible_zos_module, content, file):
     hosts = ansible_zos_module
-    hosts.all.file(path=file, state="touch")
+    # hosts.all.file(path=file, state="touch")
     hosts.all.shell(cmd=f"echo \"{content}\" > {file}")
 
 def remove_uss_environment(ansible_zos_module, file):
@@ -337,6 +337,7 @@ def remove_ds_environment(ansible_zos_module, ds_name):
 # USS test cases
 #########################
 
+@pytest.mark.uss
 def test_uss_after(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -348,17 +349,22 @@ def test_uss_after(ansible_zos_module):
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
         results = hosts.all.zos_replace(**params)
         for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_replace(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -376,12 +382,16 @@ def test_uss_after_replace(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -398,12 +408,16 @@ def test_uss_after_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -421,12 +435,16 @@ def test_uss_after_replace_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER_REPLACE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -443,12 +461,16 @@ def test_uss_before(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_replace(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -466,12 +488,16 @@ def test_uss_before_replace(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -488,12 +514,16 @@ def test_uss_before_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -511,12 +541,16 @@ def test_uss_before_replace_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_REPLACE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_before(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -534,12 +568,16 @@ def test_uss_after_before(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_before_replace(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -558,12 +596,16 @@ def test_uss_after_before_replace(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_before_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -581,12 +623,16 @@ def test_uss_after_before_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_before_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -605,12 +651,16 @@ def test_uss_after_before_replace_line(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_REPLACE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_backup_no_name(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -630,9 +680,15 @@ def test_uss_backup_no_name(ansible_zos_module):
             assert result.get("found") == 2
             backup_name = result.get("backup_name")
             assert result.get("backup_name") is not None
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
+        results = hosts.all.shell(cmd=f"ls -lT {backup_name}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(backup_name))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
@@ -640,14 +696,15 @@ def test_uss_backup_no_name(ansible_zos_module):
         remove_uss_environment(ansible_zos_module, full_path)
         remove_uss_environment(ansible_zos_module, backup_name)
 
+@pytest.mark.uss
 def test_uss_backup_name(ansible_zos_module):
     hosts = ansible_zos_module
-    uss_backup_file = get_random_file_name(dir=TMP_DIRECTORY, suffix=".tmp")
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, suffix=".tmp")
     params = {
         "regexp":"ZOAU_ROOT",
         "after":"export PATH",
         "backup":True,
-        "backup_name":uss_backup_file
+        "backup_name":backup_name
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -659,17 +716,24 @@ def test_uss_backup_name(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
-            assert result.get("backup_name") == uss_backup_file
+            assert result.get("backup_name") == backup_name
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd="cat {0}".format(uss_backup_file))
+        results = hosts.all.shell(cmd=f"ls -lT {backup_name}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
+        results = hosts.all.shell(cmd="cat {0}".format(backup_name))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
-        remove_uss_environment(ansible_zos_module, uss_backup_file)
+        remove_uss_environment(ansible_zos_module, backup_name)
 
+@pytest.mark.uss
 def test_uss_after_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["after"]
@@ -688,12 +752,16 @@ def test_uss_after_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["before"]
@@ -712,12 +780,16 @@ def test_uss_before_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["regexp"]
@@ -735,12 +807,16 @@ def test_uss_regexp_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_before_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["after", "before"]
@@ -760,12 +836,16 @@ def test_uss_after_before_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_after_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["after", "regexp"]
@@ -784,12 +864,16 @@ def test_uss_after_regexp_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["before", "regexp"]
@@ -808,12 +892,16 @@ def test_uss_before_regexp_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_before_after_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
     literal = ["after", "before", "regexp"]
@@ -833,12 +921,16 @@ def test_uss_before_after_regexp_literal(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_remove_multiple_lines(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -854,12 +946,16 @@ def test_uss_remove_multiple_lines(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 3
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MULTIPLE_LINES
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_backref(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -876,12 +972,16 @@ def test_uss_backref(ansible_zos_module):
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 3
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BACKREF
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+@pytest.mark.uss
 def test_uss_match_replace_multiple_lines(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -901,6 +1001,9 @@ exec -a 0 /bin/bash
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 1
+        results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
+        for result in results.contacted.values():
+            assert 'IBM-1047' in result.get("stdout")
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MATCH_MULTIPLE_LINES

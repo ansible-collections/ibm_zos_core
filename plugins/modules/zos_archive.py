@@ -2069,7 +2069,7 @@ def run_module():
 
     if format_param.get('format_options') is not None:
         module.deprecate(
-            msg="The 'format.format_options' parameter will be deprecated. Use 'format.options' instead.",
+            msg="The 'format.format_options' option will be deprecated. Use 'format.options' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

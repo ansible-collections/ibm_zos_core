@@ -2062,7 +2062,7 @@ def run_module():
 
     if format_param.get('name') is not None:
         module.deprecate(
-            msg="The 'format.name' option will be deprecated. Please use 'format.type' instead.",
+            msg="The 'format.name' option will be deprecated in version 2.0.0. Use 'format.type' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

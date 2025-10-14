@@ -1231,6 +1231,7 @@ def run_module(module):
         Failed to process size.
     """
     # Parameter initialization
+    pds_paths = None
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
     contains = module.params.get('contains')
@@ -1259,6 +1260,14 @@ def run_module(module):
     vsam_resource_types = set()
     filtered_migrated_types = set()
     vsam_migrated_types = set()
+
+    if pds_paths is not None:
+        module.deprecate(
+            msg="The 'pds_pattern' option and its aliases are deprecated and will be removed. \
+            On newer versions, to search for a specific member put a regex between parenthesis",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
 
     for type in resource_type:
         if type in vsam_types:

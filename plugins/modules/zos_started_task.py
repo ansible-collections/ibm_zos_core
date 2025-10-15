@@ -40,14 +40,16 @@ options:
     type: str
   device_number:
     description:
-      - I(devide_number) is the number of the device that starts. A device number is 3 or 4 hexadecimal digits. Ensure that a slash prcedes a 4-digit number but it is not before 3-digit number.
+      - I(devide_number) is the number of the device that starts. A device number is 3 or 4 hexadecimal digits.
+        Ensure that a slash prcedes a 4-digit number but it is not before 3-digit number.
       - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
         A slash (/) must precede a 4-digit number but is not before a 3-digit number.
     required: false
     type: str
   identifier_name:
     description:
-      - I(identifier_name) is the name that identifies the task that starts. This name can be up to 8 characters long. Ensure that the first character is alphabetical.
+      - I(identifier_name) is the name that identifies the task that starts. This name can be 8 characters long. 
+        Ensure that the first character is alphabetical.
       - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
         The first character must be alphabetical.
     required: false
@@ -122,7 +124,9 @@ options:
       - 'NO'
   subsystem_name:
     description:
-      - The name of the subsystem that selects the task for processing, Ensure that the name is 1 - 4 characters, which are defined in the IEFSSNxx parmlib member, and the subsystem is active.
+      - The name of the subsystem that selects the task for processing. 
+        Ensure that the name is 1 - 4 characters, which are defined in the IEFSSNxx parmlib member. 
+        And, ensure that the subsystem is active.
       - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
         which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
     required: false
@@ -144,7 +148,8 @@ options:
     default: 5
     type: int
     description:
-      -  The option I(wait_time_s) is the total time that module L(zos_started_tak,./zos_started_task.html) waits for a submitted task. The time begins when the module runs on the managed node.
+      -  The option I(wait_time_s) is the total time that module L(zos_started_tak,./zos_started_task.html) waits for a submitted task.
+         The time begins when the module runs on the managed node.
       - Option I(wait_time_s) is the total time that module
         L(zos_started_tak,./zos_started_task.html) will wait for a submitted task. The time begins when the module is executed
         on the managed node.
@@ -174,7 +179,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import opercmd,zsystem
+    from zoautil_py import opercmd, zsystem
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 

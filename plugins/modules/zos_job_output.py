@@ -517,7 +517,17 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        dd_name=dict(
+            type="str",
+            required=False,
+            aliases=['ddname'],
+            deprecated_aliases=[
+                dict(
+                    name='ddname',
+                    version='3.0.0',
+                    collection_name='ibm.ibm_zos_core',
+                )
+            ],),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 

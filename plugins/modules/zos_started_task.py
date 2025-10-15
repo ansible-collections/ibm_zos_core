@@ -29,6 +29,7 @@ description:
 options:
   asid:
     description:
+      - I(asid) is an unique address space identifier which gets assigned to each running started task.
       - I(asid) is a unique address space identifier which gets assigned to each running started task.
     required: false
     type: str
@@ -39,12 +40,14 @@ options:
     type: str
   device_number:
     description:
+      - I(devide_number) is the number of the device that starts. A device number is 3 or 4 hexadecimal digits. Ensure that a slash prcedes a 4-digit number but it is not before 3-digit number.
       - I(device_number) is the number of the device to be started. A device number is 3 or 4 hexadecimal digits.
         A slash (/) must precede a 4-digit number but is not before a 3-digit number.
     required: false
     type: str
   identifier_name:
     description:
+      - I(identifier_name) is the name that identifies the task that starts. This name can be up to 8 characters long. Ensure that the first character is alphabetical.
       - I(identifier_name) is the name that identifies the task to be started. This name can be up to 8 characters long.
         The first character must be alphabetical.
     required: false
@@ -60,6 +63,7 @@ options:
     type: str
   job_name:
     description:
+      - I(job_name) is a name which is assigned to a started task when you start it. If job_name is not specified, then member_name is used as job_name.
       - I(job_name) is a name which should be assigned to a started task while starting it. If job_name is not specified,
         then member_name is used as job_name.
     required: false
@@ -77,6 +81,8 @@ options:
     type: str
   member_name:
     description:
+      - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
+        for the task that starts. The member can be either a job or a cataloged procedure.
       - I(member_name) is a 1 - 8 character name of a member of a partitioned data set that contains the source JCL
         for the task to be started. The member can be either a job or a cataloged procedure.
     required: false
@@ -100,6 +106,7 @@ options:
       - cancel
   parameters:
     description:
+      - The program parameters are passed to the started program, which can be a list in parentheses or a string in a single quotation marks.
       - Program parameters passed to the started program, which might be a list in parentheses or a string in single quotation marks
     required: false
     type: str
@@ -115,6 +122,7 @@ options:
       - 'NO'
   subsystem_name:
     description:
+      - The name of the subsystem that selects the task for processing, Ensure that the name is 1 - 4 characters, which are defined in the IEFSSNxx parmlib member, and the subsystem is active.
       - The name of the subsystem that selects the task for processing. The name must be 1 - 4 characters,
         which are defined in the IEFSSNxx parmlib member, and the subsystem must be active.
     required: false
@@ -126,6 +134,7 @@ options:
     type: str
   verbose:
     description:
+      - The Return System logs that describes the process of the task.
       - Return System logs that describe the task's execution.
     required: false
     type: bool
@@ -135,6 +144,7 @@ options:
     default: 5
     type: int
     description:
+      -  The option I(wait_time_s) is the total time that module L(zos_started_tak,./zos_started_task.html) waits for a submitted task. The time begins when the module runs on the managed node.
       - Option I(wait_time_s) is the total time that module
         L(zos_started_tak,./zos_started_task.html) will wait for a submitted task. The time begins when the module is executed
         on the managed node.

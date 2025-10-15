@@ -1,5 +1,7 @@
 trivial:
-   - test_zos_copy_func - Enhanced test cases to support alias validation using mls -A when available (ZOA ≥ 1.4.0),
-     and updated assertions to handle both legacy and modern alias formats.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2364).
+  - test_zos_copy_func - Enhanced test cases to support alias validation using mls -A with ZOAU ≥ 1.4.0
+    and updated assertions to handle new alias formats.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2364).
+  - module_utils/log.py - Added new log utility to the collection which can be used to track different debug and info messages.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2364).
 

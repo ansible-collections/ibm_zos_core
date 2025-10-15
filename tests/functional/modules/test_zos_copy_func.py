@@ -1440,6 +1440,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
         if backup_name_result:
             hosts.all.file(path=backup_name_result, state="absent")
 
+# This is commented because is failing in SPS, will be fixed in
 # [Enabler] zos_copy test case failing in SPS test_copy_file_insufficient_read_permission_fails #2366
 # @pytest.mark.uss
 # def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):

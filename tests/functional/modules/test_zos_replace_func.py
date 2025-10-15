@@ -314,13 +314,6 @@ def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
     hosts = ansible_zos_module
     hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
     hosts.all.shell(cmd=f"dtouch  -t{ds_type} {ds_name}")
-    # hosts.all.zos_data_set(
-    #     name=ds_name,
-    #     type=ds_type,
-    #     state="present",
-    #     record_format="VB",
-    #     record_length=255
-    # )
     if ds_type in ["pds", "pdse"]:
         ds_full_name = ds_name + "(MEM)"
         hosts.all.shell(cmd=f"decho '' '{ds_full_name}' ")

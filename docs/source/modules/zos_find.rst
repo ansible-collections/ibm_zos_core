@@ -68,8 +68,6 @@ excludes
 
   If the pattern is a regular expression, it must match the full data set name.
 
-  To exclude members, the regular expression or pattern must be enclosed in parentheses. This expression can be used alongside a pattern to exclude data set names.
-
   | **required**: False
   | **type**: list
   | **elements**: str
@@ -81,6 +79,8 @@ patterns
   The patterns restrict the list of data sets or members to be returned to those names that match at least one of the patterns specified. Multiple patterns can be specified using a list.
 
   This parameter expects a list, which can be either comma separated or YAML.
+
+  If ``pds_patterns`` is provided, ``patterns`` must be member patterns.
 
   When searching for members within a PDS/PDSE, pattern can be a regular expression.
 
@@ -102,8 +102,20 @@ size
   | **type**: str
 
 
+pds_patterns
+  List of PDS/PDSE to search. Wildcard is possible.
+
+  Required when searching for data set members.
+
+  Valid only for ``nonvsam`` resource types. Otherwise ignored.
+
+  | **required**: False
+  | **type**: list
+  | **elements**: str
+
+
 resource_type
-  The types of resources to search.
+  The type of resource to search.
 
   ``nonvsam`` refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
 
@@ -111,25 +123,10 @@ resource_type
 
   ``gdg`` refers to Generation Data Groups. The module searches based on the GDG base name.
 
-  ``migrated`` refers to listing migrated datasets. Only ``excludes`` and ``migrated_type`` options can be used along with this option. The module only searches based on dataset patterns.
-
   | **required**: False
-  | **type**: list
-  | **elements**: str
+  | **type**: str
   | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index, gdg, migrated
-
-
-migrated_type
-  A migrated data set related attribute, only valid when ``resource_type=migrated``.
-
-  If provided, will search for only those types of migrated datasets.
-
-  | **required**: False
-  | **type**: list
-  | **elements**: str
-  | **default**: ['cluster', 'data', 'index', 'nonvsam']
-  | **choices**: nonvsam, cluster, data, index
+  | **choices**: nonvsam, cluster, data, index, gdg
 
 
 volume
@@ -216,22 +213,6 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Exclude all members starting with characters 'TE' in a given list datasets patterns
-     zos_find:
-       excludes: '(^te.*)'
-       patterns:
-         - IMSTEST.TEST.*
-         - IMSTEST.USER.*
-         - USER.*.LIB
-
-   - name: Exclude datasets that includes 'DATA' and members starting with characters 'MEM' in a given list datasets patterns
-     zos_find:
-       excludes: '^.*DATA.*(^MEM.*)'
-       patterns:
-         - IMSTEST.*.TEST
-         - IMSTEST.*.*
-         - USER.*.LIB
-
    - name: Find all data sets with HLQ 'IMS.LIB' or 'IMSTEST.LIB' that contain the word 'hello'
      zos_find:
        patterns:
@@ -250,7 +231,7 @@ Examples
      zos_find:
        patterns: 'IMS.LIB.*'
        contains: 'hello'
-       excludes: '.*TEST'
+       excludes: '*.TEST'
 
    - name: Find all members starting with characters 'TE' in a given list of PDS patterns
      zos_find:
@@ -272,27 +253,16 @@ Examples
      zos_find:
        patterns:
          - USER.*
-       resource_type:
-         - 'cluster'
+       resource_type: cluster
 
    - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
      zos_find:
        patterns:
          - USER.*
-       resource_type:
-         - 'gdg'
+       resource_type: gdg
        limit: 30
        scratch: true
        purge: true
-
-   - name: Find all migrated and nonvsam data sets starting with the word 'USER'
-     zos_find:
-       patterns:
-         - USER.*
-       resource_type:
-         - 'migrated'
-       migrated_type:
-         - 'nonvsam'
 
 
 
@@ -310,8 +280,6 @@ Notes
    The time taken to execute the module is proportional to the number of data sets present on the system and how large the data sets are.
 
    When searching for content within data sets, only non-binary content is considered.
-
-   As a migrated data set's information can't be retrieved without recalling it first, other options besides ``excludes`` and ``migrated_type`` are not supported.
 
 
 

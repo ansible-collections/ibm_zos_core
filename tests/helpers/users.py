@@ -734,7 +734,7 @@ class ManagedUser:
 
         try:
             cmd=f"{add_user_cmd.getvalue()}"
-            # need to connect with ssh  -i /tmp/UPGLSFLH/id_rsa UPGLSFLH@xyz.com
+            # need to connect with ssh  -i /tmp/UPGLSFLH/id_rsa UPGLSFLH@ec01136a.vmec.svl.ibm.com
             add_user_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
             # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change

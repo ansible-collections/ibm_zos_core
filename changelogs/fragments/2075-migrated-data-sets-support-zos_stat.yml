@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_stat - Added support to recall migrated data sets and return
+    its attributes.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2075)

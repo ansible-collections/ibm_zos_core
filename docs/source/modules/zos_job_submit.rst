@@ -43,24 +43,27 @@ src
   | **type**: str
 
 
-remote_src
-  If set to ``false``, the module searches for ``src`` in the controller node.
+location
+  The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
 
-  If set to ``true``, the module searches for the file ``src`` in the managed node.
+  ``data_set`` can be a PDS, PDSE, sequential data set, or a generation data set.
+
+  ``uss`` means the JCL location is located in UNIX System Services (USS).
+
+  ``local`` means locally to the Ansible control node.
 
   | **required**: False
-  | **type**: bool
-  | **default**: True
+  | **type**: str
+  | **default**: data_set
+  | **choices**: data_set, uss, local
 
 
-wait_time
-  Option *wait_time* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
+wait_time_s
+  Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 
-  *wait_time* is measured in seconds and must be a value greater than 0 and less than 86400.
+  *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
 
-  The module can submit and forget jobs by setting *wait_time* to 0. This way the module will not try to retrieve the job details other than job id. Job details and contents can be retrieved later by using `zos_job_query <./zos_job_query.html>`_ or `zos_job_output <./zos_job_output.html>`_ if needed.
-
-  If *remote_src=False* and *wait_time=0*, the module will not clean the copy of the file on the remote system, to avoid problems with job submission.
+  The module can submit and forget jobs by setting *wait_time_s* to 0. This way the module will not try to retrieve the job details other than job id. Job details and contents can be retrieved later by using `zos_job_query <./zos_job_query.html>`_ or `zos_job_output <./zos_job_output.html>`_ if needed.
 
   | **required**: False
   | **type**: int
@@ -77,7 +80,7 @@ max_rc
 return_output
   Whether to print the DD output.
 
-  If false, an empty list will be returned in the dds field.
+  If false, an empty list will be returned in the ddnames field.
 
   | **required**: False
   | **type**: bool
@@ -89,7 +92,7 @@ volume
 
   When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-  Ignored for *remote_src=False*.
+  Ignored for *location=uss* and *location=local*.
 
   | **required**: False
   | **type**: str
@@ -98,7 +101,7 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  This option is only supported for when *remote_src=False*.
+  This option is only supported for when *location=local*.
 
   If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
@@ -250,6 +253,7 @@ template_parameters
     | **default**: \\n
     | **choices**: \\n, \\r, \\r\\n
 
+
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 
@@ -292,19 +296,19 @@ Examples
    - name: Submit JCL in a PDSE member.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       remote_src: true
+       location: data_set
      register: response
 
    - name: Submit JCL in USS with no DDs in the output.
      zos_job_submit:
        src: /u/tester/demo/sample.jcl
-       remote_src: true
+       location: uss
        return_output: false
 
    - name: Convert local JCL to IBM-037 and submit the job.
      zos_job_submit:
        src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-       remote_src: false
+       location: local
        encoding:
          from: ISO8859-1
          to: IBM-037
@@ -312,36 +316,36 @@ Examples
    - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       remote_src: true
+       location: data_set
        volume: P2SS01
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       remote_src: true
-       wait_time: 30
+       location: data_set
+       wait_time_s: 30
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       remote_src: true
-       wait_time: 30
+       location: data_set
+       wait_time_s: 30
 
    - name: Submit JCL and set the max return code the module should fail on to 16.
      zos_job_submit:
        src: HLQ.DATA.LLQ
-       remote_src: true
+       location: data_set
        max_rc: 16
 
    - name: Submit JCL from the latest generation data set in a generation data group.
      zos_job_submit:
        src: HLQ.DATA.GDG(0)
-       remote_src: true
+       location: data_set
 
    - name: Submit JCL from a previous generation data set in a generation data group.
      zos_job_submit:
        src: HLQ.DATA.GDG(-2)
-       remote_src: true
+       location: data_set
 
 
 
@@ -377,11 +381,11 @@ jobs
         [
             {
                 "asid": 0,
+                "class": "K",
                 "content_type": "JOB",
-                "cpu_time": 1,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
-                "dds": [
+                "ddnames": [
                     {
                         "byte_count": "677",
                         "content": [
@@ -402,7 +406,7 @@ jobs
                             "-           12 SYSOUT SPOOL KBYTES",
                             "-         0.00 MINUTES EXECUTION TIME"
                         ],
-                        "dd_name": "JESMSGLG",
+                        "ddname": "JESMSGLG",
                         "id": "2",
                         "procstep": "",
                         "record_count": "16",
@@ -459,7 +463,7 @@ jobs
                             "        15 ++SYSPRINT DD SYSOUT=*                                                          ",
                             "           ++*                                                                             "
                         ],
-                        "dd_name": "JESJCL",
+                        "ddname": "JESJCL",
                         "id": "3",
                         "procstep": "",
                         "record_count": "47",
@@ -513,7 +517,7 @@ jobs
                             " IEF033I  JOB/DBDGEN00/STOP  2020073.1250 ",
                             "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
                         ],
-                        "dd_name": "JESYSMSG",
+                        "ddname": "JESYSMSG",
                         "id": "4",
                         "procstep": "",
                         "record_count": "44",
@@ -568,19 +572,17 @@ jobs
                             "  **** END OF MESSAGE SUMMARY REPORT ****                                                                                ",
                             "                                                                                                                         "
                         ],
-                        "dd_name": "SYSPRINT",
+                        "ddname": "SYSPRINT",
                         "id": "102",
                         "procstep": "L",
                         "record_count": "45",
                         "stepname": "DLORD6"
                     }
                 ],
-                "execution_node": "STL1",
                 "execution_time": "00:00:10",
                 "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
-                "origin_node": "STL1",
                 "owner": "OMVSADM",
                 "priority": 1,
                 "program_name": "IEBGENER",
@@ -589,14 +591,14 @@ jobs
                     "code": 0,
                     "msg": "CC 0000",
                     "msg_code": "0000",
-                    "msg_txt": ""
+                    "msg_txt": "",
+                    "steps": [
+                        {
+                            "step_cc": 0,
+                            "step_name": "DLORD6"
+                        }
+                    ]
                 },
-                "steps": [
-                    {
-                        "step_cc": 0,
-                        "step_name": "DLORD6"
-                    }
-                ],
                 "subsystem": "STL1",
                 "svc_class": "?",
                 "system": "STL1"
@@ -644,13 +646,13 @@ jobs
     | **type**: str
     | **sample**: 00:00:10
 
-  dds
+  ddnames
     Data definition names.
 
     | **type**: list
     | **elements**: dict
 
-    dd_name
+    ddname
       Data definition name.
 
       | **type**: str
@@ -687,7 +689,7 @@ jobs
       | **sample**: 574
 
     content
-      The dd content.
+      The ddname content.
 
       | **type**: list
       | **elements**: str
@@ -726,7 +728,13 @@ jobs
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": 0,
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
           }
 
@@ -755,9 +763,7 @@ jobs
 
       Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
 
-      Job status `TYPRUN=COPY` indicates that the job had the TYPRUN parameter with COPY option.
-
-      Job status `HOLD` indicates that the job had the TYPRUN parameter with either the HOLD or JCLHOLD options.
+      Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
 
       Jobs where status can not be determined will result in None (NULL).
 
@@ -786,35 +792,23 @@ jobs
 
       | **type**: int
 
+    steps
+      Series of JCL steps that were executed and their return codes.
 
-  steps
-    Series of JCL steps that were executed and their return codes.
+      | **type**: list
+      | **elements**: dict
 
-    | **type**: list
-    | **elements**: dict
-    | **sample**:
+      step_name
+        Name of the step shown as "was executed" in the DD section.
 
-      .. code-block:: json
+        | **type**: str
+        | **sample**: STEP0001
 
-          {
-              "steps": [
-                  {
-                      "step_cc": 0,
-                      "step_name": "STEP0001"
-                  }
-              ]
-          }
+      step_cc
+        The CC returned for this step in the DD section.
 
-    step_name
-      Name of the step shown as "was executed" in the DD section.
+        | **type**: int
 
-      | **type**: str
-      | **sample**: STEP0001
-
-    step_cc
-      The CC returned for this step in the DD section.
-
-      | **type**: int
 
 
   job_class
@@ -863,35 +857,5 @@ jobs
 
     | **type**: str
     | **sample**: IEBGENER
-
-  system
-    The job entry system that MVS uses to do work.
-
-    | **type**: str
-    | **sample**: STL1
-
-  subsystem
-    The job entry subsystem that MVS uses to do work.
-
-    | **type**: str
-    | **sample**: STL1
-
-  cpu_time
-    Sum of the CPU time used by each job step, in microseconds.
-
-    | **type**: int
-    | **sample**: 5
-
-  execution_node
-    Execution node that picked the job and executed it.
-
-    | **type**: str
-    | **sample**: STL1
-
-  origin_node
-    Origin node that submitted the job.
-
-    | **type**: str
-    | **sample**: STL1
 
 

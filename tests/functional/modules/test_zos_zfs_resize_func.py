@@ -25,8 +25,8 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-NO_AUTO_INCREMENT= """- hosts: zvm
-  collections:
+NO_AUTO_INCREMENT= """- hosts : zvm
+  collections :
     - ibm.ibm_zos_core
   gather_facts: False
   vars:
@@ -655,10 +655,10 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert int(out.get("stdout")) != 0
+                assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -687,10 +687,10 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert int(out.get("stdout")) != 0
+                assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -736,10 +736,10 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert int(out.get("stdout")) != 0
+                assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -762,10 +762,10 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert int(out.get("stdout")) != 0
+                assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -987,7 +987,7 @@ def test_fail_operation(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
-    size = 50
+    size = 200
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -1003,30 +1003,10 @@ def test_fail_operation(ansible_zos_module):
 # No auto increment playbook
 #############################
 
-def test_no_auto_increase_wrapper(get_config):
-    path = get_config
-    retries = 0
-    max_retries = 5
-    success = False
-
-    # Not adding a try/except block here so a real exception can bubble up
-    # and stop pytest immediately (if using -x or --stop).
-    while retries < max_retries:
-        print(f'Trying no_auto_increase. Retry: {retries}.')
-        result = no_auto_increase(path)
-        print(f'result of playbook: {result}')
-
-        if result:
-            success = True
-            break
-
-        retries += 1
-
-    assert success is True
-
-def no_auto_increase(path):
+def test_no_auto_increase(get_config):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
+    path = get_config
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]
@@ -1060,37 +1040,14 @@ def no_auto_increase(path):
         )
         stdout = os.system(command)
         assert stdout != 0
-        return True
-    except AssertionError:
-        return False
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")
 
-def test_no_auto_increase_accept_wrapper(get_config):
-    path = get_config
-    retries = 0
-    max_retries = 5
-    success = False
-
-    # Not adding a try/except block here so a real exception can bubble up
-    # and stop pytest immediately (if using -x or --stop).
-    while retries < max_retries:
-        print(f'Trying no_auto_increase_accept. Retry: {retries}.')
-        result = no_auto_increase_accept(path)
-        print(f'result of playbook: {result}')
-
-        if result:
-            success = True
-            break
-
-        retries += 1
-
-    assert success is True
-
-def no_auto_increase_accept(path):
+def test_no_auto_increase_accept(get_config):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
+    path = get_config
     with open(path, 'r') as file:
         enviroment = yaml.safe_load(file)
     ssh_key = enviroment["ssh_key"]
@@ -1124,9 +1081,6 @@ def no_auto_increase_accept(path):
         )
         stdout = os.system(command)
         assert stdout == 0
-        return True
-    except AssertionError:
-        return False
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

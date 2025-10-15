@@ -58,7 +58,7 @@ JOB_ERROR_STATUSES = frozenset(["ABEND",      # ZOAU job ended abnormally
                                 ])
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False, dd_scan=True, duration=0, timeout=0, start_time=timer()):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Parameters
@@ -71,8 +71,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False
         The job name search for (default: {None}).
     dd_name : str
         The data definition to retrieve (default: {None}).
-    sysin : bool
-        The input DD to retrieve SYSIN value (default: {False}).
     dd_scan : bool
         Whether or not to pull information from the dd's for this job {default: {True}}.
     duration : int
@@ -114,7 +112,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False
         job_name=job_name,
         dd_name=dd_name,
         duration=duration,
-        sysin=sysin,
         dd_scan=dd_scan,
         timeout=timeout,
         start_time=start_time
@@ -131,7 +128,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False
             owner=owner,
             job_name=job_name,
             dd_name=dd_name,
-            sysin=sysin,
             dd_scan=dd_scan,
             duration=duration,
             timeout=timeout,
@@ -171,7 +167,6 @@ def _job_not_found(job_id, owner, job_name, dd_name):
         job_not_found_msg = "with the name {0}".format(job_name.upper())
     job = {}
 
-    job["job_not_found"] = True
     job["job_id"] = job_id
     job["job_name"] = job_name
     job["subsystem"] = None
@@ -180,36 +175,24 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["cpu_time"] = None
     job["execution_node"] = None
     job["origin_node"] = None
-    job["content_type"] = None
-    job["creation_date"] = None
-    job["creation_time"] = None
-    job["execution_time"] = None
-    job["job_class"] = None
-    job["svc_class"] = None
-    job["priority"] = None
-    job["asid"] = None
-    job["queue_position"] = None
-    job["program_name"] = None
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
     job["ret_code"]["msg_code"] = None
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
-    job["steps"] = []
 
-    job["class"] = None
+    job["class"] = ""
 
-    job["dds"] = []
+    job["ddnames"] = []
     dd = {}
-    dd["dd_name"] = dd_name
-    dd["record_count"] = 0
-    dd["id"] = None
+    dd["ddname"] = dd_name
+    dd["record_count"] = "0"
+    dd["id"] = ""
     dd["stepname"] = None
-    dd["procstep"] = None
-    dd["byte_count"] = 0
-    dd["content"] = None
-    job["dds"].append(dd)
+    dd["procstep"] = ""
+    dd["byte_count"] = "0"
+    job["ddnames"].append(dd)
 
     jobs.append(job)
 
@@ -304,7 +287,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=False, dd_scan=True, duration=0, timeout=0, start_time=timer()):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get job status.
 
     Parameters
@@ -317,8 +300,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
         The job name search for (default: {None}).
     dd_name : str
         The data definition to retrieve (default: {None}).
-    sysin : bool
-        The input DD SYSIN (default: {False}).
     dd_scan : bool
         Whether or not to pull information from the dd's for this job {default: {True}}.
     duration : int
@@ -370,8 +351,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
             job = {}
             job["job_id"] = entry.job_id
             job["job_name"] = entry.name
-            job["subsystem"] = None
-            job["system"] = None
+            job["subsystem"] = ""
+            job["system"] = ""
             job["owner"] = entry.owner
             job["cpu_time"] = None
             job["execution_node"] = None
@@ -399,9 +380,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
             job["creation_time"] = str(entry.creation_datetime)[12:]
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
-            job["class"] = None
-            job["steps"] = []
-            job["dds"] = []
+            job["class"] = ""
+            job["ret_code"]["steps"] = []
+            job["ddnames"] = []
             job["duration"] = duration
             if hasattr(entry, "execution_time"):
                 job["execution_time"] = entry.execution_time
@@ -424,7 +405,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
                 list_of_dds = []
 
                 try:
-                    list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
+                    list_of_dds = jobs.list_dds(entry.job_id)
                 except exceptions.DDQueryException:
                     is_dd_query_exception = True
 
@@ -443,7 +424,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
                     try:
                         # Note, in the event of an exception, eg job has TYPRUN=HOLD
                         # list_of_dds will still be populated with valuable content
-                        list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
+                        list_of_dds = jobs.list_dds(entry.job_id)
                         is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
                         is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
                     except exceptions.DDQueryException:
@@ -463,7 +444,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
                         if dd_name not in single_dd["dd_name"]:
                             continue
                         else:
-                            dd["dd_name"] = single_dd["dd_name"]
+                            dd["ddname"] = single_dd["dd_name"]
 
                     if "records" in single_dd:
                         dd["record_count"] = single_dd["records"]
@@ -512,10 +493,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
 
                     dd["content"] = tmpcont.split("\n")
 
-                    job["steps"].extend(_parse_steps(tmpcont))
+                    job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
-                    job["dds"].append(dd)
-                    if job["class"] is None:
+                    job["ddnames"].append(dd)
+                    if len(job["class"]) < 1:
                         job["class"] = entry.job_class
 
                     if job["system"] is None:
@@ -564,7 +545,7 @@ def _ddname_pattern(contents, resolve_dependencies):
         re.IGNORECASE,
     ):
         raise ValueError(
-            'Invalid argument type for "{0}". Expected "dd_name_pattern"'.format(
+            'Invalid argument type for "{0}". Expected "ddname_pattern"'.format(
                 contents
             )
         )

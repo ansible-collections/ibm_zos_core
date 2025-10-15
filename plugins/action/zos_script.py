@@ -92,8 +92,8 @@ class ActionModule(ActionBase):
             copy_module_args = dict(
                 src=script_path,
                 dest=tempfile_path,
-                replace=True,
-                binary=False,
+                force=True,
+                is_binary=False,
                 encoding=module_args.get('encoding'),
                 use_template=module_args.get('use_template', False),
                 template_parameters=module_args.get('template_parameters', dict())

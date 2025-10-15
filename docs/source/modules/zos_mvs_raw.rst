@@ -682,14 +682,6 @@ dds
       | **type**: raw
 
 
-    reserved_cols
-      Determines how many columns at the beginning of the content are reserved with empty spaces.
-
-      | **required**: False
-      | **type**: int
-      | **default**: 2
-
-
     return_content
       Determines how content should be returned to the user.
 
@@ -823,45 +815,6 @@ dds
 
       | **required**: True
       | **type**: str
-
-
-
-  dd_volume
-    Use *dd_volume* to specify the volume to use in the DD statement.
-
-    | **required**: False
-    | **type**: dict
-
-
-    dd_name
-      The DD name.
-
-      | **required**: True
-      | **type**: str
-
-
-    volume_name
-      The volume serial number.
-
-      | **required**: True
-      | **type**: str
-
-
-    unit
-      Device type for the volume.
-
-      This option is case sensitive.
-
-      | **required**: True
-      | **type**: str
-
-
-    disposition
-      *disposition* indicates the status of a data set.
-
-      | **required**: True
-      | **type**: str
-      | **choices**: new, shr, mod, old
 
 
 
@@ -1454,14 +1407,6 @@ dds
           | **type**: raw
 
 
-        reserved_cols
-          Determines how many columns at the beginning of the content are reserved with empty spaces.
-
-          | **required**: False
-          | **type**: int
-          | **default**: 2
-
-
         return_content
           Determines how content should be returned to the user.
 
@@ -1562,37 +1507,6 @@ Examples
          - dd_input:
              dd_name: sysin
              content: " LISTCAT ENTRIES('SOME.DATASET.*')"
-
-   - name: Full volume dump using ADDRDSU.
-     zos_mvs_raw:
-       program_name: adrdssu
-       auth: true
-       dds:
-         - dd_data_set:
-             dd_name: dumpdd
-             data_set_name: mypgm.output.ds
-             disposition: new
-             disposition_normal: catalog
-             disposition_abnormal: delete
-             space_type: cyl
-             space_primary: 10
-             space_secondary: 10
-             record_format: u
-             record_length: 0
-             block_size: 32760
-             type: seq
-         - dd_volume:
-             dd_name: voldd
-             volume_name: "000000"
-             unit: "3390"
-             disposition: old
-         - dd_input:
-             dd_name: sysin
-             content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
-         - dd_output:
-             dd_name: sysprint
-             return_content:
-               type: text
 
    - name: List data sets matching patterns in catalog,
        save output to a new sequential data set and return output as text.
@@ -1863,28 +1777,6 @@ Examples
                          RECORDSIZE(4086 32600) -
                          VOLUMES(222222) -
                          UNIQUE)
-
-   - name: Simple FTP connection using frist and second columns.
-     zos_mvs_raw:
-       program_name: AMAPDUPL
-       auth: true
-       dds:
-         - dd_output:
-             dd_name: sysprint
-             return_content:
-               type: text
-         - dd_data_set:
-             dd_name: SYSUT1
-             data_set_name: myhlq.ds1.output
-             disposition: shr
-         - dd_input:
-             dd_name: sysin
-             reserved_cols: 0
-             content: |
-               USERID=anonymous
-               PASSWORD=anonymous
-               TARGET_SYS=testcase.boulder.ibm.com
-               TARGET_DSN=wessamp.bigfile
 
    - name: List data sets matching pattern in catalog,
        save output to a new generation of gdgs.

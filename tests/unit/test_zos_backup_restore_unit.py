@@ -142,14 +142,11 @@ def test_valid_backup_name(zos_backup_restore_mocker, backup_name):
     ["MYIclASS", "M0341CSS", "storagec", "s", "$*@@%#1", "#"],
 )
 def test_valid_sms_classes(zos_backup_restore_mocker, sms_class):
-    sms = {
-        "storage_class":sms_class,
-        "management_class":sms_class
-        }
     valid_args = dict(
         operation="backup",
         data_sets=dict(include="user.*"),
-        sms=sms
+        sms_storage_class=sms_class,
+        sms_management_class=sms_class,
     )
     assert_args_valid(zos_backup_restore_mocker, valid_args)
 
@@ -233,14 +230,11 @@ def test_invalid_backup_name(zos_backup_restore_mocker, backup_name):
     ["5555bad", "toolongclass", "bad!char", True, False, 100, 0, -1],
 )
 def test_invalid_sms_classes(zos_backup_restore_mocker, sms_class):
-    sms = {
-        "storage_class":sms_class,
-        "management_class":sms_class
-        }
     valid_args = dict(
         operation="backup",
         data_sets=dict(include="user.*"),
-        sms=sms
+        sms_storage_class=sms_class,
+        sms_management_class=sms_class,
     )
     assert_args_invalid(zos_backup_restore_mocker, valid_args)
 

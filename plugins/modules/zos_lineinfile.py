@@ -104,7 +104,6 @@ options:
       - Default is EOF
     required: false
     type: str
-    aliases: [ after ]
   insertbefore:
     description:
       - Used with C(state=present).
@@ -122,7 +121,6 @@ options:
       - Choices are BOF or '*regex*'
     required: false
     type: str
-    aliases: [ before ]
   backup:
     description:
       - Creates a backup file or backup data set for I(src), including the
@@ -293,23 +291,11 @@ msg:
   returned: failure
   type: str
   sample: Parameter verification failed
-stdout:
-  description: The stdout from ZOAU dsed command.
-  returned: always
-  type: str
-stderr:
+return_content:
   description: The error messages from ZOAU dsed
-  returned: always
+  returned: failure
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
-stdout_lines:
-    description: List of strings containing individual lines from stdout.
-    returned: always
-    type: list
-stderr_lines:
-    description: List of strings containing individual lines from stderr.
-    returned: always
-    type: list
 backup_name:
     description: Name of the backup file or data set that was created.
     returned: if backup=true
@@ -618,11 +604,9 @@ def main():
         line=dict(type='str'),
         insertafter=dict(
             type='str',
-            aliases=['after']
         ),
         insertbefore=dict(
             type='str',
-            aliases=['before']
         ),
         backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
@@ -643,8 +627,8 @@ def main():
         state=dict(arg_type="str", default='present', choices=['absent', 'present']),
         regexp=dict(arg_type="str", required=False),
         line=dict(arg_type="str", required=False),
-        insertafter=dict(arg_type="str", required=False, aliases=['after']),
-        insertbefore=dict(arg_type="str", required=False, aliases=['before']),
+        insertafter=dict(arg_type="str", required=False),
+        insertbefore=dict(arg_type="str", required=False),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
@@ -689,24 +673,7 @@ def main():
     is_gds = False
     has_special_chars = False
     dmod_exec = False
-    rc = 0
-    stdout = ''
-    stderr = ''
-    cmd = ''
-    changed = False
-    return_content = None
-
-    result = dict(
-        changed=False,
-        cmd='',
-        found=0,
-        stdout='',
-        stdout_lines=[],
-        stderr='',
-        stderr_lines=[],
-        rc=0,
-        backup_name='',
-    )
+    return_content = ""
 
     # analysis the file type
     if "/" not in src:
@@ -750,19 +717,27 @@ def main():
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
         if dmod_exec:
-            rc, cmd, stdout = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch,
+            rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch,
                                            force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['stodut'] = stodut
+            result['return_content'] = stodut
+            result['changed'] = True if rc == 0 else False
             stderr = 'Failed to insert new entry' if rc != 0 else ""
-            changed = True if rc == 0 else False
         else:
             return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
                                      backrefs, force)
     else:
         if dmod_exec:
-            rc, cmd, stdout = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force,
+            rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force,
                                            backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['stodut'] = stodut
+            result['return_content'] = stodut
+            result['changed'] = True if rc == 0 else False
             stderr = 'Failed to insert new entry' if rc != 0 else ""
-            changed = True if rc == 0 else False
         else:
             return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
     if not dmod_exec:
@@ -815,16 +790,17 @@ def main():
         if 'cmd' in ret:
             ret['cmd'] = ret['cmd'].replace('\\"', '"').replace('\\\\', '\\')
             result['cmd'] = ret['cmd']
-        changed = ret.get('changed', False)
+        result['changed'] = ret.get('changed', False)
         result['found'] = ret.get('found', 0)
         result['stdout'] = stdout
-    result['changed'] = changed
-    result['rc'] = rc
-    result['cmd'] = cmd
-    result['stdout'] = str(stdout)
-    result['stderr'] = str(stderr)
-    result['stdout_lines'] = result['stdout'].splitlines()
-    result['stderr_lines'] = result['stderr'].splitlines()
+        result['return_content'] = stdout
+    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+    # That information will be given with 'changed' and 'found'
+    if len(stderr):
+        result['stderr'] = str(stderr)
+        result['rc'] = rc
+    if 'backup_name' not in result:
+        result['backup_name'] = ""
     module.exit_json(**result)
 
 

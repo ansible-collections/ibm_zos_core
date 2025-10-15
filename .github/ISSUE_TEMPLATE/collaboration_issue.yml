@@ -42,7 +42,6 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
-        - v1.15.0-beta.1
         - v1.14.1
         - v1.14.0
         - v1.14.0-beta.1

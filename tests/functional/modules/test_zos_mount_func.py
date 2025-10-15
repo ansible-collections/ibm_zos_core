@@ -187,7 +187,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_systems):
+def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -198,7 +198,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        binary=True,
+        is_binary=True,
     )
     hosts.all.shell(
         cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
@@ -209,12 +209,19 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
     dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"
 
-    hosts.all.shell(cmd=f"dtouch -tpdse -s5M -IFBA -l80 {dest}")
+    hosts.all.zos_data_set(
+        name=dest,
+        type="pdse",
+        space_primary=5,
+        space_type="m",
+        record_format="fba",
+        record_length=80,
+    )
     print("\nbnn-Copying {0} to {1}\n".format(tmp_file_filename, dest_path))
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        binary=True,
+        is_binary=True,
         remote_src=True,
     )
 
@@ -224,7 +231,7 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
             path="/pythonx",
             fs_type="zfs",
             state="mounted",
-            persistent=dict(name=dest_path),
+            persistent=dict(data_store=dest_path),
         )
 
         for result in mount_result.values():
@@ -245,7 +252,15 @@ def test_basic_mount_with_bpx_nomarker_nobackup(ansible_zos_module, volumes_on_s
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
-        hosts.all.shell(cmd=f"drm {dest}")
+        hosts.all.zos_data_set(
+            name=dest,
+            state="absent",
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+        )
 
 def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
@@ -271,7 +286,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        binary=True,
+        is_binary=True,
         remote_src=True,
     )
 
@@ -281,7 +296,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
             path="/pythonx",
             fs_type="zfs",
             state="mounted",
-            persistent=dict(name=dest_path),
+            persistent=dict(data_store=dest_path),
         )
 
         for result in mount_result.values():
@@ -315,7 +330,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
             stdin="",
         )
 
-def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_systems):
+def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -326,7 +341,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
-        binary=True,
+        is_binary=True,
     )
     # Make it readable at console
     hosts.all.shell(
@@ -350,13 +365,20 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
     dest_path = dest + "(AUTO2)"
     back_dest_path = dest + "(AUTO2BAK)"
 
-    hosts.all.shell(cmd=f"dtouch -tpdse -s5M -IFBA -l80 {dest}")
+    hosts.all.zos_data_set(
+        name=dest,
+        type="pdse",
+        space_primary=5,
+        space_type="m",
+        record_format="fba",
+        record_length=80,
+    )
 
     print("\nbcb-Copying {0} to {1}\n".format(tmp_file_filename, dest_path))
     hosts.all.zos_copy(
         src=tmp_file_filename,
         dest=dest_path,
-        binary=True,
+        is_binary=True,
         remote_src=True,
     )
 
@@ -369,10 +391,10 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
             fs_type="zfs",
             state="mounted",
             persistent=dict(
-                name=dest_path,
+                data_store=dest_path,
                 backup="Yes",
                 backup_name=back_dest_path,
-                marker=["bpxtablemarker - try this", "second line of marker"],
+                comment=["bpxtablecomment - try this", "second line of comment"],
             ),
         )
         # copying from dataset to make editable copy on target
@@ -381,7 +403,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
         hosts.all.zos_copy(
             src=dest_path,
             dest=test_tmp_file_filename,
-            binary=True,
+            is_binary=True,
             remote_src=True,
         )
         results = hosts.all.shell(
@@ -399,7 +421,7 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
             assert result.get("changed") is True
 
         assert srcfn in data
-        assert "bpxtablemarker - try this" in data
+        assert "bpxtablecomment - try this" in data
     finally:
         hosts.all.zos_mount(
             src=srcfn,
@@ -416,7 +438,15 @@ def test_basic_mount_with_bpx_marker_backup(ansible_zos_module, volumes_on_syste
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
-        hosts.all.shell(cmd=f"drm {dest}")
+        hosts.all.zos_data_set(
+            name=dest,
+            state="absent",
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+        )
 
 def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
@@ -434,14 +464,14 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
     finally:
         tmphlq = "TMPHLQ"
         persist_data_set = get_tmp_ds_name()
-        hosts.all.shell(cmd=f"dtouch -tseq {persist_data_set}")
+        hosts.all.zos_data_set(name=persist_data_set, state="present", type="seq")
         unmount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
             state="absent",
             tmp_hlq=tmphlq,
-            persistent=dict(name=persist_data_set, backup=True)
+            persistent=dict(data_store=persist_data_set, backup=True)
         )
         hosts.all.shell(
             cmd="drm " + DataSet.escape_data_set_name(srcfn),
@@ -449,7 +479,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             stdin="",
         )
 
-        hosts.all.shell(cmd=f"drm {persist_data_set}")
+        hosts.all.zos_data_set(name=persist_data_set, state="absent")
         for result in unmount_result.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""

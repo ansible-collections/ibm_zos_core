@@ -50,26 +50,17 @@ options:
     type: bool
     required: false
     default: false
-  wait_time:
+  wait_time_s:
     description:
       - Set maximum time in seconds to wait for the commands to execute.
       - When set to 0, the system default is used.
       - This option is helpful on a busy system requiring more time to execute
         commands.
       - Setting I(wait) can instruct if execution should wait the
-        full I(wait_time).
+        full I(wait_time_s).
     type: int
     required: false
     default: 1
-  time_unit:
-    description:
-      - Set the C(wait_time) unit of time, which can be C(s) (seconds) or C(cs) (centiseconds).
-    type: str
-    required: false
-    default: s
-    choices:
-      - s
-      - cs
   case_sensitive:
     description:
       - If C(true), the command will not be converted to uppercase before
@@ -112,17 +103,11 @@ EXAMPLES = r"""
 - name: Execute operator command to show jobs, always waiting 5 seconds for response
   zos_operator:
     cmd: 'd a,all'
-    wait_time: 5
+    wait_time_s: 5
 
 - name: Display the system symbols and associated substitution texts.
   zos_operator:
     cmd: 'D SYMBOLS'
-
-- name: Execute an operator command to show device status and allocation wait 10 centiseconds.
-  zos_operator:
-    cmd: 'd u'
-    wait_time : 10
-    time_unit : 'cs'
 """
 
 RETURN = r"""
@@ -140,22 +125,16 @@ cmd:
     sample: d u,all
 elapsed:
     description:
-      The number of seconds or centiseconds that elapsed waiting for the command to complete.
+      The number of seconds that elapsed waiting for the command to complete.
     returned: always
     type: float
     sample: 51.53
-wait_time:
+wait_time_s:
     description:
-      The maximum time in the time_unit set to wait for the commands to execute.
+      The maximum time in seconds to wait for the commands to execute.
     returned: always
     type: int
     sample: 5
-time_unit:
-    description:
-      The time unit set for wait_time.
-    returned: always
-    type: str
-    sample: s
 content:
     description:
        The resulting text from the command submitted.
@@ -221,7 +200,7 @@ except Exception:
     opercmd = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, time_unit, timeout=1, preserve=False, *args, **kwargs):
+def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
     """
     Executes an operator command.
 
@@ -229,8 +208,6 @@ def execute_command(operator_cmd, time_unit, timeout=1, preserve=False, *args, *
     ----------
     operator_cmd : str
         Command to execute.
-    time_unit : str
-        Unit of time to wait of execution of the command.
     timeout : int
         Time until it stops whether it finished or not.
     preserve : bool
@@ -246,20 +223,15 @@ def execute_command(operator_cmd, time_unit, timeout=1, preserve=False, *args, *
         Return code, standard output, standard error and time elapsed from start to finish.
     """
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
-    if time_unit == "s":
-        timeout = 100 * timeout
+    timeout_c = 100 * timeout_s
 
     start = timer()
-    response = opercmd.execute(operator_cmd, timeout=timeout, preserve=preserve, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout=timeout_c, preserve=preserve, *args, **kwargs)
     end = timer()
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-    if time_unit == "cs":
-        elapsed = round((end - start) * 100, 2)
-    else:
-        elapsed = round(end - start, 2)
-
+    elapsed = round(end - start, 2)
     return rc, stdout, stderr, elapsed
 
 
@@ -280,8 +252,7 @@ def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        wait_time=dict(type="int", required=False, default=1),
-        time_unit=dict(type="str", required=False, choices=["s", "cs"], default="s"),
+        wait_time_s=dict(type="int", required=False, default=1),
         case_sensitive=dict(type="bool", required=False, default=False),
     )
 
@@ -323,8 +294,7 @@ def run_module():
         # call is returned from run_operator_command, specifying what was run.
         # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")
-        result["wait_time"] = new_params.get("wait_time")
-        result["time_unit"] = new_params.get("time_unit")
+        result["wait_time_s"] = new_params.get("wait_time_s")
         result["changed"] = False
 
         # rc=0, something succeeded (the calling script ran),
@@ -339,8 +309,7 @@ def run_module():
             module.fail_json(msg=("A non-zero return code was received : {0}. Review the response for more details.").format(result["rc"]),
                              cmd=result["cmd"],
                              elapsed_time=result["elapsed"],
-                             wait_time=result["wait_time"],
-                             time_unit=result["time_unit"],
+                             wait_time_s=result["wait_time_s"],
                              stderr=str(error) if error is not None else result["content"],
                              stderr_lines=str(error).splitlines() if error is not None else result["content"],
                              changed=result["changed"],)
@@ -369,10 +338,9 @@ def parse_params(params):
     """
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
-        verbose=dict(arg_type="bool", required=False, default=False),
-        wait_time=dict(arg_type="int", required=False, default=1),
-        time_unit=dict(type="str", required=False, choices=["s", "cs"], default="s"),
-        case_sensitive=dict(arg_type="bool", required=False, default=False),
+        verbose=dict(arg_type="bool", required=False),
+        wait_time_s=dict(arg_type="int", required=False),
+        case_sensitive=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -401,8 +369,7 @@ def run_operator_command(params):
         kwargs.update({"verbose": True})
         kwargs.update({"debug": True})
 
-    wait_time = params.get("wait_time")
-    time_unit = params.get("time_unit")
+    wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
     preserve = params.get("case_sensitive")
 
@@ -414,7 +381,7 @@ def run_operator_command(params):
         kwargs.update({"wait": True})
 
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, time_unit=time_unit, timeout=wait_time, preserve=preserve, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, preserve=preserve, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)

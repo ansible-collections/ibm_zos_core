@@ -138,11 +138,6 @@ changed
 
   | **returned**: always
   | **type**: bool
-  | **sample**:
-
-    .. code-block:: json
-
-        true
 
 jobs
   The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
@@ -158,49 +153,35 @@ jobs
             {
                 "asid": 0,
                 "content_type": "JOB",
-                "cpu_time": 1414,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
-                "execution_node": "STL1",
                 "execution_time": "00:00:02",
-                "job_class": "STC",
+                "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
-                "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 1,
-                "program_name": "BPXBATCH",
                 "queue_position": 3,
                 "ret_code": "null",
-                "subsystem": "STL1",
-                "svc_class": "?",
-                "system": "STL1"
+                "svc_class": "?"
             },
             {
                 "asid": 4,
                 "content_type": "JOB",
-                "cpu_time": 1414,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
-                "execution_node": "STL1",
                 "execution_time": "00:00:03",
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
-                "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 0,
-                "program_name": "null",
                 "queue_position": 0,
                 "ret_code": {
                     "code": "null",
-                    "msg": "CANCELED",
-                    "msg_code": "null",
-                    "msg_txt": "CANCELED"
+                    "msg": "CANCELED"
                 },
-                "subsystem": "STL1",
-                "svc_class": "E",
-                "system": "STL1"
+                "svc_class": "E"
             }
         ]
 
@@ -252,24 +233,6 @@ jobs
     | **type**: str
     | **sample**: STL1
 
-  cpu_time
-    Sum of the CPU time used by each job step, in microseconds.
-
-    | **type**: int
-    | **sample**: 5
-
-  execution_node
-    Execution node that picked the job and executed it.
-
-    | **type**: str
-    | **sample**: STL1
-
-  origin_node
-    Origin node that submitted the job.
-
-    | **type**: str
-    | **sample**: STL1
-
   ret_code
     Return code output collected from job log.
 
@@ -283,7 +246,13 @@ jobs
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": 0,
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
           }
 
@@ -327,36 +296,6 @@ jobs
 
         | **type**: int
 
-
-
-  steps
-    Series of JCL steps that were executed and their return codes.
-
-    | **type**: list
-    | **elements**: dict
-    | **sample**:
-
-      .. code-block:: json
-
-          {
-              "steps": [
-                  {
-                      "step_cc": 0,
-                      "step_name": "STEP0001"
-                  }
-              ]
-          }
-
-    step_name
-      Name of the step shown as "was executed" in the DD section.
-
-      | **type**: str
-      | **sample**: STEP0001
-
-    step_cc
-      The CC returned for this step in the DD section.
-
-      | **type**: int
 
 
   job_class
@@ -413,7 +352,7 @@ jobs
     | **sample**: 00:00:10
 
 
-msg
+message
   Message returned on failure.
 
   | **returned**: failure

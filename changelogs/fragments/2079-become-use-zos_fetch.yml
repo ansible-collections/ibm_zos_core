@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_fetch - Previously, the use of `become` would result in a permissions error
+    while trying to fetch a data set or a member. Fix now allows a user to escalate
+    privileges when fetching resources.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2079)

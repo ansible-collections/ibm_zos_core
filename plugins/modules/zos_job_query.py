@@ -108,7 +108,6 @@ changed:
     True if the state was changed, otherwise False.
   returned: always
   type: bool
-  sample: True
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
@@ -154,21 +153,21 @@ jobs:
          The job entry subsystem that MVS uses to do work.
       type: str
       sample: STL1
-    origin_node:
-      description:
-        Origin node that submitted the job.
-      type: str
-      sample: "STL1"
-    execution_node:
-      description:
-        Execution node that picked the job and executed it.
-      type: str
-      sample: "STL1"
     cpu_time:
       description:
         Sum of the CPU time used by each job step, in microseconds.
       type: int
       sample: 5
+    execution_node:
+      description:
+        Execution node that picked the job and executed it.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node that submitted the job.
+      type: str
+      sample: "STL1"
     ret_code:
       description:
          Return code output collected from job log.
@@ -211,35 +210,19 @@ jobs:
                 The CC returned for this step in the DD section.
               type: int
               sample: 0
+
       sample:
         ret_code: {
          "msg": "CC 0000",
          "msg_code": "0000",
          "msg_txt": "",
-         "code": 0
+         "code": 0,
+         "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": 0
+            }
+          ]
         }
-    steps:
-      description:
-        Series of JCL steps that were executed and their return codes.
-      type: list
-      elements: dict
-      contains:
-        step_name:
-          description:
-            Name of the step shown as "was executed" in the DD section.
-          type: str
-          sample: "STEP0001"
-        step_cc:
-          description:
-            The CC returned for this step in the DD section.
-          type: int
-          sample: 0
-      sample:
-        "steps": [
-          { "step_name": "STEP0001",
-            "step_cc": 0
-          }
-        ]
     job_class:
       description:
         Job class for this job.
@@ -294,20 +277,14 @@ jobs:
             "job_name": "LINKJOB",
             "owner": "ADMIN",
             "job_id": "JOB01427",
+            "ret_code": "null",
+            "job_class": "K",
             "content_type": "JOB",
-            "ret_code": { "msg" : "CC", "msg_code" : "0000", "code" : "0", msg_txt : "CC" },
-            "steps": [
-              { "step_name": "STEP0001",
-                "step_cc": 0
-              }
-            ],
-            "job_class": "STC",
-            "svc_class": "null",
+            "svc_class": "?",
             "priority": 1,
             "asid": 0,
             "creation_date": "2023-05-03",
             "creation_time": "12:13:00",
-            "program_name": "BPXBATCH",
             "queue_position": 3,
             "execution_time": "00:00:02",
             "system": "STL1",
@@ -321,8 +298,7 @@ jobs:
             "owner": "ADMIN",
             "job_id": "JOB16577",
             "content_type": "JOB",
-            "ret_code": { "msg" : "CANCELED", "msg_code" : "null", "code" : "null", msg_txt : "CANCELED" },
-            "steps" : [],
+            "ret_code": { "msg": "CANCELED", "code": "null" },
             "job_class": "A",
             "svc_class": "E",
             "priority": 0,
@@ -331,7 +307,6 @@ jobs:
             "creation_time": "12:14:00",
             "queue_position": 0,
             "execution_time": "00:00:03",
-            "program_name": "null",
             "system": "STL1",
             "subsystem": "STL1",
             "cpu_time": 1414,
@@ -339,7 +314,7 @@ jobs:
             "origin_node": "STL1"
         },
     ]
-msg:
+message:
   description:
      Message returned on failure.
   type: str
@@ -374,7 +349,7 @@ def run_module():
         job_id=dict(type="str", required=False),
     )
 
-    result = dict(changed=False)
+    result = dict(changed=False, message="")
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
@@ -404,7 +379,6 @@ def run_module():
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
-            result["changed"] = True
         else:
             jobs = None
 
@@ -462,8 +436,8 @@ def parsing_jobs(jobs_raw):
         Parsed jobs.
     """
     jobs = []
+    ret_code = {}
     for job in jobs_raw:
-        ret_code = job.get("ret_code")
         # Easier to see than checking for an empty string, JOB NOT FOUND was
         # replaced with None in the jobs.py and msg_txt field describes the job query instead
         if job.get("ret_code") is None:
@@ -475,32 +449,30 @@ def parsing_jobs(jobs_raw):
 
         if "AC" in status_raw:
             # the job is active
-            ret_code["msg"] = None
-            ret_code["msg_code"] = None
-            ret_code["code"] = None
-            ret_code["msg_txt"] = None
-
+            ret_code = None
         elif "CC" in status_raw:
             # status = 'Completed normally'
-            ret_code["msg"] = status_raw
-
+            ret_code = {
+                "msg": status_raw,
+                "code": job.get("ret_code").get("code"),
+            }
         elif "ABEND" in status_raw:
             # status = 'Ended abnormally'
-            ret_code["msg"] = status_raw
-
+            ret_code = {
+                "msg": status_raw,
+                "code": job.get("ret_code").get("code"),
+            }
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
-            ret_code["msg"] = status_raw
+            ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
 
         elif "CANCELED" in status_raw or "JCLERR" in status_raw or "JCL ERROR" in status_raw or "JOB NOT FOUND" in status_raw:
             # status = status_raw
-            ret_code["msg"] = status_raw
-            ret_code["code"] = None
-            ret_code["msg_code"] = None
+            ret_code = {"msg": status_raw, "code": None}
 
         else:
             # status = 'Unknown'
-            ret_code["msg"] = status_raw
+            ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
 
         job_dict = {
             "job_name": job.get("job_name"),
@@ -513,7 +485,6 @@ def parsing_jobs(jobs_raw):
             "execution_node": job.get("execution_node"),
             "origin_node": job.get("origin_node"),
             "ret_code": ret_code,
-            "steps": job.get("steps"),
             "job_class": job.get("job_class"),
             "svc_class": job.get("svc_class"),
             "priority": job.get("priority"),

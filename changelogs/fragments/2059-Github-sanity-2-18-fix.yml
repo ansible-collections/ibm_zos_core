@@ -1,0 +1,4 @@
+trivial:
+  - ac-ansible-test-sanity.yml - Updated the ansible version to 2.18,
+    venv to 2.18, python to 3.12.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2059).

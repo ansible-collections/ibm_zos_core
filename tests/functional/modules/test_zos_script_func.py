@@ -87,7 +87,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
       async_status:
         jid: "{{{{ job_task.ansible_job_id }}}}"
       register: job_result
-      until: job_result.finished | bool
+      until: job_result.finished
       retries: 20
       delay: 5
 """

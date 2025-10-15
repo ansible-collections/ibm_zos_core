@@ -132,11 +132,11 @@ All releases will meet the following test criteria.
 
 <br/>This release of the collection was tested with following dependencies.
 
-* ansible-core v2.16.x
+* ansible-core v2.15.x
 * Python 3.12.x
 * IBM Open Enterprise SDK for Python 3.12.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.5.x
-* z/OS V2R5 or V3R1
+* IBM Z Open Automation Utilities (ZOAU) 1.3.4.x
+* z/OS V2R5
 
 ## Contributing
 
@@ -152,7 +152,6 @@ If you would like to communicate with this community, you can do so through the 
 * GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
 * [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
 * Discord [System Z Enthusiasts](https://discord.gg/sze) room `ansible`.
-* LinkedIn [Ansible for IBM Z](https://www.linkedin.com/groups/14515630/).
 * Matrix general usage questions [room](https://matrix.to/#/#users:ansible.com).
 
 ## Support

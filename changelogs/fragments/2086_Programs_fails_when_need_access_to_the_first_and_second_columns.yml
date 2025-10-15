@@ -1,0 +1,5 @@
+minor_changes:
+  - zos_mvs_raw  - Before this addition, you could not put anything in columns 1 or 2, were reserved for JCL processing.
+    Change now allows add reserved_cols option and validate that the module get access to modify dd_content option
+    base on the value, if not retain the previous behavior or work.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2086)

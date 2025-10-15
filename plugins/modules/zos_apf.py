@@ -102,18 +102,17 @@ options:
     type: str
   persistent:
     description:
-      - Add/remove persistent entries to or from I(target)
+      - Add/remove persistent entries to or from I(data_set_name)
       - C(library) will not be persisted or removed if C(persistent=None)
     required: False
     type: dict
     suboptions:
-      target:
+      data_set_name:
         description:
           - The data set name used for persisting or removing a C(library) from
             the APF list.
         required: True
         type: str
-        aliases: [data_set_name]
       marker:
         description:
           - The marker line template.
@@ -128,10 +127,10 @@ options:
         default: "/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */"
       backup:
         description:
-          - Creates a backup file or backup data set for I(target),
+          - Creates a backup file or backup data set for I(data_set_name),
             including the timestamp information to ensure that you retrieve the
             original APF list
-            defined in I(target)".
+            defined in I(data_set_name)".
           - I(backup_name) can be used to specify a backup file name if
             I(backup=true).
           - The backup file name will be return on either success or failure
@@ -143,7 +142,7 @@ options:
         description:
           - Specify the USS file name or data set name for the destination
             backup.
-          - If the source I(target) is a USS file or path, the
+          - If the source I(data_set_name) is a USS file or path, the
             backup_name name must be a file or path name, and the USS file or
             path must be an absolute path name.
           - If the source is an MVS data set, the backup_name must be
@@ -238,18 +237,18 @@ EXAMPLES = r'''
     library: SOME.SEQUENTIAL.DATASET
     force_dynamic: true
     persistent:
-      target: SOME.PARTITIONED.DATASET(MEM)
+      data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
   zos_apf:
     state: absent
     library: SOME.SEQUENTIAL.DATASET
     volume: T12345
     persistent:
-      target: SOME.PARTITIONED.DATASET(MEM)
+      data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Batch libraries with custom marker, persistence for the APF list
   zos_apf:
     persistent:
-      target: "SOME.PARTITIONED.DATASET(MEM)"
+      data_set_name: "SOME.PARTITIONED.DATASET(MEM)"
       marker: "/* {mark} PROG001 USR0010 */"
     batch:
       - library: SOME.SEQ.DS1
@@ -284,22 +283,12 @@ stdout:
                  check_format> DYNAMIC or STATIC"
   returned: always
   type: str
-stdout_lines:
-  description: List of strings containing individual lines from STDOUT.
-  returned: always
-  type: list
 stderr:
   description: The error messages from ZOAU command apfadm
   returned: always
   type: str
   sample: "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already
   present in APF list."
-stderr_lines:
-  description: List of strings containing individual lines from STDERR.
-  returned: always
-  type: list
-  sample: ["BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already
-  present in APF list."]
 rc:
   description: The return code from ZOAU command apfadm
   returned: always
@@ -321,7 +310,7 @@ import json
 from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, backup as Backup)
+    better_arg_parser, zoau_version_checker, data_set, backup as Backup)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -447,16 +436,9 @@ def main():
                 type='dict',
                 required=False,
                 options=dict(
-                    target=dict(
+                    data_set_name=dict(
                         type='str',
                         required=True,
-                        aliases=["data_set_name"],
-                        deprecated_aliases=[
-                            dict(
-                                name='data_set_name',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core')
-                        ],
                     ),
                     marker=dict(
                         type='str',
@@ -521,7 +503,7 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                target=dict(arg_type='str', required=True, aliases=["data_set_name"]),
+                data_set_name=dict(arg_type='str', required=True),
                 marker=dict(arg_type='str', required=False, default='/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */'),
                 backup=dict(arg_type='bool', default=False),
                 backup_name=dict(arg_type='str', required=False, default=None),
@@ -567,7 +549,7 @@ def main():
     tmphlq = module.params.get('tmp_hlq')
 
     if persistent:
-        target = persistent.get('target')
+        data_set_name = persistent.get('data_set_name')
         backup = persistent.get('backup')
         marker = persistent.get('marker')
         if len(marker) > 71:
@@ -576,13 +558,13 @@ def main():
             if persistent.get('backup_name'):
                 backup = persistent.get('backup_name')
                 del persistent['backup_name']
-            result['backup_name'] = backupOper(module, target, backup, tmphlq)
+            result['backup_name'] = backupOper(module, data_set_name, backup, tmphlq)
             del persistent['backup']
         if state == "present":
-            persistent['addDataset'] = target
+            persistent['addDataset'] = data_set_name
         else:
-            persistent['delDataset'] = target
-        del persistent['target']
+            persistent['delDataset'] = data_set_name
+        del persistent['data_set_name']
 
     if operation:
         ret = zsystem.apf(opt=operation)
@@ -598,22 +580,26 @@ def main():
                 del item['library']
             # ignore=true is added so that it's ignoring in case of addition if already present
             # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
-            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+                ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            else:
+                ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
         else:
             if not library:
                 module.fail_json(msg='library is required')
             # ignore=true is added so that it's ignoring in case of addition if already present
             # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
-            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+                ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            else:
+                ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response
     operRc = ret.rc
     result['stderr'] = operErr
-    result['stderr_lines'] = operErr.split("\n")
     result['rc'] = operRc
     result['stdout'] = operOut
-    result['stdout_lines'] = operOut.split("\n")
 
     if operation != 'list' and operRc == 0:
         if operErr.strip():
@@ -645,7 +631,6 @@ def main():
                 except re.error:
                     module.exit_json(**result)
             result['stdout'] = ds_list
-            result['stdout_lines'] = ds_list.split("\n")
         else:
             """
             ZOAU 1.3 changed the output from apf, having the data set list inside a new "data" tag.
@@ -653,7 +638,6 @@ def main():
             """
             try:
                 result['stdout'] = json.dumps(data.get("data"))
-                result['stdout_lines'] = json.dumps(data.get("data")).split("\n")
             except Exception as e:
                 err_msg = "An exception occurred. See stderr for more details."
                 module.fail_json(msg=err_msg, stderr=to_text(e), rc=operErr)

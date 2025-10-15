@@ -31,9 +31,8 @@ description:
     such as "TCP*" or "*".
   - The owner can be specific such as "IBMUSER", or one that uses a pattern
     like "*".
-  - If there is no dd_name, or if dd_name="?", output of all the dds under
+  - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-  - If SYSIN DDs are needed, I(sysin_dd) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
@@ -56,17 +55,11 @@ options:
       - The owner who ran the job. (e.g "IBMUSER", "*")
     type: str
     required: false
-  dd_name:
+  ddname:
     description:
       - Data definition name (show only this DD on a found job).
         (e.g "JESJCL", "?")
     type: str
-    required: false
-  sysin_dd:
-    description:
-      - Whether to include SYSIN DDs as part of the output.
-    type: bool
-    default: false
     required: false
 
 attributes:
@@ -82,26 +75,21 @@ attributes:
 """
 
 EXAMPLES = r"""
-- name: Job output with dd_name
+- name: Job output with ddname
   zos_job_output:
     job_id: "STC02560"
-    dd_name: "JESMSGLG"
+    ddname: "JESMSGLG"
 
-- name: JES Job output without dd_name
+- name: JES Job output without ddname
   zos_job_output:
     job_id: "STC02560"
 
-- name: JES Job output with all dd_name
+- name: JES Job output with all ddnames
   zos_job_output:
     job_id: "STC*"
     job_name: "*"
     owner: "IBMUSER"
     ddname: "?"
-
-- name: Query a job's output including SYSIN DDs
-  zos_job_output:
-    job_id: "JOB00548"
-    sysin_dd: true
 """
 
 RETURN = r"""
@@ -151,7 +139,7 @@ jobs:
       sample: "STL1"
     class:
       description:
-        Identifies the data set used in a system output data set, usually called a sysout data set.
+         Identifies the data set used in a system output data set, usually called a sysout data set.
       type: str
       sample:
     content_type:
@@ -181,15 +169,15 @@ jobs:
         it represents the time elapsed from the job execution start and current time.
       type: str
       sample: 00:00:10
-    dds:
+    ddnames:
       description:
-        Data definition names.
+         Data definition names.
       type: list
       elements: dict
       contains:
-        dd_name:
+        ddname:
           description:
-            Data definition name.
+             Data definition name.
           type: str
           sample: JESMSGLG
         record_count:
@@ -199,7 +187,7 @@ jobs:
           sample: 17
         id:
           description:
-            The file ID.
+             The file ID.
           type: str
           sample: 2
         stepname:
@@ -210,8 +198,8 @@ jobs:
           sample: JES2
         procstep:
           description:
-            Identifies the set of statements inside JCL grouped together to
-            perform a particular function.
+             Identifies the set of statements inside JCL grouped together to
+             perform a particular function.
           type: str
           sample: PROC1
         byte_count:
@@ -221,7 +209,7 @@ jobs:
           sample: 574
         content:
           description:
-            The dd content.
+             The ddname content.
           type: list
           elements: str
           sample:
@@ -239,7 +227,7 @@ jobs:
                "         5 //SYSUT1   DD *                                                                 ",
                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                "         7 //                                                                              "
-              ]
+             ]
     job_class:
       description:
         Job class for this job.
@@ -273,7 +261,7 @@ jobs:
       sample: "IEBGENER"
     ret_code:
       description:
-        Return code output collected from job log.
+         Return code output collected from job log.
       type: dict
       contains:
         msg:
@@ -289,48 +277,48 @@ jobs:
           sample: S0C4
         msg_txt:
           description:
-            Returns additional information related to the job.
+             Returns additional information related to the job.
           type: str
           sample: "No job can be located with this job name: HELLO"
         code:
           description:
-            Return code converted to integer value (when possible).
+             Return code converted to integer value (when possible).
           type: int
           sample: 00
+        steps:
+          description:
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
+          contains:
+            step_name:
+              description:
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            step_cc:
+              description:
+                The CC returned for this step in the DD section.
+              type: int
+              sample: 0
       sample:
         ret_code: {
          "code": 0,
          "msg": "CC 0000",
          "msg_code": "0000",
          "msg_txt": "",
+         "steps": [
+           { "step_name": "STEP0001",
+             "step_cc": 0
+           }
+         ]
         }
-    steps:
-      description:
-        Series of JCL steps that were executed and their return codes.
-      type: list
-      elements: dict
-      contains:
-        step_name:
-          description:
-            Name of the step shown as "was executed" in the DD section.
-          type: str
-          sample: "STEP0001"
-        step_cc:
-          description:
-            The CC returned for this step in the DD section.
-          type: int
-          sample: 0
-      sample: [
-        { "step_name": "STEP0001",
-          "step_cc": 0
-        }
-      ]
   sample:
      [
       {
         "class": "R",
         "content_type": "JOB",
-        "dds": [
+        "ddnames": [
           {
             "byte_count": "775",
             "content": [
@@ -352,7 +340,7 @@ jobs:
               "-            6 SYSOUT SPOOL KBYTES",
               "-         0.00 MINUTES EXECUTION TIME"
             ],
-            "dd_name": "JESMSGLG",
+            "ddname": "JESMSGLG",
             "id": "2",
             "procstep": "",
             "record_count": "17",
@@ -376,7 +364,7 @@ jobs:
               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
               "         7 //                                                                              "
             ],
-            "dd_name": "JESJCL",
+            "ddname": "JESJCL",
             "id": "3",
             "procstep": "",
             "record_count": "14",
@@ -405,7 +393,7 @@ jobs:
               " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
               "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
             ],
-            "dd_name": "JESYSMSG",
+            "ddname": "JESYSMSG",
             "id": "4",
             "procstep": "",
             "record_count": "19",
@@ -419,7 +407,7 @@ jobs:
               "                                                                                                                         ",
               " PROCESSING ENDED AT EOD                                                                                                 "
             ],
-            "dd_name": "SYSPRINT",
+            "ddname": "SYSPRINT",
             "id": "102",
             "procstep": "",
             "record_count": "4",
@@ -430,7 +418,7 @@ jobs:
             "content": [
               " HELLO, WORLD                                                                    "
             ],
-            "dd_name": "SYSUT2",
+            "ddname": "SYSUT2",
             "id": "103",
             "procstep": "",
             "record_count": "1",
@@ -451,12 +439,12 @@ jobs:
           "msg": "CC 0000",
           "msg_code": "0000",
           "msg_txt": "",
+          "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": 0
+            }
+          ]
         },
-        "steps": [
-          { "step_name": "STEP0001",
-            "step_cc": 0
-          }
-        ],
         "system": "STL1",
         "subsystem": "STL1",
         "cpu_time": 1414,
@@ -468,7 +456,7 @@ changed:
     description:
       Indicates if any changes were made during module operation
     type: bool
-    returned: always
+    returned: on success
 """
 
 
@@ -508,7 +496,6 @@ def run_module():
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
         ddname=dict(type="str", required=False),
-        sysin_dd=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -518,7 +505,6 @@ def run_module():
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
         ddname=dict(type="str", required=False),
-        sysin_dd=dict(type="bool", required=False, default=False),
     )
 
     try:
@@ -531,30 +517,27 @@ def run_module():
             stderr=str(err)
         )
 
-    results = {}
-    results["changed"] = False
-
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
     ddname = module.params.get("ddname")
-    sysin = module.params.get("sysin_dd")
 
     if not job_id and not job_name and not owner:
-        module.fail_json(msg="Please provide a job_id or job_name or owner", stderr="", **results)
+        module.fail_json(msg="Please provide a job_id or job_name or owner")
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname, sysin=sysin)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
-            msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
+            msg="ZOAU exception",
+            rc=fetch_exception.response.rc,
+            stdout=fetch_exception.response.stdout_response,
             stderr=fetch_exception.response.stderr_response,
-            changed=False
         )
     except Exception as e:
-        module.fail_json(msg=repr(e), **results)
+        module.fail_json(msg=repr(e))
 
     module.exit_json(**results)
 

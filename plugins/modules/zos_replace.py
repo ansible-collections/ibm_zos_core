@@ -26,16 +26,9 @@ author:
 options:
   after:
     description:
-      - A regular expression that, if specified, determines which content will be replaced or removed B(after) the match.
-      - Option I(after) is the start position from where the module will seek to match the I(regexp) pattern.
-        When a pattern is matched, occurrences are substituted with the value set for I(replace).
-      - If option I(after) is not set, the module will search from the beginning of the I(target).
-      - Option I(after) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
-      - Option I(after) can be used in combination with I(before).
-        When combined with I(before), patterns are replaced or removed from I(after) until the value set for I(before).
-      - Option I(after) can be interpreted as a literal string instead of a regular expression by setting option I(literal=after).
+      - If specified, only content after this match will be replaced/removed.
+      - Can be used in combination with I(before).
     required: false
-    default: ''
     type: str
   backup:
     description:
@@ -70,16 +63,9 @@ options:
     type: str
   before:
     description:
-      - A regular expression that if, specified, determines which content will be replaced or removed B(before) the match.
-      - Option I(before) is the end position from where the module will seek to match the I(regexp) pattern.
-        When a pattern is matched, occurrences are substituted with the value set for I(replace).
-      - If option I(before) is not set, the module will search to the end of the I(target).
-      - Option I(before) is a regular expression as described in the L(Python library,https://docs.python.org/3/library/re.html).
-      - Option I(before) can be used in combination with I(after).
-        When combined with I(after), patterns are replaced or removed from I(after) until the value set for I(before).
-      - Option I(before) can be interpreted as a literal string instead of a regular expression by setting option I(literal=before).
+      - If specified, only content before this match will be replaced/removed.
+      - Can be used in combination with I(after).
     required: false
-    default: ''
     type: str
   encoding:
     description:
@@ -94,12 +80,8 @@ options:
     default: IBM-1047
   literal:
     description:
-      - If specified, it enables the module to interpret options I(after), I(before) and I(regexp) as a literal rather than a regular expression.
-      - Option I(literal) uses any combination of V(after), V(before) and V(regexp).
-      - To interpret one option as a literal, use I(literal=regexp), I(literal=after) or I(literal=before).
-      - To interpret multiple options as a literal, use a list such as C(['after', 'before']) or C(['regex', 'after', 'before'])
+      - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
     required: false
-    default: []
     type: raw
   target:
     description:
@@ -130,7 +112,7 @@ options:
       - If not set, matches are removed entirely.
     required: false
     type: str
-    default: ''
+    default: ""
 
 notes:
   - For supported character sets used to encode data, refer to the
@@ -138,19 +120,18 @@ notes:
 """
 
 EXAMPLES = r"""
-- name: Replace 'profile/' pattern in USS file via blank substitution.
+- name: Replace with blank space on a USS file any occurrences of the regex
   zos_replace:
     target: /tmp/src/somefile
     regexp: 'profile\/'
 
-- name: Replace regexp match with blank after line match in USS file.
+- name: Replace using after on USS file
   zos_replace:
     target: "/tmp/source"
     regexp: '^MOUNTPOINT*'
     after: export ZOAU_ROOT
 
-- name: Replace a specific line with special character on a dataset after a line, treating the text specified
-    for regexp as a literal string and after as regular expression.
+- name: Replace a specific line with special character on a dataset after a line
   zos_replace:
     target: SAMPLE.SOURCE
     regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
@@ -158,16 +139,7 @@ EXAMPLES = r"""
     after: '^\$source base \([^\s]+\)'
     literal: regexp
 
-- name: Replace a specific line with special character on a dataset after a line, treating the text specified
-    for regexp and after as regular expression.
-  zos_replace:
-    target: SAMPLE.SOURCE
-    regexp: '\ \*\*LIB\ \ DD\ UNIT=SYS,SPACE=\(TRK,\(1,1\)\),VOL=SER=vvvvvv'
-    replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
-    after: '^\$source base \([^\s]+\)'
-    literal: regexp
-
-- name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as literal strings.
+- name: Replace a specific line before a specific sentence with backup
   zos_replace:
     target: SAMPLE.SOURCE
     backup: true
@@ -177,14 +149,7 @@ EXAMPLES = r"""
       - regexp
       - before
 
-- name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as regular expression.
-  zos_replace:
-    target: SAMPLE.SOURCE
-    backup: true
-    regexp: '\ //SYSPRINT\ DD\ SYSOUT=\*'
-    before: '\ SAMPLES OUTPUT SYSIN\ \*\=\$DSN'
-
-- name: Replace 'var' with 'vars' between matched lines after and before with backup.
+- name: Replace some words between two lines with a backup with tmp_hlq
   zos_replace:
     target: SAMPLE.DATASET
     tmp_hlq: ANSIBLE
@@ -195,7 +160,7 @@ EXAMPLES = r"""
     after: ^/tmp/source*
     before: ^   if*
 
-- name: Replace lines on a GDS and generate a backup on the same GDG.
+- name: Replace lines on a GDS and generate a backup on the same GDG
   zos_replace:
     target: SOURCE.GDG(0)
     regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
@@ -204,7 +169,7 @@ EXAMPLES = r"""
     backup: true
     backup_name: "SOURCE.GDG(+1)"
 
-- name: Delete 'SYSTEM' calls via backref between matched lines in a PDS member.
+- name: Delete some calls to SYSTEM on a member using a backref
   zos_replace:
     target: PDS.SOURCE(MEM)
     regexp: '^(.*?SYSTEM.*?)SYSTEM(.*)'
@@ -218,13 +183,13 @@ backup_name:
     description: Name of the backup file or data set that was created.
     returned: if backup=true
     type: str
-    sample: "/path/to/file.txt.2015-02-03@04:15"
+    sample: /path/to/file.txt.2015-02-03@04:15
 changed:
     description:
         Indicates if the source was modified.
     returned: always
     type: bool
-    sample: True
+    sample: 1
 found:
     description: Number of matches found
     returned: success
@@ -592,28 +557,28 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            after=dict(type='str', default=''),
+            after=dict(type='str'),
             backup=dict(type='bool', default=False, required=False),
             backup_name=dict(type='str', default=None, required=False),
-            before=dict(type='str', default=''),
+            before=dict(type='str'),
             encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            literal=dict(type="raw", required=False, default=[]),
+            literal=dict(type="raw", required=False, default=None),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
         supports_check_mode=False
     )
     args_def = dict(
-        after=dict(type='str', default=''),
+        after=dict(type='str'),
         backup=dict(type='bool', default=False, required=False),
         backup_name=dict(type='data_set_or_path', default=None, required=False),
-        before=dict(type='str', default=''),
+        before=dict(type='str'),
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        literal=dict(type=literals, required=False, default=[]),
+        literal=dict(type=literals, required=False, default=None),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -742,8 +707,6 @@ def literals(contents, dependencies):
     """
     allowed_values = {"after", "before", "regexp"}
     if not contents:
-        return None
-    if contents == []:
         return None
     if not isinstance(contents, list):
         contents = [contents]

@@ -131,7 +131,7 @@ def test_uss_single_archive(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             }
         )
 
@@ -162,7 +162,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             mode=dest_mode
         )
@@ -191,7 +191,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             }
         )
 
@@ -203,7 +203,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             }
         )
 
@@ -216,7 +216,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             force=True,
         )
@@ -257,7 +257,7 @@ def test_uss_archive_multiple_files(ansible_zos_module, ds_format, path):
             src=path.get("files"),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
         )
 
@@ -302,7 +302,7 @@ def test_uss_archive_multiple_files_with_exclude(ansible_zos_module, ds_format, 
             src=path.get("files"),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             exclude=path.get("exclude")
         )
@@ -337,7 +337,7 @@ def test_uss_archive_remove_targets(ansible_zos_module, ds_format):
             src=paths,
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             remove=True
         )
@@ -367,7 +367,7 @@ def test_uss_archive_encode(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             encoding={
                 "from": TO_ENCODING,
@@ -401,7 +401,7 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
             src=list(USS_TEST_FILES.keys()),
             dest=dest,
             format={
-                "type":ds_format
+                "name":ds_format
             },
             encoding={
                 "from": FROM_ENCODING,
@@ -432,10 +432,10 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
 
 # List of tests:
 # - test_mvs_archive_single_dataset
-# - test_mvs_archive_single_dataset_adrdssu
+# - test_mvs_archive_single_dataset_use_adrdssu
 # - test_mvs_archive_single_data_set_remove_target
 # - test_mvs_archive_multiple_data_sets
-# - test_mvs_archive_multiple_data_sets_adrdssu
+# - test_mvs_archive_multiple_data_sets_use_adrdssu
 # - test_mvs_archive_multiple_data_sets_remove_target
 # - test_mvs_archive_multiple_data_sets_with_exclusion
 # - test_mvs_archive_multiple_data_sets_with_missing
@@ -519,11 +519,11 @@ def test_mvs_archive_single_dataset(
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "type":ds_format
+            "name":ds_format
         }
         if ds_format == "terse":
-            format_dict["options"] = {
-                "spack":True
+            format_dict["format_options"] = {
+                "terse_pack":"spack"
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -536,7 +536,7 @@ def test_mvs_archive_single_dataset(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -571,7 +571,7 @@ def test_mvs_archive_single_dataset(
 @pytest.mark.parametrize(
     "record_format", ["fb", "vb"],
 )
-def test_mvs_archive_single_dataset_adrdssu(
+def test_mvs_archive_single_dataset_use_adrdssu(
     ansible_zos_module,
     ds_format,
     data_set,
@@ -617,13 +617,13 @@ def test_mvs_archive_single_dataset_adrdssu(
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "type":ds_format
+            "name":ds_format
         }
-        format_dict["options"] = {
-            "adrdssu":True
+        format_dict["format_options"] = {
+            "use_adrdssu":True
         }
         if ds_format == "terse":
-            format_dict["options"].update(spack=True)
+            format_dict["format_options"].update(terse_pack="spack")
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
             dest=archive_data_set,
@@ -635,7 +635,7 @@ def test_mvs_archive_single_dataset_adrdssu(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -699,11 +699,11 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "type":ds_format
+            "name":ds_format
         }
         if ds_format == "terse":
-            format_dict["options"] = {
-                "spack":True
+            format_dict["format_options"] = {
+                "terse_pack":"spack"
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -717,18 +717,11 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
-            # Changed to using the exact data set name in dls
-            # because using wildcards would fail.
-            # Assert archive data set is in place
-            cmd_result = hosts.all.shell(cmd = f"dls {archive_data_set}")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
-            # Assert src_data_set is removed
-            cmd_result = hosts.all.shell(cmd = f"dls '{src_data_set}'")
-            for c_result in cmd_result.contacted.values():
-                assert f"BGYSC1103E No datasets match pattern: {src_data_set}." in c_result.get("stderr")
+                assert src_data_set != c_result.get("stdout")
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
@@ -780,12 +773,12 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "type":ds_format,
-            "options":{}
+            "name":ds_format,
+            "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["options"].update(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"].update(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
             dest=archive_data_set,
@@ -798,7 +791,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
             assert result.get("dest") == archive_data_set
             for ds in target_ds_list:
                 assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
@@ -853,12 +846,12 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "type":ds_format,
-            "options":{}
+            "name":ds_format,
+            "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["options"].update(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"].update(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         exclude = f"{src_data_set}1"
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
@@ -876,9 +869,8 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
                     assert exclude not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -932,12 +924,12 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, ds_format
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "type":ds_format,
-            "options":{}
+            "name":ds_format,
+            "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["options"].update(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"].update(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=f"{src_data_set}*",
             dest=archive_data_set,
@@ -949,7 +941,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, ds_format
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
@@ -1012,12 +1004,12 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
         path_list = [ds.get("name") for ds in target_ds_list]
 
         format_dict = {
-            "type":ds_format,
-            "options":{}
+            "name":ds_format,
+            "format_options":{}
         }
         if ds_format == "terse":
-            format_dict["options"].update(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"].update(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=path_list,
             dest=archive_data_set,
@@ -1035,9 +1027,8 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
                     assert ds.get("name") not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -1101,11 +1092,11 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "type":ds_format
+            "name":ds_format
         }
         if ds_format == "terse":
-            format_dict["options"] = {
-                "spack":True
+            format_dict["format_options"] = {
+                "terse_pack":"spack"
             }
 
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
@@ -1131,9 +1122,8 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
 
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}'")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -1175,10 +1165,10 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        format_dict = dict(type=format, options=dict())
+        format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["options"] = dict(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
             dest=archive_data_set,
@@ -1189,7 +1179,7 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
             assert result.get("dest") == archive_data_set
             assert f"{data_set_name}.G0001V00" in result.get("archived")
             assert f"{data_set_name}.G0002V00" in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}' ")
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(hlq))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -1218,10 +1208,10 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        format_dict = dict(type=format, options=dict())
+        format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["options"] = dict(spack=True)
-        format_dict["options"].update(adrdssu=True)
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
             src=data_set_name,
             dest=f"{archive_data_set}(+1)",
@@ -1230,9 +1220,9 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert data_set_name in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{archive_data_set}*' ")
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(hlq))
             for c_result in cmd_result.contacted.values():
-                assert f"{archive_data_set}.G0001V00" in c_result.get("stdout")
+                assert archive_data_set in c_result.get("stdout")
     finally:
         hosts.all.shell(cmd=f"drm {hlq}.*")
 
@@ -1299,11 +1289,11 @@ def test_mvs_archive_single_dataset_encoding(
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "type":ds_format
+            "name":ds_format
         }
         if ds_format == "terse":
-            format_dict["options"] = {
-                "spack":True
+            format_dict["format_options"] = {
+                "terse_pack":"spack"
             }
         archive_result = hosts.all.zos_archive(
             src=src_data_set,
@@ -1316,7 +1306,7 @@ def test_mvs_archive_single_dataset_encoding(
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = f"dls '{hlq}.*'")
+            cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -1374,9 +1364,9 @@ def test_mvs_archive_multiple_dataset_pattern_encoding(ansible_zos_module, ds_fo
                 ds_target = f"{ds_name}({member})" if member else ds_name
                 hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_target}\"")
 
-        format_dict = {"type": ds_format}
+        format_dict = {"name": ds_format}
         if ds_format == "terse":
-            format_dict["options"] = {"spack": True}
+            format_dict["format_options"] = {"terse_pack": "spack"}
         for ds_name in matched_datasets:
             archive_data_set = get_tmp_ds_name()
             archive_result = hosts.all.zos_archive(
@@ -1390,7 +1380,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding(ansible_zos_module, ds_fo
                 assert result.get("changed") is True
                 assert result.get("dest") == archive_data_set
                 assert ds_name in result.get("archived")
-            cmd_result = hosts.all.shell(cmd=f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd=f"dls {archive_data_set}")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -1448,14 +1438,14 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding(ansible_zos
                 ds_target = f"{ds_name}({member})" if member else ds_name
                 hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_target}\"")
 
-        format_dict = {"type": ds_format}
+        format_dict = {"name": ds_format}
         if ds_format == "terse":
-            format_dict["options"] = {"spack": True}
-        #skipping some files to encode
+            format_dict["format_options"] = {"terse_pack": "spack"}
+        #skipping some files to encode 
         skip_encoding_list = [matched_datasets[0]]
         current_encoding_config = encoding.copy()
         current_encoding_config["skip_encoding"] = skip_encoding_list
-
+        
         for ds_name in matched_datasets:
             archive_data_set = get_tmp_ds_name()
             archive_result = hosts.all.zos_archive(
@@ -1469,7 +1459,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding(ansible_zos
                 assert result.get("changed") is True
                 assert result.get("dest") == archive_data_set
                 assert ds_name in result.get("archived")
-            cmd_result = hosts.all.shell(cmd=f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd=f"dls {archive_data_set}")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -1521,16 +1511,16 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                         type="member",
                         state="present"
                     )
-
+        
         test_line = "pattern match"
         for ds_name in all_datasets_to_process:
             for member in data_set.get("members"):
                 ds_target = f"{ds_name}({member})" if member else ds_name
                 hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_target}\"")
 
-        format_dict = {"type": ds_format}
+        format_dict = {"name": ds_format}
         if ds_format == "terse":
-            format_dict["options"] = {"spack": True}
+            format_dict["format_options"] = {"terse_pack": "spack"}
         for ds_name in matched_datasets:
 
             original_hex_result = hosts.all.shell(cmd=f"dcat '{ds_name}' | od -x")
@@ -1558,7 +1548,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                     original_hex.append('*')
                 else:
                     parts = line.split()
-                    if len(parts) > 1:
+                    if len(parts) > 1: 
                         original_hex.extend(parts[1:])
 
             reverted_hex = []
@@ -1574,13 +1564,13 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                 try:
                     original_first_star_idx = original_hex.index('*')
                 except ValueError:
-                    original_first_star_idx = len(original_hex)
+                    original_first_star_idx = len(original_hex) 
 
                 try:
                     reverted_first_star_idx = reverted_hex.index('*')
                 except ValueError:
                     reverted_first_star_idx = len(reverted_hex)
-
+                
                 original_hex_to_compare = original_hex[:original_first_star_idx]
                 reverted_hex_to_compare = reverted_hex[:reverted_first_star_idx]
 
@@ -1589,7 +1579,7 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansib
                 assert result.get("changed") is True
                 assert result.get("dest") == archive_data_set
                 assert ds_name in result.get("archived")
-            cmd_result = hosts.all.shell(cmd=f"dls '{archive_data_set}'")
+            cmd_result = hosts.all.shell(cmd=f"dls {archive_data_set}")
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 

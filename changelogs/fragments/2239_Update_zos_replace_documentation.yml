@@ -1,3 +1,0 @@
-trivial:
-  - zos_replace_func.py - Update documentation adding default values and add verbosity for after, before and literal options.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2239).

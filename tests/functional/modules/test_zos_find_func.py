@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -102,7 +102,6 @@ def test_find_gdg_data_sets(ansible_zos_module):
             assert len(val.get('data_sets')) == 1
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
@@ -115,7 +114,6 @@ def test_find_gdg_data_sets(ansible_zos_module):
             assert len(val.get('data_sets')) == 1
             assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
@@ -129,7 +127,6 @@ def test_find_gdg_data_sets(ansible_zos_module):
             assert len(val.get('data_sets')) == 1
             assert {"name":gdg_c, "type": "GDG"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
 
     finally:
         # Remove one by one to avoid using an HLQ.* cuz it could cause bugs when running in parallel.
@@ -163,7 +160,6 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             for ds in val.get('data_sets'):
                 assert ds.get('name') in SEQ_NAMES
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -203,8 +199,6 @@ def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
             for ds in val.get('data_sets'):
                 assert ds.get('name') in SEQ_NAMES
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -247,17 +241,15 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
+            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
-            patterns=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*']
+            patterns=['.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
                 assert ds.get('name') in PDS_NAMES
                 assert len(ds.get('members')) == 1
-            assert val.get('matched') is not None
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -290,9 +282,6 @@ def test_exclude_data_sets_from_matched_list(ansible_zos_module):
             assert len(val.get('data_sets')) == 2
             for ds in val.get('data_sets'):
                 assert ds.get('name') in SEQ_NAMES
-            assert val.get('matched') is not None
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -333,16 +322,14 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            excludes=['(.*FILE$)'],
-            patterns=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*']
+            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
+            excludes=['.*FILE$'],
+            patterns=['.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
                 assert len(ds.get('members')) == 1
-            assert val.get('matched') is not None
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -363,8 +350,6 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 2
         assert val.get('matched') == 2
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 @pytest.mark.parametrize("ds_type", DATASET_TYPES)
@@ -379,8 +364,6 @@ def test_find_data_sets_larger_than_size(ansible_zos_module, ds_type):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             assert val.get('matched') == 2
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(name=TEST_PS1, state="absent")
         hosts.all.zos_data_set(name=TEST_PS2, state="absent")
@@ -395,8 +378,6 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == 1
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(name=TEST_PS, state="absent")
 
@@ -415,8 +396,6 @@ def test_find_data_sets_in_volume(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) >= 1
             assert val.get('matched') >= 1
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
@@ -440,8 +419,6 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('data_sets')[0].get("name", None) == VSAM_NAMES[0]
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
@@ -451,8 +428,6 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('data_sets')[0].get("name", None) == f"{VSAM_NAMES[0]}.DATA"
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
@@ -461,8 +436,6 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
@@ -472,8 +445,6 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('data_sets')[0].get("name", None) == f"{VSAM_NAMES[0]}.INDEX"
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
@@ -483,8 +454,6 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             assert len(val.get('data_sets')) == 3
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('examined') == 1
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -518,8 +487,6 @@ def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.shell(cmd=f"drm '{jcl_ds}'")
         hosts.all.zos_data_set(
@@ -549,8 +516,6 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -568,7 +533,6 @@ def test_find_invalid_age_indicator_fails(ansible_zos_module):
     find_res = hosts.all.zos_find(patterns=['some.pattern'], age='3s')
     for val in find_res.contacted.values():
         assert val.get('msg') is not None
-        assert val.get('changed') is False
 
 
 def test_find_invalid_size_indicator_fails(ansible_zos_module):
@@ -576,7 +540,6 @@ def test_find_invalid_size_indicator_fails(ansible_zos_module):
     find_res = hosts.all.zos_find(patterns=['some.pattern'], size='5h')
     for val in find_res.contacted.values():
         assert val.get('msg') is not None
-        assert val.get('changed') is False
 
 
 def test_find_non_existent_data_sets(ansible_zos_module):
@@ -585,20 +548,17 @@ def test_find_non_existent_data_sets(ansible_zos_module):
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 def test_find_non_existent_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        patterns=[f'{TEST_SUITE_HLQ}.NONE.PDS.*'],
+        pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*'],
+        patterns=['.*']
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 def test_find_mixed_members_from_pds_paths(ansible_zos_module):
@@ -630,15 +590,14 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            excludes=['(.*FILE$)'],
-            patterns=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
+            pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
+            excludes=['.*FILE$'],
+            patterns=['.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
                 assert len(ds.get('members')) == 1
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -672,8 +631,6 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
             for ds in special_names:
                 assert {"name":ds, "type": "NONVSAM"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         for ds in special_names:
             hosts.all.shell(cmd=f"drm '{ds}'")
@@ -696,12 +653,10 @@ def test_find_vsam_and_gdg_data_sets(ansible_zos_module, volumes_on_systems):
             resource_type=['cluster', 'gdg']
         )
         for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) >= 2
+            assert len(val.get('data_sets')) == 2
             assert val.get('matched') == len(val.get('data_sets'))
             assert {"name":VSAM_NAMES[0], "type": "CLUSTER"} in val.get('data_sets')
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -734,15 +689,11 @@ def test_find_gdg_and_nonvsam_data_sets(ansible_zos_module):
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             resource_type=["gdg", "nonvsam"],
         )
-        data_sets = [{"name":data_set_name, "type": "NONVSAM"} for data_set_name in SEQ_NAMES]
-        data_sets.append({"name":gdg_b, "type": "GDG"})
         for val in find_res.contacted.values():
             assert val.get('msg') is None
-            assert len(val.get('data_sets')) >= 4
-            for data_set in data_sets:
-                assert data_set in val.get('data_sets')
+            assert len(val.get('data_sets')) == 4
+            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
     finally:
         # Remove GDG.
         hosts.all.shell(cmd=f"drm {gdg_b}")
@@ -781,11 +732,9 @@ def test_find_vsam_and_nonvsam_data_sets(ansible_zos_module, volumes_on_systems)
         )
         for val in find_res.contacted.values():
             assert val.get('msg') is None
-            assert len(val.get('data_sets')) >= 4
+            assert len(val.get('data_sets')) == 4
             assert {"name":f'{VSAM_NAMES[0]}.DATA', "type": "DATA"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         # Remove VSAM.
         hosts.all.zos_data_set(
@@ -817,8 +766,6 @@ def test_find_migrated_data_sets(ansible_zos_module):
         assert len(val.get('data_sets')) != 0
         for ds in val.get('data_sets'):
             assert ds.get("type") == "MIGRATED"
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
@@ -832,8 +779,6 @@ def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
         assert len(val.get('data_sets')) != 0
         for ds in val.get('data_sets'):
             assert not re.fullmatch(r".*F4", ds.get("name"))
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 def test_find_migrated_data_sets_with_migrated_type(ansible_zos_module):
@@ -848,8 +793,6 @@ def test_find_migrated_data_sets_with_migrated_type(ansible_zos_module):
         for ds in val.get('data_sets'):
             assert ds.get("type") == "MIGRATED"
             assert ds.get("migrated_resource_type") == "NONVSAM"
-        assert val.get('examined') is not None
-        assert val.get('msg') is None
 
 
 def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
@@ -869,8 +812,6 @@ def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
             for ds in val.get('data_sets'):
                 assert ds.get("type") in ["MIGRATED", "GDG"]
-            assert val.get('examined') is not None
-            assert val.get('msg') is None
     finally:
         # Remove GDG.
         hosts.all.shell(cmd=f"drm {gdg_a}")

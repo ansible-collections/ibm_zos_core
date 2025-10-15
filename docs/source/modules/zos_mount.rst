@@ -63,25 +63,25 @@ fs_type
 state
   The desired status of the described mount (choice).
 
-  If *state=mounted* and *src* are not in use, the module will add the file system entry to the parmlib member *persistent/name* if not present. The *path* will be updated, the device will be mounted and the module will complete successfully with *changed=True*.
+  If *state=mounted* and *src* are not in use, the module will add the file system entry to the parmlib member *persistent/data_store* if not present. The *path* will be updated, the device will be mounted and the module will complete successfully with *changed=True*.
 
 
-  If *state=mounted* and *src* are in use, the module will add the file system entry to the parmlib member *persistent/name* if not present. The *path* will not be updated, the device will not be mounted and the module will complete successfully with *changed=False*.
+  If *state=mounted* and *src* are in use, the module will add the file system entry to the parmlib member *persistent/data_store* if not present. The *path* will not be updated, the device will not be mounted and the module will complete successfully with *changed=False*.
 
 
-  If *state=unmounted* and *src* are in use, the module will **not** add the file system entry to the parmlib member *persistent/name*. The device will be unmounted and the module will complete successfully with *changed=True*.
+  If *state=unmounted* and *src* are in use, the module will **not** add the file system entry to the parmlib member *persistent/data_store*. The device will be unmounted and the module will complete successfully with *changed=True*.
 
 
-  If *state=unmounted* and *src* are not in use, the module will **not** add the file system entry to parmlib member *persistent/name*.The device will remain unchanged and the module will complete with *changed=False*.
+  If *state=unmounted* and *src* are not in use, the module will **not** add the file system entry to parmlib member *persistent/data_store*.The device will remain unchanged and the module will complete with *changed=False*.
 
 
-  If *state=present*, the module will add the file system entry to the provided parmlib member *persistent/name* if not present. The module will complete successfully with *changed=True*.
+  If *state=present*, the module will add the file system entry to the provided parmlib member *persistent/data_store* if not present. The module will complete successfully with *changed=True*.
 
 
-  If *state=absent*, the module will remove the file system entry to the provided parmlib member *persistent/name* if present. The module will complete successfully with *changed=True*.
+  If *state=absent*, the module will remove the file system entry to the provided parmlib member *persistent/data_store* if present. The module will complete successfully with *changed=True*.
 
 
-  If *state=remounted*, the module will **not** add the file system entry to parmlib member *persistent/name*. The device will be unmounted and mounted, the module will complete successfully with *changed=True*.
+  If *state=remounted*, the module will **not** add the file system entry to parmlib member *persistent/data_store*. The device will be unmounted and mounted, the module will complete successfully with *changed=True*.
 
 
   | **required**: False
@@ -91,13 +91,13 @@ state
 
 
 persistent
-  Add or remove mount command entries to provided *name*
+  Add or remove mount command entries to provided *data_store*
 
   | **required**: False
   | **type**: dict
 
 
-  name
+  data_store
     The data set name used for persisting a mount command. This is usually BPXPRMxx or a copy.
 
     | **required**: True
@@ -105,7 +105,7 @@ persistent
 
 
   backup
-    Creates a backup file or backup data set for *name*, including the timestamp information to ensure that you retrieve the original parameters defined in *name*.
+    Creates a backup file or backup data set for *data_store*, including the timestamp information to ensure that you retrieve the original parameters defined in *data_store*.
 
     *backup_name* can be used to specify a backup file name if *backup=true*.
 
@@ -119,7 +119,7 @@ persistent
   backup_name
     Specify the USS file name or data set name for the destination backup.
 
-    If the source *name* is a USS file or path, the *backup_name* name can be relative or absolute for file or path name.
+    If the source *data_store* is a USS file or path, the *backup_name* name can be relative or absolute for file or path name.
 
     If the source is an MVS data set, the backup_name must be an MVS data set name.
 
@@ -131,10 +131,10 @@ persistent
     | **type**: str
 
 
-  marker
-    If provided, this is used as a marker that surrounds the command in the *persistent/name*
+  comment
+    If provided, this is used as a comment that surrounds the command in the *persistent/data_store*
 
-    Comments are used to encapsulate the *persistent/name* entry such that they can easily be understood and located.
+    Comments are used to encapsulate the *persistent/data_store* entry such that they can easily be understood and located.
 
     | **required**: False
     | **type**: list
@@ -334,8 +334,8 @@ Examples
        fs_type: zfs
        state: mounted
        persistent:
-         name: SYS1.PARMLIB(BPXPRMAA)
-         marker: For Tape2 project
+         data_store: SYS1.PARMLIB(BPXPRMAA)
+         comment: For Tape2 project
 
    - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
      zos_mount:
@@ -344,10 +344,10 @@ Examples
        fs_type: zfs
        state: mounted
        persistent:
-         name: SYS1.PARMLIB(BPXPRMAA)
+         data_store: SYS1.PARMLIB(BPXPRMAA)
          backup: true
          backup_name: SYS1.PARMLIB(BPXPRMAB)
-         marker: For Tape2 project
+         comment: For Tape2 project
 
    - name: Mount a filesystem ignoring uid/gid values.
      zos_mount:
@@ -454,7 +454,7 @@ persistent
   | **returned**: always
   | **type**: dict
 
-  name
+  data_store
     The persistent store name where the mount was written to.
 
     | **returned**: always
@@ -479,8 +479,8 @@ persistent
     | **type**: str
     | **sample**: SYS1.FILESYS(PRMAABAK)
 
-  marker
-    The text that was used in markers around the *Persistent/name* entry.
+  comment
+    The text that was used in markers around the *Persistent/data_store* entry.
 
     | **returned**: always
     | **type**: list
@@ -493,15 +493,6 @@ persistent
                   "u\u0027I did this because..\u0027"
               ]
           ]
-
-  state
-    The state of the persistent entry in the persistent data set.
-
-    Possible values are ``added`` and ``removed``.
-
-    | **returned**: always
-    | **type**: str
-    | **sample**: added
 
 
 unmount_opts

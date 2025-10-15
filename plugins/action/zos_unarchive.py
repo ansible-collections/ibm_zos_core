@@ -63,7 +63,7 @@ class ActionModule(ActionBase):
             source = module_args.get("src")
             force = _process_boolean(module_args.get("force"))
             format = self._task.args.get("format")
-            format_type = format.get("type")
+            format_name = format.get("name")
             copy_module_args = dict()
             dest_data_set = format.get("dest_data_set")
             dest = ""
@@ -71,12 +71,12 @@ class ActionModule(ActionBase):
                 source = os.path.expanduser(source)
             source = os.path.realpath(source)
 
-            if format_type in USS_SUPPORTED_FORMATS:
+            if format_name in USS_SUPPORTED_FORMATS:
                 tmp_files = dest = self._execute_module(
                     module_name="tempfile", module_args={}, task_vars=task_vars,
                 ).get("path")
-                uss_format = format_type
-            elif format_type in MVS_SUPPORTED_FORMATS:
+                uss_format = format_name
+            elif format_name in MVS_SUPPORTED_FORMATS:
                 if dest_data_set is None:
                     dest_data_set = dict()
                 tmp_hlq = module_args.get("tmp_hlq") if module_args.get("tmp_hlq") is not None else ""
@@ -90,9 +90,9 @@ class ActionModule(ActionBase):
                 dest = cmd_res.get("stdout")
                 if dest_data_set.get("space_primary") is None:
                     dest_data_set.update(space_primary=5, space_type="m")
-                if format_type == 'terse':
+                if format_name == 'terse':
                     dest_data_set.update(type='seq', record_format='fb', record_length=1024)
-                if format_type == 'xmit':
+                if format_name == 'xmit':
                     dest_data_set.update(type='seq', record_format='fb', record_length=80)
 
             copy_module_args.update(
@@ -100,8 +100,8 @@ class ActionModule(ActionBase):
                     src=source,
                     dest=dest,
                     dest_data_set=dest_data_set,
-                    replace=force,
-                    binary=True,
+                    force=force,
+                    is_binary=True,
                 )
             )
             copy_task = self._task.copy()

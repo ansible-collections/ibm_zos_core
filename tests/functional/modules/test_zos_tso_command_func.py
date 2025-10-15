@@ -23,11 +23,6 @@ def test_zos_tso_command_run_help(ansible_zos_module):
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == "help"
         assert result.get("changed") is True
 
 
@@ -48,11 +43,6 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == command_string[0]
         assert result.get("changed") is True
 
 
@@ -66,79 +56,43 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     results_allocate = hosts.all.zos_tso_command(commands=command_string)
     # Validate the correct allocation of dataset
     for result in results_allocate.contacted.values():
-        for index, item in enumerate(result.get("output")):
+        for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") == ""
-            assert item.get("command") == command_string[index]
         assert result.get("changed") is True
     # Validate listds of datasets and validate LISTDS using alias param 'command' of auth command
-    cmd = f"LISTDS '{default_temp_dataset}'"
-    results = hosts.all.zos_tso_command(commands=[cmd])
+    results = hosts.all.zos_tso_command(commands=[f"LISTDS '{default_temp_dataset}'"])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is True
     # Validate LISTDS using alias param 'command'
-    cmd = f"LISTDS '{default_temp_dataset}'"
-    results = hosts.all.zos_tso_command(command=cmd)
+    results = hosts.all.zos_tso_command(command=f"LISTDS '{default_temp_dataset}'")
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is True
     # Validate LISTCAT command and an unauth command
-    cmd = f"LISTCAT ENT('{default_temp_dataset}')"
     results = hosts.all.zos_tso_command(
-        commands=[cmd]
+        commands=[f"LISTCAT ENT('{default_temp_dataset}')"]
     )
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is True
     # Validate remove dataset
-    cmd = f"delete '{default_temp_dataset}'"
-    results = hosts.all.zos_tso_command(commands=[cmd])
+    results = hosts.all.zos_tso_command(commands=[f"delete '{default_temp_dataset}'"])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is True
     # Expect the tso_command to fail here because
     # the previous command will have already deleted the data set
     # Validate data set was removed by previous call
-    cmd = f"delete '{default_temp_dataset}'"
-    results = hosts.all.zos_tso_command(commands=[cmd])
+    results = hosts.all.zos_tso_command(commands=[f"delete '{default_temp_dataset}'"])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 8
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is False
-        assert result.get("failed") is True
 
 
 # The failure test
@@ -149,31 +103,18 @@ def test_zos_tso_command_empty_command(ansible_zos_module):
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 255
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == ""
         assert result.get("changed") is False
-        assert result.get("failed") is True
 
 
 # The failure test
 # The input command is no-existing command, the module return rc 255.
 def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
-    cmd = "xxxxxx"
-    results = hosts.all.zos_tso_command(commands=[])
+    results = hosts.all.zos_tso_command(commands=["xxxxxx"])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 255
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") == ""
-            assert item.get("command") == cmd
-        assert result.get("changed") is True
-        assert result.get("failed", False) is False
+        assert result.get("changed") is False
 
 
 # The positive test
@@ -186,13 +127,11 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
     commands_list = ["LU {0}".format(user), "LISTGRP"]
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
-        for index, item in enumerate(result.get("output")):
-            assert item.get("rc") == 0
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == commands_list[index]
+        for item in result.get("output"):
+            if item.get("command") == "LU {0}".format(user):
+                assert item.get("rc") == 0
+            if item.get("command") == "LISTGRP":
+                assert item.get("rc") == 0
         assert result.get("changed") is True
 
 
@@ -200,19 +139,13 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
 # The command that kicks off rc>0 which is allowed
 def test_zos_tso_command_maxrc(ansible_zos_module):
     hosts = ansible_zos_module
-    cmd = "LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC"
     results = hosts.all.zos_tso_command(
-        commands=[cmd],
+        commands=["LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC"],
         max_rc=4
     )
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") < 5
-            assert item.get("line_count") > 0
-            assert len(item.get("stdout_lines")) > 0
-            assert item.get("stderr") == ""
-            assert item.get("stdout") != ""
-            assert item.get("command") == cmd
         assert result.get("changed") is True
 
 
@@ -225,46 +158,25 @@ def test_zos_tso_command_gds(ansible_zos_module):
         hosts.all.shell(cmd="dtouch -tseq '{0}(+1)' ".format(default_data_set))
         print(f"data set name {default_data_set}")
         hosts = ansible_zos_module
-        cmd = """LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)
         results = hosts.all.zos_tso_command(
-            commands=[cmd],
+            commands=["""LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)],
             max_rc=4
         )
         for result in results.contacted.values():
             for item in result.get("output"):
                 assert result.get("changed") is True
-                assert item.get("line_count") > 0
-                assert len(item.get("stdout_lines")) > 0
-                assert item.get("stderr") == ""
-                assert item.get("stdout") != ""
-                # command has to be different because the GDS name gets resolved
-                assert item.get("command") != cmd
-        cmd = """LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)
         results = hosts.all.zos_tso_command(
-            commands=[cmd],
+            commands=["""LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)],
             max_rc=4
         )
         for result in results.contacted.values():
             for item in result.get("output"):
                 assert result.get("changed") is True
-                assert item.get("line_count") > 0
-                assert len(item.get("stdout_lines")) > 0
-                assert item.get("stderr") == ""
-                assert item.get("stdout") != ""
-                # command has to be different because the GDS name gets resolved
-                assert item.get("command") != cmd
-        cmd = """LISTDS '{0}(-1)'""".format(default_data_set)
         results = hosts.all.zos_tso_command(
-            commands=[cmd]
+            commands=["""LISTDS '{0}(-1)'""".format(default_data_set)]
         )
         for result in results.contacted.values():
-            for item in result.get("output"):
-                assert item.get("line_count") > 0
-                assert len(item.get("stdout_lines")) > 0
-                assert item.get("stderr") == ""
-                assert item.get("stdout") != ""
-                # command has to be different because the GDS name gets resolved
-                assert item.get("command") != cmd
             assert result.get("changed") is True
     finally:
-        hosts.all.shell(cmd=f"drm -f {default_data_set}")
+        None
+        # hosts.all.shell(cmd="drm ANSIBLE.*".format(default_data_set))

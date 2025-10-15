@@ -1,0 +1,9 @@
+trivial:
+  - zos_copy - Added a note to the documentation redirecting users to other
+    modules to see how to recall migrated data sets before trying to copy
+    them.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2098)
+  - zos_mvs_raw - Added an example for how to recall a migrated data set.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2098)
+  - zos_tso_cmd - Added an example for how to recall a migrated data set.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2098)

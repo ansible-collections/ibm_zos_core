@@ -164,7 +164,6 @@ class RawDatasetDefinition(DatasetDefinition):
         backup=None,
         return_content=None,
         tmphlq=None,
-        raw=False,
         **kwargs
     ):
         """
@@ -230,16 +229,9 @@ class RawDatasetDefinition(DatasetDefinition):
                    HLQ to be used for temporary datasets. Defaults to None.
         ----------
         """
-        self.raw = raw
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
         self.tmphlq = tmphlq
-        if raw:
-            super().__init__(
-                dataset_name=data_set_name,
-                raw=True
-            )
-            return
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -308,11 +300,6 @@ class RawDatasetDefinition(DatasetDefinition):
                 key_label2=key_label2,
                 key_encoding2=key_encoding2,
             )
-
-    def __str__(self):
-        if self.raw:
-            return f"{self.dataset_name},raw"
-        return super().__str__()
 
 
 class RawFileDefinition(FileDefinition):

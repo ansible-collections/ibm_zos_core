@@ -1,6 +1,0 @@
-trivial:
-  - test_zos_archive_func.py - Modify the way dls is executed in zos_archive tests
-    adding a single quote wrap around wildcard searches.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2265).
-  - test_zos_encode_func.py - Modified zos_encode test cases so that no temporary files are being left behind.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2265).

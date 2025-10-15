@@ -46,7 +46,7 @@ options:
     type: dict
     required: true
     suboptions:
-      type:
+      name:
         description:
           - The compression format used while archiving.
         type: str
@@ -59,7 +59,7 @@ options:
           - terse
           - xmit
           - pax
-      options:
+      format_options:
         description:
           - Options specific to a compression format.
         type: dict
@@ -76,7 +76,7 @@ options:
               - When providing the I(xmit_log_data_set) name, ensure there
                 is adequate space.
             type: str
-          adrdssu:
+          use_adrdssu:
             description:
               - If set to true, the C(zos_unarchive) module will use Data
                 Facility Storage Management Subsystem data set services
@@ -86,7 +86,7 @@ options:
             default: False
           dest_volumes:
             description:
-              - When I(adrdssu=True), specify the volume the data sets
+              - When I(use_adrdssu=True), specify the volume the data sets
                 will be written to.
               - If no volume is specified, storage management rules will be
                 used to determine the volume where the file will be
@@ -378,14 +378,14 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "./files/archive_folder_test.tar"
     format:
-      type: tar
+      name: tar
 
 # use include
 - name: Unarchive a bzip file selecting only a file to unpack.
   zos_unarchive:
     src: "/tmp/test.bz2"
     format:
-      type: bz2
+      name: bz2
     include:
       - 'foo.txt'
 
@@ -394,7 +394,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      type: terse
+      name: terse
     exclude:
       - USER.ARCHIVE.TEST1
       - USER.ARCHIVE.TEST2
@@ -404,16 +404,16 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE(0)"
     format:
-      type: terse
+      name: terse
 
 # List option
 - name: List content from XMIT
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.XMIT"
     format:
-      type: xmit
-      options:
-        adrdssu: true
+      name: xmit
+      format_options:
+        use_adrdssu: true
     list: true
 
 # Encoding example
@@ -421,7 +421,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      type: terse
+      name: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -430,7 +430,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      type: terse
+      name: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -522,7 +522,7 @@ class Unarchive():
             Destination of the unarchive.
         format : str
             Name of the format of the module.
-        options : list[str]
+        format_options : list[str]
             Options of the format of the module.
         tmphql : str
             High level qualifier for temporary datasets.
@@ -552,8 +552,8 @@ class Unarchive():
         self.module = module
         self.src = module.params.get("src")
         self.dest = module.params.get("dest")
-        self.format = module.params.get("format").get("type")
-        self.options = module.params.get("format").get("options")
+        self.format = module.params.get("format").get("name")
+        self.format_options = module.params.get("format").get("format_options")
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
         self.targets = list()
@@ -888,7 +888,7 @@ class MVSUnarchive(Unarchive):
         ----------
         volumes : list[str]
             List of destination volumes.
-        adrdssu : bool
+        use_adrdssu : bool
             Whether to use Data Facility Storage Management Subsystem data set services
             program ADRDSSU to uncompress data sets or not.
         dest_dat_set : dict
@@ -897,8 +897,8 @@ class MVSUnarchive(Unarchive):
             Source size.
         """
         super(MVSUnarchive, self).__init__(module)
-        self.volumes = self.options.get("dest_volumes")
-        self.adrdssu = self.options.get("adrdssu")
+        self.volumes = self.format_options.get("dest_volumes")
+        self.use_adrdssu = self.format_options.get("use_adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
@@ -1115,10 +1115,9 @@ class MVSUnarchive(Unarchive):
             self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing ADRDSSU to unarchive {0}. List of data sets not restored : {1}".format(source, unrestored_data_sets),
-                stdout=f"command: {restore_cmd} \n stdout:{out}",
+                stdout=out,
                 stderr=err,
-                stdout_lines=f"command: {restore_cmd} \n stdout:{out}".splitlines(),
-                stderr_lines=err.splitlines(),
+                stdout_lines=restore_cmd,
                 rc=rc,
             )
         return rc
@@ -1177,7 +1176,7 @@ class MVSUnarchive(Unarchive):
 
         """
         temp_ds = ""
-        if not self.adrdssu:
+        if not self.use_adrdssu:
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
             self.targets = [temp_ds]
@@ -1323,8 +1322,6 @@ class AMATerseUnarchive(MVSUnarchive):
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
                 rc=rc,
             )
         return rc
@@ -1372,8 +1369,6 @@ class XMITUnarchive(MVSUnarchive):
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
                 rc=rc,
             )
         return rc
@@ -1396,7 +1391,7 @@ def get_unarchive_handler(module):
     ZipUnarchive
         The appropriate object type for any other format.
     """
-    format = module.params.get("format").get("type")
+    format = module.params.get("format").get("name")
     if format in ["tar", "gz", "bz2", "pax"]:
         return TarUnarchive(module)
     elif format == "terse":
@@ -1599,12 +1594,12 @@ def run_module():
                 type='dict',
                 required=True,
                 options=dict(
-                    type=dict(
+                    name=dict(
                         type='str',
                         required=True,
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                     ),
-                    options=dict(
+                    format_options=dict(
                         type='dict',
                         required=False,
                         options=dict(
@@ -1616,7 +1611,7 @@ def run_module():
                                 type='list',
                                 elements='str',
                             ),
-                            adrdssu=dict(
+                            use_adrdssu=dict(
                                 type='bool',
                                 default=False,
                             )
@@ -1703,13 +1698,13 @@ def run_module():
             type='dict',
             required=True,
             options=dict(
-                type=dict(
+                name=dict(
                     type='str',
                     required=True,
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                 ),
-                options=dict(
+                format_options=dict(
                     type='dict',
                     required=False,
                     options=dict(
@@ -1721,7 +1716,7 @@ def run_module():
                             type='list',
                             elements='str'
                         ),
-                        adrdssu=dict(
+                        use_adrdssu=dict(
                             type='bool',
                             default=False,
                         ),
@@ -1729,7 +1724,7 @@ def run_module():
                     default=dict(xmit_log_data_set=""),
                 )
             ),
-            default=dict(type="", options=dict(xmit_log_data_set="")),
+            default=dict(name="", format_options=dict(xmit_log_data_set="")),
         ),
         dest_data_set=dict(
             arg_type='dict',

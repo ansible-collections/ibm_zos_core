@@ -31,52 +31,6 @@ Parameters
 ----------
 
 
-access
-  Specifies how the module will access data sets and z/OS UNIX files when performing a backup or restore operation.
-
-  | **required**: False
-  | **type**: dict
-
-
-  share
-    Specifies that the module allow data set read access to other programs while backing up or restoring.
-
-    *share* and ``full_volume`` are mutually exclusive; you cannot use both.
-
-    Option *share*is conditionally supported for *operation=backup* or *operation=restore*.
-
-    When *operation=backup*, and source backup is a VSAM data set, the option is only supported for VSAM data sets which are not defined with VSAM SHAREOPTIONS (1,3) or (1,4). - When *operation=restore*, and restore target is a VSAM data set or PDSE data set, this option is not supported. Both data set types will be accessed exlusivly preventing reading or writing to the VSAM, PDSE, or PDSE members.
-
-    The SHAREOPTIONS for VSAM data sets.
-
-    (1) the data set can be shared by multiple programs for read-only processing, or a single program for read and write processing.
-
-    (2) the data set can be accessed by multiple programs for read-only processing, and can also be accessed by a program for write processing.
-
-    (3) the data set can be shared by multiple programs where each program is responsible for maintaining both read and write data integrity.
-
-    (4) the data set can be shared by multiple programs where each program is responsible for maintaining both read and write data integrity differing from (3) in that I/O buffers are updated for each request.
-
-    | **required**: False
-    | **type**: bool
-    | **default**: False
-
-
-  auth
-    *auth=true* allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and catalogs.
-
-    This is option is supported both, *operation=backup* and *operation=restore*.
-
-    If you are not authorized to use this option, the module ends with an error message.
-
-    Some authorization checking for data sets is unavoidable, when when *auth* is specified because some checks are initiated by services and programs invoked by this module which can not be bypassed.
-
-    | **required**: False
-    | **type**: bool
-    | **default**: False
-
-
-
 operation
   Used to specify the operation to perform.
 
@@ -196,99 +150,26 @@ overwrite
   | **default**: False
 
 
-compress
-  When *operation=backup*, enables compression of partitioned data sets using system-level compression features. If supported, this may utilize zEDC hardware compression.
+sms_storage_class
+  When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
 
-  This option can reduce the size of the temporary dataset generated during backup operations either before the AMATERSE step when *terse* is True or the resulting backup when *terse* is False.
+  When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
 
-  | **required**: False
-  | **type**: bool
-  | **default**: False
-
-
-terse
-  When *operation=backup*, executes an AMATERSE step to compress and pack the temporary data set for the backup. This creates a backup with a format suitable for transferring off-platform.
-
-  If *operation=backup* and if *dataset=False* then option *terse* must be True.
+  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
-  | **type**: bool
-  | **default**: True
+  | **type**: str
 
 
-sms
-  Specifies how System Managed Storage (SMS) interacts with the storage class and management class when either backup or restore operations are occurring.
+sms_management_class
+  When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
 
-  Storage class contains performance and availability attributes related to the storage occupied by the data set. A data set that has a storage class assigned to it is defined as an 'SMS-managed' data set.
+  When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
 
-  Management class contains the data set attributes related to the migration and backup of the data set and the expiration date of the data set. A management class can be assigned only to a data set that also has a storage class assigned.
+  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
-  | **type**: dict
-
-
-  storage_class
-    When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
-
-    When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
-
-    If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
-
-    | **required**: False
-    | **type**: str
-
-
-  management_class
-    When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
-
-    When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
-
-    If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
-
-    | **required**: False
-    | **type**: str
-
-
-  disable_automatic_class
-    Specifies that the automatic class selection (ACS) routines will not be used to determine the target data set class names for the provided list.
-
-    The list must contain fully or partially qualified data set names.
-
-    To include all selected data sets, "**" in a list.
-
-    You must have READ access to RACF FACILITY class profile `STGADMIN.ADR.RESTORE.BYPASSACS` to use this option.
-
-    | **required**: False
-    | **type**: list
-    | **elements**: str
-    | **default**: []
-
-
-  disable_automatic_storage_class
-    Specifies that automatic class selection (ACS) routines will not be used to determine the source data set storage class.
-
-    Enabling *disable_automatic_storage_class* ensures ACS is null.
-
-    *storage_class* and *disable_automatic_storage_class* are mutually exclusive; you cannot use both.
-
-    The combination of *disable_automatic_storage_class* and ``disable_automatic_class=[dsn,dsn1,...]`` ensures the selected data sets will not be SMS-managed.
-
-    | **required**: False
-    | **type**: bool
-    | **default**: False
-
-
-  disable_automatic_management_class
-    Specifies that automatic class selection (ACS) routines will not be used to determine the source data set management class.
-
-    Enabling *disable_automatic_storage_class* ensures ACS is null.
-
-    *management_class* and *disable_automatic_management_class* are mutually exclusive; you cannot use both.
-
-    | **required**: False
-    | **type**: bool
-    | **default**: False
-
+  | **type**: str
 
 
 space
@@ -313,7 +194,6 @@ space_type
 
   | **required**: False
   | **type**: str
-  | **default**: m
   | **choices**: k, m, g, cyl, trk
 
 
@@ -335,18 +215,6 @@ tmp_hlq
 
   | **required**: False
   | **type**: str
-
-
-index
-  When ``operation=backup`` specifies that for any VSAM cluster backup, the backup must also contain all the associated alternate index (AIX®) clusters and paths.
-
-  When ``operation=restore`` specifies that for any VSAM cluster dumped with the SPHERE keyword, the module must also restore all associated AIX® clusters and paths.
-
-  The alternate index is a VSAM function that allows logical records of a KSDS or ESDS to be accessed sequentially and directly by more than one key field. The cluster that has the data is called the base cluster. An alternate index cluster is then built from the base cluster.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
 
 
 
@@ -396,15 +264,6 @@ Examples
          include:
            - user.gdg(-1)
            - user.gdg(0)
-       backup_name: my.backup.dzp
-
-   - name: Backup datasets using compress
-     zos_backup_restore:
-       operation: backup
-       compress: true
-       terse: true
-       data_sets:
-         include: someds.name.here
        backup_name: my.backup.dzp
 
    - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
@@ -498,52 +357,8 @@ Examples
        operation: restore
        volume: MYVOL2
        backup_name: /tmp/temp_backup.dzp
-       sms:
-         storage_class: DB2SMS10
-         management_class: DB2SMS10
-
-   - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-       Disable for all datasets SMS storage and management classes data sets.
-     zos_backup_restore:
-       operation: restore
-       volume: MYVOL2
-       backup_name: /tmp/temp_backup.dzp
-       sms:
-         disable_automatic_class:
-           - "**"
-         disable_automatic_storage_class: true
-         disable_automatic_management_class: true
-
-   - name: Restore data sets from backup stored in the MVS file MY.BACKUP.DZP
-       Disable for al some datasets SMS storage and management classes data sets.
-     zos_backup_restore:
-       operation: restore
-       volume: MYVOL2
-       backup_name: MY.BACKUP.DZP
-       sms:
-         disable_automatic_class:
-           - "ANSIBLE.TEST.**"
-           - "**.ONE.**"
-         disable_automatic_storage_class: true
-         disable_automatic_management_class: true
-
-   - name: Backup all data sets matching the pattern USER.VSAM.** to z/OS UNIX
-       file /tmp/temp_backup.dzp and ensure the VSAM alternate index are preserved.
-     zos_backup_restore:
-       operation: backup
-       data_sets:
-         include: user.vsam.**
-       backup_name: /tmp/temp_backup.dzp
-       index: true
-
-   - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp
-       whether they exist or not and do so as authorized disabling any security checks.
-     zos_backup_restore:
-       operation: restore
-       backup_name: /tmp/temp_backup.dzp
-       access:
-         auth: true
-         share: true
+       sms_storage_class: DB2SMS10
+       sms_management_class: DB2SMS10
 
 
 
@@ -563,36 +378,4 @@ Notes
 
 
 
-
-Return Values
--------------
-
-
-changed
-  Indicates if the operation made changes.
-
-  ``true`` when backup/restore was successful, ``false`` otherwise.
-
-  | **returned**: always
-  | **type**: bool
-  | **sample**:
-
-    .. code-block:: json
-
-        true
-
-backup_name
-  The USS file name or data set name that was used as a backup.
-
-  Matches the *backup_name* parameter provided as input.
-
-  | **returned**: always
-  | **type**: str
-  | **sample**: /u/oeusr03/my_backup.dzp
-
-message
-  Returns any important messages about the modules execution, if any.
-
-  | **returned**: always
-  | **type**: str
 

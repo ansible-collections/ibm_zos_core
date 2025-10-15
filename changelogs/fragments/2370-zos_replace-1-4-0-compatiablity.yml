@@ -1,4 +1,5 @@
 minor_changes:
   - zos_replace - Removing Force parameter from the logic as its not supported in ZOAU 1.4.0.
     Making required changes in test cases and making sure module logic is updated as per ZOAU.
+    As there are whitespaces while reading dataset in order for regex to work, will be ignored. 
     (https://github.com/ansible-collections/ibm_zos_core/pull/2370)

@@ -135,6 +135,7 @@ options:
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
+  - Whitespaces at the end of line will be ignored in order for regex to work.
 """
 
 EXAMPLES = r"""
@@ -531,6 +532,7 @@ def open_file(file, encoding, uss):
     else:
         with zoau_io.RecordIO(f"//'{file}'") as dataset_read:
             dataset_content = dataset_read.readrecords()
+        # As in ZOAU 1.4.0 on reading dataset we are getting extra whitespace so we need rstrip for regex to work.
         decode_list = [codecs.decode(record, encoding).rstrip() for record in dataset_content]
 
     return decode_list

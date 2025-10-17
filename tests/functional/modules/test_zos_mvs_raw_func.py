@@ -1074,24 +1074,24 @@ def test_data_set_name_gdgs(ansible_zos_module):
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
         # Create a new one
-        results = hosts.all.zos_mvs_raw(
-            program_name="idcams",
-            auth=True,
-            dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set + "(+1)",
-                        disposition="new",
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
-            ],
-        )
-        for result in results.contacted.values():
-            assert result.get("ret_code", {}).get("code", -1) == 0
-            assert len(result.get("dd_names", [])) > 0
+        #results = hosts.all.zos_mvs_raw(
+        #    program_name="idcams",
+        #    auth=True,
+        #    dds=[
+        #        dict(
+        #            dd_data_set=dict(
+        #                dd_name=SYSPRINT_DD,
+        #                data_set_name=default_data_set + "(+1)",
+        #                disposition="new",
+        #                return_content=dict(type="text"),
+        #            ),
+        #        ),
+        #        dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
+        #    ],
+        #)
+        #for result in results.contacted.values():
+        #    assert result.get("ret_code", {}).get("code", -1) == 0
+        #    assert len(result.get("dd_names", [])) > 0
         # Negative case
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",

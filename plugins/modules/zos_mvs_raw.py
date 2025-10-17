@@ -1784,7 +1784,7 @@ import traceback
 from shlex import quote
 
 try:
-    from zoautil_py import datasets, zoau_io
+    from zoautil_py import gdgs, zoau_io
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     zoau_io = ZOAUImportError(traceback.format_exc())
@@ -2743,7 +2743,7 @@ def get_dd_name_and_key(dd):
         dd_name = dd.get("dd_data_set").get("dd_name")
         data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
                                                             dd.get("dd_data_set").get("disposition"),
-                                                            dd.get("dd_data_set").get("type"))
+                                                            )
         dd.get("dd_data_set")["data_set_name"] = data_set_name
         dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"
@@ -2793,7 +2793,7 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset, disposition, type):
+def resolve_data_set_names(dataset, disposition):
     """Resolve cases for data set names as relative gds or positive
       that could be accepted if disposition is new.
       Parameters
@@ -2802,8 +2802,6 @@ def resolve_data_set_names(dataset, disposition, type):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
-      type : str
-          Type of dataset
       Returns
       -------
       str
@@ -2819,7 +2817,7 @@ def resolve_data_set_names(dataset, disposition, type):
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
-              return str(datasets.create(dataset).name), "shr"
+                return str(datasets.create(dataset).name), "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:

@@ -19,7 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_started_task
-version_added: 2.0.0
+version_added: 1.16.0
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
 short_description: Perform operations on started tasks.
@@ -463,21 +463,13 @@ except ImportError:
     jobs = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(module, operator_cmd, started_task_name, asidx, execute_display_before=False, state=None, **kwargs):
+def execute_command(operator_cmd):
     """Execute operator command.
 
     Parameters
     ----------
     operator_cmd : str
         Operator command.
-    started_task_name : str
-        Name of the started task.
-    asidx : string
-        The HEX adress space identifier.
-    execute_display_before: bool
-        Indicates whether display command need to be executed before actual command or not.
-    **kwargs : dict
-        More arguments for the command.
 
     Returns
     -------
@@ -485,23 +477,14 @@ def execute_command(module, operator_cmd, started_task_name, asidx, execute_disp
         Tuple containing the RC, standard out, standard err of the
         query script and started task parameters.
     """
-    task_params = []
-    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds
     timeout_c = 0
-    if execute_display_before and started_task_name:
-        task_params = execute_display_command(started_task_name, asidx)
-        if not task_params and state != 'started':
-            module.fail_json(
-                rc=1,
-                msg="No started task is active with the given name.",
-                changed=False
-            )
-    response = opercmd.execute(operator_cmd, timeout_c, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout_c)
 
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-    return rc, stdout, stderr, task_params
+    return rc, stdout, stderr
 
 
 def fetch_current_time():
@@ -543,8 +526,12 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
         The HEX adress space identifier.
     task_params_before: list
         List of started task details which have same started task name.
-    timeout : int
-        Timeout to wait for the command execution, measured in centiseconds.
+    state : string
+        State value passed in input.
+    wait_time: int
+        The time period to wait for a started task operation.
+    wait_full_time: bool
+        Indicates whether full amount of time mentioned in wait_time need to be waited.
 
     Returns
     -------
@@ -1438,7 +1425,7 @@ def run_module():
             'required': False
         }
     }
-
+    # Validate input parameters
     try:
         parser = better_arg_parser.BetterArgParser(args_def)
         parsed_args = parser.parse_args(module.params)
@@ -1453,8 +1440,7 @@ def run_module():
     wait_time_s = module.params.get('wait_time')
     wait_full_time = module.params.get('wait_full_time')
     verbose = module.params.get('verbose')
-    kwargs = {}
-    # Fetch started task name if task_id is present in the request
+    # Fetch started task name if task_id is present in the request by executing display command
     execute_display_before = True
     task_id = module.params.get('task_id')
     task_name = ""
@@ -1462,7 +1448,8 @@ def run_module():
     duplicate_tasks = False
     started_task_name_from_id = ""
     get_system_logs = module.params.get('get_system_logs')
-    task_info = []
+    task_params_before = []
+    task_params_after = []
     if task_id and state != "displayed":
         execute_display_before = False
         if state == "started":
@@ -1478,9 +1465,9 @@ def run_module():
                 duplicate_tasks = True
             for task in task_id_params:
                 if task['asidx'] == asidx:
-                    task_info.append(task)
+                    task_params_before.append(task)
                     started_task_name_from_id = f"{task['task_name']}.{task['task_identifier']}"
-            if not task_info:
+            if not task_params_before:
                 module.fail_json(
                     rc=1,
                     msg="Started task of the given task_id is not active.",
@@ -1524,8 +1511,7 @@ def run_module():
     kwargs = {}
     kwargs.update({"wait": True})
     cmd = ""
-    task_params_before = []
-    task_params_after = []
+    # Create comannd depending on the input operation and parameters
     if state == "started":
         err_msg = start_errmsg
         started_task_name, cmd = validate_and_prepare_start_command(module)
@@ -1545,24 +1531,34 @@ def run_module():
     elif state == "modified":
         err_msg = modify_errmsg
         started_task_name, cmd = prepare_modify_command(module, started_task_name_from_id)
+    # Note the timestamp before operation execution to fetch system logs within that time frame.
     if get_system_logs:
         before_time = fetch_current_time()
     changed = False
     stdout = ""
     stderr = ""
-    rc, out, err, task_params_before = execute_command(module, cmd, started_task_name, asidx, execute_display_before, state, **kwargs)
-    if task_id:
-        task_params_before = task_info
+    # Execute display before to validate whether started task exists or not to perform required operation
+    if execute_display_before and started_task_name:
+        task_params_before = execute_display_command(started_task_name, asidx)
+        if not task_params_before and state != 'started':
+            module.fail_json(
+                rc=1,
+                msg="No started task is active with the given name.",
+                changed=False
+            )
+    # Execute the operation on started task as mentioned in input
+    rc, out, err = execute_command(cmd)
     is_failed = False
     system_logs = ""
     task_output_logs = ""
     msg = ""
     task_params = []
+    # Validate the sysout of opercmd with the above listed error codes to find if any error occured
     found_msg = next((msg for msg in err_msg if msg in out), None)
     if err != "" or found_msg:
         is_failed = True
         msg = error_details.get(found_msg)
-
+    # If error did not find in previous step then run display command again and validate operation result
     if not is_failed:
         if state == "displayed":
             task_params_after = extract_keys(out, asidx)
@@ -1574,7 +1570,7 @@ def run_module():
                 )
         else:
             task_params_after = execute_display_command(started_task_name, asidx, task_params_before, state, wait_time_s, wait_full_time)
-
+        # Assign tasks depending on state value.
         if state in ("cancelled", "forced", "stopped"):
             task_params = task_params_before
             if task_params_after:
@@ -1585,10 +1581,10 @@ def run_module():
                 is_failed = True
             elif verbose:
                 task_output_logs = get_task_logs(task_params_after[0].get('task_id'))
-
+        # Fetch system logs as per the recorded timestamp before operation execution
         if get_system_logs:
             system_logs = fetch_logs(cmd.upper(), before_time)
-
+    # Create response to return
     current_state = ""
     if is_failed:
         if rc == 0:

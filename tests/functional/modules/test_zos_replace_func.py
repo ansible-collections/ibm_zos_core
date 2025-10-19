@@ -37,7 +37,7 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_CONTENT_IBM1047_CHECKSUM = '257a5e4fa24f4551ff5d2b650a91afd7'
+TEST_CONTENT_IBM1047_CHECKSUM = '6ea1e61cf9fd780e7d4f4f77bd926722'
 
 TEST_LITERAL_CONTENT = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -126,7 +126,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_REPLACE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# used in test_uss_before_replace
+TEST_BEFORE_REPLACE_IBM1047_CHECKSUM = "ccf8aa2c50bad655d3bc5b1aaed029a9"
 
 TEST_BEFORE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -138,7 +139,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_LINE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_before_line
+TEST_BEFORE_LINE_IBM1047_CHECKSUM = "1ccee070d2d41a3e53ef479d8b9fdd4c"
 
 TEST_BEFORE_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -151,7 +153,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_REPLACE_LINE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_before_replace_line
+TEST_BEFORE_REPLACE_LINE_IBM1047_CHECKSUM = "e21e54b7abdf8bbd7a2fe0add3573a10"
 
 TEST_BEFORE_AFTER = """if [ -z STEPLIB ] && tty -s;
 then
@@ -177,7 +180,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_AFTER_REPLACE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_after_before_replace
+TEST_BEFORE_AFTER_REPLACE_IBM1047_CHECKSUM = "cf5f96ba1a66f104a0cf0cfbcaf5c956"
 
 TEST_BEFORE_AFTER_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -201,7 +205,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_AFTER_REPLACE_LINE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_after_before_replace_line
+TEST_BEFORE_AFTER_REPLACE_LINE_IBM1047_CHECKSUM = "9ac53f428745d977338718a79ef39d21"
 
 SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
 MOUNTPOINT('/tmp/src/somedirectory') 0xC1
@@ -241,7 +246,8 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
  JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_LITERAL_CONTENT_AFTER_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_after_literal
+TEST_LITERAL_CONTENT_AFTER_IBM1047_CHECKSUM = "177afcb365098c5e9a79522d9a1dc06a"
 
 TEST_LITERAL_CONTENT_BEFORE = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -256,7 +262,8 @@ IEE134I TRACE DISABLED - MONITORING STOPPED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_LITERAL_CONTENT_BEFORE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_before_literal
+TEST_LITERAL_CONTENT_BEFORE_IBM1047_CHECKSUM = "4ceb85037f9aa4dedd085b5f0485fbcd"
 
 TEST_LITERAL_CONTENT_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -270,7 +277,8 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_LITERAL_CONTENT_REGEXP_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_regexp_literal
+TEST_LITERAL_CONTENT_REGEXP_IBM1047_CHECKSUM = "591b6fd589e2e309dfd17a6e7232742f"
 
 TEST_LITERAL_CONTENT_BEFORE_AFTER="""IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -285,7 +293,8 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_before_literal
+TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_CHECKSUM = "a9a9d6881e2c76cb1d3fcc239e44b8b7"
 
 TEST_LITERAL_CONTENT_AFTER_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -299,7 +308,8 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_after_regexp_literal
+TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM = "a6e959bd5c6fa5269e4564bedfa05ae7"
 
 TEST_MULTIPLE_LINES = """if [ -z STEPLIB ] && tty -s;
 then
@@ -309,7 +319,8 @@ fi
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 ZOAU_ROOT=/usr/lpp/zoautil/v100"""
 
-TEST_MULTIPLE_LINES_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_remove_multiple_lines
+TEST_MULTIPLE_LINES_IBM1047_CHECKSUM = "384b22b319b8996d5ad68f44f63fe780"
 
 TEST_BACKREF = """if [ -z STEPLIB ] && tty -s;
 then
@@ -322,7 +333,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export NEW_ZOAU_ROOT
 export NEW__BPXK_AUTOCVT"""
 
-TEST_BACKREF_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_backref
+TEST_BACKREF_IBM1047_CHECKSUM = "773b24260c9c93841b32d35cf0cf9910"
 
 TEST_MATCH_MULTIPLE_LINES = """### REPLACED MULTILINE TEXT ###
 export STEPLIB=custom
@@ -333,7 +345,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_MATCH_MULTIPLE_LINES_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+# Used in test test_uss_match_replace_multiple_lines
+TEST_MATCH_MULTIPLE_LINES_IBM1047_CHECKSUM = "8a984fde84129c33fb60895fc75e63ef"
 
 #####################
 #  Set up testing
@@ -809,10 +822,10 @@ def test_uss_backup_name(ansible_zos_module):
         results = hosts.all.shell(cmd=f"ls -lT {params['target']}")
         for result in results.contacted.values():
             assert 'IBM-1047' in result.get("stdout")
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
         results = hosts.all.shell(cmd=f"ls -lT {backup_name}")
@@ -886,7 +899,7 @@ def test_uss_before_literal(ansible_zos_module):
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
         results = hosts.all.shell(cmd=f"md5 {params["target"]}")
         for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_CHECKSUM in result.get("stdout")
+            assert TEST_LITERAL_CONTENT_BEFORE_IBM1047_CHECKSUM in result.get("stdout")
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 

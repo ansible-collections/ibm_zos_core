@@ -540,7 +540,7 @@ def run_module():
 
     if ddname is not None:
         module.deprecate(
-            msg="The 'ddname' option is deprecated and will be used as alias. Please use 'dd_name' instead.",
+            msg="The 'dd_name' option will be deprecated. Please use 'dd_name' instead.",
             version="2.0.0",
             collection_name='ibm.ibm_zos_core',
         )

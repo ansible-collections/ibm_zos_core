@@ -88,7 +88,6 @@ options:
             choices:
               - pack
               - spack
-            aliases: [spack]
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -1889,7 +1888,6 @@ def run_module():
                             terse_pack=dict(
                                 type='str',
                                 choices=['pack', 'spack'],
-                                aliases=['spack']
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1989,7 +1987,6 @@ def run_module():
                             type='str',
                             required=False,
                             choices=['pack', 'spack'],
-                            aliases=['spack']
                         ),
                         xmit_log_data_set=dict(
                             type='str',
@@ -2075,13 +2072,6 @@ def run_module():
         )
 
         optopms_deprecate = format_param['format_options']
-
-        if optopms_deprecate.get('terse_pack') is not None:
-            module.deprecate(
-                msg="The 'format.format_options.terse_pack' option will be deprecated. On new version use 'format.format_options.spack' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
 
         if optopms_deprecate.get('use_adrdssu') is not None:
             module.deprecate(

@@ -50,7 +50,6 @@ options:
     required: false
     default: data_set
     type: str
-    aliases: [remote_src]
     choices:
       - data_set
       - uss
@@ -950,7 +949,6 @@ def run_module():
             type="str",
             default="data_set",
             choices=["data_set", "uss", "local"],
-            aliases=["remote_src"]
         ),
         encoding=dict(
             type="dict",
@@ -1022,7 +1020,6 @@ def run_module():
             arg_type="str",
             default="data_set",
             choices=["data_set", "uss", "local"],
-            aliases=["remote_src"]
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
@@ -1045,14 +1042,6 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
-
-    if module.params.get("location") is not None:
-        module.deprecate(
-            msg="The 'location' option will be deprecated Please use 'remote_src' instead. Logic will change to set if the document with the job is \
-                on the controller or the node",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
 
     if module.params.get("wait_time_s") is not None:
         module.deprecate(

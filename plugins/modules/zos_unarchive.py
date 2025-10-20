@@ -1707,6 +1707,7 @@ def run_module():
                 name=dict(
                     type='str',
                     required=True,
+                    default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                     aliases=['type'],
                 ),

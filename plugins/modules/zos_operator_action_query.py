@@ -90,7 +90,6 @@ options:
         required: False
         type: bool
         default: False
-        aliases: [literal]
 seealso:
 - module: zos_operator
 
@@ -272,7 +271,6 @@ def run_module():
                     default=False,
                     type="bool",
                     required=False,
-                    aliases=["literal"]
                 )
             )
         )
@@ -282,14 +280,6 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
-        if module.params.get('message_filter') is not None:
-            if module.params.get('message_filter').get('use_regex') is not None:
-                module.deprecate(
-                    msg="The 'use_regex' option will be deprecated. Please use 'literal' instead.\
-                        New version will use false to mean regex will be used.",
-                    version="2.0.0",
-                    collection_name='ibm.ibm_zos_core',
-                )
         new_params = parse_params(module.params)
 
         kwargs = {}

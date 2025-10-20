@@ -64,6 +64,7 @@ export
 export _BPXK_AUTOCVT"""
 
 TEST_AFTER_IBM1047_CHECKSUM = 'adc5d04bde385bb771bd40015bfc1fc5'
+TEST_AFTER_IBM1047_DATA_SET_CHECKSUM = '5271284ae8b1cdaa748b7aaa16eecbcd'
 
 TEST_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -372,7 +373,7 @@ def remove_uss_environment(ansible_zos_module, file):
 def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content):
     hosts = ansible_zos_module
     hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-    hosts.all.shell(cmd=f"dtouch {ds_name} -t {ds_type}")
+    hosts.all.shell(cmd=f"dtouch -t {ds_type} {ds_name} ")
     if ds_type in ["pds", "pdse"]:
         ds_full_name = ds_name + "(MEM)"
         hosts.all.shell(cmd=f"decho '' '{ds_full_name}' ")
@@ -1175,9 +1176,9 @@ def test_ds_after(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd=f"md5 {params['target']}")
+        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
         for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1831,7 +1832,7 @@ def test_ds_backup_name(ansible_zos_module, dstype, backup_name):
             assert result.get("stdout") == TEST_AFTER
         results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_backup_file))
         for result in results.contacted.values():
             if ds_type == "seq":

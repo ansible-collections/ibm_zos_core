@@ -1,5 +1,5 @@
 minor_changes:
-  - zos_apf - Adds new aliases ``target`` for ``data_set_name``  and warning message that will be deprecated on 2.0.0.
+  - zos_apf - Adds new alias ``target`` for ``data_set_name``  and a warning message that it will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
   - zos_archive - Adds new aliases ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
   - zos_archive - Adds new aliases ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.

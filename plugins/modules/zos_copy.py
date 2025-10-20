@@ -963,6 +963,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
     idcams
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+
 
 if PY3:
     import pathlib
@@ -3443,6 +3445,11 @@ def run_module(module, arg_def):
         is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # Validation for copy from a member
     if src_member:

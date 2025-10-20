@@ -7,5 +7,7 @@ minor_changes:
     (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
   - modules/zos_fetch - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
+  - modules/zos_mvs_raw - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2365)
   - modules/zos_stat - Adopt new GenerationDataGroupView generations property for ZOAu 1.4.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2365)

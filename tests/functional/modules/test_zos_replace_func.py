@@ -64,7 +64,6 @@ export
 export _BPXK_AUTOCVT"""
 
 TEST_AFTER_IBM1047_CHECKSUM = 'adc5d04bde385bb771bd40015bfc1fc5'
-TEST_AFTER_IBM1047_DATA_SET_CHECKSUM = 'f9b63993a21f1f393c03d8b15ff4ae99'
 
 TEST_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -78,7 +77,6 @@ export HOME_ROOT
 export _BPXK_AUTOCVT"""
 
 TEST_AFTER_REPLACE_IBM1047_CHECKSUM = '3d544999e1fc06c5ec9df5934a12ef7e'
-TEST_AFTER_REPLACE_IBM1047_DATA_SET_CHECKSUM = '57f2ff92112bd2d869dc55c7f7bcf6a6'
 
 TEST_AFTER_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -90,7 +88,6 @@ export PATH
 ZOAU_ROOT=/usr/lpp/zoautil/v100"""
 
 TEST_AFTER_LINE_IBM1047_CHECKSUM = 'dfbc66293be4c17640f9023f4aded92e'
-TEST_AFTER_LINE_IBM1047_DATA_SET_CHECKSUM = '7efa1fdcf3a8e50010fe86c3a9629765'
 
 TEST_AFTER_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -104,7 +101,6 @@ export TMP=tmp/etc
 export TMP=tmp/etc"""
 
 TEST_AFTER_REPLACE_LINE_IBM1047_CHECKSUM = 'f82263f232f6d453cb01e3ad4b20e89a'
-TEST_AFTER_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM = '5eeb75f7d4d7e3216749292459394399'
 
 TEST_BEFORE = """if [ -z  ] && tty -s;
 then
@@ -118,7 +114,6 @@ export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
 TEST_BEFORE_IBM1047_CHECKSUM = "85a9ab2a0babc3cd599c6eadb09fec7f"
-TEST_BEFORE_IBM1047_DATA_SET_CHECKSUM = "12de95fd6b7c1e61e64ef34685b68d95"
 
 TEST_BEFORE_REPLACE = """if [ -z STAND ] && tty -s;
 then
@@ -133,7 +128,6 @@ export _BPXK_AUTOCVT"""
 
 # used in test_uss_before_replace
 TEST_BEFORE_REPLACE_IBM1047_CHECKSUM = "ccf8aa2c50bad655d3bc5b1aaed029a9"
-TEST_BEFORE_REPLACE_IBM1047_DATA_SET_CHECKSUM = "dd0f39bcd314f00c4f6ec83e5264eb67"
 
 TEST_BEFORE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -147,7 +141,6 @@ export _BPXK_AUTOCVT"""
 
 # Used in test test_uss_before_line
 TEST_BEFORE_LINE_IBM1047_CHECKSUM = "1ccee070d2d41a3e53ef479d8b9fdd4c"
-TEST_BEFORE_LINE_IBM1047_DATA_SET_CHECKSUM = "8f4480196ebf9a2680721c0d22a03922"
 
 TEST_BEFORE_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -162,7 +155,6 @@ export _BPXK_AUTOCVT"""
 
 # Used in test test_uss_before_replace_line
 TEST_BEFORE_REPLACE_LINE_IBM1047_CHECKSUM = "e21e54b7abdf8bbd7a2fe0add3573a10"
-TEST_BEFORE_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM = "79a246abee3c415e054583db58d39a71"
 
 TEST_BEFORE_AFTER = """if [ -z STEPLIB ] && tty -s;
 then
@@ -176,7 +168,6 @@ export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
 TEST_BEFORE_AFTER_IBM1047_CHECKSUM = "b2387e24c65cc2f2d36744cb3f60aa36"
-TEST_BEFORE_AFTER_IBM1047_DATA_SET_CHECKSUM = "ad23dbac0ed447ae36c0a3c9d1922bd2"
 
 TEST_BEFORE_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -191,7 +182,6 @@ export _BPXK_AUTOCVT"""
 
 # Used in test test_uss_after_before_replace
 TEST_BEFORE_AFTER_REPLACE_IBM1047_CHECKSUM = "cf5f96ba1a66f104a0cf0cfbcaf5c956"
-TEST_BEFORE_AFTER_REPLACE_IBM1047_DATA_SET_CHECKSUM = "825c14e417e0681b452aecb26ebeeeeb"
 
 TEST_BEFORE_AFTER_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -203,7 +193,6 @@ export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
 TEST_BEFORE_AFTER_LINE_IBM1047_CHECKSUM = "9869829672e3b84d507ded7b4b984e5b"
-TEST_BEFORE_AFTER_LINE_IBM1047_DATA_SET_CHECKSUM = "76efbc81df6f25bedc65c76cd11cf723"
 
 TEST_BEFORE_AFTER_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
@@ -218,7 +207,6 @@ export _BPXK_AUTOCVT"""
 
 # Used in test test_uss_after_before_replace_line
 TEST_BEFORE_AFTER_REPLACE_LINE_IBM1047_CHECKSUM = "9ac53f428745d977338718a79ef39d21"
-TEST_BEFORE_AFTER_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM = "039933ac273c400f71bb1c4a151a55b3"
 
 SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
 MOUNTPOINT('/tmp/src/somedirectory') 0xC1
@@ -231,6 +219,8 @@ TYPE('ZFS')
 SECURITY
 """
 
+SRC_INVALID_UTF8_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
+
 SRC_INVALID_UTF8_REPLACE = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
 MOUNTPOINT('/tmp/src/somedirectory') 0xC1
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
@@ -240,6 +230,8 @@ export ZOAU_ROOT
 ('/tmp/zfs_aggr1')
 TYPE('ZFS')
 SECURITY"""
+
+SRC_INVALID_UTF8_REPLACE_IBM1047_CHECKSUM = "aasdsadasdsaasfasfas"
 
 TEST_LITERAL_CONTENT_AFTER="""IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -256,7 +248,6 @@ IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
 # Used in test test_uss_after_literal
 TEST_LITERAL_CONTENT_AFTER_IBM1047_CHECKSUM = "177afcb365098c5e9a79522d9a1dc06a"
-TEST_LITERAL_CONTENT_AFTER_IBM1047_DATA_SET_CHECKSUM = "177afcb365098c5e9a79522d9a1dc06a"
 
 TEST_LITERAL_CONTENT_BEFORE = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -273,7 +264,6 @@ IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
 # Used in test test_uss_before_literal
 TEST_LITERAL_CONTENT_BEFORE_IBM1047_CHECKSUM = "4ceb85037f9aa4dedd085b5f0485fbcd"
-TEST_LITERAL_CONTENT_BEFORE_IBM1047_DATA_SET_CHECKSUM = "051d1d10d50aa930e911e5b7512f49aa"
 
 TEST_LITERAL_CONTENT_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -289,7 +279,6 @@ IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
 # Used in test test_uss_regexp_literal
 TEST_LITERAL_CONTENT_REGEXP_IBM1047_CHECKSUM = "591b6fd589e2e309dfd17a6e7232742f"
-TEST_LITERAL_CONTENT_REGEXP_IBM1047_DATA_SET_CHECKSUM = "fba8845d635a2a5498b4cd9731d87b24"
 
 TEST_LITERAL_CONTENT_BEFORE_AFTER="""IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -306,7 +295,6 @@ IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
 # Used in test test_uss_before_literal
 TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_CHECKSUM = "a9a9d6881e2c76cb1d3fcc239e44b8b7"
-TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_DATA_SET_CHECKSUM = "5e28e6690badeb1f4a020f7f07e289d1"
 
 TEST_LITERAL_CONTENT_AFTER_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
@@ -322,7 +310,6 @@ IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
 # Used in test test_uss_after_regexp_literal
 TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM = "a6e959bd5c6fa5269e4564bedfa05ae7"
-TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_DATA_SET_CHECKSUM = "30648807c63be066e4464fab6b9fd303"
 
 TEST_MULTIPLE_LINES = """if [ -z STEPLIB ] && tty -s;
 then
@@ -334,7 +321,6 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100"""
 
 # Used in test test_uss_remove_multiple_lines
 TEST_MULTIPLE_LINES_IBM1047_CHECKSUM = "384b22b319b8996d5ad68f44f63fe780"
-TEST_MULTIPLE_LINES_IBM1047_DATA_SET_CHECKSUM = "f88ac18dfe22b2ce29162e3162de54d7"
 
 TEST_BACKREF = """if [ -z STEPLIB ] && tty -s;
 then
@@ -349,7 +335,6 @@ export NEW__BPXK_AUTOCVT"""
 
 # Used in test test_uss_backref
 TEST_BACKREF_IBM1047_CHECKSUM = "773b24260c9c93841b32d35cf0cf9910"
-TEST_BACKREF_IBM1047_DATA_SET_CHECKSUM = "874b9dc0984a5da4ec69e230e27b053e"
 
 TEST_MATCH_MULTIPLE_LINES = """### REPLACED MULTILINE TEXT ###
 export STEPLIB=custom
@@ -362,7 +347,6 @@ export _BPXK_AUTOCVT"""
 
 # Used in test test_uss_match_replace_multiple_lines
 TEST_MATCH_MULTIPLE_LINES_IBM1047_CHECKSUM = "8a984fde84129c33fb60895fc75e63ef"
-TEST_MATCH_MULTIPLE_LINES_IBM1047_DATA_SET_CHECKSUM = "037832cf5b045af9a97ef6aab0246801"
 
 #####################
 #  Set up testing
@@ -372,7 +356,7 @@ TMP_DIRECTORY = "/tmp/"
 
 ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 
-DS_TYPE = ['seq'] # , 'pds', 'pdse']
+DS_TYPE = ['seq', 'pds', 'pdse']
 
 BACKUP_OPTIONS = ["SEQ", "MEM"]
 
@@ -1191,10 +1175,9 @@ def test_ds_after(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        # For data sets we need to extract the value and then use md5 as using md5 to the data set directly produces a different hash
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1222,9 +1205,6 @@ def test_ds_after_replace(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER_REPLACE
-        results = hosts.all.shell(cmd=f"md5 \"//\'{params['target']}\'\"")
-        for result in results.contacted.values():
-            assert TEST_AFTER_REPLACE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1253,7 +1233,7 @@ def test_ds_after_line(ansible_zos_module, dstype):
             assert result.get("stdout") == TEST_AFTER_LINE
         results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
         for result in results.contacted.values():
-            assert TEST_AFTER_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_LINE_IBM1047_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1283,7 +1263,7 @@ def test_ds_after_replace_line(ansible_zos_module, dstype):
             assert result.get("stdout") == TEST_AFTER_REPLACE_LINE
         results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
         for result in results.contacted.values():
-            assert TEST_AFTER_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_REPLACE_LINE_IBM1047_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1310,9 +1290,6 @@ def test_ds_before(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1340,9 +1317,6 @@ def test_ds_before_replace(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_REPLACE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_REPLACE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1369,9 +1343,6 @@ def test_ds_before_line(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_LINE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1399,9 +1370,6 @@ def test_ds_before_replace_line(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_REPLACE_LINE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1429,9 +1397,6 @@ def test_ds_after_before(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1460,9 +1425,6 @@ def test_ds_after_before_replace(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_REPLACE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_AFTER_REPLACE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1490,9 +1452,6 @@ def test_ds_after_before_line(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_LINE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_AFTER_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1521,9 +1480,6 @@ def test_ds_after_before_replace_line(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BEFORE_AFTER_REPLACE_LINE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BEFORE_AFTER_REPLACE_LINE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1552,9 +1508,6 @@ def test_ds_after_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1583,15 +1536,12 @@ def test_ds_before_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_BEFORE_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_regexp_literal(ansible_zos_module, dstype):
+def test_ds_before_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     literal = ["regexp"]
@@ -1613,9 +1563,6 @@ def test_ds_regexp_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_REGEXP
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_REGEXP_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1645,9 +1592,6 @@ def test_ds_after_before_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE_AFTER
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1676,9 +1620,6 @@ def test_ds_after_regexp_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1707,9 +1648,6 @@ def test_ds_before_regexp_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1739,9 +1677,6 @@ def test_ds_before_after_regexp_literal(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1767,9 +1702,6 @@ def test_ds_remove_multiple_lines(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MULTIPLE_LINES
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_MULTIPLE_LINES_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1796,9 +1728,6 @@ def test_ds_backref(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BACKREF
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_BACKREF_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1828,9 +1757,6 @@ exec -a 0 /bin/bash
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MATCH_MULTIPLE_LINES
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
-        for result in results.contacted.values():
-            assert TEST_MATCH_MULTIPLE_LINES_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1903,9 +1829,9 @@ def test_ds_backup_name(ansible_zos_module, dstype, backup_name):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_backup_file))
         for result in results.contacted.values():
             if ds_type == "seq":
@@ -1957,9 +1883,9 @@ def test_gdg_ds(ansible_zos_module):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd=f"md5 \"//'{params['target']}'\"")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_DATA_SET_CHECKSUM in result.get("stdout")
+            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
 
         params["target"] = ds_name + "(-1)"
         results = hosts.all.zos_replace(**params)
@@ -1970,6 +1896,9 @@ def test_gdg_ds(ansible_zos_module):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
+        for result in results.contacted.values():
+            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
 
         params_w_bck = {
             "regexp":"ZOAU_ROOT",
@@ -1989,6 +1918,9 @@ def test_gdg_ds(ansible_zos_module):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
+        results = hosts.all.shell(cmd=f"md5 {backup}")
+        for result in results.contacted.values():
+            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
 
         params["target"] = ds_name + "(-3)"
         results = hosts.all.zos_replace(**params)

@@ -1784,9 +1784,8 @@ import traceback
 from shlex import quote
 
 try:
-    from zoautil_py import gdgs, zoau_io
+    from zoautil_py import zoau_io
 except Exception:
-    datasets = ZOAUImportError(traceback.format_exc())
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
@@ -2817,7 +2816,7 @@ def resolve_data_set_names(dataset, disposition):
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
-                return str(datasets.create(dataset).name), "shr"
+                return dataset, "new"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:

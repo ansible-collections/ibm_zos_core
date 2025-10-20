@@ -5,7 +5,7 @@ minor_changes:
   - zos_archive - Adds new aliases ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
   - zos_archive - Adds new aliases ``adrdssus`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
-  - zos_copy - Adds new aliases ``replace`` for ``force`` and warning message that will be deprecated on 2.0.0.
+  - zos_copy - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0.
   - zos_copy - Adds new aliases ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
   - zos_fetch - Adds new aliases ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.

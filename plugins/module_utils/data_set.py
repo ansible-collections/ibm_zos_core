@@ -1860,7 +1860,7 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations
-            # On 1.4 zoau version if you give 0 or -1 go to proper generation
+            # From ZOAU 1.4 version relative notation 0 or -1 is on automatic give
             gds = generations[rel_generation]
         except Exception:
             raise GDSNameResolveError(relative_name)

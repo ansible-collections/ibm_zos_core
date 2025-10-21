@@ -89,6 +89,64 @@ options:
     choices:
       - backup
       - restore
+  output:
+    description:
+      - Specifies how a backup will be restored to the filesystem when I(operation=restore).
+      - Option C(output) does not perform any operations when I(operation=backup), it will be ignored.
+    type: dict
+    required: false
+    suboptions:
+      write:
+        description:
+          - Specifies the how the module should write to the file system when performing a restore operation.
+          - When C(write) is used with option C(names), the restore operation can filter on data set names and replace.
+          - When choice is C(conditional) and C(names), if a data set with the old name exists,
+            the module will allocate and restore the data set with the new name. Otherwise, the data set is restored with the old name.
+          - When choice is C(unconditional) and C(names), whether or not a data set with the old name exists,
+            the module will allocate and restore the data set with the new name. Otherwise, the data set is not restored.
+          - When choice is C(replace) and C(names), the source data set names or provided C(names) are used to replace and
+            allocate data sets whether or not they exist.
+        required: false
+        type: str
+        choices:
+          - conditional
+          - unconditional
+          - replace
+        default: replace
+      names:
+        description:
+          - Specifies the data set names to be used for both filtering and replacing.
+        type: list
+        elements: dict
+        required: false
+        default: []
+        suboptions:
+          old:
+            description:
+              - Key `old` is the original data set name, the value must be a valid data set name or generic.
+            type: str
+          new:
+            description:
+              - Key `new` is the new data set name or generic, so that the value is used to replace the matching `old` data set.
+            type: str
+      hlq:
+        description:
+          - Specifies the new HLQ to use for the data sets being restored.
+          - Mutually exclusive with I(names), you can either set a I(hlq) or I(names) but not both.
+          - Defaults to none so that the original HLQ remains unchanged.
+        type: str
+        required: false
+      tmp_hlq:
+        description:
+          - Override the default high level qualifier (HLQ) for temporary
+            data sets used in the module's operation.
+          - If I(tmp_hlq) is set, this value will be applied to all temporary
+            data sets.
+          - If I(tmp_hlq) is not set, the value will be the username who submits
+            the ansible task, this is the default behavior. If the username can
+            not be identified, the value C(TMPHLQ) is used.
+        required: false
+        type: str
   data_sets:
     description:
       - Determines which data sets to include in the backup.
@@ -179,8 +237,6 @@ options:
     description:
       - When I(operation=backup), specifies if an existing data set or UNIX file matching
         I(backup_name) should be deleted.
-      - When I(operation=restore), specifies if the module should overwrite existing data sets
-        with matching name on the target device.
     type: bool
     default: False
   compress:
@@ -292,23 +348,6 @@ options:
     required: false
     aliases:
       - unit
-  hlq:
-    description:
-      - Specifies the new HLQ to use for the data sets being restored.
-      - If no value is provided, the data sets will be restored with their original HLQs.
-    type: str
-    required: false
-  tmp_hlq:
-    description:
-      - Override the default high level qualifier (HLQ) for temporary
-        data sets used in the module's operation.
-      - If I(tmp_hlq) is set, this value will be applied to all temporary
-        data sets.
-      - If I(tmp_hlq) is not set, the value will be the username who submits
-        the ansible task, this is the default behavior. If the username can
-        not be identified, the value C(TMPHLQ) is used.
-    required: false
-    type: str
   index:
     description:
       - When C(operation=backup) specifies that for any VSAM cluster backup, the backup must also contain
@@ -440,7 +479,8 @@ EXAMPLES = r"""
     data_sets:
       include: "**.TEST"
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Only restore data sets whose last, or only qualifier is TEST.
@@ -451,14 +491,16 @@ EXAMPLES = r"""
       include: "**.TEST"
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the data set MY.BACKUP.DZP.
     Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP.DZP
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore volume from backup stored in the data set MY.BACKUP.DZP.
     Restore to volume MYVOL2.
@@ -616,8 +658,25 @@ def main():
                 disable_automatic_management_class=dict(type="bool", required=False, default=False),
             )
         ),
-        hlq=dict(type="str", required=False),
-        tmp_hlq=dict(type="str", required=False),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
+                names=dict(
+                    type="list",
+                    elements="dict",
+                    required=False,
+                    default=[],
+                    options=dict(
+                        old=dict(type="str"),
+                        new=dict(type="str")
+                    ),
+                ),
+                hlq=dict(type="str", required=False),
+                tmp_hlq=dict(type="str", required=False),
+            )
+        ),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
     )
@@ -638,10 +697,14 @@ def main():
         compress = params.get("compress")
         terse = params.get("terse")
         sms = params.get("sms")
-        hlq = params.get("hlq")
-        tmp_hlq = params.get("tmp_hlq")
+        output = params.get("output")
+        hlq = output.get("hlq")
+        tmp_hlq = output.get("tmp_hlq")
         sphere = params.get("index")
         access = params.get('access')
+
+        if (hlq or tmp_hlq) and bool(output.get("names")):
+            module.fail_json(msg="The use or restore only is valid use hlq or names options not both.")
 
         if sms and bool(sms.get("storage_class")) and sms.get("disable_automatic_storage_class"):
             module.fail_json(msg="storage_class and disable_automatic_storage_class are mutually exclusive, only one can be use by operation.")
@@ -779,8 +842,25 @@ def parse_and_validate_args(params):
                 disable_automatic_management_class=dict(type="bool", required=False),
             )
         ),
-        hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
-        tmp_hlq=dict(type=hlq_type, required=False),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
+                names=dict(
+                    type="list",
+                    elements="dict",
+                    required=False,
+                    default=[],
+                    options=dict(
+                        old=dict(type="str"),
+                        new=dict(type="str")
+                    ),
+                ),
+                hlq=dict(type="str", required=False),
+                tmp_hlq=dict(type="str", required=False),
+            )
+        ),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
     )

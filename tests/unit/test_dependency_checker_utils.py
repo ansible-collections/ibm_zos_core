@@ -72,6 +72,9 @@ def test_validate_dependencies_python_upper(monkeypatch):
 # Test: Python out-of-range (>3.13)
 # ------------------------------
 def test_validate_dependencies_python_out_of_range(monkeypatch):
+    # Use pytest's monkeypatch fixture to temporarily override functions
+    # in dependency_checker and version modules. This simulates different
+    # Python, z/OS, and ZOAU versions for testing without changing the real environment.
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 14))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.14.0")

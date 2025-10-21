@@ -13,7 +13,11 @@
 from __future__ import absolute_import, division, print_function
 import sys
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
-from zoautil_py import zsystem
+try:
+    from zoautil_py import zsystem
+except ImportError:
+    zsystem = None
+
 
 __metaclass__ = type
 
@@ -64,6 +68,10 @@ def get_python_version():
 
 def get_zos_version(module=None):
     """Fetch z/OS version using ZOAU Python API and return a string like '2.5'."""
+    if zsystem is None:
+        if module:
+            module.fail_json(msg="ZOAU Python API not found.")
+        return None
     try:
         sys_info = zsystem.zinfo("sys", json_format=True)
         sys_data = sys_info.get("data", {}).get("sys_info", {})

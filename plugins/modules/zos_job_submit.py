@@ -63,6 +63,7 @@ options:
     required: false
     default: 10
     type: int
+    aliases: [wait_time]
     description:
       - Option I(wait_time_s) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
@@ -967,7 +968,7 @@ def run_module():
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
-        wait_time_s=dict(type="int", default=10),
+        wait_time_s=dict(type="int", default=10, aliases=["wait_time"]),
         max_rc=dict(type="int", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
@@ -1027,7 +1028,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=10),
+        wait_time_s=dict(arg_type="int", required=False, default=10, aliases=["wait_time"]),
         max_rc=dict(arg_type="int", required=False),
     )
 
@@ -1041,6 +1042,13 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
+
+    if module.params.get("wait_time_s") is not None:
+        module.deprecate(
+            msg="The 'wait_time_s' option will be deprecated. Please use 'wait_time' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
 
     # Extract values from set module options
     location = parsed_args.get("location")

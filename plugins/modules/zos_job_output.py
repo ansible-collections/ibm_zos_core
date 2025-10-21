@@ -62,6 +62,7 @@ options:
         (e.g "JESJCL", "?")
     type: str
     required: false
+    aliases: [dd_name]
   sysin_dd:
     description:
       - Whether to include SYSIN DDs as part of the output.
@@ -507,7 +508,7 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        ddname=dict(type="str", required=False, aliases=["dd_name"]),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -517,7 +518,7 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        ddname=dict(type="str", required=False, aliases=["dd_name"]),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 
@@ -536,6 +537,13 @@ def run_module():
     owner = module.params.get("owner")
     ddname = module.params.get("ddname")
     sysin = module.params.get("sysin_dd")
+
+    if ddname is not None:
+        module.deprecate(
+            msg="The 'dd_name' option will be deprecated. Please use 'dd_name' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner")

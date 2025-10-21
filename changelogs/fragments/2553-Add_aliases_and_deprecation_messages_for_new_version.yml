@@ -1,0 +1,25 @@
+minor_changes:
+  - zos_apf - Adds new alias ``target`` for ``data_set_name``  and a warning message that it will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_archive - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0.
+  - zos_archive - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0.
+  - zos_archive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_copy - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0.
+  - zos_copy - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_fetch - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_job_output - Adds new alias ``dd_name`` for ``ddname`` and warning message that will be alias on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_job_submit - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_mount - Adds new alias ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0.
+  - zos_mount - Adds new alias ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_operator - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+  - zos_unarchive - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
+  - zos_unarchive - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
+  - zos_unarchive - Adds new alias ``adrdssus`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2353).

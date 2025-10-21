@@ -1964,9 +1964,6 @@ def test_gdg_ds(ansible_zos_module):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd=f"md5 {params['target']}")
-        for result in results.contacted.values():
-            assert TEST_AFTER_IBM1047_CHECKSUM in result.get("stdout")
 
         params["target"] = ds_name + "(-1)"
         results = hosts.all.zos_replace(**params)

@@ -39,6 +39,8 @@ COMPATIBILITY_MATRIX = {
 # ------------------------------------------------------------------------------
 # Version Fetchers
 # ------------------------------------------------------------------------------
+
+
 def get_zoau_version(module=None):
     """Return ZOAU version as a string, e.g. '1.4.0'"""
     try:
@@ -130,8 +132,6 @@ def validate_dependencies(module):
         for compat in compat_list if compat['zoau_version'] == zoau_version
     ]
     expected_py_str = ", ".join(expected_py_ranges) if expected_py_ranges else "unknown"
-
-
     # If no matching entry was found
     module.fail_json(
         msg=(

@@ -12,4 +12,4 @@
 # limitations under the License.
 # Update this version with each new release of the collection
 
-__version__ = "2.5.0"
+__version__ = "2.0.0"

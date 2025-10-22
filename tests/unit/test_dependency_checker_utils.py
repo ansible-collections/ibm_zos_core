@@ -10,35 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import pytest
-from unittest.mock import MagicMock
-from ansible.utils.display import Display
-
-# ------------------------------
-# Mock zoautil_py and zsystem
-# ------------------------------
-sys.modules['zoautil_py'] = MagicMock()
-sys.modules['zoautil_py.zsystem'] = MagicMock()
-
+from unittest.mock import MagicMock, patch
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import dependency_checker
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
 
-# ------------------------------
-# FakeModule for testing
-# ------------------------------
 class FakeModule:
-    def run_command(self, cmd):
-        return 0, "", ""
+    def __init__(self):
+        self.warned = []
+        self.exited = None
 
     def fail_json(self, **kwargs):
         raise Exception(kwargs.get("msg", "fail_json called"))
 
     def exit_json(self, **kwargs):
+        self.exited = kwargs
         raise StopIteration(kwargs)
 
+    def warn(self, msg):
+        self.warned.append(msg)
+
+
 # ------------------------------
-# Tests
+# Test: Python above max triggers warning
 # ------------------------------
 def test_python_above_max(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
@@ -48,41 +42,53 @@ def test_python_above_max(monkeypatch):
     monkeypatch.setattr(version, "__version__", "2.0.0")
 
     mod = FakeModule()
-    with pytest.raises(StopIteration) as exc:
+    with pytest.raises(StopIteration):
         dependency_checker.validate_dependencies(mod)
-    assert "Dependency check passed with warnings" in exc.value.value["msg"]
-    assert any("Python 3.14.0 exceeds the maximum tested version" in w for w in exc.value.value["warnings"])
+    assert any("Python 3.14.0 exceeds the maximum tested version" in w for w in mod.warned)
+    assert mod.exited["msg"] == "Dependency check passed with warnings."
 
+
+# ------------------------------
+# Test: z/OS above max triggers warning
+# ------------------------------
 def test_zos_above_max(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.12.0")
-    monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "3.5")
+    monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "3.2")
     monkeypatch.setattr(version, "__version__", "2.0.0")
 
     mod = FakeModule()
-    with pytest.raises(StopIteration) as exc:
+    with pytest.raises(StopIteration):
         dependency_checker.validate_dependencies(mod)
-    assert "Dependency check passed with warnings" in exc.value.value["msg"]
-    assert any("z/OS 3.5 exceeds the maximum tested version" in w for w in exc.value.value["warnings"])
+    assert any("z/OS 3.2 exceeds the maximum tested version" in w for w in mod.warned)
+    assert mod.exited["msg"] == "Dependency check passed with warnings."
 
-def test_zos_fetch_failure(monkeypatch):
+
+# ------------------------------
+# Test: versions within range pass without warning
+# ------------------------------
+def test_versions_within_range(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.12.0")
-    monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: None)
+    monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "2.6")
     monkeypatch.setattr(version, "__version__", "2.0.0")
 
     mod = FakeModule()
-    with pytest.raises(StopIteration) as exc:
+    with pytest.raises(StopIteration):
         dependency_checker.validate_dependencies(mod)
-    assert "Dependency compatibility check passed" in exc.value.value["msg"] or \
-           "Dependency check passed with warnings" in exc.value.value["msg"]
+    assert mod.warned == []
+    assert mod.exited["msg"] == "Dependency compatibility check passed."
 
+
+# ------------------------------
+# Test: Python below min fails
+# ------------------------------
 def test_python_below_min(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
-    monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 10))
-    monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.10.0")
+    monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 11))
+    monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.11.0")
     monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "2.6")
     monkeypatch.setattr(version, "__version__", "2.0.0")
 
@@ -91,6 +97,10 @@ def test_python_below_min(monkeypatch):
         dependency_checker.validate_dependencies(mod)
     assert "Incompatible Python version" in str(exc.value)
 
+
+# ------------------------------
+# Test: z/OS below min fails
+# ------------------------------
 def test_zos_below_min(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
@@ -102,15 +112,3 @@ def test_zos_below_min(monkeypatch):
     with pytest.raises(Exception) as exc:
         dependency_checker.validate_dependencies(mod)
     assert "Incompatible z/OS version" in str(exc.value)
-
-def test_versions_within_range(monkeypatch):
-    monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
-    monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
-    monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.12.0")
-    monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "2.6")
-    monkeypatch.setattr(version, "__version__", "2.0.0")
-
-    mod = FakeModule()
-    with pytest.raises(StopIteration) as exc:
-        dependency_checker.validate_dependencies(mod)
-    assert "Dependency compatibility check passed" in exc.value.value["msg"]

@@ -45,7 +45,6 @@ COMPATIBILITY_MATRIX = {
 # Version Fetchers
 # ------------------------------------------------------------------------------
 def get_zoau_version(module=None):
-    """Return ZOAU version as a string, e.g. '1.4.0'"""
     try:
         from zoautil_py import ZOAU_API_VERSION
         return ZOAU_API_VERSION
@@ -54,22 +53,16 @@ def get_zoau_version(module=None):
             module.fail_json(msg="Unable to import ZOAU. Please check PYTHONPATH, LIBPATH, ZOAU_HOME and PATH environment variables.")
         return None
 
-
 def get_python_version_info():
-    """Return Python major and minor version as a tuple."""
     return sys.version_info.major, sys.version_info.minor
 
-
 def get_python_version():
-    """Return full Python version string (e.g. '3.12.0')."""
     return f"{sys.version_info.major}.{sys.version_info.minor}.0"
 
-
 def get_zos_version(module=None):
-    """Fetch z/OS version using ZOAU Python API and return a string like '2.5'."""
     if zsystem is None:
         if module:
-            module.fail_json(msg="Unable to import ZOAU. Please check PYTHONPATH, LIBPATH, ZOAU_HOME and PATH environment variables.")
+            display.warning("Unable to import ZOAU zsystem module.")
         return None
     try:
         sys_info = zsystem.zinfo("sys", json_format=True)
@@ -79,36 +72,30 @@ def get_zos_version(module=None):
         if version and release:
             return f"{int(version)}.{int(release)}"
     except Exception as e:
-        if module:
-            module.fail_json(msg=f"Failed to fetch z/OS version: {e}")
+        display.warning(f"Failed to fetch z/OS version: {e}")
         return None
-
 
 # ------------------------------------------------------------------------------
 # Dependency Validation
 # ------------------------------------------------------------------------------
 def validate_dependencies(module):
-    """Validate the runtime environment against compatibility requirements."""
     zoau_version = get_zoau_version(module)
     python_major, python_minor = get_python_version_info()
     python_version_str = get_python_version()
+    zos_version_str = get_zos_version(module)
     collection_version = version.__version__
 
-    # Fetch z/OS version with warning if fails
-    try:
-        zos_version_str = get_zos_version(module)
-        if zos_version_str is None:
-            display.warning("Unable to fetch z/OS version. Continuing with dependency check.")
-            zos_version = 0.0  # fallback
-        else:
-            zos_version = float(zos_version_str)
-    except Exception as e:
-        display.warning(f"Failed to fetch or parse z/OS version: {e}. Continuing with dependency check.")
-        zos_version = 0.0
+    # Ensure critical versions are available
+    if not all([zoau_version, python_version_str, collection_version]):
+        module.fail_json(msg="Unable to fetch critical dependencies: ZOAU, Python, Collection Version.")
 
-    # Ensure required versions are available
-    if not all([zoau_version, collection_version, python_version_str]):
-        module.fail_json(msg="Unable to fetch one or more required dependencies. Dependencies checked are ZOAU, Python, z/OS.")
+    # Convert z/OS version to float if available
+    zos_version = None
+    if zos_version_str:
+        try:
+            zos_version = float(zos_version_str)
+        except Exception:
+            display.warning(f"Unable to parse z/OS version: {zos_version_str}")
 
     compat_list = COMPATIBILITY_MATRIX.get(collection_version, [])
     if not compat_list:
@@ -125,38 +112,36 @@ def validate_dependencies(module):
     for compat in compat_list:
         if compat["zoau_version"] == zoau_version:
             min_py = parse_py(compat["min_python_version"])
-            min_zos = compat.get("min_zos_version", 0.0)
+            min_zos = compat["min_zos_version"]
             break
 
-    if not min_py:
+    if not min_py or not min_zos:
         module.fail_json(msg=f"Incompatible ZOAU version: {zoau_version}")
 
     # --- Validation logic ---
     warnings = []
-
-    # Maximum tested versions
     max_py = (3, 13)
     max_zos = 3.1
 
-    # Fail if Python below minimum
+    # Too old = fail
     if current_py < min_py:
         module.fail_json(msg=f"Incompatible Python version: {python_version_str}. Minimum supported is {compat['min_python_version']}.")
 
-    # Warn if z/OS below minimum
-    if zos_version < min_zos:
-        warnings.append(f"z/OS version {zos_version_str} is below minimum supported {min_zos}, continuing anyway.")
+    if zos_version is not None and zos_version < min_zos:
+        module.fail_json(msg=f"Incompatible z/OS version: {zos_version_str}. Minimum supported is {min_zos}.")
 
-    # Warn if above maximum
+    # Too new = warn
     if current_py > max_py:
-        warnings.append(f"Python {python_version_str} exceeds the maximum supported version {max_py[0]}.{max_py[1]}.")
-    if zos_version > max_zos:
-        warnings.append(f"z/OS {zos_version_str} exceeds the maximum supported version {max_zos}.")
+        warnings.append(f"Python {python_version_str} exceeds the maximum tested version {max_py[0]}.{max_py[1]}.")
 
-    # Log warnings
+    if zos_version is not None and zos_version > max_zos:
+        warnings.append(f"z/OS {zos_version_str} exceeds the maximum tested version {max_zos}.")
+
+    # Display warnings via Ansible log utility
     for w in warnings:
         display.warning(w)
 
-    # Exit
+    # Exit module with warnings if any
     if warnings:
         module.exit_json(changed=False, msg="Dependency check passed with warnings.", warnings=warnings)
     else:

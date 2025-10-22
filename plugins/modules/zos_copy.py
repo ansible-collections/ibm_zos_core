@@ -193,6 +193,7 @@ options:
     type: bool
     default: false
     required: false
+    aliases: [replace]
   force_lock:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
@@ -236,6 +237,7 @@ options:
     type: bool
     default: false
     required: false
+    aliases: [binary]
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -4015,7 +4017,7 @@ def main():
         argument_spec=dict(
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
-            is_binary=dict(type='bool', default=False),
+            is_binary=dict(type='bool', default=False, aliases=["binary"]),
             executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
             aliases=dict(type='bool', default=False, required=False),
@@ -4108,7 +4110,7 @@ def main():
                     autoescape=dict(type='bool', default=True),
                 )
             ),
-            force=dict(type='bool', default=False),
+            force=dict(type='bool', default=False, aliases=["replace"]),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
             owner=dict(type='str', required=False),
@@ -4120,7 +4122,7 @@ def main():
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
-        is_binary=dict(arg_type='bool', required=False, default=False),
+        is_binary=dict(arg_type='bool', required=False, default=False, aliases=["binary"]),
         executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
         aliases=dict(arg_type='bool', required=False, default=False),
@@ -4132,6 +4134,7 @@ def main():
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         volume=dict(arg_type='str', required=False),
+        force=dict(type='bool', default=False, aliases=["replace"]),
         force_lock=dict(type='bool', default=False),
 
         dest_data_set=dict(
@@ -4208,6 +4211,20 @@ def main():
                 from_encoding=dict(arg_type="encoding"),
                 to_encoding=dict(arg_type="encoding"),
             )
+        )
+
+    if module.params.get("force") is not None:
+        module.deprecate(
+            msg="The 'force' option will be deprecated. Please use 'replace' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
+
+    if module.params.get("is_binary") is not None:
+        module.deprecate(
+            msg="The 'is_binary' option wil be deprecated. Please use 'binary' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
         )
 
     res_args = conv_path = None

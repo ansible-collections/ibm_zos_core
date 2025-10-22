@@ -267,7 +267,11 @@ def run_module():
             required=False,
             options=dict(
                 filter=dict(type="str", required=True),
-                use_regex=dict(default=False, type="bool", required=False)
+                use_regex=dict(
+                    default=False,
+                    type="bool",
+                    required=False,
+                )
             )
         )
     )

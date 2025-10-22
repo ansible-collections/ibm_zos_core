@@ -1,0 +1,53 @@
+---
+- name: "CONTROLLER | Gather Ansible version"
+  ansible.builtin.command: ansible --version
+  register: ansible_version
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather SSH client version"
+  ansible.builtin.command: ssh -V
+  register: ssh_version
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather Ansible config changes"
+  ansible.builtin.command: ansible-config dump --only-changed
+  register: ansible_config
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather system locale"
+  ansible.builtin.command: locale
+  register: locale
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | List installed Ansible collections"
+  ansible.builtin.command: ansible-galaxy collection list
+  register: collections
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather environment variables"
+  ansible.builtin.command: env
+  register: env
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather Ansible facts"
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true

@@ -1,0 +1,36 @@
+---
+- name: "Z/OS | Check ZOAU installation and version"
+  ibm.ibm_zos_core.zos_command:
+    cmd: "zoaversion -c"
+  register: managed_zoaversion
+  changed_when: false
+  ignore_errors: true
+
+# - name: "Z/OS | Check for APF authorization"
+#   ibm.ibm_zos_core.zos_apf:
+#     library: "{{ zos_diagnostics_apf_library }}"
+#     state: present
+#   register: managed_apf_check
+#   ignore_errors: true
+
+- name: "Z/OS | Gather Python version"
+  ansible.builtin.command: "python3 --version"
+  register: managed_python_version
+  changed_when: false
+  ignore_errors: true
+
+- name: "Z/OS | Gather system locale"
+  ansible.builtin.command: "locale"
+  register: managed_locale
+  changed_when: false
+  ignore_errors: true
+
+- name: "Z/OS | Gather environment variables"
+  ibm.ibm_zos_core.zos_command:
+    cmd: "env"
+  register: managed_env
+  changed_when: false
+  ignore_errors: true
+
+- name: "Z/OS | Gather Ansible facts"
+  ansible.builtin.setup:

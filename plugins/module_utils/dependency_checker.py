@@ -52,7 +52,7 @@ def get_zoau_version(module=None):
         return ZOAU_API_VERSION
     except ImportError:
         if module:
-            module.fail_json(msg=" ZOAU Python API not found.")
+            module.fail_json(msg="Unable to import ZOAU. Please check PYTHONPATH, LIBPATH, ZOAU_HOME and PATH environment variables.")
         return None
 
 
@@ -70,7 +70,7 @@ def get_zos_version(module=None):
     """Fetch z/OS version using ZOAU Python API and return a string like '2.5'."""
     if zsystem is None:
         if module:
-            module.fail_json(msg="ZOAU Python API not found.")
+            module.fail_json(msg="Unable to import ZOAU. Please check PYTHONPATH, LIBPATH, ZOAU_HOME and PATH environment variables.")
         return None
     try:
         sys_info = zsystem.zinfo("sys", json_format=True)

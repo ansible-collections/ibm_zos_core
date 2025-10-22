@@ -25,8 +25,7 @@ short_description: Manage user and group profiles in RACF
 description:
   - The L(zos_user,./zos_user.html) module executes RACF TSO commands that can manage
     user and group RACF profiles.
-  - The module can create, update and delete RACF profiles, as well as list information
-    about them.
+  - The module can create, update and delete RACF profiles about them.
 options:
   name:
     description:
@@ -38,7 +37,7 @@ options:
   operation:
     description:
       - RACF command that will be executed.
-      - Group profiles can be created, updated, listed, deleted and purged.
+      - Group profiles can be created, updated, deleted and purged.
       - User profiles can use any of the choices.
       - C(delete) will run a RACF C(DELGROUP) or a C(DELUSER) TSO command. This will
         remove the profile but not every reference in the RACF database.
@@ -51,7 +50,6 @@ options:
     choices:
       - create
       - update
-      - list
       - delete
       - purge
       - connect
@@ -1010,7 +1008,10 @@ dump_name:
 """
 
 import copy
+import math
+import os
 import re
+import tempfile
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
@@ -1018,6 +1019,15 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
+
+try:
+    from zoautil_py import datasets, mvscmd, ztypes
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
+    mvscmd = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 def dynamic_dict(contents, dependencies):
     """Validates options that are YAML dictionaries created by a user in a task.
@@ -1192,6 +1202,9 @@ class RACFHandler():
         self.name = module_params['name']
         self.operation = module_params['operation']
         self.scope = module_params['scope']
+        self.database = module_params['database']
+        self.keep_dump = module_params['keep_dump']
+        self.optimize_dump = module_params['optimize_dump']
         # Nested params.
         params_copy = copy.deepcopy(module_params)
         del params_copy['name']
@@ -1470,6 +1483,172 @@ class RACFHandler():
 
         return cmd
 
+    def purge_profile(self):
+        # First step: run the IRRUT200 utility.
+        # Getting the total allocation for the database.
+        # TODO: put inside a try/catch block.
+        database_listing = datasets.list_datasets(self.database)[0]
+        database_total_space = database_listing.total_space
+
+        # Putting the input commands for IRRUT200 inside a text file.
+        sysin_file = tempfile.mkstemp()
+        with open(sysin_file[0], mode='w', encoding='cp1047') as filepath:
+            filepath.write("MAP\nEND")
+
+        # TODO: use a temp HLQ.
+        backup_name = datasets.tmp_name()
+
+        irrut200_dds = [
+            ztypes.DDStatement('SYSRACF', ztypes.DatasetDefinition(
+                self.database,
+                disposition='SHR'
+            )),
+            ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
+                backup_name,
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='DELETE',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=10,
+                primary_unit='CYL',
+                secondary=0,
+                secondary_unit='CYL',
+                record_format='F',
+                record_length=4096,
+                block_size=20480
+            )),
+            ztypes.DDStatement('SYSUT2', '*'),
+            ztypes.DDStatement('SYSPRINT', '*'),
+            ztypes.DDStatement('SYSIN', ztypes.FileDefinition(sysin_file[1]))
+        ]
+        irrut200_response = mvscmd.execute_authorized('IRRUT200', dds=irrut200_dds)
+        percent_used_search = re.search(
+            r'(RACF DATA SET IS\s*)(\d+)(\s*PERCENT FULL)',
+            irrut200_response.stdout_response
+        )
+        percent_used = int(percent_used_search[2])
+        database_used_space = math.ceil((database_total_space * percent_used) / 100)
+
+        # Cleaning up.
+        os.remove(sysin_file[1])
+        datasets.delete(backup_name)
+
+        # Second step: run the IRRDBU00 utility.
+        # TODO: put inside a try/catch block.
+        dump_data_set = datasets.tmp_name()
+        irrdbu00_dds = [
+            ztypes.DDStatement('SYSPRINT', '*'),
+            ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
+                self.database,
+                disposition='SHR'
+            )),
+            # TODO: change size attributes
+            ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
+                dump_data_set,
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='CATALOG',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=150,
+                primary_unit='CYL',
+                secondary=50,
+                secondary_unit='CYL',
+                record_format='VB',
+                record_length=4096,
+                block_size=20480
+            ))
+        ]
+        lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
+        irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
+
+        # Third step: run IRRRID00.
+        # TODO: put inside a try/catch block.
+        # Putting the profile we want to search for in a text file.
+        sysin_name = datasets.tmp_name()
+        sysin_data_set = datasets.create(
+            sysin_name,
+            'SEQ',
+            record_format='FB',
+            record_length=80
+        )
+        datasets.write(sysin_name, self.name, append=False)
+
+        clist = datasets.tmp_name()
+        irrrid00_dds = [
+            ztypes.DDStatement('SYSPRINT', '*'),
+            ztypes.DDStatement('SYSOUT', '*'),
+            ztypes.DDStatement('SORTOUT', ztypes.DatasetDefinition(
+                datasets.tmp_name(),
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='DELETE',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=5,
+                primary_unit='CYL',
+                secondary=5,
+                secondary_unit='CYL',
+                record_format='VB',
+                record_length=4096,
+                block_size=20480
+            )),
+            ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
+                datasets.tmp_name(),
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='DELETE',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=3,
+                primary_unit='CYL',
+                secondary=5,
+                secondary_unit='CYL'
+            )),
+            ztypes.DDStatement('INDD', ztypes.DatasetDefinition(
+                dump_data_set,
+                disposition='OLD'
+            )),
+            ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
+                clist,
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='CATALOG',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=150,
+                primary_unit='CYL',
+                secondary=50,
+                secondary_unit='CYL',
+                record_format='VB',
+                record_length=259,
+                block_size=1036
+            )),
+            ztypes.DDStatement('SYSIN', ztypes.DatasetDefinition(
+                sysin_name,
+                disposition='SHR'
+            ))
+        ]
+        irrrid00_response = mvscmd.execute('IRRRID00', dds=irrrid00_dds)
+
+        # TODO: update entitied modified
+        cmd = f"EXEC '{clist}'"
+        rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
+
+        # Cleaning up.
+        datasets.delete(sysin_name)
+        if not self.keep_dump:
+            datasets.delete(clist)
+            datasets.delete(dump_data_set)
+
+        self.database_dumped = True
+        self.dump_kept = self.keep_dump
+        self.dump_name = dump_data_set
+
+        return rc, stdout, stderr, cmd
+        
+
 
 class GroupHandler(RACFHandler):
     """Subclass containing all information needed to clean, validate and execute
@@ -1553,6 +1732,8 @@ class GroupHandler(RACFHandler):
             rc, stdout, stderr, cmd = self._update_group()
         if self.operation == 'delete':
             rc, stdout, stderr, cmd = self._delete_group()
+        if self.operation == 'purge':
+            rc, stdout, stderr, cmd = self.purge_profile()
 
         self.cmd = cmd
         # Getting the base dictionary.
@@ -1816,6 +1997,8 @@ class UserHandler(RACFHandler):
             rc, stdout, stderr, cmd = self._update_user()
         if self.operation == 'delete':
             rc, stdout, stderr, cmd = self._delete_user()
+        if self.operation == 'purge':
+            rc, stdout, stderr, cmd = self.purge_profile()
         if self.operation == 'connect':
             rc, stdout, stderr, cmd = self._connect_user()
         if self.operation == 'remove':
@@ -2442,12 +2625,24 @@ def run_module():
             'operation': {
                 'type': 'str',
                 'required': True,
-                'choices': ['create', 'list', 'update', 'delete', 'purge', 'connect', 'remove']
+                'choices': ['create', 'update', 'delete', 'purge', 'connect', 'remove']
             },
             'scope': {
                 'type': 'str',
                 'required': True,
                 'choices': ['user', 'group']
+            },
+            'database': {
+                'type': 'str',
+                'required': False
+            },
+            'keep_dump': {
+                'type': 'bool',
+                'default': False
+            },
+            'optimize_dump': {
+                'type': 'bool',
+                'default': True
             },
             'general': {
                 'type': 'dict',
@@ -3013,6 +3208,8 @@ def run_module():
                 }
             }
         },
+        # Require database when operation=purge.
+        required_if=[('operation', 'purge', ('database',))],
         supports_check_mode=True
     )
 
@@ -3020,6 +3217,9 @@ def run_module():
         'name': {'arg_type': 'str', 'required': True, 'aliases': ['src']},
         'operation': {'arg_type': 'str', 'required': True},
         'scope': {'arg_type': 'str', 'required': True},
+        'database': {'arg_type': 'str', 'required': False},
+        'keep_dump': {'arg_type': 'bool', 'required': True},
+        'optimize_dump': {'arg_type': 'bool', 'required': True},
         'general': {
             'arg_type': 'dict',
             'required': False,

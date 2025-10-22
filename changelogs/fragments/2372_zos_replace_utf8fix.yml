@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_replace - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not.
+    Fix now writes the file with the provided ``encoding`` value only if an occurrence if found.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2372).

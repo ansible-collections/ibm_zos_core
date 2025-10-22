@@ -556,7 +556,7 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
                 task_params = extract_keys(display_response.stdout_response, asidx)
         if (is_response_required and task_params) or (not is_response_required and not task_params):
             if wait_full_time:
-                pending_time = wait_time - ( i + 1 ) * 5
+                pending_time = wait_time - (i + 1) * 5
                 time.sleep(pending_time)
                 break
             else:

@@ -97,9 +97,9 @@ def validate_dependencies(module):
     collection_version = version.__version__
 
     # Ensure all versions are available
-    if not all([zoau_version, zos_version_str, collection_version]):
+    if not all([zoau_version, zos_version_str, collection_version, python_version_str]):
         module.fail_json(
-            msg=" Missing one or more required versions (ZOAU, Python, z/OS, Collection Version)."
+            msg="Unable to fetch one or more required dependencies.Dependencies checked are ZOAU, Python, z/OS."
         )
 
     # Convert z/OS version to float for comparison

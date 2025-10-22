@@ -201,10 +201,10 @@ options:
     default: false
   wait_full_time:
     description:
-        - When C(wait_full_time=true), the module waits for the time mentioned in I(wait_time) before validating the
-          started task operation.
-        - When C(wait_full_time=false), the module starts polling every 5 seconds to validate the started task operation. It returns
-          response immediately after successful validation.
+        - If C(wait_full_time=false), the module polls every 5 seconds to check the status of the started task and returns
+          immediately once the task is successfully validated.
+        - When C(wait_full_time=true), the module waits for the duration specified in I(wait_time), even after the started
+          task operation has been successfully validated.
     required: false
     default: false
     type: bool
@@ -213,6 +213,7 @@ options:
         - Total time that the module will wait for a submitted task, measured in seconds.
           The time begins when the module is executed on the managed node. Default value of 0 means to wait the default
           amount of time supported by the opercmd utility.
+        - The default value is 10 seconds if this value is not specified, or if the specified value is less than 10.
     required: false
     default: 10
     type: int
@@ -542,9 +543,6 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
     wait_interval = 5
     iteration_count = wait_time // 5
     is_response_required = False
-    if wait_full_time:
-        iteration_count = 1
-        wait_interval = wait_time
     if state in ["started", "modified"]:
         is_response_required = True
     task_params = []
@@ -557,7 +555,12 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
             else:
                 task_params = extract_keys(display_response.stdout_response, asidx)
         if (is_response_required and task_params) or (not is_response_required and not task_params):
-            break
+            if wait_full_time:
+                pending_time = wait_time - ( i + 1 ) * 5
+                time.sleep(pending_time)
+                break
+            else:
+                break
     return task_params
 
 
@@ -1438,6 +1441,8 @@ def run_module():
     before_time = ""
     state = module.params.get('state')
     wait_time_s = module.params.get('wait_time')
+    if wait_time_s < 10:
+        wait_time_s = 10
     wait_full_time = module.params.get('wait_full_time')
     verbose = module.params.get('verbose')
     # Fetch started task name if task_id is present in the request by executing display command

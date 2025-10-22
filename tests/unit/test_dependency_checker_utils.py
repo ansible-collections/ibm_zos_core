@@ -35,6 +35,11 @@ class FakeModule:
 # Test: Python above max triggers warning
 # ------------------------------
 def test_python_above_max(monkeypatch):
+    # This approach is preferred over using simple dictionaries because:
+    # 1. The validate_dependencies function relies on real functions to fetch versions.
+    # 2. Using monkeypatch allows us to simulate different runtime environments.
+    # 3. We can precisely test success, failure, and warning scenarios without affecting
+    #    the real system or requiring specific Python/ZOAU/zOS versions.
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 14))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.14.0")

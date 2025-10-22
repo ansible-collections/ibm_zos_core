@@ -27,16 +27,16 @@ __metaclass__ = type
 # Define compatible versions of Python, ZOAU, and z/OS for each collection version.
 COMPATIBILITY_MATRIX = {
     "2.0.0": [
-        {"zoau_version": "1.4.0", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
-        {"zoau_version": "1.4.1", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
-        {"zoau_version": "1.4.2", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
+        {"zoau_version": "1.4.0", "min_python_version": "3.12", "min_zos_version": 2.5},
+        {"zoau_version": "1.4.1", "min_python_version": "3.12", "min_zos_version": 2.5},
+        {"zoau_version": "1.4.2", "min_python_version": "3.12", "min_zos_version": 2.5},
     ],
     "2.1.0": [
-        {"zoau_version": "1.4.1", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
-        {"zoau_version": "1.4.2", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
+        {"zoau_version": "1.4.1", "min_python_version": "3.12", "min_zos_version": 2.5},
+        {"zoau_version": "1.4.2", "min_python_version": "3.12", "min_zos_version": 2.5},
     ],
     "2.2.0": [
-        {"zoau_version": "1.4.2", "min_python_version": "3.12", "max_python_version": "3.13", "min_zos_version": 2.5, "max_zos_version": 3.1},
+        {"zoau_version": "1.4.2", "min_python_version": "3.12", "min_zos_version": 2.5},
     ],
 }
 
@@ -81,7 +81,7 @@ def get_zos_version(module=None):
             return f"{int(version)}.{int(release)}"
     except Exception as e:
         if module:
-            module.fail_json(msg=f" Failed to fetch z/OS version: {e}")
+            module.fail_json(msg=f"Failed to fetch z/OS version: {e}")
         return None
 
 
@@ -99,14 +99,14 @@ def validate_dependencies(module):
     # Ensure all versions are available
     if not all([zoau_version, zos_version_str, collection_version, python_version_str]):
         module.fail_json(
-            msg="Unable to fetch one or more required dependencies.Dependencies checked are ZOAU, Python, z/OS."
+            msg="Unable to fetch one or more required dependencies. Dependencies checked are ZOAU, Python, z/OS."
         )
 
     # Convert z/OS version to float for comparison
     try:
         zos_version = float(zos_version_str)
     except Exception:
-        module.fail_json(msg=f" Unable to parse z/OS version: {zos_version_str}")
+        module.fail_json(msg=f"Unable to parse z/OS version: {zos_version_str}")
 
     compat_list = COMPATIBILITY_MATRIX.get(collection_version, [])
     if not compat_list:
@@ -120,41 +120,29 @@ def validate_dependencies(module):
 
     # Check if any entry in the list matches the current environment
     for compat in compat_list:
-        min_py = parse_py(compat["min_python_version"])
-        max_py = parse_py(compat["max_python_version"])
+        if compat["zoau_version"] == zoau_version:
+            min_py = parse_py(compat["min_python_version"])
+            min_zos = compat["min_zos_version"]
 
-        if (
-            compat["zoau_version"] == zoau_version
-            and min_py <= current_py <= max_py
-            and compat["min_zos_version"] <= zos_version <= compat["max_zos_version"]
-        ):
+            # Fail if below minimum supported versions
+            if current_py < min_py:
+                module.fail_json(
+                    msg=f"Incompatible Python version: {python_version_str}. Minimum supported is {compat['min_python_version']}."
+                )
+            if zos_version < min_zos:
+                module.fail_json(
+                    msg=f"Incompatible z/OS version: {zos_version_str}. Minimum supported is {min_zos}."
+                )
+
             module.exit_json(
                 msg=(
-                    f" Dependency compatibility check passed: "
+                    f"Dependency compatibility check passed: "
                     f"ZOAU {zoau_version}, Python {python_version_str}, "
                     f"z/OS {zos_version_str}, Collection Version {collection_version}"
                 )
             )
-    expected_py_ranges = [
-        f"{compat['min_python_version']}-{compat['max_python_version']}"
-        for compat in compat_list if compat['zoau_version'] == zoau_version
-    ]
-    expected_py_str = ", ".join(expected_py_ranges) if expected_py_ranges else "unknown"
-    # If no matching entry was found
-    module.fail_json(
-        msg=(
-            f"Incompatible configuration detected:\n"
-            f"  ZOAU: {zoau_version}\n"
-            f"  Python: {python_version_str} (expected {expected_py_str})\n"
-            f"  z/OS: {zos_version_str}\n"
-            f"  Collection Version: {collection_version}"
-        )
-    )
 
-    module.exit_json(
-        msg=(
-            f" Dependency compatibility check passed: "
-            f"ZOAU {zoau_version}, Python {python_version_str}, "
-            f"z/OS {zos_version_str}, Collection Version {collection_version}"
-        )
+    # If no matching ZOAU version found
+    module.fail_json(
+        msg=f"Incompatible ZOAU version {zoau_version}. No matching compatibility entry found."
     )

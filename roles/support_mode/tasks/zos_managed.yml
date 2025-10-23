@@ -1,6 +1,6 @@
 ---
 - name: "Z/OS | Check ZOAU installation and version"
-  ibm.ibm_zos_core.zos_command:
+  ansible.builtin.command:
     cmd: "zoaversion -c"
   register: managed_zoaversion
   changed_when: false
@@ -14,23 +14,31 @@
 #   ignore_errors: true
 
 - name: "Z/OS | Gather Python version"
-  ansible.builtin.command: "python3 --version"
+  ansible.builtin.command:
+    cmd: "python3 --version"
   register: managed_python_version
   changed_when: false
   ignore_errors: true
 
 - name: "Z/OS | Gather system locale"
-  ansible.builtin.command: "locale"
+  ansible.builtin.command:
+    cmd: "locale"
   register: managed_locale
   changed_when: false
   ignore_errors: true
 
 - name: "Z/OS | Gather environment variables"
-  ibm.ibm_zos_core.zos_command:
+  ansible.builtin.command:
     cmd: "env"
   register: managed_env
   changed_when: false
   ignore_errors: true
 
 - name: "Z/OS | Gather Ansible facts"
-  ansible.builtin.setup:
+  ibm.ibm_zos_core.zos_gather_facts:
+    gather_subset:
+      - ipl
+      - sys
+      - cpu
+      - iodf
+  register: zos_facts

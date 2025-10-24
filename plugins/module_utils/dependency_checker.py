@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 import sys
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
-from packaging import version as v  # for version comparison
+from distutils.version import LooseVersion as v  # for version comparison
 
 try:
     from zoautil_py import zsystem
@@ -117,7 +117,7 @@ def validate_dependencies(module):
     matched_compat = None
 
     for compat in compat_list:
-        if v.parse(zoau_version) >= v.parse(compat["min_zoau_version"]):
+        if v(zoau_version) >= v(compat["min_zoau_version"]):
             matched_compat = compat
             min_py = parse_python_version(compat["min_python_version"])
             min_zos = compat["min_zos_version"]
@@ -138,7 +138,7 @@ def validate_dependencies(module):
     max_zos = 3.1
 
     # --- ZOAU check (hard fail if below min) ---
-    if v.parse(zoau_version) < v.parse(matched_compat["min_zoau_version"]):
+    if v(zoau_version) < v(matched_compat["min_zoau_version"]):
         module.fail_json(
             msg=f"Incompatible ZOAU version: {zoau_version}. Minimum supported is {matched_compat['min_zoau_version']}."
         )

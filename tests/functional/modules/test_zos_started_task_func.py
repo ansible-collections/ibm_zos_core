@@ -16,8 +16,8 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-from ibm_zos_core_startedtask.tests.helpers.dataset import get_tmp_ds_name
-from ibm_zos_core_startedtask.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 from ibm_zos_core.tests.helpers.dataset import get_tmp_member
 from shellescape import quote
 import re

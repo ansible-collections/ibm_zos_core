@@ -1,0 +1,6 @@
+bugfixes:
+  - zos_fetch - Previously, running the module with a missing source could raise an ``UnboundLocalError``
+    because the variable ``is_member`` was referenced before initialization. The fix now ensures
+    ``is_member`` is initialized before dataset existence checks, allowing the module to fail gracefully
+    with a proper error message when the source does not exist.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2378).

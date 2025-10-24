@@ -1231,6 +1231,7 @@ def run_module(module):
         Failed to process size.
     """
     # Parameter initialization
+    pds_paths = None
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
     contains = module.params.get('contains')

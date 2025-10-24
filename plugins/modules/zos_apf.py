@@ -113,6 +113,7 @@ options:
             the APF list.
         required: True
         type: str
+        aliases: [target]
       marker:
         description:
           - The marker line template.
@@ -439,6 +440,7 @@ def main():
                     data_set_name=dict(
                         type='str',
                         required=True,
+                        aliases=["target"],
                     ),
                     marker=dict(
                         type='str',
@@ -503,7 +505,7 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                data_set_name=dict(arg_type='str', required=True),
+                data_set_name=dict(arg_type='str', required=True, aliases=["target"]),
                 marker=dict(arg_type='str', required=False, default='/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */'),
                 backup=dict(arg_type='bool', default=False),
                 backup_name=dict(arg_type='str', required=False, default=None),
@@ -534,6 +536,16 @@ def main():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+
+        persistent_param = module.params.get('persistent', {})
+
+        if persistent_param.get('data_set_name') is not None:
+            module.deprecate(
+                msg="The 'persistent.data_set_name' option will be deprecated. Please use 'persistent.target' instead.",
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
+            )
+
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

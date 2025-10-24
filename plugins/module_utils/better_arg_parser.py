@@ -1194,12 +1194,6 @@ class BetterArgParser(object):
             aliases = {}
         arg_aliases.append(arg_name)
         for alternate_name in arg_aliases:
-            if aliases.get(alternate_name, arg_name) != arg_name:
-                raise ValueError(
-                    'Conflicting aliases "{0}" and "{1}" found for name "{2}"'.format(
-                        aliases.get(alternate_name), alternate_name, arg_name
-                    )
-                )
             aliases[alternate_name] = arg_name
         return aliases
 

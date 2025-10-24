@@ -546,7 +546,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             task = member_name
         )
         for result in display_result.contacted.values():
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
@@ -661,7 +661,7 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
     )
     for result in display_result.contacted.values():
         asid_val = result.get("tasks")[0]["asidx"]
-        assert result.get("changed") is True
+        assert result.get("changed") is False
         assert result.get("rc") == 0
         assert result.get("stderr") == ""
         assert len(result.get("tasks")) > 0
@@ -787,7 +787,7 @@ def test_force_and_start_with_icsf_task(ansible_zos_module):
         task = "ICSF"
     )
     for result in display_results.contacted.values():
-        assert result.get("changed") is True
+        assert result.get("changed") is False
         assert result.get("rc") == 0
         assert result.get("stderr") == ""
         assert result.get("cmd") == "D A,ICSF"
@@ -887,7 +887,7 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
         )
 
         for result in display_results.contacted.values():
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) == 2
             assert result.get("stderr") == ""
@@ -911,7 +911,7 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
         )
 
         for result in display_results.contacted.values():
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) == 1
             assert result.get("stderr") == ""
@@ -983,7 +983,7 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
 
         for result in display_results.contacted.values():
             task_id = result.get('tasks')[0]['task_id']
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) == 2
             assert result.get("stderr") == ""
@@ -1003,7 +1003,7 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
         )
 
         for result in display_results.contacted.values():
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) == 1
             assert result.get("stderr") == ""
@@ -1025,7 +1025,7 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
     for result in display_result.contacted.values():
         task_id = result.get('tasks')[0]['task_id']
         asid_val = result.get('tasks')[0]['asidx']
-        assert result.get("changed") is True
+        assert result.get("changed") is False
         assert result.get("rc") == 0
         assert result.get("stderr") == ""
         assert len(result.get("tasks")) > 0

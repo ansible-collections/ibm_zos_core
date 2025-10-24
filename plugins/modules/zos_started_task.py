@@ -1647,7 +1647,8 @@ def run_module():
         stderr = err
 
     result = dict()
-
+    if state == "displayed":
+        changed = False
     if module.check_mode:
         module.exit_json(**result)
 

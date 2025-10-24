@@ -76,3 +76,10 @@ def get_random_qs(size=7):
         random_q = random_q.replace(random_char, random.choice(special_chars))
         count += 1
     return random_q
+
+def get_tmp_member():
+    # Generate a random length between 3 and 7
+    length = random.randint(2, 6)
+    random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    return random_str.upper()

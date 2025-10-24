@@ -122,7 +122,7 @@ def test_zos_below_min(monkeypatch):
 # ------------------------------
 # Test: ZOAU below minimum version triggers failure
 # ------------------------------
-def test_zoau_below_min_fails_mwndm(monkeypatch):
+def test_zoau_below_min_fails(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.3.9")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.12.0")
@@ -133,4 +133,3 @@ def test_zoau_below_min_fails_mwndm(monkeypatch):
     with pytest.raises(Exception) as exc:
         dependency_checker.validate_dependencies(mod)
     assert "Incompatible ZOAU version" in str(exc.value)
-

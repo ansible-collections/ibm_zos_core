@@ -332,7 +332,7 @@ def test_cancel_task_negative(ansible_zos_module):
     cancel_results = hosts.all.zos_started_task(
         state = "cancelled",
         asidx = "0012",
-        userid = "OMVSTEST",
+        user_id = "OMVSTEST",
         dump = True,
         verbose=True
     )
@@ -342,7 +342,7 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
     cancel_results = hosts.all.zos_started_task(
         state = "cancelled",
-        userid = "OMVSADM",
+        user_id = "OMVSADM",
         armrestart = True
     )
     for result in cancel_results.contacted.values():
@@ -372,7 +372,7 @@ def test_force_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
     force_results = hosts.all.zos_started_task(
         state = "forced",
-        userid = "OMVSADM",
+        user_id = "OMVSADM",
         armrestart = True
     )
     for result in force_results.contacted.values():
@@ -412,7 +412,7 @@ def test_force_task_negative(ansible_zos_module):
     #     assert result.get("cmd") == "FORCE TESTER.SAMPLE,TCB=000678,RETRY=YES"
     # force_results = hosts.all.zos_started_task(
     #     state = "forced",
-    #     userid = "OMVSTEST",
+    #     user_id = "OMVSTEST",
     #     tcb_address = "000678",
     #     retry_force = True,
     #     verbose=True
@@ -485,7 +485,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             state = "started",
             member = member_name,
             identifier = "TESTER",
-            reus_asid = True
+            reusable_asid = True
         )
         for result in start_results.contacted.values():
             assert result.get("changed") is True
@@ -1087,11 +1087,11 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert result.get("stderr") == ""
 
 # This testcase will be successful when a TSO session with user 'OMVSADM' is open.
-# def test_cancel_using_userid(ansible_zos_module):
+# def test_cancel_using_user_id(ansible_zos_module):
 #     hosts = ansible_zos_module
 #     display_results = hosts.all.zos_started_task(
 #         state = "cancelled",
-#         userid = "OMVSADM"
+#         user_id = "OMVSADM"
 #     )
 #     for result in display_results.contacted.values():
 #         print(result)

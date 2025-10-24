@@ -76,11 +76,12 @@ options:
     type: str
     aliases:
         - identifier
-  get_system_logs:
+  system_logs:
     description:
-        - When C(get_system_logs=true), the module will return system logs that describe the task's execution.
+        - When C(system_logs=true), the module will return system logs that describe the task's execution.
           This option can return a big response depending on system load, also it could surface other
           program's activity.
+        - It is not recommended to have this option on all the time, but rather use it as a debugging option.
     required: false
     type: bool
     default: false
@@ -93,10 +94,10 @@ options:
     type: str
   job_name:
     description:
-        - When I(state) is started, this is the name which should be assigned to a started task
-          while starting it. If I(job_name) is not specified, then I(member_name) is used as job's name.
+        - When I(state) is started, this is the name which will be assigned to a started task while starting it.
+          If I(job_name) is not specified, then I(member_name) is used as job's name.
         - When I(state) is C(displayed), C(modified), C(cancelled), C(stopped), or C(forced), I(job_name) is the
-          started task name.
+          started task name used to query the system.
     required: false
     type: str
     aliases:
@@ -115,7 +116,7 @@ options:
     description:
         - Name of a member of a partitioned data set that contains the source JCL for the task to be started. The member
           can be either a job or a cataloged procedure.
-        - Only applicable when I(state) is C(started), otherwise ignored.
+        - I(member_name) is mandatory and only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: str
     aliases:
@@ -124,6 +125,7 @@ options:
     description:
         - Program parameters passed to the started program.
         - Only applicable when I(state) is C(started) or C(modified), otherwise ignored.
+        - For example, REFRESH or REPLACE parameters can be passed while modifying a started task.
     required: false
     type: list
     elements: str
@@ -134,17 +136,17 @@ options:
 #         - Only applicable when I(state) is C(forced), otherwise ignored.
 #     required: false
 #     type: bool
-  reus_asid:
+  reusable_asid:
     description:
-        - When I(reus_asid) is C(True) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
-          to the address space created by the START command. If I(reus_asid) is not specified or REUSASID(NO) is specified in
+        - When I(reusable_asid) is C(True) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
+          to the address space created by the START command. If I(reusable_asid) is not specified or REUSASID(NO) is specified in
           DIAGxx, an ordinary ASID is assigned.
         - Only applicable when I(state) is C(started), otherwise ignored.
     required: false
     type: bool
   state:
     description:
-        - I(state) should be the desired state of the started task after the module is executed.
+        - I(state) is the desired state of the started task after the module is executed.
         - If I(state) is C(started) and the respective member is not present on the managed node, then error will be thrown with C(rc=1),
           C(changed=false) and I(stderr) which contains error details.
         - If I(state) is C(cancelled), C(modified), C(displayed), C(stopped) or C(forced) and the started task is not running on the managed node,
@@ -170,7 +172,7 @@ options:
     type: str
   task_id:
     description:
-        - The started task id starts with STC.
+        - A unique system-generated identifier that represents a specific started task running in z/OS. This id starts with STC.
         - Only applicable when I(state) is C(displayed), C(modified), C(cancelled), C(stopped), or C(forced), otherwise ignored.
     required: false
     type: str
@@ -187,7 +189,7 @@ options:
 #         - Only applicable when I(state) is C(started), otherwise ignored.
 #     required: false
 #     type: str
-  userid:
+  user_id:
     description:
         - The user ID of the time-sharing user you want to cancel or force.
         - Only applicable when I(state) is C(cancelled) or C(forced), otherwise ignored.
@@ -201,6 +203,8 @@ options:
     default: false
   wait_full_time:
     description:
+        - For a started task that takes time to initialize, I(wait_time) with C(wait_full_time=true) ensures the started task
+          completes initialization and JES updates the system control blocks.
         - If C(wait_full_time=false), the module polls every 5 seconds to check the status of the started task and returns
           immediately once the task is successfully validated.
         - When C(wait_full_time=true), the module waits for the duration specified in I(wait_time), even after the started
@@ -212,7 +216,7 @@ options:
     description:
         - Total time that the module will wait for a submitted task, measured in seconds.
           The time begins when the module is executed on the managed node. Default value of 0 means to wait the default
-          amount of time supported by the opercmd utility.
+          amount of time.
         - The default value is 10 seconds if this value is not specified, or if the specified value is less than 10.
     required: false
     default: 10
@@ -234,85 +238,111 @@ EXAMPLES = r"""
   zos_started_task:
     state: "started"
     member: "PROCAPP"
+
 - name: Start a started task using a member name and giving it an identifier.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     identifier: "SAMPLE"
+
 - name: Start a started task using both a member and a job name.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     job_name: "SAMPLE"
+
 - name: Start a started task and enable verbose output.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     job_name: "SAMPLE"
     verbose: True
+
+- name: Start a started task and wait for 30 seconds before fetching task details.
+  zos_started_task:
+    state: "started"
+    member: "PROCAPP"
+    verbose: True
+    wait_time: 30
+    wait_full_time: True
+
 - name: Start a started task specifying the subsystem and enabling a reusable ASID.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
     subsystem: "MSTR"
-    reus_asid: "YES"
+    reusable_asid: "YES"
+
 - name: Display a started task using a started task name.
   zos_started_task:
     state: "displayed"
     task_name: "PROCAPP"
+
 - name: Display a started task using a started task id.
   zos_started_task:
     state: "displayed"
     task_id: "STC00012"
+
 - name: Display all started tasks that begin with an s using a wildcard.
   zos_started_task:
     state: "displayed"
     task_name: "s*"
+
 - name: Display all started tasks.
   zos_started_task:
     state: "displayed"
     task_name: "all"
+
 - name: Cancel a started task using task name.
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
+
 - name: Cancel a started task using a started task id.
   zos_started_task:
     state: "cancelled"
     task_id: "STC00093"
+
 - name: Cancel a started task using it's task name and ASID.
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
     asidx: 0014
+
 - name: Modify a started task's parameters.
   zos_started_task:
     state: "modified"
     task_name: "SAMPLE"
     parameters: ["XX=12"]
+
 - name: Modify a started task's parameters using a started task id.
   zos_started_task:
     state: "modified"
     task_id: "STC00034"
     parameters: ["XX=12"]
+
 - name: Stop a started task using it's task name.
   zos_started_task:
     state: "stopped"
     task_name: "SAMPLE"
+
 - name: Stop a started task using a started task id.
   zos_started_task:
     state: "stopped"
     task_id: "STC00087"
+
 - name: Stop a started task using it's task name, identifier and ASID.
   zos_started_task:
     state: "stopped"
     task_name: "SAMPLE"
     identifier: "SAMPLE"
     asidx: 00A5
+
 - name: Force a started task using it's task name.
   zos_started_task:
     state: "forced"
     task_name: "SAMPLE"
+
 - name: Force a started task using it's task id.
   zos_started_task:
     state: "forced"
@@ -327,7 +357,7 @@ changed:
   type: bool
 cmd:
   description:
-    - Command executed via opercmd.
+    - Command executed via opercmd to achieve the desired state.
   returned: changed
   type: str
   sample: S SAMPLE
@@ -400,7 +430,12 @@ tasks:
       sample: 00000.00.00.003
     elapsed_time:
       description:
-         - The processor time used by the address space, including the initiator. This time does not include SRB time.
+         - For address spaces other than system address spaces, this value represents the elapsed time since the task
+           was selected for execution.
+         - For system address spaces created before master scheduler initialization, this value represents the elapsed
+           time since the master scheduler was initialized.
+         - For system address spaces created after master scheduler initialization, this value represents the elapsed
+           time since the system address space was created.
          - I(elapsed_time) format is hhhhh.mm.ss.SSS(hours.minutes.seconds.milliseconds).
          - C(********) when time exceeds 100000 hours.
          - C(NOTAVAIL) when the TOD clock is not working.
@@ -588,12 +623,12 @@ def validate_and_prepare_start_command(module):
     device_number = module.params.get('device_number') or ""
     volume_serial = module.params.get('volume') or ""
     subsystem_name = module.params.get('subsystem')
-    reus_asid = ''
-    if module.params.get('reus_asid') is not None:
-        if module.params.get('reus_asid'):
-            reus_asid = 'YES'
+    reusable_asid = ''
+    if module.params.get('reusable_asid') is not None:
+        if module.params.get('reusable_asid'):
+            reusable_asid = 'YES'
         else:
-            reus_asid = 'NO'
+            reusable_asid = 'NO'
     keyword_parameters = module.params.get('keyword_parameters')
     keyword_parameters_string = ""
     device = device_type if device_type else device_number
@@ -682,8 +717,8 @@ def validate_and_prepare_start_command(module):
         cmd = f"{cmd},JOBACCT={job_account}"
     if subsystem_name:
         cmd = f"{cmd},SUB={subsystem_name}"
-    if reus_asid:
-        cmd = f"{cmd},REUSASID={reus_asid}"
+    if reusable_asid:
+        cmd = f"{cmd},REUSASID={reusable_asid}"
     if keyword_parameters_string:
         cmd = f"{cmd},{keyword_parameters_string}"
     return started_task_name, cmd
@@ -879,7 +914,7 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
     asidx = module.params.get('asidx') or asidx
     dump = module.params.get('dump')
     armrestart = module.params.get('armrestart')
-    userid = module.params.get('userid')
+    user_id = module.params.get('user_id')
     started_task_name = ""
     if started_task:
         started_task_name = started_task
@@ -890,22 +925,22 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
         else:
             started_task_name = f"{started_task_name}.{started_task_name}"
     else:
-        if not userid:
+        if not user_id:
             module.fail_json(
                 rc=5,
-                msg="job_name, task_id and userid are missing, one of them is needed to cancel a task.",
+                msg="job_name, task_id and user_id are missing, one of them is needed to cancel a task.",
                 changed=False
             )
-    if userid and armrestart:
+    if user_id and armrestart:
         module.fail_json(
             rc=5,
-            msg="The ARMRESTART parameter is not valid with the U=userid parameter.",
+            msg="The ARMRESTART parameter is not valid with the U=user_id parameter.",
             changed=False
         )
     if started_task_name:
         cmd = f"C {started_task_name}"
     else:
-        cmd = f"FORCE U={userid}"
+        cmd = f"FORCE U={user_id}"
     if asidx or duplicate_tasks:
         cmd = f"{cmd},A={asidx}"
     if dump:
@@ -941,7 +976,7 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
     asidx = module.params.get('asidx') or asidx
     arm = module.params.get('arm')
     armrestart = module.params.get('armrestart')
-    userid = module.params.get('userid')
+    user_id = module.params.get('user_id')
     tcb_address = module.params.get('tcb_address')
     retry = ''
     if module.params.get('retry_force') is not None:
@@ -956,10 +991,10 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
             msg="The TCB address of the task should be exactly 6-digit hexadecimal.",
             changed=False
         )
-    if userid and armrestart:
+    if user_id and armrestart:
         module.fail_json(
             rc=5,
-            msg="The ARMRESTART parameter is not valid with the U=userid parameter.",
+            msg="The ARMRESTART parameter is not valid with the U=user_id parameter.",
             changed=False
         )
     if started_task:
@@ -971,16 +1006,16 @@ def prepare_force_command(module, started_task=None, asidx=None, duplicate_tasks
         else:
             started_task_name = f"{started_task_name}.{started_task_name}"
     else:
-        if not userid:
+        if not user_id:
             module.fail_json(
                 rc=5,
-                msg="job_name, task_id and userid are missing, one of them is needed to force stop a running started task.",
+                msg="job_name, task_id and user_id are missing, one of them is needed to force stop a running started task.",
                 changed=False
             )
     if started_task_name:
         cmd = f"FORCE {started_task_name}"
     else:
-        cmd = f"FORCE U={userid}"
+        cmd = f"FORCE U={user_id}"
     if asidx or duplicate_tasks:
         cmd = f"{cmd},A={asidx}"
     if arm:
@@ -1237,7 +1272,7 @@ def run_module():
                 'type': 'bool',
                 'required': False
             },
-            'get_system_logs': {
+            'system_logs': {
                 'type': 'bool',
                 'required': False,
                 'default': False
@@ -1275,7 +1310,7 @@ def run_module():
             #     'type': 'bool',
             #     'required': False
             # },
-            'reus_asid': {
+            'reusable_asid': {
                 'type': 'bool',
                 'required': False
             },
@@ -1291,7 +1326,7 @@ def run_module():
             #     'type': 'str',
             #     'required': False
             # },
-            'userid': {
+            'user_id': {
                 'type': 'str',
                 'required': False
             },
@@ -1353,7 +1388,7 @@ def run_module():
             'arg_type': 'bool',
             'required': False
         },
-        'get_system_logs': {
+        'system_logs': {
             'arg_type': 'bool',
             'required': False,
             'default': False
@@ -1390,7 +1425,7 @@ def run_module():
         #     'arg_type': 'bool',
         #     'required': False
         # },
-        'reus_asid': {
+        'reusable_asid': {
             'arg_type': 'bool',
             'required': False
         },
@@ -1406,7 +1441,7 @@ def run_module():
         #     'arg_type': 'str',
         #     'required': False
         # },
-        'userid': {
+        'user_id': {
             'arg_type': 'str',
             'required': False
         },
@@ -1452,7 +1487,7 @@ def run_module():
     asidx = module.params.get('asidx')
     duplicate_tasks = False
     started_task_name_from_id = ""
-    get_system_logs = module.params.get('get_system_logs')
+    system_logs = module.params.get('system_logs')
     task_params_before = []
     task_params_after = []
     if task_id and state != "displayed":
@@ -1485,7 +1520,7 @@ def run_module():
     INVALID PARAMETER - IEE535I: When invalid parameter passed in command line.
     NOT ACTIVE - IEE341I: When started task with the given job name is not active
     REJECTED: When modify command is not supported by respective started task.
-    NOT LOGGED ON - IEE324I: When invalid userid passed in command.
+    NOT LOGGED ON - IEE324I: When invalid user_id passed in command.
     DUPLICATE NAME FOUND - IEE842I: When multiple started tasks exist with same name.
     NON-CANCELABLE - IEE838I: When cancel command can't stop job and force command is needed.
     CANCELABLE - IEE838I: When force command used without using cancel command
@@ -1504,7 +1539,7 @@ def run_module():
         'NOT FOUND': 'Started task is not active',
         'IEE341I': 'Started task is not active',
         'REJECTED': 'Started task is not accepting modification.',
-        'IEE324I': 'The userid specified on the command is not currently active in the system..',
+        'IEE324I': 'The user_id specified on the command is not currently active in the system..',
         'IEE842I': 'More than one active job with the specified name exist.',
         'NON-CANCELABLE': 'The task cannot be canceled. Use the FORCE ARM command.',
         'CANCELABLE': 'The task can be canceled. Use the CANCEL command.',
@@ -1537,7 +1572,7 @@ def run_module():
         err_msg = modify_errmsg
         started_task_name, cmd = prepare_modify_command(module, started_task_name_from_id)
     # Note the timestamp before operation execution to fetch system logs within that time frame.
-    if get_system_logs:
+    if system_logs:
         before_time = fetch_current_time()
     changed = False
     stdout = ""
@@ -1587,7 +1622,7 @@ def run_module():
             elif verbose:
                 task_output_logs = get_task_logs(task_params_after[0].get('task_id'))
         # Fetch system logs as per the recorded timestamp before operation execution
-        if get_system_logs:
+        if system_logs:
             system_logs = fetch_logs(cmd.upper(), before_time)
     # Create response to return
     current_state = ""
@@ -1598,7 +1633,7 @@ def run_module():
         if not msg:
             msg = (
                 f"Status of the started task is not as expected after executing the operation {state}."
-                "Get system logs by enabling get_system_logs option to know more details."
+                "Get system logs by enabling system_logs option to know more details."
             )
         stdout = out
         stderr = err
@@ -1620,6 +1655,7 @@ def run_module():
         changed=changed,
         state=current_state,
         cmd=cmd,
+        msg=msg,
         tasks=task_params,
         rc=rc,
         stdout=stdout,
@@ -1629,8 +1665,6 @@ def run_module():
         system_logs=system_logs,
         verbose_output=task_output_logs
     )
-    if msg:
-        result['msg'] = msg
 
     module.exit_json(**result)
 

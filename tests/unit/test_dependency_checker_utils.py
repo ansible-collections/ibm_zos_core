@@ -19,24 +19,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
 class FakeModule:
     def __init__(self):
         self.warned = []
-        self.failed = None
-        self.exited = None
 
     def fail_json(self, **kwargs):
-        self.failed = kwargs.get("msg")
         raise Exception(kwargs.get("msg", "fail_json called"))
-
-    def exit_json(self, **kwargs):
-        # Should not be called anymore in new behavior
-        self.exited = kwargs
-        raise Exception("exit_json should not be called")
 
     def warn(self, msg):
         self.warned.append(msg)
 
 
 # ------------------------------
-# Test: Python above max triggers warning but does not exit
+# Test: Python above max triggers warning
 # ------------------------------
 def test_python_above_max(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
@@ -47,9 +39,7 @@ def test_python_above_max(monkeypatch):
 
     mod = FakeModule()
     dependency_checker.validate_dependencies(mod)
-
     assert any("Python 3.14.0 exceeds the maximum tested version" in w for w in mod.warned)
-    assert "Dependency check completed with warnings." in mod.warned
 
 
 # ------------------------------
@@ -64,13 +54,11 @@ def test_zos_above_max(monkeypatch):
 
     mod = FakeModule()
     dependency_checker.validate_dependencies(mod)
-
     assert any("z/OS 3.2 exceeds the maximum tested version" in w for w in mod.warned)
-    assert "Dependency check completed with warnings." in mod.warned
 
 
 # ------------------------------
-# Test: versions within range pass without warnings
+# Test: versions within range pass without warning
 # ------------------------------
 def test_versions_within_range(monkeypatch):
     monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.4.2")
@@ -81,8 +69,7 @@ def test_versions_within_range(monkeypatch):
 
     mod = FakeModule()
     dependency_checker.validate_dependencies(mod)
-
-    assert mod.warned == ["Dependency compatibility check passed."]
+    assert mod.warned == []
 
 
 # ------------------------------
@@ -97,9 +84,7 @@ def test_python_below_min(monkeypatch):
 
     mod = FakeModule()
     dependency_checker.validate_dependencies(mod)
-
     assert any("Python 3.11.0 is below the minimum tested version" in w for w in mod.warned)
-    assert "Dependency check completed with warnings." in mod.warned
 
 
 # ------------------------------
@@ -114,9 +99,7 @@ def test_zos_below_min(monkeypatch):
 
     mod = FakeModule()
     dependency_checker.validate_dependencies(mod)
-
     assert any("z/OS 2.4 is below the minimum tested version" in w for w in mod.warned)
-    assert "Dependency check completed with warnings." in mod.warned
 
 
 # ------------------------------

@@ -103,7 +103,7 @@ def validate_dependencies(module):
         )
 
     # Convert versions to proper types
-    current_py = (python_major, python_minor)
+    current_python = (python_major, python_minor)
     try:
         zos_version = float(zos_version_str) if zos_version_str else None
     except ValueError:
@@ -131,15 +131,15 @@ def validate_dependencies(module):
 
     # --- Validation logic ---
     warnings = []
-    max_py = (3, 13)
+    max_python = (3, 13)
     max_zos = 3.1
 
     # --- Python warnings ---
-    min_py = version_tuple(matched_compat["min_python_version"])
-    if current_py < min_py:
-        warnings.append(f"Python {python_version_str} is below the minimum tested version {min_py[0]}.{min_py[1]}.")
-    elif current_py > max_py:
-        warnings.append(f"Python {python_version_str} exceeds the maximum tested version {max_py[0]}.{max_py[1]}.")
+    min_python = version_tuple(matched_compat["min_python_version"])
+    if current_python < min_python:
+        warnings.append(f"Python {python_version_str} is below the minimum tested version {min_python[0]}.{min_python[1]}.")
+    elif current_python > max_python:
+        warnings.append(f"Python {python_version_str} exceeds the maximum tested version {max_python[0]}.{max_python[1]}.")
 
     # --- z/OS warnings ---
     min_zos = matched_compat["min_zos_version"]

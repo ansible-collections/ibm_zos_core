@@ -552,7 +552,7 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
         module : obj
             Object of Ansible to access to the facilities
         uss : bool
-            Variable to indicate the type of open for the module
+            Variable to indicate the type of file to open for the module. Either uss or data set.
         literal : list
             List of values to be used as string disabling regex option.
         encoding : str, optional
@@ -675,41 +675,44 @@ def run_module():
                                                      encoding=encoding, after=after, before=before, literal=literal)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
-        try:
-            content = [line.rstrip() for line in full_text]
-            full_text = "\n".join(content)
-            with open(tmp_file, 'w') as f:
-                f.write(full_text)
-        except Exception as e:
-            os.remove(tmp_file)
-            module.fail_json(
-                msg=f"Unable to write on data set {src}. {e}",
-            )
 
-        try:
-            f = open(src, 'r+')
-            f.truncate(0)
-            shutil.copyfile(tmp_file, src)
-        finally:
-            os.remove(tmp_file)
+        if replaced > 0:
+            try:
+                content = [line.rstrip() for line in full_text]
+                full_text = "\n".join(content)
+                with open(tmp_file, 'w', encoding=encoding) as f:
+                    f.write(full_text)
+            except Exception as e:
+                os.remove(tmp_file)
+                module.fail_json(
+                    msg=f"Unable to write on data set {src}. {e}",
+                )
+
+            try:
+                f = open(src, 'r+', encoding=encoding)
+                f.truncate(0)
+                shutil.copyfile(tmp_file, src)
+            finally:
+                os.remove(tmp_file)
 
     else:
         full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,
                                                      encoding=encoding, after=after, before=before, literal=literal)
-        try:
-            # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as ds:
-                pass
-            content = [line.rstrip() for line in full_text]
-            full_text = "\n".join(content)
-            rc_write = datasets.write(dataset_name=src, content=full_text)
-            if rc_write is not None:
-                raise Exception("None was not returned from datasets.write.")
-        except Exception as e:
-            module.fail_json(
-                msg=f"Unable to write on data set {src}. {e}",
-                **result
-            )
+        if replaced > 0:
+            try:
+                # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
+                with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as ds:
+                    pass
+                content = [line.rstrip() for line in full_text]
+                full_text = "\n".join(content)
+                rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
+            except Exception as e:
+                module.fail_json(
+                    msg=f"Unable to write on data set {src}. {e}",
+                    **result
+                )
 
     if replaced > 0:
         changed = True

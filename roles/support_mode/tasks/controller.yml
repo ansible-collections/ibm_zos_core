@@ -16,7 +16,7 @@
   ignore_errors: true
 
 - name: "CONTROLLER | Gather Ansible config changes"
-  ansible.builtin.command: ansible-config dump --only-changed
+  ansible.builtin.command: ansible-config dump
   register: ansible_config
   changed_when: false
   delegate_to: localhost

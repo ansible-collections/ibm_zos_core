@@ -1,7 +1,0 @@
-trivial:
-   - zos_job_output - renamed the input parameter to be called as sysin_dd.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2251).
-
-   - test_zos_job_output_func - modified the test case 'test_zos_job_output_job_exists_with_sysin'
-     to use sysin_dd instead of input.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2251).

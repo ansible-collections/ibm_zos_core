@@ -1,0 +1,4 @@
+minor_changes:
+  - plugins/filter/stat.py - Added new filter plugin, stat, to filter the output returned
+    by zos_stat depending on the type of resource that was queried.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2385).

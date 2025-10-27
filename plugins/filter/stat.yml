@@ -25,6 +25,8 @@ DOCUMENTATION:
     resource:
       description:
         - Type of resource which fields should be filtered from the returned JSON of zos_stat.
+        - If the resource is a data set, the filter will only include the relevant fields for
+          the specific type of data set queried by zos_stat.
       type: str
       required: true
       choices:
@@ -34,8 +36,8 @@ DOCUMENTATION:
         - gdg
 
 EXAMPLES: |
-  # filter data
-  #
+  # Get only data set specific attributes.
+  clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set')}}"
 
 RETURN:
   _value:

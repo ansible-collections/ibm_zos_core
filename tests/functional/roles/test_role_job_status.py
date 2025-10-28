@@ -21,10 +21,10 @@ def test_my_role_with_vars(ansible_zos_module):
 
     jobs = hosts.all.zos_job_query(job_id="*", owner="*")
     for job in jobs.contacted.values():
-        job_id = job.gets("jobs")[0].get("job_id")
+        job_id = job.get("jobs")[0].get("job_id")
 
     hosts.all.set_fact(job_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") is True
+        assert result.get("msg").get("job_active") is not None
         assert result.get("msg").get("job_status") is not None

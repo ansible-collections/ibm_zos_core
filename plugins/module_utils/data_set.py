@@ -1859,8 +1859,9 @@ class DataSet(object):
                 # Fail if we are trying to resolve a future generation.
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
-            generations = gdg.generations()
-            gds = generations[rel_generation - 1]
+            generations = gdg.generations
+            # From ZOAU 1.4 version relative notation 0 or -1 is on automatic give
+            gds = generations[rel_generation]
         except Exception:
             raise GDSNameResolveError(relative_name)
 

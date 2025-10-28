@@ -719,7 +719,7 @@ class FetchHandler:
         dir_path = tempfile.mkdtemp()
 
         data_group = gdgs.GenerationDataGroupView(src)
-        for current_gds in data_group.generations():
+        for current_gds in data_group.generations:
             if current_gds.organization in data_set.DataSet.MVS_SEQ:
                 self._fetch_mvs_data(
                     current_gds.name,

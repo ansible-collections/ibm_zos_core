@@ -2802,8 +2802,6 @@ def resolve_data_set_names(dataset, disposition, type):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
-      type : str
-          Type of dataset
       Returns
       -------
       str
@@ -2820,9 +2818,11 @@ def resolve_data_set_names(dataset, disposition, type):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
                 if type:
-                    return str(datasets.create(dataset, type).name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type=type)
+                    return new_generation.name, "shr"
                 else:
-                    return str(datasets.create(dataset, "seq").name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type="seq")
+                    return new_generation.name, "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:

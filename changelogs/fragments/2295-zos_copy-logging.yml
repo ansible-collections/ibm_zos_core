@@ -1,0 +1,3 @@
+enhancements:
+  - zos_copy - Added step-by-step logging when run with -vvv
+    (https://github.com/ansible-collections/ibm_zos_core/pull/nnnn).

@@ -1,11 +1,11 @@
 
-:github_url: https://github.com/IBM/ibm_zosmf/tree/master/plugins/roles/zmf_cpm_create_software_instance
+:github_url: https://github.com/IBM/ibm_zosmf/tree/master/plugins/roles/job_status
 
-.. _zmf_cpm_create_software_instance_module:
+.. _job_status_module:
 
 
-zmf_cpm_create_software_instance -- Role creates a z/OS software instance
-=========================================================================
+job_status -- Role creates a z/OS software instance
+===================================================
 
 
 .. contents::
@@ -15,7 +15,7 @@ zmf_cpm_create_software_instance -- Role creates a z/OS software instance
 
 Synopsis
 --------
-- The **IBM z/OSMF collection** provides an Ansible role, referred to as **zmf_cpm_create_software_instance**, to create an instance of manually configured z/OS software such as IBM Customer Information Control System (CICS®), IBM Db2®, IBM Information Management System (IMS™), IBM MQ, and IBM WebSphere Application Server or any other z/OS Software in **IBM Cloud Provisioning and Management (CP&M**) registry.
+- The **IBM z/OSMF collection** provides an Ansible role, referred to as **job_status**, to create an instance of manually configured z/OS software such as IBM Customer Information Control System (CICS®), IBM Db2®, IBM Information Management System (IMS™), IBM MQ, and IBM WebSphere Application Server or any other z/OS Software in **IBM Cloud Provisioning and Management (CP&M**) registry.
 
 
 
@@ -278,7 +278,7 @@ Examples
        - ibm.ibm_zosmf
      tasks: 
        - include_role:
-           name: zmf_cpm_create_software_instance
+           name: job_status
          vars:
            system_name: "<fill-me>"
            sysplex_name: "<fill-me>" 

@@ -2,12 +2,12 @@
 
 
 DOCUMENTATION = r"""
-role: zmf_cpm_create_software_instance
+role: job_status
 short_description: Role creates a z/OS software instance
 description:
     - >
       The B(IBM z/OSMF collection) provides an Ansible role, referred to as
-      B(zmf_cpm_create_software_instance), to create an instance of manually
+      B(job_status), to create an instance of manually
       configured z/OS software such as IBM Customer Information Control System
       (CICS®), IBM Db2®, IBM Information Management System (IMS™), IBM MQ, and
       IBM WebSphere Application Server or any other z/OS Software in
@@ -198,7 +198,7 @@ EXAMPLES = r"""
     - ibm.ibm_zosmf
   tasks: 
     - include_role:
-        name: zmf_cpm_create_software_instance
+        name: job_status
       vars:
         system_name: "<fill-me>"
         sysplex_name: "<fill-me>" 

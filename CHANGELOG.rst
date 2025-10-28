@@ -4,12 +4,105 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.15.0
+=======
+
+Release Summary
+---------------
+
+Release Date: '2025-09-30'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_archive - Adds support for encoding before archiving files. (https://github.com/ansible-collections/ibm_zos_core/pull/2081)
+- zos_archive - Adds support for reverting the encoding of a source's files after archiving them. (https://github.com/ansible-collections/ibm_zos_core/pull/2192)
+- zos_archive - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them. (https://github.com/ansible-collections/ibm_zos_core/pull/2116)
+- zos_copy - Added support for british pound character usage in file content and data set names for both source and destination when copying. (https://github.com/ansible-collections/ibm_zos_core/pull/2153)
+- zos_copy - Adds new option `identical_gdg_copy` in the module. This allows copying GDG generations from a source base to a destination base while preserving generation data set absolute names when the destination base does not exist prior to the copy. (https://github.com/ansible-collections/ibm_zos_core/pull/2100).
+- zos_copy - Adds support of using alias names in src and dest parameters for PS, PDS and PDSE data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/2103)
+- zos_fetch - Updated the documentation to correctly state what the default behavior of the module is. (https://github.com/ansible-collections/ibm_zos_core/pull/2047).
+- zos_find - Adds functionality to find migrated data sets. - Adds functionality to find different types of data sets at the same time. (https://github.com/ansible-collections/ibm_zos_core/pull/2073).
+- zos_job_output - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_query - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_submit - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_mvs_raw  - Before this addition, you could not put anything in columns 1 or 2, were reserved for JCL processing. Change now allows add reserved_cols option and validate that the module get access to modify dd_content option base on the value, if not retain the previous behavior or work. (https://github.com/ansible-collections/ibm_zos_core/pull/2086)
+- zos_mvs_raw - Adds support for volume data definition. (https://github.com/ansible-collections/ibm_zos_core/pull/2194)
+- zos_stat - Added support to recall migrated data sets and return its attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/2075)
+- zos_stat - Adds new fields that describe the type of the resource that was queried. These new fields are `isfile`, `isdataset`, `isaggregate` and `isgdg`. (https://github.com/ansible-collections/ibm_zos_core/pull/2137)
+- zos_stat - Adds support to query data sets using their aliases. (https://github.com/ansible-collections/ibm_zos_core/pull/2061)
+- zos_stat - Module now returns whether the resource queried exists on the managed node with the `exists` field inside `stat`. (https://github.com/ansible-collections/ibm_zos_core/pull/2137)
+- zos_unarchive - Added encoding support for the unarchive module. This allows users to encode the files after unarchiving them in a perticular encoding. (https://github.com/ansible-collections/ibm_zos_core/pull/2105)
+
+Bugfixes
+--------
+
+- zos_backup_restore - Return value `backup_name` was empty upon successful result. Fix now returns `backup_name` populated. (https://github.com/ansible-collections/ibm_zos_core/pull/2040).
+- zos_data_set - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume. (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
+- zos_fetch - Previously, the use of `become` would result in a permissions error while trying to fetch a data set or a member. Fix now allows a user to escalate privileges when fetching resources. (https://github.com/ansible-collections/ibm_zos_core/pull/2079)
+- zos_lineinfile - Return values ``return_content`` and ``backup_name`` were not always being returned. Fix now ensure that these values are always present in the module's response. (https://github.com/ansible-collections/ibm_zos_core/pull/2120)
+- zos_lineinfile - The module would report a false negative when certain special characters where present in the `line` option. Fix now reports the successful operation. (https://github.com/ansible-collections/ibm_zos_core/pull/2080).
+- zos_mount - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/2060).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
+
 v1.14.1
 =======
 
 Release Summary
 ---------------
 
+Release Date: '2025-07-30'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`
+
+Minor Changes
+-------------
+
+- zos_archive - Adds support for encoding before archiving files. (https://github.com/ansible-collections/ibm_zos_core/pull/2081)
+- zos_archive - Adds support for reverting the encoding of a source's files after archiving them. (https://github.com/ansible-collections/ibm_zos_core/pull/2192)
+- zos_archive - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them. (https://github.com/ansible-collections/ibm_zos_core/pull/2116)
+- zos_copy - Added support for british pound character usage in file content and data set names for both source and destination when copying. (https://github.com/ansible-collections/ibm_zos_core/pull/2153)
+- zos_copy - Adds new option `identical_gdg_copy` in the module. This allows copying GDG generations from a source base to a destination base while preserving generation data set absolute names when the destination base does not exist prior to the copy. (https://github.com/ansible-collections/ibm_zos_core/pull/2100).
+- zos_copy - Adds support of using alias names in src and dest parameters for PS, PDS and PDSE data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/2103)
+- zos_fetch - Updated the documentation to correctly state what the default behavior of the module is. (https://github.com/ansible-collections/ibm_zos_core/pull/2047).
+- zos_find - Adds functionality to find migrated data sets. - Adds functionality to find different types of data sets at the same time. (https://github.com/ansible-collections/ibm_zos_core/pull/2073).
+- zos_job_output - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_query - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_submit - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_mvs_raw  - Before this addition, you could not put anything in columns 1 or 2, were reserved for JCL processing. Change now allows add reserved_cols option and validate that the module get access to modify dd_content option base on the value, if not retain the previous behavior or work. (https://github.com/ansible-collections/ibm_zos_core/pull/2086)
+- zos_mvs_raw - Adds support for volume data definition. (https://github.com/ansible-collections/ibm_zos_core/pull/2194)
+- zos_stat - Added support to recall migrated data sets and return its attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/2075)
+- zos_stat - Adds new fields that describe the type of the resource that was queried. These new fields are `isfile`, `isdataset`, `isaggregate` and `isgdg`. (https://github.com/ansible-collections/ibm_zos_core/pull/2137)
+- zos_stat - Adds support to query data sets using their aliases. (https://github.com/ansible-collections/ibm_zos_core/pull/2061)
+- zos_stat - Module now returns whether the resource queried exists on the managed node with the `exists` field inside `stat`. (https://github.com/ansible-collections/ibm_zos_core/pull/2137)
+- zos_unarchive - Added encoding support for the unarchive module. This allows users to encode the files after unarchiving them in a perticular encoding. (https://github.com/ansible-collections/ibm_zos_core/pull/2105)
+
+Bugfixes
+--------
+
+- zos_backup_restore - Return value `backup_name` was empty upon successful result. Fix now returns `backup_name` populated. (https://github.com/ansible-collections/ibm_zos_core/pull/2040).
+- zos_data_set - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume. (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
+- zos_fetch - Previously, the use of `become` would result in a permissions error while trying to fetch a data set or a member. Fix now allows a user to escalate privileges when fetching resources. (https://github.com/ansible-collections/ibm_zos_core/pull/2079)
+- zos_lineinfile - Return values ``return_content`` and ``backup_name`` were not always being returned. Fix now ensure that these values are always present in the module's response. (https://github.com/ansible-collections/ibm_zos_core/pull/2120)
+- zos_lineinfile - The module would report a false negative when certain special characters where present in the `line` option. Fix now reports the successful operation. (https://github.com/ansible-collections/ibm_zos_core/pull/2080).
+- zos_mount - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/2060).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
+
+v1.14.1
 Release Date: '2025-07-03'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.

@@ -134,9 +134,9 @@ def retrieve_data_set_names(results):
     """ Retrieve system generated data set names """
     data_set_names = []
     for result in results.contacted.values():
-        if len(result.get("names", [])) > 0:
-            for name in result.get("names"):
-                data_set_names.append(name)
+        if len(result.get("data_sets", [])) > 0:
+            for data_set in result.get("data_sets"):
+                data_set_names.append(data_set.get("name"))
     return data_set_names
 
 def print_results(results):
@@ -162,7 +162,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
+            src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30
         )
         # verify data set creation was successful
 
@@ -221,7 +221,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
+            src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -232,6 +232,9 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
+            assert len(result.get("data_sets")) > 0
+            assert result.get("data_sets")[0].get("name") is not None
+            assert result.get("data_sets")[0].get("type") is not None
         # uncatalog the data set
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         for result in results.contacted.values():
@@ -267,7 +270,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
+            src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -315,7 +318,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
+            src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -356,7 +359,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(
 
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
-    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30)
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30)
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -371,7 +374,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2, dataset)), TEMP_PATH))
-    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30)
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", remote_src=True, wait_time=30)
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -974,8 +977,8 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-            for dsname in result.get("names"):
-                assert dsname[:7] == tmphlq
+            for ds in result.get("data_sets"):
+                assert ds.get("name")[:7] == tmphlq
     finally:
         if dsname:
             hosts.all.zos_data_set(name=default_data_set_name, state="absent")
@@ -1022,6 +1025,13 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert len(result.get("data_sets")) > 0
+            assert result.get("data_sets")[0].get("empty") is not None
+            assert result.get("data_sets")[0].get("extended") is not None
+            assert result.get("data_sets")[0].get("fifo") is not None
+            assert result.get("data_sets")[0].get("limit") is not None
+            assert result.get("data_sets")[0].get("purge") is not None
+            assert result.get("data_sets")[0].get("scratch") is not None
         results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -1161,3 +1171,151 @@ def test_gdg_deletion_when_absent(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
         assert result.get("failed") is None
+
+def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
+    """
+    Tests that 'state: absent' with 'noscratch: true' correctly uncatalogs
+    a data set but leaves its physical entry in the VTOC.
+    """
+    volumes = Volume_Handler(volumes_on_systems)
+    volume = volumes.get_available_vol()
+    hosts = ansible_zos_module
+    dataset = get_tmp_ds_name(2, 2)
+
+    try:
+        # Arrange: Create the test data set on the specific volume
+        hosts.all.zos_data_set(
+            name=dataset,
+            type='seq',
+            state='present',
+            volumes=[volume],
+            space_primary=1,
+            space_type='m'
+        )
+
+        # Act: Delete the dataset using the noscratch option
+        results = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            noscratch=True
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        # Assert 1: Verify the data set is GONE from the catalog.
+        # This is the first part of the test, where we check that the data set
+        results = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        # catalog_check = hosts.all.command(f"dls '{dataset}'", failed_when=False)
+        # for result in catalog_check.contacted.values():
+        #     # Assert that the command failed (non-zero return code)
+        #     assert result.get("rc") != 0
+        # Assert 2: Verify the data set is STILL on the volume's VTOC.
+        # This is the crucial second half of the test.
+        # We can do this by trying to delete it again, but specifying the volume.
+        # If this delete reports "changed: true", it's proof that it found and
+        # deleted the uncataloged data set from the VTOC.
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC.
+            assert result.get("changed") is True
+    finally:
+        # Cleanup: Perform a final, full delete from the volume since it's still there.
+        # We provide the volume to ensure it can be found and deleted.
+        hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            volumes=[volume]
+        )
+
+def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on_systems):
+    """
+    Tests that the 'noscratch: true' sub-option works correctly when used inside a
+    batch list to uncatalog multiple data sets.
+    """
+    hosts = ansible_zos_module
+    volume = Volume_Handler(volumes_on_systems).get_available_vol()
+    
+    # Define two separate data sets for the batch operation
+    dataset_1 = get_tmp_ds_name()
+    dataset_2 = get_tmp_ds_name()
+
+    try:
+        # --- Arrange ---
+        # Create both data sets in a preliminary batch operation so they exist
+        setup_results = hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'type': 'seq', 'state': 'present', 'volumes': volume},
+                {'name': dataset_2, 'type': 'seq', 'state': 'present', 'volumes': volume}
+            ]
+        )
+        for result in setup_results.contacted.values():
+            assert result.get("changed") is True
+
+        # --- Act ---
+        # Run the main test: a batch uncatalog where both items use noscratch
+        act_results = hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'state': 'absent', 'noscratch': True},
+                {'name': dataset_2, 'state': 'absent', 'noscratch': True}
+            ]
+        )
+        # # Assert on the main action results
+        for result in act_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(
+            name=dataset_1,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        results = hosts.all.zos_data_set(
+            name=dataset_2,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        
+        # # --- Verification Assertions ---
+        # Assert 2: Verify the data set is STILL on the volume's VTOC.
+        # This is the crucial second half of the test.
+        # We can do this by trying to delete it again, but specifying the volume.
+        # If this delete reports "changed: true", it's proof that it found and
+        # deleted the uncataloged data set from the VTOC.
+        
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset_1,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC
+            assert result.get("changed") is True
+        
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset_2,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC
+            assert result.get("changed") is True
+    finally:
+        # --- Cleanup ---
+        # Ensure both data sets are fully deleted from the volume's VTOC.
+        # This is critical because the test's main action leaves them on disk.
+        hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'state': 'absent', 'volumes': [volume]},
+                {'name': dataset_2, 'state': 'absent', 'volumes': [volume]}
+            ]
+        )

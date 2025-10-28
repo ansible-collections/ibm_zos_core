@@ -62,38 +62,38 @@ options:
             - >
                 If I(state=mounted) and I(src) are not in use, the module will
                 add the file system entry to the parmlib member
-                I(persistent/data_store) if not present. The I(path) will be
+                I(persistent/name) if not present. The I(path) will be
                 updated, the device will be mounted and the module will complete
                 successfully with I(changed=True).
             - >
                 If I(state=mounted) and I(src) are in use, the module will add
                 the file system entry to the parmlib member
-                I(persistent/data_store) if not present. The I(path) will not
+                I(persistent/name) if not present. The I(path) will not
                 be updated, the device will not be mounted and the module will
                 complete successfully with I(changed=False).
             - >
                 If I(state=unmounted) and I(src) are in use, the module will
                 B(not) add the file system entry to the parmlib member
-                I(persistent/data_store). The device will be unmounted and
+                I(persistent/name). The device will be unmounted and
                 the module will complete successfully with I(changed=True).
             - >
                 If I(state=unmounted) and I(src) are not in use, the module will
                 B(not) add the file system entry to parmlib member
-                I(persistent/data_store).The device will remain unchanged and
+                I(persistent/name).The device will remain unchanged and
                 the module will complete with I(changed=False).
             - >
                 If I(state=present), the module will add the file system entry
-                to the provided parmlib member I(persistent/data_store)
+                to the provided parmlib member I(persistent/name)
                 if not present. The module will complete successfully with
                 I(changed=True).
             - >
                 If I(state=absent), the module will remove the file system entry
-                to the provided parmlib member I(persistent/data_store) if
+                to the provided parmlib member I(persistent/name) if
                 present. The module will complete successfully with
                 I(changed=True).
             - >
                 If I(state=remounted), the module will B(not) add the file
-                system entry to parmlib member I(persistent/data_store). The
+                system entry to parmlib member I(persistent/name). The
                 device will be unmounted and mounted, the module will complete
                 successfully with I(changed=True).
         type: str
@@ -107,22 +107,23 @@ options:
         default: mounted
     persistent:
         description:
-            - Add or remove mount command entries to provided I(data_store)
+            - Add or remove mount command entries to provided I(name)
         required: False
         type: dict
         suboptions:
-            data_store:
+            name:
                 description:
                     - The data set name used for persisting a mount command.
                       This is usually BPXPRMxx or a copy.
                 required: True
                 type: str
+                aliases: [ data_store ]
             backup:
                 description:
                     - Creates a backup file or backup data set for
-                      I(data_store), including the timestamp information to
+                      I(name), including the timestamp information to
                       ensure that you retrieve the original parameters defined
-                      in I(data_store).
+                      in I(name).
                     - I(backup_name) can be used to specify a backup file name
                       if I(backup=true).
                     - The backup file name will be returned on either success or
@@ -135,7 +136,7 @@ options:
                 description:
                     - Specify the USS file name or data set name for the
                       destination backup.
-                    - If the source I(data_store) is a USS file or path, the
+                    - If the source I(name) is a USS file or path, the
                       I(backup_name) name can be relative or absolute for file
                       or path name.
                     - If the source is an MVS data set, the backup_name must be
@@ -151,15 +152,16 @@ options:
                       MVS backup data set recovery can be done by renaming it.
                 required: false
                 type: str
-            comment:
+            marker:
                 description:
-                    - If provided, this is used as a comment that surrounds the
-                      command in the I(persistent/data_store)
-                    - Comments are used to encapsulate the I(persistent/data_store) entry
+                    - If provided, this is used as a marker that surrounds the
+                      command in the I(persistent/name)
+                    - Comments are used to encapsulate the I(persistent/name) entry
                       such that they can easily be understood and located.
                 type: list
                 elements: str
                 required: False
+                aliases: [ comment ]
     unmount_opts:
         description:
             - Describes how the unmount will be performed.
@@ -356,8 +358,8 @@ EXAMPLES = r"""
     fs_type: zfs
     state: mounted
     persistent:
-      data_store: SYS1.PARMLIB(BPXPRMAA)
-      comment: For Tape2 project
+      name: SYS1.PARMLIB(BPXPRMAA)
+      marker: For Tape2 project
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
   zos_mount:
@@ -366,10 +368,10 @@ EXAMPLES = r"""
     fs_type: zfs
     state: mounted
     persistent:
-      data_store: SYS1.PARMLIB(BPXPRMAA)
+      name: SYS1.PARMLIB(BPXPRMAA)
       backup: true
       backup_name: SYS1.PARMLIB(BPXPRMAB)
-      comment: For Tape2 project
+      marker: For Tape2 project
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
@@ -440,7 +442,7 @@ persistent:
     returned: always
     type: dict
     contains:
-        data_store:
+        name:
             description: The persistent store name where the mount was written to.
             returned: always
             type: str
@@ -455,12 +457,19 @@ persistent:
             returned: always
             type: str
             sample: SYS1.FILESYS(PRMAABAK)
-        comment:
-            description: The text that was used in markers around the I(Persistent/data_store) entry.
+        marker:
+            description: The text that was used in markers around the I(Persistent/name) entry.
             returned: always
             type: list
             sample:
                 - [u'I did this because..']
+        state:
+            description:
+                - The state of the persistent entry in the persistent data set.
+                - Possible values are C(added) and C(removed).
+            returned: always
+            type: str
+            sample: added
 unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
@@ -740,7 +749,7 @@ def run_module(module, arg_def):
     persistent = parsed_args.get("persistent")
     backup = None
     backup_name = ""
-    comment = None
+    marker = None
     unmount_opts = parsed_args.get("unmount_opts")
     mount_opts = parsed_args.get("mount_opts")
     src_params = parsed_args.get("src_params")
@@ -753,8 +762,8 @@ def run_module(module, arg_def):
     tmphlq = parsed_args.get("tmp_hlq")
 
     if persistent:
-        data_store = persistent.get("data_store").upper()
-        comment = persistent.get("comment")
+        name = persistent.get("name").upper()
+        marker = persistent.get("marker")
         backup = persistent.get("backup")
         if backup:
             if persistent.get("backup_name"):
@@ -763,20 +772,19 @@ def run_module(module, arg_def):
                 backup_code = None
             else:
                 backup_code = backup_name
-            backup_name = mt_backupOper(module, data_store, backup_code, tmphlq)
+            backup_name = mt_backupOper(module, name, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
-        if "mounted" in state or "present" in state:
-            persistent["addDataset"] = data_store
+        if state == "mounted" or state == "present":
+            persistent["state"] = "added"
         else:
-            persistent["delDataset"] = data_store
-        del persistent["data_store"]
+            persistent["state"] = "removed"
 
     write_persistent = False
     if "mounted" in state or "present" in state or "absent" in state:
         if persistent:
-            if data_store:
-                if len(data_store) > 0:
+            if name:
+                if len(name) > 0:
                     write_persistent = True
 
     will_mount = True
@@ -793,7 +801,7 @@ def run_module(module, arg_def):
             path=path,
             fs_type=fs_type,
             state=state,
-            persistent=parsed_args.get("persistent"),
+            persistent=persistent,
             unmount_opts=unmount_opts,
             mount_opts=mount_opts,
             src_params=src_params,
@@ -805,13 +813,12 @@ def run_module(module, arg_def):
             automove_list=automove_list,
             cmd="not built",
             changed=changed,
-            comment=comment,
+            marker=marker,
             rc=0,
             stdout="",
             stderr="",
         )
     )
-
     # data set to be mounted/unmounted must exist
     fs_du = data_set.DataSetUtils(src, tmphlq=tmphlq)
     fs_exists = fs_du.exists()
@@ -869,10 +876,10 @@ def run_module(module, arg_def):
 
     parmtext = ""
 
-    if comment is not None:
+    if marker is not None:
         extra = ""
         ctr = 1
-        for tabline in comment:
+        for tabline in marker:
             if len(extra) > 0:
                 extra += " "
             extra += tabline.strip()
@@ -1033,38 +1040,34 @@ def run_module(module, arg_def):
             stderr = "Mount called on data set that is already mounted.\n"
 
     if write_persistent and module.check_mode is False:
-        fst_du = data_set.DataSetUtils(data_store, tmphlq=tmphlq)
+        fst_du = data_set.DataSetUtils(name, tmphlq=tmphlq)
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
-                msg="Persistent data set ({0}) is either not cataloged or does not exist.".format(data_store),
+                msg="Persistent data set ({0}) is either not cataloged or does not exist.".format(name),
                 stderr=str(res_args),
             )
 
-        bk_ds = datasets.tmp_name(high_level_qualifier=tmphlq)
-        datasets.create(name=bk_ds, dataset_type="SEQ")
+        new_str = get_str_to_keep(dataset=name, src=src)
 
-        new_str = get_str_to_keep(dataset=data_store, src=src)
+        if new_str:
+            modified_str = [line for line in new_str if line.strip() or line.lstrip()]
 
-        rc_write = 0
+            rc_write = 0
 
-        try:
-            for line in new_str:
-                rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+            try:
+                # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
+                with zoau_io.zopen(f"//'{name}'", "w", "cp1047", recfm="*") as ds:
+                    pass
+                full_text = "\n".join(modified_str)
+                rc_write = datasets.write(dataset_name=name, content=full_text, append=True, force=True)
                 if rc_write != 0:
                     raise Exception("Non zero return code from datasets.write.")
-        except Exception as e:
-            datasets.delete(dataset=bk_ds)
-            module.fail_json(
-                msg="Unable to write on persistent data set {0}. {1}".format(data_store, e),
-                stderr=str(res_args),
-            )
-
-        try:
-            datasets.delete(dataset=data_store)
-            datasets.copy(source=bk_ds, target=data_store)
-        finally:
-            datasets.delete(dataset=bk_ds)
+            except Exception as e:
+                module.fail_json(
+                    msg="Unable to write on persistent data set {0}. {1}".format(name, e),
+                    stderr=str(res_args),
+                )
 
         if will_mount:
             d = datetime.today()
@@ -1072,7 +1075,7 @@ def run_module(module, arg_def):
             marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
             marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
 
-            datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
+            datasets.blockinfile(dataset=name, state=True, block=parmtext, marker=marker, insert_after="EOF")
 
     if rc == 0:
         if stdout is None:
@@ -1091,7 +1094,7 @@ def run_module(module, arg_def):
             stderr=stderr,
         )
     )
-    del res_args["comment"]
+    del res_args["marker"]
 
     return res_args
 
@@ -1130,13 +1133,33 @@ def main():
                 type="dict",
                 required=False,
                 options=dict(
-                    data_store=dict(
+                    name=dict(
                         type="str",
                         required=True,
+                        aliases=["data_store"],
+                        deprecated_aliases=[
+                            dict(
+                                name='data_store',
+                                version='3.0.0',  # Version when it will be removed
+                                collection_name='ibm.ibm_zos_core',
+                            )
+                        ],
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", elements="str", required=False),
+                    marker=dict(
+                        type="list",
+                        elements="str",
+                        required=False,
+                        aliases=["comment"],
+                        deprecated_aliases=[
+                            dict(
+                                name='comment',
+                                version='3.0.0',  # Version when it will be removed
+                                collection_name='ibm.ibm_zos_core',
+                            )
+                        ],
+                    ),
                 ),
             ),
             unmount_opts=dict(
@@ -1193,10 +1216,10 @@ def main():
             arg_type="dict",
             required=False,
             options=dict(
-                data_store=dict(arg_type="str", required=True),
+                name=dict(arg_type="str", required=True, aliases=["data_store"]),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
-                comment=dict(arg_type="list", elements="str", required=False),
+                marker=dict(arg_type="list", elements="str", required=False, aliases=["comment"]),
             ),
         ),
         unmount_opts=dict(

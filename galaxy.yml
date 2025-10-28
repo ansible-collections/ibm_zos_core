@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.14.1"
+version: "2.0.0-beta.1"
 
 # Collection README file
 readme: README.md
@@ -77,13 +77,11 @@ build_ignore:
   - .pytest_cache
   - .vscode
   - Jenkinsfile
-  - ac
   - ansible.cfg
   - changelogs
   - collections
   - docs
   - importer_result.json
-  - scripts
   - test_config.yml
   - tests/*.ini
   - tests/*.py
@@ -102,3 +100,4 @@ build_ignore:
   - venv*
   - ansible_collections
   - '*.log'
+  - '*.sh'

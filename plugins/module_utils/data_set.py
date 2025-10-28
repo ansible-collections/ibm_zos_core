@@ -36,12 +36,14 @@ except ImportError:
 
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
+    from zoautil_py.exceptions import GenerationDataGroupCreateException
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
+    GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -202,6 +204,7 @@ class DataSet(object):
         arguments.pop("replace", None)
         present = False
         changed = False
+        data_set = None
         if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
         # Validate volume conflicts when:
@@ -220,7 +223,7 @@ class DataSet(object):
 
         if not present:
             try:
-                DataSet.create(**arguments)
+                changed, data_set = DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
@@ -234,14 +237,14 @@ class DataSet(object):
                     raise
         if present:
             if not replace:
-                return changed
-            DataSet.replace(**arguments)
+                return changed, data_set
+            changed, data_set = DataSet.replace(**arguments)
         if type.upper() == "ZFS":
             DataSet.format_zfs(name)
-        return True
+        return changed, data_set
 
     @staticmethod
-    def ensure_absent(name, volumes=None, tmphlq=None):
+    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False):
         """Deletes provided data set if it exists.
 
         Parameters
@@ -252,13 +255,15 @@ class DataSet(object):
             The volumes the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
 
         Returns
         -------
         bool
             Indicates if changes were made.
         """
-        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq)
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -1003,7 +1008,7 @@ class DataSet(object):
         return present, changed
 
     @staticmethod
-    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None):
+    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False):
         """Attempts to catalog a data set if not already cataloged, then deletes
            the data set.
            This is helpful when a data set currently cataloged is not the data
@@ -1019,6 +1024,8 @@ class DataSet(object):
             The volumes the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
 
         Returns
         -------
@@ -1039,7 +1046,7 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
                 else:
@@ -1074,7 +1081,7 @@ class DataSet(object):
 
                     if present:
                         try:
-                            DataSet.delete(name)
+                            DataSet.delete(name, noscratch=noscratch)
                         except DatasetDeleteError:
                             try:
                                 DataSet.uncatalog(name, tmphlq=tmphlq)
@@ -1101,14 +1108,14 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
         else:
             present = DataSet.data_set_cataloged(name, None, tmphlq=tmphlq)
             if present:
                 try:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
                 except DatasetDeleteError:
@@ -1243,7 +1250,8 @@ class DataSet(object):
         """
         arguments = locals()
         DataSet.delete(name)
-        DataSet.create(**arguments)
+        changed, data_set = DataSet.create(**arguments)
+        return changed, data_set
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -1411,10 +1419,10 @@ class DataSet(object):
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         changed = data_set is not None
-        return changed
+        return changed, data_set
 
     @staticmethod
-    def delete(name):
+    def delete(name, noscratch=False):
         """A wrapper around zoautil_py
         datasets.delete() to raise exceptions on failure.
 
@@ -1428,7 +1436,7 @@ class DataSet(object):
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name)
+        rc = datasets.delete(name, noscratch=noscratch)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -2717,11 +2725,13 @@ class MVSDataSet():
             "tmp_hlq": tmp_hlq,
             "force": force,
         }
-        rc = DataSet.ensure_present(**arguments)
+        rc, data_set = DataSet.ensure_present(**arguments)
+        if data_set is not None:
+            self.merge_attributes_from_zoau_data_set(data_set)
         self.set_state("present")
         return rc
 
-    def ensure_absent(self, tmp_hlq=None):
+    def ensure_absent(self, tmp_hlq=None, noscratch=False):
         """Removes the data set.
 
         Parameters
@@ -2734,7 +2744,7 @@ class MVSDataSet():
         int
             Indicates if changes were made.
         """
-        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq)
+        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch)
         if rc == 0:
             self.set_state("absent")
         return rc
@@ -2837,6 +2847,37 @@ class MVSDataSet():
             raise ValueError(f"State {self.state} not supported for MVSDataset class.")
         return True
 
+    def merge_attributes_from_zoau_data_set(self, zoau_data_set):
+        # print(zoau_data_set)
+        self.name = zoau_data_set.name
+        self.record_format = zoau_data_set.record_format and zoau_data_set.record_format.lower()
+        self.record_length = zoau_data_set.record_length
+        self.volumes = zoau_data_set.volume and zoau_data_set.volume.lower()
+        self.block_size = zoau_data_set.block_size
+        self.type = zoau_data_set.type and zoau_data_set.type.lower()
+
+    @property
+    def attributes(self):
+        data_set_attributes = {
+            "name": self.name,
+            "state": self.state,
+            "type": self.data_set_type,
+            "space_primary": self.space_primary,
+            "space_secondary": self.space_secondary,
+            "space_type": self.space_type,
+            "record_format": self.record_format,
+            "sms_storage_class": self.sms_storage_class,
+            "sms_data_class": self.sms_data_class,
+            "sms_management_class": self.sms_management_class,
+            "record_length": self.record_length,
+            "block_size": self.block_size,
+            "directory_blocks": self.directory_blocks,
+            "key_offset": self.key_offset,
+            "key_length": self.key_length,
+            "volumes": self.volumes,
+        }
+        return data_set_attributes
+
 
 class Member():
     """Represents a member on z/OS.
@@ -2893,6 +2934,15 @@ class Member():
         rc = DataSet.ensure_member_present(self.name, replace, tmphlq=tmphlq)
         return rc
 
+    @property
+    def attributes(self):
+        member_attributes = {
+            "name": self.name,
+            "parent_data_set_type": self.parent_data_set_type,
+            "data_set_type": self.data_set_type,
+        }
+        return member_attributes
+
 
 class GenerationDataGroup():
     """Represents a Generation Data Group base in z/OS.
@@ -2941,8 +2991,15 @@ class GenerationDataGroup():
         self.data_set_type = "gdg"
         self.raw_name = name
         self.gdg = None
-        # Removed escaping since is not needed by the GDG python api.
-        # self.name = DataSet.escape_data_set_name(self.name)
+        self.state = 'present'
+
+    @staticmethod
+    def _validate_gdg_name(name):
+        """Validates the length of a GDG name."""
+        if name and len(name) > 35:
+            raise GenerationDataGroupCreateError(
+                msg="GDG creation failed: dataset name exceeds 35 characters."
+            )
 
     def create(self):
         """Creates the GDG.
@@ -2952,6 +3009,7 @@ class GenerationDataGroup():
         int
             Indicates if changes were made.
         """
+        GenerationDataGroup._validate_gdg_name(self.name)
         gdg = gdgs.create(
             name=self.name,
             limit=self.limit,
@@ -2962,6 +3020,7 @@ class GenerationDataGroup():
             fifo=self.fifo,
         )
         self.gdg = gdg
+        self.state = 'present'
         return True
 
     def ensure_present(self, replace):
@@ -2980,16 +3039,38 @@ class GenerationDataGroup():
         changed = False
         present = False
         gdg = None
+        name = arguments.get("name")
+
+        # Add this line to validate the name length before any operation
+        GenerationDataGroup._validate_gdg_name(name)
+
+        def _create_gdg(args):
+            try:
+                return gdgs.create(**args)
+            except exceptions._ZOAUExtendableException as e:
+                # Now, check if it's the specific exception we want to handle.
+                if isinstance(e, GenerationDataGroupCreateException):
+                    stderr = getattr(e.response, 'stderr_response', '')
+                    if "BGYSC5906E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="FIFO creation failed: the system may not support FIFO datasets or is not configured for it.")
+                    elif "BGYSC6104E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="GDG creation failed: 'purge=true' requires 'scratch=true'.")
+                    else:
+                        raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}")
+                else:
+                    # If it's a different ZOAU error, re-raise it.
+                    raise e
         if gdgs.exists(arguments.get("name")):
             present = True
 
         if not present:
-            gdg = gdgs.create(**arguments)
+            gdg = _create_gdg(arguments)
+
         else:
             if not replace:
                 return changed
             changed = self.ensure_absent(True)
-            gdg = gdgs.create(**arguments)
+            gdg = _create_gdg(arguments)
         if isinstance(gdg, gdgs.GenerationDataGroupView):
             changed = True
         return changed
@@ -3014,13 +3095,29 @@ class GenerationDataGroup():
             rc = datasets.delete(self.name)
             if rc > 0:
                 if force:
-                    if isinstance(self.gdg, gdgs.GenerationDataGroupView):
-                        self.gdg.delete()
-                    else:
-                        gdg_view = gdgs.GenerationDataGroupView(name=self.name)
-                        gdg_view.delete()
-                else:
-                    raise DatasetDeleteError(self.raw_name, rc)
+                    try:
+                        if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+                            self.gdg.delete()
+                        else:
+                            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                            gdg_view.delete()
+                    except exceptions._ZOAUExtendableException as e:
+                        stderr = getattr(e.response, 'stderr_response', '')
+                        if "BGYSC1603I" in stderr:
+                            raise GenerationDataGroupDeleteError(
+                                msg=(
+                                    "Data set deletion failed: the generation data set is currently in use "
+                                    " by another job or session. Try deleting after ensuring no active usage."
+                                )
+                            )
+                        elif "BGYSC5906E" in stderr:
+                            raise GenerationDataGroupDeleteError(
+                                msg="GDG deletion failed due to an IDCAMS failure. A GDS might be in use or locked."
+                            )
+                        else:
+                            raise GenerationDataGroupDeleteError(
+                                msg=f"GDG deletion failed. Raw error: {stderr}"
+                            )
         else:
             return False
         return True
@@ -3043,6 +3140,21 @@ class GenerationDataGroup():
             gdg_view = gdgs.GenerationDataGroupView(name=self.name)
             gdg_view.clear()
         return True
+
+    @property
+    def attributes(self):
+        data_set_attributes = {
+            "name": self.name,
+            "state": self.state,
+            "type": self.data_set_type,
+            "empty": self.empty,
+            "extended": self.extended,
+            "fifo": self.fifo,
+            "limit": self.limit,
+            "purge": self.purge,
+            "scratch": self.scratch,
+        }
+        return data_set_attributes
 
 
 def is_member(data_set):
@@ -3460,4 +3572,18 @@ class GDSNameResolveError(Exception):
             "Error resolving relative generation data set name. {0} "
             "Make sure the generation exists and is active.".format(data_set)
         )
+        super().__init__(self.msg)
+
+
+class GenerationDataGroupCreateError(Exception):
+    def __init__(self, msg):
+        """Error during creation of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
+
+
+class GenerationDataGroupDeleteError(Exception):
+    def __init__(self, msg):
+        """Error during deletion of a Generation Data Group."""
+        self.msg = msg
         super().__init__(self.msg)

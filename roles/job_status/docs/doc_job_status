@@ -14,7 +14,7 @@ role: job_status
 short_description: Role that queries a job to extract its current status and determine its execution state.
 description:
     - >
-      The B(IBM z/ibm_zos_core collection) provides an Ansible role, referred to as
+      The B(IBM z/OS core collection) provides an Ansible role, referred to as
       B(job_status), to query a particular job with a given job_id and parse the response
       to return as a msg the job status and if the job is currently running or not.
 author:

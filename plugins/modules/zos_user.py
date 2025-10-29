@@ -1015,6 +1015,7 @@ import tempfile
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -1486,168 +1487,188 @@ class RACFHandler():
     def purge_profile(self):
         # First step: run the IRRUT200 utility.
         # Getting the total allocation for the database.
-        # TODO: put inside a try/catch block.
-        database_listing = datasets.list_datasets(self.database)[0]
-        database_total_space = database_listing.total_space
+        try:
+            # TODO: use a temp HLQ.
+            backup_name = datasets.tmp_name()
+            sysin_file = None
 
-        # Putting the input commands for IRRUT200 inside a text file.
-        sysin_file = tempfile.mkstemp()
-        with open(sysin_file[0], mode='w', encoding='cp1047') as filepath:
-            filepath.write("MAP\nEND")
+            if not datasets.exists(self.database):
+                return 1, "", f"The RACF database {self.database} does not exist. No purge was not performed.", None
+            database_listing = datasets.list_datasets(self.database)[0]
+            database_total_space = math.ceil(database_listing.total_space / 1000)
 
-        # TODO: use a temp HLQ.
-        backup_name = datasets.tmp_name()
+            # Putting the input commands for IRRUT200 inside a text file.
+            sysin_file = tempfile.mkstemp()
+            with open(sysin_file[0], mode='w', encoding='cp1047') as filepath:
+                filepath.write("MAP\nEND")
 
-        irrut200_dds = [
-            ztypes.DDStatement('SYSRACF', ztypes.DatasetDefinition(
-                self.database,
-                disposition='SHR'
-            )),
-            ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
-                backup_name,
-                type='SEQ',
-                disposition='NEW',
-                normal_disposition='DELETE',
-                abnormal_disposition='DELETE',
-                device_unit='SYSDA',
-                primary=10,
-                primary_unit='CYL',
-                secondary=0,
-                secondary_unit='CYL',
-                record_format='F',
-                record_length=4096,
-                block_size=20480
-            )),
-            ztypes.DDStatement('SYSUT2', '*'),
-            ztypes.DDStatement('SYSPRINT', '*'),
-            ztypes.DDStatement('SYSIN', ztypes.FileDefinition(sysin_file[1]))
-        ]
-        irrut200_response = mvscmd.execute_authorized('IRRUT200', dds=irrut200_dds)
-        percent_used_search = re.search(
-            r'(RACF DATA SET IS\s*)(\d+)(\s*PERCENT FULL)',
-            irrut200_response.stdout_response
-        )
-        percent_used = int(percent_used_search[2])
-        database_used_space = math.ceil((database_total_space * percent_used) / 100)
-
-        # Cleaning up.
-        os.remove(sysin_file[1])
-        datasets.delete(backup_name)
+            irrut200_dds = [
+                ztypes.DDStatement('SYSRACF', ztypes.DatasetDefinition(
+                    self.database,
+                    disposition='SHR'
+                )),
+                ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
+                    backup_name,
+                    type='SEQ',
+                    disposition='NEW',
+                    normal_disposition='DELETE',
+                    abnormal_disposition='DELETE',
+                    device_unit='SYSDA',
+                    primary=database_total_space,
+                    primary_unit='KB',
+                    secondary=0,
+                    secondary_unit='KB',
+                    record_format='F',
+                    record_length=4096,
+                    block_size=20480
+                )),
+                ztypes.DDStatement('SYSUT2', '*'),
+                ztypes.DDStatement('SYSPRINT', '*'),
+                ztypes.DDStatement('SYSIN', ztypes.FileDefinition(sysin_file[1]))
+            ]
+            irrut200_response = mvscmd.execute_authorized('IRRUT200', dds=irrut200_dds)
+            percent_used_search = re.search(
+                r'(RACF DATA SET IS\s*)(\d+)(\s*PERCENT FULL)',
+                irrut200_response.stdout_response
+            )
+            percent_used = int(percent_used_search[2])
+            database_used_space = math.ceil((database_total_space * percent_used) / 100)
+        except Exception as err:
+            return 1, "", f"An error ocurred while running the IRRUT200 utility: {traceback.format_exc()}", None
+        finally:
+            # Cleaning up.
+            if sysin_file and os.path.exists(sysin_file[1]):
+                os.remove(sysin_file[1])
+            if datasets.exists(backup_name):
+                datasets.delete(backup_name)
 
         # Second step: run the IRRDBU00 utility.
-        # TODO: put inside a try/catch block.
-        dump_data_set = datasets.tmp_name()
-        irrdbu00_dds = [
-            ztypes.DDStatement('SYSPRINT', '*'),
-            ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
-                self.database,
-                disposition='SHR'
-            )),
-            # TODO: change size attributes
-            ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
-                dump_data_set,
-                type='SEQ',
-                disposition='NEW',
-                normal_disposition='CATALOG',
-                abnormal_disposition='DELETE',
-                device_unit='SYSDA',
-                primary=150,
-                primary_unit='CYL',
-                secondary=50,
-                secondary_unit='CYL',
-                record_format='VB',
-                record_length=4096,
-                block_size=20480
-            ))
-        ]
-        lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
-        irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
+        try:
+            # TODO: use a temp HLQ.
+            dump_data_set = datasets.tmp_name()
+            irrdbu00_dds = [
+                ztypes.DDStatement('SYSPRINT', '*'),
+                ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
+                    self.database,
+                    disposition='SHR'
+                )),
+                ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
+                    dump_data_set,
+                    type='SEQ',
+                    disposition='NEW',
+                    normal_disposition='CATALOG',
+                    abnormal_disposition='DELETE',
+                    device_unit='SYSDA',
+                    primary=database_total_space,
+                    primary_unit='KB',
+                    secondary=math.ceil(database_total_space / 2),
+                    secondary_unit='KB',
+                    record_format='VB',
+                    record_length=4096,
+                    block_size=20480
+                ))
+            ]
+            lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
+            irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
+        except Exception as err:
+            return 1, "", f"An error ocurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
 
         # Third step: run IRRRID00.
-        # TODO: put inside a try/catch block.
         # Putting the profile we want to search for in a text file.
-        sysin_name = datasets.tmp_name()
-        sysin_data_set = datasets.create(
-            sysin_name,
-            'SEQ',
-            record_format='FB',
-            record_length=80
-        )
-        datasets.write(sysin_name, self.name, append=False)
-
-        clist = datasets.tmp_name()
-        irrrid00_dds = [
-            ztypes.DDStatement('SYSPRINT', '*'),
-            ztypes.DDStatement('SYSOUT', '*'),
-            ztypes.DDStatement('SORTOUT', ztypes.DatasetDefinition(
-                datasets.tmp_name(),
-                type='SEQ',
-                disposition='NEW',
-                normal_disposition='DELETE',
-                abnormal_disposition='DELETE',
-                device_unit='SYSDA',
-                primary=5,
-                primary_unit='CYL',
-                secondary=5,
-                secondary_unit='CYL',
-                record_format='VB',
-                record_length=4096,
-                block_size=20480
-            )),
-            ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
-                datasets.tmp_name(),
-                type='SEQ',
-                disposition='NEW',
-                normal_disposition='DELETE',
-                abnormal_disposition='DELETE',
-                device_unit='SYSDA',
-                primary=3,
-                primary_unit='CYL',
-                secondary=5,
-                secondary_unit='CYL'
-            )),
-            ztypes.DDStatement('INDD', ztypes.DatasetDefinition(
-                dump_data_set,
-                disposition='OLD'
-            )),
-            ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
-                clist,
-                type='SEQ',
-                disposition='NEW',
-                normal_disposition='CATALOG',
-                abnormal_disposition='DELETE',
-                device_unit='SYSDA',
-                primary=150,
-                primary_unit='CYL',
-                secondary=50,
-                secondary_unit='CYL',
-                record_format='VB',
-                record_length=259,
-                block_size=1036
-            )),
-            ztypes.DDStatement('SYSIN', ztypes.DatasetDefinition(
+        try:
+            # TODO: use a temp HLQ.
+            sysin_name = datasets.tmp_name()
+            sysin_data_set = datasets.create(
                 sysin_name,
-                disposition='SHR'
-            ))
-        ]
-        irrrid00_response = mvscmd.execute('IRRRID00', dds=irrrid00_dds)
+                'SEQ',
+                record_format='FB',
+                record_length=80,
+                device_unit='SYSDA',
+                primary=1,
+                primary_unit='KB',
+                secondary=0,
+                secondary_unit='KB',
+            )
+            datasets.write(sysin_name, self.name, append=False)
 
-        # TODO: update entitied modified
-        cmd = f"EXEC '{clist}'"
-        rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
+            clist = datasets.tmp_name()
+            irrrid00_dds = [
+                ztypes.DDStatement('SYSPRINT', '*'),
+                ztypes.DDStatement('SYSOUT', '*'),
+                ztypes.DDStatement('SORTOUT', ztypes.DatasetDefinition(
+                    datasets.tmp_name(),
+                    type='SEQ',
+                    disposition='NEW',
+                    normal_disposition='DELETE',
+                    abnormal_disposition='DELETE',
+                    device_unit='SYSDA',
+                    primary=database_total_space,
+                    primary_unit='KB',
+                    secondary=math.ceil(database_total_space / 2),
+                    secondary_unit='KB',
+                    record_format='VB',
+                    record_length=4096,
+                    block_size=20480
+                )),
+                ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
+                    datasets.tmp_name(),
+                    type='SEQ',
+                    disposition='NEW',
+                    normal_disposition='DELETE',
+                    abnormal_disposition='DELETE',
+                    device_unit='SYSDA',
+                    primary=database_total_space,
+                    primary_unit='KB',
+                    secondary=math.ceil(database_total_space / 2),
+                    secondary_unit='KB',
+                )),
+                ztypes.DDStatement('INDD', ztypes.DatasetDefinition(
+                    dump_data_set,
+                    disposition='OLD'
+                )),
+                ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
+                    clist,
+                    type='SEQ',
+                    disposition='NEW',
+                    normal_disposition='CATALOG',
+                    abnormal_disposition='DELETE',
+                    device_unit='SYSDA',
+                    primary=database_total_space,
+                    primary_unit='KB',
+                    secondary=math.ceil(database_total_space / 2),
+                    secondary_unit='KB',
+                    record_format='VB',
+                    record_length=259,
+                    block_size=1036
+                )),
+                ztypes.DDStatement('SYSIN', ztypes.DatasetDefinition(
+                    sysin_name,
+                    disposition='SHR'
+                ))
+            ]
+            irrrid00_response = mvscmd.execute('IRRRID00', dds=irrrid00_dds)
 
-        # Cleaning up.
-        datasets.delete(sysin_name)
-        if not self.keep_dump:
-            datasets.delete(clist)
-            datasets.delete(dump_data_set)
+            # TODO: update entities modified
+            # TODO: add noexec option to not execute the CLIST
+            cmd = f"EXEC '{clist}'"
+            # rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
+        except Exception as err:
+            return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
+        finally:
+            # TODO: fix clean up
+            # Cleaning up.
+            if datasets.exists(sysin_name):
+                datasets.delete(sysin_name)
+            # if not self.keep_dump:
+            #     datasets.delete(clist)
+            #     datasets.delete(dump_data_set)
 
         self.database_dumped = True
         self.dump_kept = self.keep_dump
         self.dump_name = dump_data_set
 
-        return rc, stdout, stderr, cmd
-        
+        # return rc, stdout, stderr, cmd
+        return 0, f"{dump_data_set}, {clist}", "", cmd
 
 
 class GroupHandler(RACFHandler):

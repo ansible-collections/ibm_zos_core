@@ -24,7 +24,26 @@ def test_generate_data_set_name_filter(ansible_zos_module):
     results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
 
     for result in results.contacted.values():
-        print(result)
         assert result.get('msg') is not None
         assert input_string in result.get('msg')
 
+def test_generate_data_set_name_filter_multiple_generations(ansible_zos_module):
+    hosts = ansible_zos_module
+    input_string = "OMVSADM"
+    hosts.all.set_fact(input_string=input_string)
+    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name(10) }}")
+
+    for result in results.contacted.values():
+        assert result.get('msg') is not None
+        assert input_string in result.get('msg')[0]
+        assert len(result.get('msg')) == 10
+
+def test_generate_data_set_name_filter_bad_hl1(ansible_zos_module):
+    hosts = ansible_zos_module
+    input_string = "OMVSADMONE"
+    hosts.all.set_fact(input_string=input_string)
+    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
+
+    for result in results.contacted.values():
+        assert result.get('failed') is True
+        assert result.get('msg') == "The high level qualifier is too long for the data set name"

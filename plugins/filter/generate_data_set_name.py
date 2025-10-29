@@ -14,12 +14,11 @@ import string
 import re
 from ansible.errors import AnsibleFilterError
 
-def generate_data_set_name(value, llq="", generations=1):
+def generate_data_set_name(value, generations=1):
     """Filter to generate valid data set names
 
     Args:
         value {str} -- value of high level qualifier to use on data set names
-        llq {str, optional} -- last level qualifier use on names. Defaults to "".
         generations {int, optional} -- number of dataset names to generate. Defaults to 1.
 
     Returns:
@@ -28,24 +27,18 @@ def generate_data_set_name(value, llq="", generations=1):
     if len(value) > 8:
         raise AnsibleFilterError("The high level qualifier is too long for the data set name")
 
-    if len(llq) > 8:
-        raise AnsibleFilterError("The last level qualifier is too long for the data set name")
-
     if generations > 1:
         dataset_names = []
         for generation in range(generations):
-            name = value +  get_tmp_ds_name(llq=llq)
+            name = value +  get_tmp_ds_name()
             dataset_names.append(name)
     else:
-        dataset_names = value + get_tmp_ds_name(llq=llq)
+        dataset_names = value + get_tmp_ds_name()
 
     return dataset_names
 
-def get_tmp_ds_name(llq=""):
+def get_tmp_ds_name():
     """Unify the random qualifiers generate in one name.
-
-    Args:
-        llq {str, optional}: last level qualifier use on names. Defaults to "".
 
     Returns:
         str: valid data set name
@@ -53,12 +46,8 @@ def get_tmp_ds_name(llq=""):
     ds = "."
     ds += "P" + get_random_q() + "."
     ds += "T" + get_random_q() + "."
-    if llq:
-        ds+=llq
-        return ds
-    else:
-        ds+= "C" + get_random_q()
-        return ds
+    ds+= "C" + get_random_q()
+    return ds
 
 def get_random_q():
     """ Function or test to ensure random hlq of datasets"""

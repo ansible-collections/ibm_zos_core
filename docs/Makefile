@@ -119,6 +119,7 @@ role-doc:
 		ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
 		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
+		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py-e; \
 	fi; \
 	done
 

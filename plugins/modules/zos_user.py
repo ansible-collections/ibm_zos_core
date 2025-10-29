@@ -1667,8 +1667,10 @@ class RACFHandler():
         self.dump_kept = self.keep_dump
         self.dump_name = dump_data_set
 
+        rc, out, err = self.module.run_command(f"dcat {clist}")
+
         # return rc, stdout, stderr, cmd
-        return 0, f"{dump_data_set}, {clist}", "", cmd
+        return 0, f"{dump_data_set}, {clist}: {out}", "", cmd
 
 
 class GroupHandler(RACFHandler):

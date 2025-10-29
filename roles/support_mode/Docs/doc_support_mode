@@ -1,0 +1,119 @@
+# Copyright (c) IBM Corporation 2020, 2025
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DOCUMENTATION = r"""
+role: support_mode
+short_description: Gathers diagnostic facts from a z/OS managed node.
+description:
+    - >
+      The B(support_mode) role gathers a comprehensive set of diagnostic facts
+      from a z/OS managed node.
+    - >
+      This includes information about the ZOAU installation, Python version,
+      system locale, environment variables, installed pip packages,
+      z/OS system facts, and filesystem mount status for
+      ZOAU and Python.
+    - >
+      All gathered information is consolidated and saved to a YAML report file
+      C(support_mode_report_<hostname>.yml) in the user's home
+      directory on the Ansible controller.
+    - >
+      A fact named C(support_mode_managed_results) is also set on the
+      managed host with the same data.
+author:
+    - Rohitash Goyal (@Rohitcodes28)
+options:
+    run_managed_diagnostics:
+        description:
+            - Controls whether the z/OS managed node diagnostic tasks are executed.
+        required: False
+        type: bool
+        default: True
+    support_mode_gather_syslog:
+        description:
+            - >
+              If set to C(True), the role will also attempt to run the
+              C(D A,L) MVS operator command to gather active system information.
+        required: False
+        type: bool
+        default: False
+"""
+
+EXAMPLES = r"""
+- name: Run support_mode to gather z/OS diagnostics
+  hosts: zos_host
+  gather_facts: no
+  collections:
+    - ibm.ibm_zos_core
+  tasks:
+    - include_role:
+        name: ibm.ibm_zos_core.support_mode
+
+- name: Run support_mode and include MVS operator command output
+  hosts: zos_host
+  gather_facts: no
+  collections:
+    - ibm.ibm_zos_core
+  tasks:
+    - include_role:
+        name: ibm.ibm_zos_core.support_mode
+      vars:
+        support_mode_gather_syslog: true
+"""
+
+# Roles don't return anything.
+# But RETURN block must be defined for doc extraction tooling to avoid error.
+# The content in RETURN block will not be display in doc-site.
+RETURN = r"""
+changed:
+    description: Indicates if any change is made during the role operation.
+    returned: always
+    type: bool
+support_mode_managed_results:
+    description: >
+        A fact set on the managed host containing all gathered diagnostic data.
+        This data is also written to a YAML file on the controller.
+    returned: always
+    type: dict
+    contains:
+        zoau_version:
+            description: The output of the `zoaversion -c` command.
+            type: str
+        python_version_stdout:
+            description: The standard output from `python3 --version`.
+            type: str
+        python_version_stderr:
+            description: The standard error from `python3 --version`.
+            type: str
+        locale:
+            description: A list of locale settings from the `locale` command.
+            type: list
+        environment:
+            description: A list of environment variables from the `env` command.
+            type: list
+        zos_facts:
+            description: A dictionary of z/OS facts from `zos_gather_facts`.
+            type: dict
+        pip_list:
+            description: A list of installed packages from `pip3 list`.
+            type: list
+        df_zoau_path:
+            description: The mount status of the ZOAU home directory.
+            type: list
+        df_python_path:
+            description: The mount status of the Python home directory.
+            type: list
+        operator_command_output:
+            description: >
+                The output of the MVS operator command (e.g., `D A,L`),
+                or 'N/A' if `support_mode_gather_syslog` is false.
+            type: list
+"""

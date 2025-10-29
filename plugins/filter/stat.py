@@ -187,7 +187,7 @@ def filter_stat(attributes, resource):
     for field in VALID_FIELDS[resource]:
         cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
 
-    if resource == 'data_set':
+    if resource == 'data_set' and cleaned_attributes['attributes']['dsorg'] is not None:
         if 'ps' in cleaned_attributes['attributes']['dsorg']:
             for field in VALID_FIELDS['seq']:
                 cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)

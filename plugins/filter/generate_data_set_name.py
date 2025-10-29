@@ -37,8 +37,7 @@ def generate_data_set_name(value, llq="", generations=1):
             name = value +  get_tmp_ds_name(llq=llq)
             dataset_names.append(name)
     else:
-        dataset_names = ""
-        value += get_tmp_ds_name(llq=llq)
+        dataset_names = value + get_tmp_ds_name(llq=llq)
 
     return dataset_names
 

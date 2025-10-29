@@ -2187,7 +2187,7 @@ class DataSet(object):
         # We need to unescape because this call to the system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
-        idcams_cmd = f" LISTCAT ALIAS ENTRIES('{name}')ALL"
+        idcams_cmd = f""" LISTCAT -\n ENTRIES('{name}') -\n ALIAS ALL"""
         response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
         if response.rc == 0:

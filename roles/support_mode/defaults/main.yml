@@ -1,7 +1,3 @@
 ---
-# Ansible controller.
-run_controller_diagnostics: true
-# z/OS managed node.
-run_managed_diagnostics: true
 # Operator PCON command
 support_mode_gather_syslog: false

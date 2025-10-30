@@ -31,12 +31,6 @@ description:
 author:
     - Rohitash Goyal (@Rohitcodes28)
 options:
-    run_managed_diagnostics:
-        description:
-            - Controls whether the z/OS managed node diagnostic tasks are executed.
-        required: False
-        type: bool
-        default: True
     support_mode_gather_syslog:
         description:
             - >

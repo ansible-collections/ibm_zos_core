@@ -18,13 +18,18 @@ description:
       from a z/OS managed node.
     - >
       This includes information about the ZOAU installation, Python version,
-      system locale, environment variables, installed pip packages,
-      z/OS system facts, and filesystem mount status for
-      ZOAU and Python.
+      system locale, environment variables, user limits (ulimit),
+      pip packages, z/OS system facts, OMVS segment, filesystem mount status,
+      and APF attributes for ZOAU.
     - >
-      All gathered information is consolidated and saved to a YAML report file
+      If C(create_log_file) is C(True) (the default), all gathered information
+      is consolidated and saved to a YAML report file
       C(support_mode_report_<hostname>.yml) in the user's home
-      directory on the Ansible controller.
+      directory on the Ansible controller, and sensitive data is hidden
+      from the console.
+    - >
+      If C(create_log_file) is C(False), no file is created, and all data
+      is printed to the console.
     - >
       A fact named C(support_mode_managed_results) is also set on the
       managed host with the same data.
@@ -35,21 +40,36 @@ options:
         description:
             - >
               If set to C(True), the role will also attempt to run the
-              C(D A,L) MVS operator command to gather active system information.
+              MVS operator commands C(D A,L), C(D OMVS,LIMITS), and
+              C(D OMVS,OPTIONS) to gather system activity and OMVS status.
         required: False
         type: bool
         default: False
+    create_log_file:
+        description:
+            - >
+              Controls whether the role creates a YAML report file on the controller
+              and hides sensitive data from the console.
+            - >
+              If C(True), the report file is created and sensitive data
+              is hidden from the console (C(no_log: true)).
+            - >
+              If C(False), no report file is created and all gathered data,
+              including sensitive information, is printed to the console (C(no_log: false)).
+        required: False
+        type: bool
+        default: True
 """
 
 EXAMPLES = r"""
-- name: Run support_mode to gather z/OS diagnostics
+- name: Run support_mode to gather z/OS diagnostics (default)
   hosts: zos_host
   gather_facts: no
   collections:
     - ibm.ibm_zos_core
   tasks:
     - include_role:
-        name: ibm.ibm_zos_core.support_mode
+        name: support_mode
 
 - name: Run support_mode and include MVS operator command output
   hosts: zos_host
@@ -58,9 +78,20 @@ EXAMPLES = r"""
     - ibm.ibm_zos_core
   tasks:
     - include_role:
-        name: ibm.ibm_zos_core.support_mode
+        name: support_mode
       vars:
         support_mode_gather_syslog: true
+
+- name: Run support_mode and print all sensitive data to console (no log file)
+  hosts: zos_host
+  gather_facts: no
+  collections:
+    - ibm.ibm_zos_core
+  tasks:
+    - include_role:
+        name: support_mode
+      vars:
+        create_log_file: false
 """
 
 # Roles don't return anything.
@@ -74,12 +105,16 @@ changed:
 support_mode_managed_results:
     description: >
         A fact set on the managed host containing all gathered diagnostic data.
-        This data is also written to a YAML file on the controller.
+        This data is also written to a YAML file on the controller if
+        C(create_log_file) is C(True).
     returned: always
     type: dict
     contains:
         zoau_version:
-            description: The output of the `zoaversion -c` command.
+            description: The standard output of the `zoaversion -c` command.
+            type: str
+        zoau_version_stderr:
+            description: The standard error of the `zoaversion -c` command.
             type: str
         python_version_stdout:
             description: The standard output from `python3 --version`.
@@ -96,18 +131,46 @@ support_mode_managed_results:
         zos_facts:
             description: A dictionary of z/OS facts from `zos_gather_facts`.
             type: dict
+        zos_facts_fallback:
+            description: The output of the Python-based `zinfo` fallback query.
+            type: list
         pip_list:
             description: A list of installed packages from `pip3 list`.
+            type: list
+        pip_show_zoau:
+            description: The output of `pip3 show zoautil-py`.
+            type: list
+        pip_show_zoau_stderr:
+            description: The standard error of `pip3 show zoautil-py`.
+            type: str
+        user_limits:
+            description: A list of user limits from the `ulimit -a` command.
+            type: list
+        omvs_segment:
+            description: The output of the `tsocmd "lu $(whoami) omvs"` command.
             type: list
         df_zoau_path:
             description: The mount status of the ZOAU home directory.
             type: list
+        zoau_bin_attributes:
+            description: The output of `ls -laE` on the ZOAU bin directory.
+            type: list
         df_python_path:
             description: The mount status of the Python home directory.
             type: list
-        operator_command_output:
+        operator_d_a_l:
             description: >
-                The output of the MVS operator command (e.g., `D A,L`),
+                The output of the MVS operator command `D A,L`,
+                or 'N/A' if `support_mode_gather_syslog` is false.
+            type: list
+        operator_d_omvs_limits:
+            description: >
+                The output of the MVS operator command `D OMVS,LIMITS`,
+                or 'N/A' if `support_mode_gather_syslog` is false.
+            type: list
+        operator_d_omvs_options:
+            description: >
+                The output of the MVS operator command `D OMVS,OPTIONS`,
                 or 'N/A' if `support_mode_gather_syslog` is false.
             type: list
 """

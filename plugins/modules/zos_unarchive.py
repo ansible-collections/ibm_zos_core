@@ -64,7 +64,6 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
-        aliases: [options]
         suboptions:
           xmit_log_data_set:
             description:
@@ -85,7 +84,6 @@ options:
                 a portable format after using C(xmit) or C(terse).
             type: bool
             default: False
-            aliases: [adrdssu]
           dest_volumes:
             description:
               - When I(adrdssu=True), specify the volume the data sets
@@ -1605,12 +1603,10 @@ def run_module():
                         type='str',
                         required=True,
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                        aliases=['type'],
                     ),
                     options=dict(
                         type='dict',
                         required=False,
-                        aliases=['options'],
                         options=dict(
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1623,7 +1619,6 @@ def run_module():
                             adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['adrdssu']
                             )
                         )
                     ),
@@ -1713,12 +1708,10 @@ def run_module():
                     required=True,
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                    aliases=['type'],
                 ),
                 options=dict(
                     type='dict',
                     required=False,
-                    aliases=['options'],
                     options=dict(
                         xmit_log_data_set=dict(
                             type='str',
@@ -1731,7 +1724,6 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['adrdssu']
                         ),
                     ),
                     default=dict(xmit_log_data_set=""),

@@ -73,6 +73,14 @@
   ignore_errors: true
   when: zoau_home_path is defined and zoau_home_path != 'not_found'
 
+- name: "z/OS | Check APF bits in ZOAU bin directory"
+  ansible.builtin.shell:
+    cmd: "ls -E \"{{ zoau_home_path }}/bin\""
+  register: managed_bin_apf_bits
+  changed_when: false
+  ignore_errors: true
+  when: zoau_home_path is defined and zoau_home_path != 'not_found'
+
 - name: "z/OS | Check Python home mount status (df)"
   ansible.builtin.shell:
     cmd: "df -P \"{{ python_home_path }}\""
@@ -141,6 +149,11 @@
     var: managed_df_zoau.stdout_lines
   when: managed_df_zoau is defined and managed_df_zoau.stdout_lines is defined
 
+- name: "z/OS | ZOAU apf attributes"
+  ansible.builtin.debug:
+    var: managed_bin_apf_bits.stdout_lines
+  when: managed_bin_apf_bits is defined and managed_bin_apf_bits.stdout_lines is defined
+
 - name: "z/OS | Python Path Mount Status"
   ansible.builtin.debug:
     var: managed_df_python.stdout_lines
@@ -162,6 +175,7 @@
       zos_facts: "{{ zos_facts.ansible_facts | default('N/A') }}"
       pip_list: "{{ managed_pip_list.stdout_lines | default('N/A') }}"
       df_zoau_path: "{{ managed_df_zoau.stdout_lines | default('N/A') }}"
+      zoau_bin_attributes: "{{ managed_bin_apf_bits.stdout_lines | default('N/A') }}"
       df_python_path: "{{ managed_df_python.stdout_lines | default('N/A') }}"
       operator_command_output: "{{ managed_operator_output.content | default('N/A', true) }}"
 

@@ -1838,6 +1838,7 @@ def determine_scratch(data_set_params):
             scratch = True
     return scratch
 
+
 def build_return_schema(data_set_list):
     """ Builds return values schema with empty values.
 

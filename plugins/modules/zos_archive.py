@@ -65,11 +65,13 @@ options:
           - terse
           - xmit
           - pax
+        aliases: [type]
       format_options:
         description:
           - Options specific to a compression format.
         type: dict
         required: false
+        aliases: [options]
         suboptions:
           terse_pack:
             description:
@@ -105,6 +107,7 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
+            aliases: [adrdssu]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -1874,11 +1877,13 @@ def run_module():
                     name=dict(
                         type='str',
                         default='gz',
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                        aliases=['type'],
                     ),
                     format_options=dict(
                         type='dict',
                         required=False,
+                        aliases=['options'],
                         options=dict(
                             terse_pack=dict(
                                 type='str',
@@ -1890,6 +1895,7 @@ def run_module():
                             use_adrdssu=dict(
                                 type='bool',
                                 default=False,
+                                aliases=['adrdssu']
                             )
                         ),
                     ),
@@ -1969,11 +1975,13 @@ def run_module():
                 name=dict(
                     type='str',
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=['type'],
                 ),
                 format_options=dict(
                     type='dict',
                     required=False,
+                    aliases=["options"],
                     options=dict(
                         terse_pack=dict(
                             type='str',
@@ -1987,6 +1995,7 @@ def run_module():
                         use_adrdssu=dict(
                             type='bool',
                             default=False,
+                            aliases=['adrdssu']
                         )
                     ),
                     default=dict(
@@ -2045,6 +2054,32 @@ def run_module():
         original_message='',
         message=''
     )
+
+    format_param = module.params.get('format', {})
+
+    if format_param and format_param.get('name') is not None:
+        module.deprecate(
+            msg="The 'format.name' option will be deprecated in version 2.0.0. Use 'format.type' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
+
+    if format_param and format_param.get('format_options') is not None:
+        module.deprecate(
+            msg="The 'format.format_options' option will be deprecated. Use 'format.options' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
+
+        optopms_deprecate = format_param['format_options']
+
+        if optopms_deprecate and optopms_deprecate.get('use_adrdssu') is not None:
+            module.deprecate(
+                msg="The 'format.format_options.use_adrdssu' option will be deprecated. On new version use 'format.format_options.adrdssu' instead.",
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
+            )
+
     if module.check_mode:
         module.exit_json(**result)
 

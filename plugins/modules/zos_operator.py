@@ -61,6 +61,7 @@ options:
     type: int
     required: false
     default: 1
+    aliases: [wait_time]
   case_sensitive:
     description:
       - If C(true), the command will not be converted to uppercase before
@@ -252,7 +253,7 @@ def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        wait_time_s=dict(type="int", required=False, default=1),
+        wait_time_s=dict(type="int", required=False, default=1, aliases=["wait_time"]),
         case_sensitive=dict(type="bool", required=False, default=False),
     )
 
@@ -264,6 +265,13 @@ def run_module():
         module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
+        if module.params.get('wait_time_s') is not None:
+            module.deprecate(
+                msg="The 'wait_time_s' option will be deprecated. Please use 'wait_time' instead.",
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
+            )
+
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
@@ -339,7 +347,7 @@ def parse_params(params):
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
-        wait_time_s=dict(arg_type="int", required=False),
+        wait_time_s=dict(arg_type="int", required=False, aliases=["wait_time"]),
         case_sensitive=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)

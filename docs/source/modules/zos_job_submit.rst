@@ -766,7 +766,9 @@ jobs
 
       Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
 
-      Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
+      Job status `TYPRUN=COPY` indicates that the job had the TYPRUN parameter with COPY option.
+
+      Job status `HOLD` indicates that the job had the TYPRUN parameter with either the HOLD or JCLHOLD options.
 
       Jobs where status can not be determined will result in None (NULL).
 

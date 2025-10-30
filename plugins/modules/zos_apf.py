@@ -539,7 +539,7 @@ def main():
 
         persistent_param = module.params.get('persistent', {})
 
-        if persistent_param.get('data_set_name') is not None:
+        if persistent_param and persistent_param.get('data_set_name') is not None:
             module.deprecate(
                 msg="The 'persistent.data_set_name' option will be deprecated. Please use 'persistent.target' instead.",
                 version="2.0.0",

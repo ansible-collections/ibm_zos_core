@@ -1,4 +1,0 @@
-trivial:
-   - zos_backup_restore - Fixes the command failure which is happening while generating
-     the command that is passed to ZOAU.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2355).

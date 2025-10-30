@@ -1,5 +1,0 @@
-minor_changes:
-   - zos_copy - Adds a better error message that gives user a
-     hint that copy issue can be due to a GDS part of ``src`` GDG is
-     being used by another process.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2220)

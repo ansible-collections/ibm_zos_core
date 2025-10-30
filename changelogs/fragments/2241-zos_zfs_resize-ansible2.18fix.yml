@@ -1,4 +1,0 @@
-trivial:
-   - test_zos_zfs_resize_func.py - modified test case `test_grow_n_shrink_operations_trace_ds_not_created` and `test_grow_n_shrink_operations_trace_ds`
-     to resolve issues when testing ansible 2.18.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2241).

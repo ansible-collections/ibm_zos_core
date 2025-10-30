@@ -1,3 +1,0 @@
-minor_changes:
-   - zos_job_output - Adds support to query SYSIN DDs from a job with new option input.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2207)

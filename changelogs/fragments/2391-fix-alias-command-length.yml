@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_copy - When a data set name had the maximum length of 44 characters, a check to see if it
+    is an alias would fail. Fix now solves this issue so that any valid data set name can be used
+    as a source or destination.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2391)

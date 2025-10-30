@@ -102,3 +102,4 @@ build_ignore:
   - '*.log'
   - '*.sh'
   - ac
+  - branch_protection_rules.json

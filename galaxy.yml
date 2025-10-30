@@ -101,3 +101,4 @@ build_ignore:
   - ansible_collections
   - '*.log'
   - '*.sh'
+  - ac

@@ -553,15 +553,6 @@ def main():
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
 
-        persistent_param = module.params.get('persistent', {})
-
-        if persistent_param and persistent_param.get('data_set_name') is not None:
-            module.deprecate(
-                msg="The 'persistent.data_set_name' option will be deprecated. Please use 'persistent.target' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

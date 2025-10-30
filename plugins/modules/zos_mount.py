@@ -766,13 +766,6 @@ def run_module(module, arg_def):
         marker = persistent.get("marker")
         backup = persistent.get("backup")
 
-        if comment is not None:
-            module.deprecate(
-                msg="The 'comment' option will be deprecated. Please use 'marker' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
         if backup:
             if persistent.get("backup_name"):
                 backup_name = persistent.get("backup_name").upper()

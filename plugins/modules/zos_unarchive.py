@@ -1783,32 +1783,6 @@ def run_module():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
-
-        format_param = module.params.get('format', {})
-
-        if format_param and format_param.get('name') is not None:
-            module.deprecate(
-                msg="The 'format.name' option will be deprecated in version 2.0.0. Use 'format.type' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        if format_param and format_param.get('format_options') is not None:
-            module.deprecate(
-                msg="The 'format.format_options' option will be deperecated. Use 'format.options' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        format_options = format_param['format_options']
-
-        if format_options and format_options.get('use_adrdssu') is not None:
-            module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' option will be deperecated. Use 'format.format_options.adrdssu' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))

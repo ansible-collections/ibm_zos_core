@@ -579,15 +579,6 @@ options:
         type: bool
         required: false
         default: false
-      noscratch:
-        description:
-          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-          - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-            The Data Set Control Block is not removed from the VTOC.
-          - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
-        type: bool
-        required: false
-        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -1721,11 +1712,6 @@ def parse_and_validate_args(params):
                     required=False,
                     default=False,
                 ),
-                noscratch=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
             ),
         ),
         # For individual data set args
@@ -1812,11 +1798,6 @@ def parse_and_validate_args(params):
             default=None
         ),
         force=dict(
-            type="bool",
-            required=False,
-            default=False,
-        ),
-        noscratch=dict(
             type="bool",
             required=False,
             default=False,
@@ -1989,11 +1970,6 @@ def run_module():
                     required=False,
                     default=False,
                 ),
-                noscratch=dict(
-                    type="bool",
-                    required=False,
-                    default=False,
-                ),
             ),
         ),
         # For individual data set args
@@ -2074,11 +2050,6 @@ def run_module():
             required=False,
             default=False
         ),
-        noscratch=dict(
-            type="bool",
-            required=False,
-            default=False
-        ),
     )
     result = dict(changed=False)
 
@@ -2106,8 +2077,6 @@ def run_module():
             module.params["replace"] = None
         if module.params.get("record_format") is not None:
             module.params["record_format"] = None
-        if module.params.get("noscratch") is not None:
-            module.params["noscratch"] = None
     elif module.params.get("type") is not None:
         if module.params.get("type") in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it

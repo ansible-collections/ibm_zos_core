@@ -4233,20 +4233,6 @@ def main():
             )
         )
 
-    if module.params.get("force") is not None:
-        module.deprecate(
-            msg="The 'force' option will be deprecated. Please use 'replace' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
-
-    if module.params.get("is_binary") is not None:
-        module.deprecate(
-            msg="The 'is_binary' option wil be deprecated. Please use 'binary' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
-
     res_args = conv_path = None
     try:
         res_args, conv_path = run_module(module, arg_def)

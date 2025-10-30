@@ -991,13 +991,6 @@ def run_module():
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
 
-    if module.params.get("wait_time_s") is not None:
-        module.deprecate(
-            msg="The 'wait_time_s' option will be deprecated. Please use 'wait_time' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
-
     # Extract values from set module options
     remote_src = parsed_args.get("remote_src")
     volume = parsed_args.get("volume")

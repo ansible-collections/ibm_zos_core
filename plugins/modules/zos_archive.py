@@ -1991,7 +1991,6 @@ def run_module():
                 options=dict(
                     type='dict',
                     required=False,
-                    aliases=["options"],
                     options=dict(
                         spack=dict(
                             type='bool',
@@ -2065,31 +2064,6 @@ def run_module():
         original_message='',
         message=''
     )
-
-    format_param = module.params.get('format', {})
-
-    if format_param and format_param.get('name') is not None:
-        module.deprecate(
-            msg="The 'format.name' option will be deprecated in version 2.0.0. Use 'format.type' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
-
-    if format_param and format_param.get('format_options') is not None:
-        module.deprecate(
-            msg="The 'format.format_options' option will be deprecated. Use 'format.options' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
-
-        optopms_deprecate = format_param['format_options']
-
-        if optopms_deprecate and optopms_deprecate.get('use_adrdssu') is not None:
-            module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' option will be deprecated. On new version use 'format.format_options.adrdssu' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
 
     if module.check_mode:
         module.exit_json(**result)

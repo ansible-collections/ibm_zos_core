@@ -117,6 +117,7 @@ options:
                       This is usually BPXPRMxx or a copy.
                 required: True
                 type: str
+                aliases: [name]
             backup:
                 description:
                     - Creates a backup file or backup data set for
@@ -160,6 +161,7 @@ options:
                 type: list
                 elements: str
                 required: False
+                aliases: [marker]
     unmount_opts:
         description:
             - Describes how the unmount will be performed.
@@ -754,8 +756,24 @@ def run_module(module, arg_def):
 
     if persistent:
         data_store = persistent.get("data_store").upper()
+
+        if data_store:
+            module.deprecate(
+                msg="The 'data_store' option will be deprecated. Please use 'name' instead.",
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
+            )
+
         comment = persistent.get("comment")
         backup = persistent.get("backup")
+
+        if comment is not None:
+            module.deprecate(
+                msg="The 'comment' option will be deprecated. Please use 'marker' instead.",
+                version="2.0.0",
+                collection_name='ibm.ibm_zos_core',
+            )
+
         if backup:
             if persistent.get("backup_name"):
                 backup_name = persistent.get("backup_name").upper()
@@ -1133,10 +1151,11 @@ def main():
                     data_store=dict(
                         type="str",
                         required=True,
+                        aliases=["name"]
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", elements="str", required=False),
+                    comment=dict(type="list", elements="str", required=False, aliases=["marker"]),
                 ),
             ),
             unmount_opts=dict(
@@ -1193,10 +1212,10 @@ def main():
             arg_type="dict",
             required=False,
             options=dict(
-                data_store=dict(arg_type="str", required=True),
+                data_store=dict(arg_type="str", required=True, aliases=["name"]),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
-                comment=dict(arg_type="list", elements="str", required=False),
+                comment=dict(arg_type="list", elements="str", required=False, aliases=["marker"]),
             ),
         ),
         unmount_opts=dict(

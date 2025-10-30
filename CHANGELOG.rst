@@ -4,6 +4,57 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.16.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2025-10-31'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_apf - Adds new alias ``target`` for ``data_set_name``  and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_archive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_archive - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_archive - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_backup_restore - Adds ``compress`` option to enable compression of partitioned data sets using hardware compression if available. (https://github.com/ansible-collections/ibm_zos_core/pull/2260)
+- zos_backup_restore - Adds ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup. (https://github.com/ansible-collections/ibm_zos_core/pull/2260)
+- zos_copy - Adds a better error message that gives user a hint that copy issue can be due to a GDS part of ``src`` GDG is being used by another process. (https://github.com/ansible-collections/ibm_zos_core/pull/2220)
+- zos_copy - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_copy - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_data_set - Adds `noscratch` option to allow uncataloging a data set without deleting it from the volume's VTOC. (https://github.com/ansible-collections/ibm_zos_core/pull/2202)
+- zos_data_set - Enhances error messages when creating a Generation Data Group fails. (https://github.com/ansible-collections/ibm_zos_core/pull/2212)
+- zos_data_set - Enhances error messages when deleting a Generation Data Group fails. (https://github.com/ansible-collections/ibm_zos_core/pull/2255)
+- zos_data_set - Merged `noscratch` functionality into the `scratch` option. This allows uncataloging a data set without deleting it from the volume's VTOC (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
+- zos_fetch - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_job_output - Adds new alias ``dd_name`` for ``ddname`` and warning message that will be alias on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_job_output - Adds support to query SYSIN DDs from a job with new option input. (https://github.com/ansible-collections/ibm_zos_core/pull/2207)
+- zos_job_submit - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_job_submit - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD. (https://github.com/ansible-collections/ibm_zos_core/pull/2229).
+- zos_mount - Adds new alias ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_mount - Adds new alias ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_mvs_raw - Adds new `raw` option under ``dd_data_set`` that lets the MVS program create datasets with its own DCB attributes without the user having to specify them. (https://github.com/ansible-collections/ibm_zos_core/pull/2341).
+- zos_operator - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_unarchive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_unarchive - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_unarchive - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+
+Bugfixes
+--------
+
+- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2236).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_started_task - Perform operations on started tasks.
+
 v1.15.0
 =======
 

@@ -135,6 +135,22 @@ options:
         with matching name on the target device.
     type: bool
     default: False
+  compress:
+    description:
+      - When I(operation=backup), enables compression of partitioned data sets using system-level
+        compression features. If supported, this may utilize zEDC hardware compression.
+      - This option can reduce the size of the temporary dataset generated during backup operations
+        either before the AMATERSE step when I(terse) is True or the resulting backup
+        when I(terse) is False.
+    type: bool
+    default: False
+  terse:
+    description:
+      - When I(operation=backup), executes an AMATERSE step to compress and pack the temporary data set
+        for the backup. This creates a backup with a format suitable for transferring off-platform.
+      - If I(operation=backup) and if I(dataset=False) then option I(terse) must be True.
+    type: bool
+    default: True
   sms_storage_class:
     description:
       - When I(operation=restore), specifies the storage class to use. The storage class will
@@ -174,6 +190,7 @@ options:
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
       - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
+    default: m
     choices:
       - k
       - m
@@ -253,6 +270,15 @@ EXAMPLES = r"""
       include:
         - user.gdg(-1)
         - user.gdg(0)
+    backup_name: my.backup.dzp
+
+- name: Backup datasets using compress
+  zos_backup_restore:
+    operation: backup
+    compress: true
+    terse: true
+    data_sets:
+      include: someds.name.here
     backup_name: my.backup.dzp
 
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
@@ -412,13 +438,15 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"], default="m"),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
         backup_name=dict(type="str", required=True),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=False),
+        terse=dict(type="bool", default=True),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
@@ -431,13 +459,15 @@ def main():
         operation = params.get("operation")
         data_sets = params.get("data_sets", {})
         space = params.get("space")
-        space_type = params.get("space_type")
+        space_type = params.get("space_type", "m")
         volume = params.get("volume")
         full_volume = params.get("full_volume")
         temp_volume = params.get("temp_volume")
         backup_name = params.get("backup_name")
         recover = params.get("recover")
         overwrite = params.get("overwrite")
+        compress = params.get("compress")
+        terse = params.get("terse")
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
@@ -452,6 +482,8 @@ def main():
                 full_volume=full_volume,
                 temp_volume=temp_volume,
                 overwrite=overwrite,
+                compress=compress,
+                terse=terse,
                 recover=recover,
                 space=space,
                 space_type=space_type,
@@ -545,6 +577,8 @@ def parse_and_validate_args(params):
         backup_name=dict(type=backup_name_type, required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
+        compress=dict(type="bool", default=False),
+        terse=dict(type="bool", default=True),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
@@ -566,6 +600,8 @@ def backup(
     full_volume,
     temp_volume,
     overwrite,
+    compress,
+    terse,
     recover,
     space,
     space_type,
@@ -579,6 +615,8 @@ def backup(
     ----------
     backup_name : str
         The data set or UNIX path to place the backup.
+    compress : bool
+        Compress the dataset or file produced by ADRDSSU before taking backup.
     include_data_sets : list
         A list of data set patterns to include in the backup.
     exclude_data_sets : list
@@ -589,6 +627,8 @@ def backup(
         Specifies if a backup will be made of the entire volume.
     temp_volume : bool
         Specifies the volume that should be used to store temporary files.
+    terse : bool
+        Uses AMATERSE to compress and pack the dump generated by ADRDSSU.
     overwrite : bool
         Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
     recover : bool
@@ -603,6 +643,7 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -963,6 +1004,12 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
+
+    if kwargs.get("compress") is not None:
+        zoau_args["compress"] = kwargs.get("compress")
+
+    if kwargs.get("terse") is not None:
+        zoau_args["terse"] = kwargs.get("terse")
 
     if kwargs.get("sms_storage_class"):
         zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")

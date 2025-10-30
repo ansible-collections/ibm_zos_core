@@ -58,7 +58,7 @@ JOB_ERROR_STATUSES = frozenset(["ABEND",      # ZOAU job ended abnormally
                                 ])
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Parameters
@@ -71,6 +71,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
         The job name search for (default: {None}).
     dd_name : str
         The data definition to retrieve (default: {None}).
+    sysin : bool
+        The input DD to retrieve SYSIN value (default: {False}).
     dd_scan : bool
         Whether or not to pull information from the dd's for this job {default: {True}}.
     duration : int
@@ -112,6 +114,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
         job_name=job_name,
         dd_name=dd_name,
         duration=duration,
+        sysin=sysin,
         dd_scan=dd_scan,
         timeout=timeout,
         start_time=start_time
@@ -128,6 +131,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
             owner=owner,
             job_name=job_name,
             dd_name=dd_name,
+            sysin=sysin,
             dd_scan=dd_scan,
             duration=duration,
             timeout=timeout,
@@ -287,7 +291,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=False, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get job status.
 
     Parameters
@@ -300,6 +304,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
         The job name search for (default: {None}).
     dd_name : str
         The data definition to retrieve (default: {None}).
+    sysin : bool
+        The input DD SYSIN (default: {False}).
     dd_scan : bool
         Whether or not to pull information from the dd's for this job {default: {True}}.
     duration : int
@@ -405,7 +411,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 list_of_dds = []
 
                 try:
-                    list_of_dds = jobs.list_dds(entry.job_id)
+                    list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
                 except exceptions.DDQueryException:
                     is_dd_query_exception = True
 
@@ -424,7 +430,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     try:
                         # Note, in the event of an exception, eg job has TYPRUN=HOLD
                         # list_of_dds will still be populated with valuable content
-                        list_of_dds = jobs.list_dds(entry.job_id)
+                        list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
                         is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
                         is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
                     except exceptions.DDQueryException:

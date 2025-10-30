@@ -63,6 +63,7 @@ options:
     required: false
     default: 10
     type: int
+    aliases: [wait_time]
     description:
       - Option I(wait_time_s) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
@@ -272,7 +273,8 @@ jobs:
             - Job status `SYS` indicates a system failure.
             - Job status `?` indicates status can not be determined.
             - Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
-            - Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
+            - Job status `TYPRUN=COPY` indicates that the job had the TYPRUN parameter with COPY option.
+            - Job status `HOLD` indicates that the job had the TYPRUN parameter with either the HOLD or JCLHOLD options.
             - Jobs where status can not be determined will result in None (NULL).
           type: str
           sample: AC
@@ -966,7 +968,7 @@ def run_module():
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
-        wait_time_s=dict(type="int", default=10),
+        wait_time_s=dict(type="int", default=10, aliases=["wait_time"]),
         max_rc=dict(type="int", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
@@ -1026,7 +1028,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=10),
+        wait_time_s=dict(arg_type="int", required=False, default=10, aliases=["wait_time"]),
         max_rc=dict(arg_type="int", required=False),
     )
 
@@ -1040,6 +1042,13 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
+
+    if module.params.get("wait_time_s") is not None:
+        module.deprecate(
+            msg="The 'wait_time_s' option will be deprecated. Please use 'wait_time' instead.",
+            version="2.0.0",
+            collection_name='ibm.ibm_zos_core',
+        )
 
     # Extract values from set module options
     location = parsed_args.get("location")
@@ -1116,8 +1125,9 @@ def run_module():
                 result["execution_time"] = job_output_txt[0].get("execution_time")
 
             result["duration"] = duration
+            job_msg = job_output_txt[0].get("ret_code", {}).get("msg")
 
-            if duration >= wait_time_s:
+            if duration >= wait_time_s and job_msg != "HOLD":
                 result["failed"] = True
                 result["changed"] = False
                 _msg = ("The JCL submitted with job id {0} but appears to be a long "
@@ -1161,19 +1171,13 @@ def run_module():
                                 job_ret_code.update({"msg_txt": _msg})
                                 raise Exception(_msg)
 
-                    if job_ret_code_code is not None and job_ret_code_msg == 'NOEXEC':
-                        job_dd_names = job_output_txt[0].get("ddnames")
-                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
-                        # These are the conditions for a job run with TYPRUN=COPY.
-                        if not jes_jcl_dd:
-                            job_ret_code.update({"msg": "TYPRUN=COPY"})
-                            _msg = ("The job was run with TYPRUN=COPY. "
-                                    "This way, the steps are not executed, but the JCL is validated and stored "
-                                    "in the JES spool. "
-                                    "Please review the job log for further details.")
-                            job_ret_code.update({"msg_txt": _msg})
-
-                    if job_ret_code_code is None or job_ret_code.get("msg") == 'NOEXEC':
+                    if job_ret_code_msg == 'HOLD':
+                        _msg = ("The job was run with TYPRUN=HOLD or TYPRUN=JCLHOLD "
+                                "to request special job processing. This will result in no completion, "
+                                "no return code, no job steps and changed will be set to false.")
+                        job_ret_code.update({"msg_txt": _msg})
+                        is_changed = False
+                    elif job_ret_code_code is None and job_ret_code.get("msg") == 'NOEXEC':
                         # If there is no job_ret_code_code (Job return code) it may NOT be an error,
                         # some jobs will never return have an RC, eg Started tasks(which are not supported),
                         # so further analyze the
@@ -1183,21 +1187,21 @@ def run_module():
                         jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
 
                         # Its possible jobs don't have a JESJCL which are active and this would
-                        # cause an index out of range error.
+                        # mean the job had TYPRUN=COPY.
                         if not jes_jcl_dd:
-                            _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
-                            _msg = ("The job return code was not available in the job log, "
-                                    "please review the job log{0}".format(_msg_detail))
+                            job_ret_code.update({"msg": "TYPRUN=COPY"})
+                            _msg = ("The job was run with TYPRUN=COPY. "
+                                    "This way, the steps are not executed, but the JCL is validated and stored "
+                                    "in the JES spool. "
+                                    "Please review the job log for further details.")
                             job_ret_code.update({"msg_txt": _msg})
-                            raise Exception(_msg)
+                        else:
+                            jes_jcl_dd_content = jes_jcl_dd[0].get("content")
+                            jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
+                            # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
+                            special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
+                                                                   .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
 
-                        jes_jcl_dd_content = jes_jcl_dd[0].get("content")
-                        jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
-                        # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
-                        special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
-                                                               .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
-
-                        if job_ret_code_msg == 'NOEXEC':
                             job_ret_code.update({"msg": special_processing_keyword[0]})
                             job_ret_code.update({"code": None})
                             job_ret_code.update({"msg_code": None})
@@ -1206,19 +1210,17 @@ def run_module():
                                                  "return code or job steps and changed will be false."
                                                  .format(job_submitted_id, special_processing_keyword[0])})
                             is_changed = False
-                        else:
-                            # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated
-                            # so check both and provide a proper response.
+                    elif job_ret_code_code is None:
+                        # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated
+                        # so check both and provide a proper response.
 
-                            if job_ret_code_msg_code is None:
-                                _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
-                                _msg = ("The job return code was not available in the job log, "
-                                        "please review the job log{0}".format(_msg_detail))
-                                job_ret_code.update({"msg_txt": _msg})
-                                raise Exception(_msg)
+                        if job_ret_code_msg_code is None:
+                            _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
+                            _msg = ("The job return code was not available in the job log, "
+                                    "please review the job log{0}".format(_msg_detail))
+                            job_ret_code.update({"msg_txt": _msg})
+                            raise Exception(_msg)
 
-                            # raise Exception("The job return code was not available in the job log, "
-                            #                 "please review the job log and error {0}.".format(job_ret_code_msg))
                     elif job_ret_code_code != 0 and max_rc is None:
                         _msg = ("The job return code {0} was non-zero in the "
                                 "job output, this job has failed.".format(str(job_ret_code_code)))

@@ -1602,7 +1602,7 @@ def run_module():
                     type=dict(
                         type='str',
                         required=True,
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                     ),
                     options=dict(
                         type='dict',
@@ -1707,7 +1707,7 @@ def run_module():
                     type='str',
                     required=True,
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                 ),
                 options=dict(
                     type='dict',
@@ -1719,7 +1719,7 @@ def run_module():
                         ),
                         dest_volumes=dict(
                             type='list',
-                            elements='str'
+                            elements='str',
                         ),
                         adrdssu=dict(
                             type='bool',

@@ -765,6 +765,7 @@ def run_module(module, arg_def):
         name = persistent.get("name").upper()
         marker = persistent.get("marker")
         backup = persistent.get("backup")
+
         if backup:
             if persistent.get("backup_name"):
                 backup_name = persistent.get("backup_name").upper()

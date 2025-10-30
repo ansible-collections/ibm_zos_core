@@ -985,6 +985,100 @@ releases:
       name: zos_replace
       namespace: ''
     release_date: '2025-08-05'
+  1.16.0-beta.1:
+    changes:
+      bugfixes:
+      - zos_backup_restore - Module documentation stated that default ``space_type``
+        for a backup was ``m`` but module would use bytes instead. Fix now uses the
+        correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2236).
+      minor_changes:
+      - zos_apf - Adds new alias ``target`` for ``data_set_name``  and a warning message
+        that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_archive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning
+        message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_archive - Adds new alias ``options`` for ``format_options`` and a warning
+        message that it will be deprecated on 2.0.0.
+      - zos_archive - Adds new alias ``type`` for ``name`` and a warning message that
+        it will be deprecated on 2.0.0.
+      - zos_backup_restore - Adds ``compress`` option to enable compression of partitioned
+        data sets using hardware compression if available. (https://github.com/ansible-collections/ibm_zos_core/pull/2260)
+      - zos_backup_restore - Adds ``terse`` option to modify the behavior of executing
+        an AMATERSE step to compress the temporary data set for the backup. (https://github.com/ansible-collections/ibm_zos_core/pull/2260)
+      - zos_copy - Adds a better error message that gives user a hint that copy issue
+        can be due to a GDS part of ``src`` GDG is being used by another process.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/2220)
+      - zos_copy - Adds new alias ``binary`` for ``is_binary`` and warning message
+        that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_copy - Adds new alias ``replace`` for ``force`` and a warning message
+        that it will be deprecated on 2.0.0.
+      - zos_data_set - Adds `noscratch` option to allow uncataloging a data set without
+        deleting it from the volume's VTOC. (https://github.com/ansible-collections/ibm_zos_core/pull/2202)
+      - zos_data_set - Enhances error messages when creating a Generation Data Group
+        fails. (https://github.com/ansible-collections/ibm_zos_core/pull/2212)
+      - zos_data_set - Enhances error messages when deleting a Generation Data Group
+        fails. (https://github.com/ansible-collections/ibm_zos_core/pull/2255)
+      - zos_data_set - Merged `noscratch` functionality into the `scratch` option.
+        This allows uncataloging a data set without deleting it from the volume's
+        VTOC (https://github.com/ansible-collections/ibm_zos_core/pull/2268).
+      - zos_fetch - Adds new alias ``binary`` for ``is_binary`` and warning message
+        that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_job_output - Adds new alias ``dd_name`` for ``ddname`` and warning message
+        that will be alias on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_job_output - Adds support to query SYSIN DDs from a job with new option
+        input. (https://github.com/ansible-collections/ibm_zos_core/pull/2207)
+      - zos_job_submit - Adds new alias ``wait_time`` for ``wait_time_s`` and warning
+        message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_job_submit - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/2229).
+      - zos_mount - Adds new alias ``marker`` for ``comment`` and warning message
+        that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_mount - Adds new alias ``name`` for ``data_store`` and warning message
+        that will be deprecated on 2.0.0.
+      - zos_mvs_raw - Adds new `raw` option under ``dd_data_set`` that lets the MVS
+        program create datasets with its own DCB attributes without the user having
+        to specify them. (https://github.com/ansible-collections/ibm_zos_core/pull/2341).
+      - zos_operator - Adds new alias ``wait_time`` for ``wait_time_s`` and warning
+        message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_unarchive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and warning
+        message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+      - zos_unarchive - Adds new alias ``options`` for ``format_options`` and warning
+        message that will be deprecated on 2.0.0.
+      - zos_unarchive - Adds new alias ``type`` for ``name`` and warning message that
+        will be deprecated on 2.0.0.
+      release_summary: 'Release Date: ''2025-10-31''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 2202-zos_data_set-Support-noscratch-options.yml
+    - 2207-SYSIN-support-zos_job_output.yml
+    - 2212-data_set-Enhance-error-message.yml
+    - 2213-test-case-conditional-failure-2-19.yml
+    - 2220-zos_copy-better-error-message-GDG-copy-issue.yml
+    - 2229-job-typrun-support.yml
+    - 2236-space-type-default-zos_backup_restore.yml
+    - 2241-zos_zfs_resize-ansible2.18fix.yml
+    - 2251-zos_job_output-input-sysin_dd-rename.yml
+    - 2255-data_set-Enhance-error-message.yml
+    - 2258-zos_lineinfile-cleanup-file.yml
+    - 2260-zos_backup_restore-compression-bypass.yml
+    - 2265-stabilize-zos_archive-tests.yml
+    - 2268-zos_data_set-merge-noscratch-into-scratch-option.yml
+    - 2269-test_case_update_219.yml
+    - 2341-zos_mvs_raw-Add-raw-option-for-generic-dcb-selection.yml
+    - 2355-zos_backup_restore-dzip-command-failure.yml
+    - 2553-Add_aliases_and_deprecation_messages_for_new_version.yml
+    - v1.16.0-beta.1_summary.yml
+    modules:
+    - description: Perform operations on started tasks.
+      name: zos_started_task
+      namespace: ''
+    release_date: '2025-10-27'
   1.2.1:
     changes:
       bugfixes:

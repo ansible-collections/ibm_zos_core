@@ -1,8 +1,3 @@
 ---
-- name: Include controller diagnostic tasks
-  ansible.builtin.include_tasks: controller.yml
-  when: run_controller_diagnostics
-
 - name: Include z/OS managed node diagnostic tasks
   ansible.builtin.include_tasks: zos_managed.yml
-  when: run_managed_diagnostics

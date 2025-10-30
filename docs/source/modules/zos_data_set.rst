@@ -302,13 +302,18 @@ purge
 
 
 scratch
-  Sets the *scratch* attribute for Generation Data Groups.
+  When ``state=absent``, specifies whether to physically remove the data set from the volume.
 
-  Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+  If ``scratch=true``, the data set is deleted and its entry is removed from the volume's VTOC.
+
+  If ``scratch=false``, the data set is uncataloged but not physically removed from the volume. This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+  When ``state=present`` option **scratch** sets the *scratch* attribute for Generation Data Groups and is ignored for any other data set type.
+
+  When ``state=present`` and ``type=GDG`` specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
   | **required**: False
   | **type**: bool
-  | **default**: False
 
 
 volumes
@@ -644,13 +649,16 @@ batch
 
 
   scratch
-    Sets the *scratch* attribute for Generation Data Groups.
+    When ``state=absent``, specifies whether to physically remove the data set from the volume.
 
-    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+    If ``scratch=true``, the data set is deleted and its entry is removed from the volume's VTOC.
+
+    If ``scratch=false``, the data set is uncataloged but not physically removed from the volume. This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+    The default is ``true`` for non-GDG data sets and ``false`` for GDG data sets.
 
     | **required**: False
     | **type**: bool
-    | **default**: False
 
 
   volumes
@@ -782,6 +790,13 @@ Examples
      zos_data_set:
        name: someds.name.here
        state: absent
+
+   - name: Uncatalog a data set but do not remove it from the volume.
+     zos_data_set:
+       name: someds.name.here
+       type: seq
+       state: absent
+       scratch: false
 
    - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
      zos_data_set:

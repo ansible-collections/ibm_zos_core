@@ -6,12 +6,22 @@
   changed_when: false
   ignore_errors: true
 
+- name: "z/OS | Debug: Check ZOAU installation"
+  ansible.builtin.debug:
+    msg: "WARNING: 'zoaversion -c' command failed (rc={{ managed_zoaversion.rc }}). This often means ZOAU is not installed or not in the user's PATH."
+  when: managed_zoaversion.rc | default(0) != 0
+
 - name: "z/OS | Gather Python version"
   ansible.builtin.command:
     cmd: "python3 --version"
   register: managed_python_version
   changed_when: false
   ignore_errors: true
+
+- name: "z/OS | Debug: Check Python installation"
+  ansible.builtin.debug:
+    msg: "WARNING: 'python3 --version' command failed (rc={{ managed_python_version.rc }}). This often means Python 3 is not installed or not in the user's PATH."
+  when: managed_python_version.rc | default(0) != 0
 
 - name: "z/OS | Gather system locale"
   ansible.builtin.command:
@@ -26,16 +36,32 @@
   register: managed_env
   changed_when: false
   ignore_errors: true
+  no_log: "{{ create_log_file }}"
 
-- name: "z/OS | Gather Ansible facts"
-  ibm.ibm_zos_core.zos_gather_facts:
-    gather_subset:
-      - ipl
-      - sys
-      - cpu
-      - iodf
-  register: zos_facts
-  ignore_errors: true
+- name: "z/OS | Gather system facts"
+  block:
+    - name: "z/OS | Gather Ansible facts using zos_gather_facts"
+      ibm.ibm_zos_core.zos_gather_facts:
+        gather_subset:
+          - ipl
+          - sys
+          - cpu
+          - iodf
+      register: zos_facts
+  rescue:
+    - name: "z/OS | Fallback: Attempt to get IPL info via zinfo"
+      ansible.builtin.command: |
+        python3 -c
+        "
+        from zoautil_py import zsystem
+        import sys
+        print('Fallback zinfo query via Python: {0}'.format(sys.version))
+        result=zsystem.zinfo(facts=['iplinfo'])
+        if result:
+            print(result)
+        "
+      register: zos_facts_fallback
+      ignore_errors: true
 
 - name: "z/OS | List installed pip packages"
   ansible.builtin.command:
@@ -43,6 +69,21 @@
   register: managed_pip_list
   changed_when: false
   ignore_errors: true
+
+- name: "z/OS | Gather user limits"
+  ansible.builtin.command:
+    cmd: "ulimit -a"
+  register: managed_ulimit
+  changed_when: false
+  ignore_errors: true
+
+- name: "z/OS | Gather user's OMVS segment"
+  ansible.builtin.shell:
+    cmd: "tsocmd \"lu $(whoami) omvs\""
+  register: managed_omvs_segment
+  changed_when: false
+  ignore_errors: true
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Extract paths from environment variables"
   ansible.builtin.set_fact:
@@ -59,11 +100,13 @@
          | default('=not_found')
          | split('='))[1] }}
   when: managed_env.stdout_lines is defined
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Determine Python home from executable path"
   ansible.builtin.set_fact:
     python_home_path: "{{ (python_exe_path | ansible.builtin.dirname) | ansible.builtin.dirname }}"
   when: python_exe_path is defined and python_exe_path != 'not_found'
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Check ZOAU home mount status (df)"
   ansible.builtin.shell:
@@ -75,7 +118,7 @@
 
 - name: "z/OS | Check APF bits in ZOAU bin directory"
   ansible.builtin.shell:
-    cmd: "ls -E \"{{ zoau_home_path }}/bin\""
+    cmd: "ls -laE \"{{ zoau_home_path }}/bin\""
   register: managed_bin_apf_bits
   changed_when: false
   ignore_errors: true
@@ -89,23 +132,37 @@
   ignore_errors: true
   when: python_home_path is defined and python_home_path != 'not_found'
 
-
 - name: "z/OS | OPTIONAL: Gather operator command output"
   when: support_mode_gather_syslog
   block:
-    - name: "Run MVS operator command (e.g., 'D A,L')"
+    - name: "Run MVS operator command 'D A,L'"
       ibm.ibm_zos_core.zos_operator:
         cmd: "D A,L"
       register: managed_operator_output
       ignore_errors: true
+      no_log: "{{ create_log_file }}"
+
+    - name: "Run MVS operator command 'D OMVS,LIMITS'"
+      ibm.ibm_zos_core.zos_operator:
+        cmd: "D OMVS,LIMITS"
+      register: managed_omvs_limits
+      ignore_errors: true
+      no_log: "{{ create_log_file }}"
+
+    - name: "Run MVS operator command 'D OMVS,OPTIONS'"
+      ibm.ibm_zos_core.zos_operator:
+        cmd: "D OMVS,OPTIONS"
+      register: managed_omvs_options
+      ignore_errors: true
+      no_log: "{{ create_log_file }}"
   rescue:
     - name: "Note: Operator command failed"
       ansible.builtin.debug:
-        msg: "The 'zos_operator' command failed."
+        msg: "The 'zos_operator' command failed. This may be due to 'support_mode_gather_syslog' being true but the user lacking operator authority."
 
 # --- DISPLAY MANAGED NODE RESULTS ---
 
-- name: "z/OS | --- RESULTS ---"
+- name: "z/OS | --- RESULTS (sensitive data is hidden if create_log_file=true) ---"
   ansible.builtin.debug:
     msg: "Starting z/OS managed node diagnostics display"
 
@@ -133,16 +190,33 @@
   ansible.builtin.debug:
     var: managed_env.stdout_lines
   when: managed_env is defined
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Core Facts"
   ansible.builtin.debug:
     var: zos_facts.ansible_facts
   when: zos_facts is defined and zos_facts.ansible_facts is defined
 
+- name: "z/OS | Core Facts (Fallback)"
+  ansible.builtin.debug:
+    var: zos_facts_fallback.stdout_lines
+  when: zos_facts_fallback is defined
+
 - name: "z/OS | Pip List"
   ansible.builtin.debug:
     var: managed_pip_list.stdout_lines
   when: managed_pip_list is defined
+
+- name: "z/OS | User Limits"
+  ansible.builtin.debug:
+    var: managed_ulimit.stdout_lines
+  when: managed_ulimit is defined
+
+- name: "z/OS | OMVS Segment"
+  ansible.builtin.debug:
+    var: managed_omvs_segment.stdout_lines
+  when: managed_omvs_segment is defined
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | ZOAU Path Mount Status"
   ansible.builtin.debug:
@@ -159,29 +233,49 @@
     var: managed_df_python.stdout_lines
   when: managed_df_python is defined and managed_df_python.stdout_lines is defined
 
-- name: "z/OS | operator_command_output"
+- name: "z/OS | Operator Output (D A,L)"
   ansible.builtin.debug:
     var: managed_operator_output.content
   when: managed_operator_output is defined and managed_operator_output.content is defined
+  no_log: "{{ create_log_file }}"
+
+- name: "z/OS | Operator Output (D OMVS,LIMITS)"
+  ansible.builtin.debug:
+    var: managed_omvs_limits.content
+  when: managed_omvs_limits is defined and managed_omvs_limits.content is defined
+  no_log: "{{ create_log_file }}"
+
+- name: "z/OS | Operator Output (D OMVS,OPTIONS)"
+  ansible.builtin.debug:
+    var: managed_omvs_options.content
+  when: managed_omvs_options is defined and managed_omvs_options.content is defined
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Consolidate all results into one variable"
   ansible.builtin.set_fact:
     support_mode_managed_results:
       zoau_version: "{{ managed_zoaversion.stdout | default('N/A') }}"
+      zoau_version_stderr: "{{ managed_zoaversion.stderr | default('N/A') }}"
       python_version_stdout: "{{ managed_python_version.stdout | default('N/A') }}"
       python_version_stderr: "{{ managed_python_version.stderr | default('N/A') }}"
       locale: "{{ managed_locale.stdout_lines | default('N/A') }}"
       environment: "{{ managed_env.stdout_lines | default('N/A') }}"
       zos_facts: "{{ zos_facts.ansible_facts | default('N/A') }}"
+      zos_facts_fallback: "{{ zos_facts_fallback.stdout_lines | default('N/A') }}"
       pip_list: "{{ managed_pip_list.stdout_lines | default('N/A') }}"
+      user_limits: "{{ managed_ulimit.stdout_lines | default('N/A') }}"
+      omvs_segment: "{{ managed_omvs_segment.stdout_lines | default('N/A') }}"
       df_zoau_path: "{{ managed_df_zoau.stdout_lines | default('N/A') }}"
       zoau_bin_attributes: "{{ managed_bin_apf_bits.stdout_lines | default('N/A') }}"
-      df_python_path: "{{ managed_df_python.stdout_lines | default('N/A') }}"
-      operator_command_output: "{{ managed_operator_output.content | default('N/A', true) }}"
+      df_python_path: "{{ managed_df_python.stdout_lines | default('N/AN/A') }}"
+      operator_d_a_l: "{{ managed_operator_output.content | default('N/A', true) }}"
+      operator_d_omvs_limits: "{{ managed_omvs_limits.content | default('N/A', true) }}"
+      operator_d_omvs_options: "{{ managed_omvs_options.content | default('N/A', true) }}"
+  no_log: "{{ create_log_file }}"
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
     dest: "{{ lookup('env', 'HOME') }}/support_mode_report_{{ inventory_hostname }}.yml"
     content: "{{ support_mode_managed_results | to_nice_yaml }}"
   delegate_to: localhost
-  when: support_mode_managed_results is defined
+  when: support_mode_managed_results is defined and create_log_file

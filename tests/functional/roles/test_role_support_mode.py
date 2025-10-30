@@ -19,6 +19,7 @@ __metaclass__ = type
 def test_support_mode_role_default(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.set_fact(support_mode_gather_syslog= False)
+    hosts.all.set_fact(create_log_file= True)
     results = hosts.all.include_role(name="support_mode")
     for result in results.contacted.values():
         assert not result.get("failed", False), "Role failed to execute"
@@ -26,6 +27,15 @@ def test_support_mode_role_default(ansible_zos_module):
 def test_support_mode_role_with_syslog_true(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.set_fact(support_mode_gather_syslog= True)
+    hosts.all.set_fact(create_log_file= True)
+    results = hosts.all.include_role(name="support_mode")
+    for result in results.contacted.values():
+        assert not result.get("failed", False), "Role failed with syslog=true"
+
+def test_support_mode_role_with_create_log_false(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.set_fact(support_mode_gather_syslog= True)
+    hosts.all.set_fact(create_log_file= False)
     results = hosts.all.include_role(name="support_mode")
     for result in results.contacted.values():
         assert not result.get("failed", False), "Role failed with syslog=true"

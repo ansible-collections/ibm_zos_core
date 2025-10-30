@@ -1,3 +1,6 @@
 ---
 # Operator PCON command
 support_mode_gather_syslog: false
+# Set to true to create the YAML report file.
+# If set to false, no report will be created, all sensitive data will be printed to the console.
+create_log_file: true

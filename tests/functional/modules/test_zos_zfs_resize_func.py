@@ -1014,7 +1014,6 @@ def test_no_auto_increase_wrapper(get_config):
     while retries < max_retries:
         print(f'Trying no_auto_increase. Retry: {retries}.')
         result = no_auto_increase(path)
-        print(f'result of playbook: {result}')
 
         if result:
             success = True
@@ -1078,7 +1077,6 @@ def test_no_auto_increase_accept_wrapper(get_config):
     while retries < max_retries:
         print(f'Trying no_auto_increase_accept. Retry: {retries}.')
         result = no_auto_increase_accept(path)
-        print(f'result of playbook: {result}')
 
         if result:
             success = True

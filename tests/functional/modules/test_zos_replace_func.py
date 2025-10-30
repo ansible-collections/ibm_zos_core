@@ -396,7 +396,7 @@ def remove_uss_environment(ansible_zos_module, file):
 def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content):
     hosts = ansible_zos_module
     hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-    hosts.all.shell(cmd=f"dtouch -t {ds_type} {ds_name} ")
+    hosts.all.shell(cmd=f"dtouch  -t{ds_type} {ds_name}")
     if ds_type in ["pds", "pdse"]:
         ds_full_name = ds_name + "(MEM)"
         hosts.all.shell(cmd=f"decho '' '{ds_full_name}' ")

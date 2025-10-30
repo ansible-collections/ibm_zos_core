@@ -30,6 +30,7 @@ author:
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
   - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg)"
 
 options:
   system:
@@ -41,7 +42,7 @@ options:
         - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
-  message_id:
+  msg_id:
     description:
         - Return outstanding messages requiring operator action awaiting a
           reply for a particular message identifier.
@@ -50,6 +51,7 @@ options:
         - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
+    aliases: [ message_id ]
   job_name:
     description:
       - Return outstanding messages requiring operator action awaiting a reply
@@ -59,7 +61,7 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
-  message_filter:
+  msg_filter:
     description:
       - Return outstanding messages requiring operator action awaiting a
         reply that match a regular expression (regex) filter.
@@ -67,11 +69,12 @@ options:
         are returned regardless of their content.
     type: dict
     required: false
+    aliases: [ message_filter ]
     suboptions:
       filter:
         description:
           - Specifies the substring or regex to match to the outstanding messages,
-            see I(use_regex).
+            see I(literal).
           - All special characters in a filter string that are not a regex are escaped.
           - Valid Python regular expressions are supported. See L(the official
             documentation,https://docs.python.org/library/re.html) for more information.
@@ -80,16 +83,16 @@ options:
             newline."
         required: True
         type: str
-      use_regex:
+      literal:
         description:
           - Indicates that the value for I(filter) is a regex or a string to match.
-          - If False, the module assumes that I(filter) is not a regex and
-            matches the I(filter) substring on the outstanding messages.
-          - If True, the module creates a regex from the I(filter) string and
+          - If False, the module creates a regex from the I(filter) string and
             matches it to the outstanding messages.
+          - If True, the module assumes that I(filter) is not a regex and
+            matches the I(filter) substring on the outstanding messages.
         required: False
         type: bool
-        default: False
+        default: True
 seealso:
 - module: zos_operator
 
@@ -116,11 +119,11 @@ EXAMPLES = r"""
 
 - name: Display all outstanding messages whose message id begin with dsi*
   zos_operator_action_query:
-      message_id: dsi*
+      msg_id: dsi*
 
 - name: Display all outstanding messages that have the text IMS READY in them
   zos_operator_action_query:
-      message_filter:
+      msg_filter:
           filter: IMS READY
 
 - name: Display all outstanding messages where the job name begins with 'mq',
@@ -128,11 +131,11 @@ EXAMPLES = r"""
         pattern 'IMS'
   zos_operator_action_query:
       job_name: mq*
-      message_id: dsi*
+      msg_id: dsi*
       system: mv29
-      message_filter:
+      msg_filter:
           filter: ^.*IMS.*$
-          use_regex: true
+          literal: true
 """
 
 RETURN = r"""
@@ -147,13 +150,13 @@ changed:
 count:
     description:
         The total number of outstanding messages.
-    returned: on success
+    returned: always
     type: int
     sample: 12
 actions:
     description:
         The list of the outstanding messages.
-    returned: success
+    returned: always
     type: list
     elements: dict
     contains:
@@ -183,11 +186,11 @@ actions:
             returned: on success
             type: str
             sample: STC01537
-        message_text:
+        msg_txt:
             description:
                 Content of the outstanding message requiring operator
-                action awaiting a reply. If I(message_filter) is set,
-                I(message_text) will be filtered accordingly.
+                action awaiting a reply. If I(msg_filter) is set,
+                I(msg_txt) will be filtered accordingly.
             returned: success
             type: str
             sample: "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN"
@@ -198,7 +201,7 @@ actions:
             returned: success
             type: str
             sample: IM5HCONN
-        message_id:
+        msg_id:
             description:
                 Message identifier for outstanding message requiring operator
                 action awaiting a reply.
@@ -212,18 +215,18 @@ actions:
                 "type": 'R',
                 "system": 'MV27',
                 "job_id": 'STC01537',
-                "message_text": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
+                "msg_txt": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
                 "job_name": 'IM5HCONN',
-                "message_id": 'HWSC0000I'
+                "msg_id": 'HWSC0000I'
             },
             {
                 "number": '002',
                 "type": 'R',
                 "system": 'MV27',
                 "job_id": 'STC01533',
-                "message_text": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
+                "msg_txt": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
                 "job_name": 'IM5HCTRL',
-                "message_id": 'DFS3139I'
+                "msg_id": 'DFS3139I'
             }
         ]
 """
@@ -260,23 +263,20 @@ def run_module():
     """
     module_args = dict(
         system=dict(type="str", required=False),
-        message_id=dict(type="str", required=False),
+        msg_id=dict(type="str", required=False, aliases=['message_id']),
         job_name=dict(type="str", required=False),
-        message_filter=dict(
+        msg_filter=dict(
             type="dict",
             required=False,
+            aliases=['message_filter'],
             options=dict(
                 filter=dict(type="str", required=True),
-                use_regex=dict(
-                    default=False,
-                    type="bool",
-                    required=False,
-                )
+                literal=dict(default=True, type="bool", required=False)
             )
         )
     )
 
-    result = dict(changed=False)
+    result = dict(changed=False, count=0, actions=[])
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
@@ -325,7 +325,7 @@ def run_module():
                 cmd="d r,a,jn",
             )
 
-        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message, new_params['message_filter'])
+        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message, new_params['msg_filter'])
         requests = find_required_request(merged_list, new_params)
         if requests:
             result["count"] = len(requests)
@@ -355,9 +355,9 @@ def parse_params(params):
     """
     arg_defs = dict(
         system=dict(arg_type=system_type, required=False),
-        message_id=dict(arg_type=message_id_type, required=False),
+        msg_id=dict(arg_type=msg_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
-        message_filter=dict(arg_type=message_filter_type, required=False)
+        msg_filter=dict(arg_type=msg_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -384,7 +384,7 @@ def system_type(arg_val, params):
     return arg_val.upper()
 
 
-def message_id_type(arg_val, params):
+def msg_id_type(arg_val, params):
     """Message id type.
 
     Parameters
@@ -424,7 +424,7 @@ def job_name_type(arg_val, params):
     return arg_val.upper()
 
 
-def message_filter_type(arg_val, params):
+def msg_filter_type(arg_val, params):
     """Message filter type.
 
     Parameters
@@ -446,12 +446,12 @@ def message_filter_type(arg_val, params):
     """
     try:
         filter_text = arg_val.get("filter")
-        use_regex = arg_val.get("use_regex")
+        literal = arg_val.get("literal")
 
-        if use_regex:
-            raw_arg_val = r'{0}'.format(filter_text)
-        else:
+        if literal:
             raw_arg_val = r'^.*{0}.*$'.format(re.escape(filter_text))
+        else:
+            raw_arg_val = r'{0}'.format(filter_text)
 
         re.compile(raw_arg_val)
     except re.error:
@@ -507,7 +507,7 @@ def find_required_request(merged_list, params):
     return requests
 
 
-def create_merge_list(message_a, message_b, message_filter):
+def create_merge_list(msg_a, msg_b, msg_filter):
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
     For example, if we have:
     'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
@@ -516,20 +516,20 @@ def create_merge_list(message_a, message_b, message_filter):
 
     Parameters
     ----------
-    message_a : str
+    msg_a : str
         Result coming from command 'd r,a,s'.
-    message_b : str
+    msg_b : str
         Result coming from command 'd r,a,jn'.
-    message_filter : str
+    msg_filter : str
         Message filter.
 
     Returns
     -------
     Union
-        Merge of the result of message_a and the result of message_b.
+        Merge of the result of msg_a and the result of msg_b.
     """
-    list_a = parse_result_a(message_a, message_filter)
-    list_b = parse_result_b(message_b, message_filter)
+    list_a = parse_result_a(msg_a, msg_filter)
+    list_b = parse_result_b(msg_b, msg_filter)
     merged_list = merge_list(list_a, list_b)
     return merged_list
 
@@ -550,15 +550,15 @@ def filter_requests(merged_list, params):
         Filtered list.
     """
     system = params.get("system")
-    message_id = params.get("message_id")
+    msg_id = params.get("msg_id")
     job_name = params.get("job_name")
     newlist = merged_list
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
-    if message_id:
-        newlist = handle_conditions(newlist, "message_id", message_id)
+    if msg_id:
+        newlist = handle_conditions(newlist, "msg_id", msg_id)
     return newlist
 
 
@@ -623,14 +623,14 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
     return OperatorQueryResult(rc, stdout, stderr)
 
 
-def match_raw_message(msg, message_filter):
+def match_raw_message(msg, msg_filter):
     """Match raw message.
 
     Parameters
     ----------
     msg : str
         Message to match.
-    message_filter : str
+    msg_filter : str
         Filter for the message.
 
     Return
@@ -638,11 +638,11 @@ def match_raw_message(msg, message_filter):
     bool
         If the pattern matches msg.
     """
-    pattern = re.compile(message_filter, re.DOTALL)
+    pattern = re.compile(msg_filter, re.DOTALL)
     return pattern.match(msg)
 
 
-def parse_result_a(result, message_filter):
+def parse_result_a(result, msg_filter):
     """parsing the result that coming from command 'd r,a,s',
     there are usually two formats:
      - line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'
@@ -653,7 +653,7 @@ def parse_result_a(result, message_filter):
     ----------
     result : str
         Result coming from command 'd r,a,s'.
-    message_filter : str
+    msg_filter : str
         Message filter.
 
     Returns
@@ -672,7 +672,7 @@ def parse_result_a(result, message_filter):
     )
     for match in match_iter:
         # If there was a filter specified, we skip messages that do not match it.
-        if message_filter is not None and not match_raw_message(match.string, message_filter):
+        if msg_filter is not None and not match_raw_message(match.string, msg_filter):
             continue
 
         dict_temp = {
@@ -683,13 +683,13 @@ def parse_result_a(result, message_filter):
         if match.group(4) != "":
             dict_temp["job_id"] = match.group(4)
         if match.group(5) != "":
-            dict_temp["message_text"] = match.group(5).strip()
+            dict_temp["msg_txt"] = match.group(5).strip()
         list.append(dict_temp)
 
     return list
 
 
-def parse_result_b(result, message_filter):
+def parse_result_b(result, msg_filter):
     """Parse the result that comes from command 'd r,a,jn', the main purpose
     to use this command is to get the job_name and message id, which is not
     included in 'd r,a,s'
@@ -698,7 +698,7 @@ def parse_result_b(result, message_filter):
     ----------
     result : str
         Result coming from command 'd r,a,jn'.
-    message_filter : str
+    msg_filter : str
         Message filter.
 
     Returns
@@ -718,13 +718,13 @@ def parse_result_b(result, message_filter):
 
     for match in match_iter:
         # If there was a filter specified, we skip messages that do not match it.
-        if message_filter is not None and not match_raw_message(match.string, message_filter):
+        if msg_filter is not None and not match_raw_message(match.string, msg_filter):
             continue
 
         dict_temp = {
             "number": match.group(1),
             "job_name": match.group(2),
-            "message_id": match.group(3),
+            "msg_id": match.group(3),
         }
 
         # Sometimes 'job_name' will be null because the operator action is a

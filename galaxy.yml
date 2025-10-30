@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.16.0-beta.1"
+version: "2.0.0-beta.1"
 
 # Collection README file
 readme: README.md

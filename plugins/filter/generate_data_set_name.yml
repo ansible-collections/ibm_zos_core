@@ -23,7 +23,7 @@ DOCUMENTATION:
       required: true
     generations:
       description:
-        - Number of dta set names that you require to generate.
+        - Number of data set names that you require to generate.
       type: int
       required: false
 

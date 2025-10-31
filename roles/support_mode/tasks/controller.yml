@@ -1,0 +1,122 @@
+# Copyright (c) IBM Corporation 2020, 2025
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+- name: "CONTROLLER | Gather Ansible version"
+  ansible.builtin.command: ansible --version
+  register: controller_ansible_version
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather SSH client version"
+  ansible.builtin.command: ssh -V
+  register: controller_ssh_version
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather Ansible config (all)"
+  ansible.builtin.command: ansible-config dump
+  register: controller_ansible_config_dump
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather Ansible config (only changed)"
+  ansible.builtin.command: ansible-config dump --only-changed
+  register: controller_ansible_config_changed
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather system locale"
+  ansible.builtin.command: locale
+  register: controller_locale
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | List installed Ansible collections"
+  ansible.builtin.command: ansible-galaxy collection list
+  register: controller_galaxy_list
+  changed_when: false
+  ignore_errors: true
+
+- name: "CONTROLLER | Gather environment variables"
+  ansible.builtin.command: env
+  register: controller_env
+  changed_when: false
+  ignore_errors: true
+  no_log: "{{ control_node_log_file }}"
+
+- name: "CONTROLLER | Gather Ansible facts"
+  ansible.builtin.setup:
+  register: controller_setup_facts
+  ignore_errors: true
+
+# --- DISPLAY CONTROLLER NODE RESULTS ---
+
+- name: "CONTROLLER | Ansible Version"
+  ansible.builtin.debug:
+    var: controller_ansible_version.stdout
+  when: controller_ansible_version.stdout is defined
+
+- name: "CONTROLLER | SSH Version"
+  ansible.builtin.debug:
+    var: controller_ssh_version.stderr
+  when: controller_ssh_version.stderr is defined
+
+- name: "CONTROLLER | Ansible Config (all)"
+  ansible.builtin.debug:
+    var: controller_ansible_config_dump.stdout_lines
+  when: controller_ansible_config_dump.stdout_lines is defined
+
+- name: "CONTROLLER | Ansible Config (changed only)"
+  ansible.builtin.debug:
+    var: controller_ansible_config_changed.stdout_lines
+  when: controller_ansible_config_changed.stdout_lines is defined
+
+- name: "CONTROLLER | Locale"
+  ansible.builtin.debug:
+    var: controller_locale.stdout_lines
+  when: controller_locale.stdout_lines is defined
+
+- name: "CONTROLLER | Collections"
+  ansible.builtin.debug:
+    var: controller_galaxy_list.stdout_lines
+  when: controller_galaxy_list.stdout_lines is defined
+
+- name: "CONTROLLER | Environment"
+  ansible.builtin.debug:
+    var: controller_env.stdout_lines
+  when: controller_env.stdout_lines is defined
+  no_log: "{{ control_node_log_file }}"
+
+- name: "CONTROLLER | Core Facts"
+  ansible.builtin.debug:
+    var: controller_setup_facts.ansible_facts
+  when: controller_setup_facts.ansible_facts is defined
+
+# --- LOG FILE GENERATION ---
+
+- name: "CONTROLLER | Consolidate all results into one variable"
+  ansible.builtin.set_fact:
+    support_mode_controller_results:
+      ansible_version: "{{ controller_ansible_version.stdout | default('N/A') }}"
+      ssh_version: "{{ controller_ssh_version.stderr | default('N/A') }}"
+      ansible_config_all: "{{ controller_ansible_config_dump.stdout_lines | default('N/A') }}"
+      ansible_config_changed: "{{ controller_ansible_config_changed.stdout_lines | default('N/A') }}"
+      locale: "{{ controller_locale.stdout_lines | default('N/A') }}"
+      collections: "{{ controller_galaxy_list.stdout_lines | default('N/A') }}"
+      environment: "{{ controller_env.stdout_lines | default('N/A') }}"
+      controller_facts: "{{ controller_setup_facts.ansible_facts | default('N/A') }}"
+  no_log: "{{ control_node_log_file }}"
+
+- name: "CONTROLLER | Save controller node results to a YAML file"
+  ansible.builtin.copy:
+    dest: "{{ lookup('env', 'HOME') }}/support_mode_report_localhost.yml"
+    content: "{{ support_mode_controller_results | to_nice_yaml }}"
+  when: (support_mode_controller_results is defined) and control_node_log_file

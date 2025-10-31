@@ -14,6 +14,7 @@ import string
 import re
 from ansible.errors import AnsibleFilterError
 
+
 def generate_data_set_name(value, generations=1):
     """Filter to generate valid data set names
 
@@ -30,12 +31,13 @@ def generate_data_set_name(value, generations=1):
     if generations > 1:
         dataset_names = []
         for generation in range(generations):
-            name = value +  get_tmp_ds_name()
+            name = value + get_tmp_ds_name()
             dataset_names.append(name)
     else:
         dataset_names = value + get_tmp_ds_name()
 
     return dataset_names
+
 
 def get_tmp_ds_name():
     """Unify the random qualifiers generate in one name.
@@ -46,24 +48,26 @@ def get_tmp_ds_name():
     ds = "."
     ds += "P" + get_random_q() + "."
     ds += "T" + get_random_q() + "."
-    ds+= "C" + get_random_q()
+    ds += "C" + get_random_q()
     return ds
+
 
 def get_random_q():
     """ Function or test to ensure random hlq of datasets"""
     # Generate the first random hlq of size pass as parameter
-    letters =  string.ascii_uppercase + string.digits
-    random_q =  ''.join(random.choice(letters)for iteration in range(7))
+    letters = string.ascii_uppercase + string.digits
+    random_q = ''.join(random.choice(letters)for iteration in range(7))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process
-    while  count < 5 and not re.fullmatch(
-    r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
-            random_q,
-            re.IGNORECASE,
-        ):
-        random_q =  ''.join(random.choice(letters)for iteration in range(7))
-        count += 1
+    while count < 5 and not re.fullmatch(
+           r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
+           random_q,
+           re.IGNORECASE,
+           ):
+            random_q = ''.join(random.choice(letters)for iteration in range(7))
+            count += 1
     return random_q
+
 
 class FilterModule(object):
     """ Jinja2 filter for the returned list or string by the collection module. """

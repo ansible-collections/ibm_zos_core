@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
+import secrets
 import string
 import re
 from ansible.errors import AnsibleFilterError
@@ -56,7 +56,7 @@ def get_random_q():
     """ Function or test to ensure random hlq of datasets"""
     # Generate the first random hlq of size pass as parameter
     letters = string.ascii_uppercase + string.digits
-    random_q = ''.join(random.choice(letters)for iteration in range(7))
+    random_q = ''.join(secrets.choice(letters)for iteration in range(7))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process
     while count < 5 and not re.fullmatch(
@@ -64,7 +64,7 @@ def get_random_q():
         random_q,
         re.IGNORECASE,
     ):
-        random_q = ''.join(random.choice(letters)for iteration in range(7))
+        random_q = ''.join(secrets.choice(letters)for iteration in range(7))
         count += 1
     return random_q
 

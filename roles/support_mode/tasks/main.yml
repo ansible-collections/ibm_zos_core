@@ -9,5 +9,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Include z/OS managed node diagnostic tasks
+- name: "Run controller diagnostic tasks"
+  ansible.builtin.include_tasks:
+    file: controller.yml
+    apply:
+      delegate_to: localhost
+  when: control_node
+
+- name: "Run z/OS managed node diagnostic tasks"
   ansible.builtin.include_tasks: zos_managed.yml
+  vars:
+    environment: "{{ environment_vars }}"
+  when: managed_node

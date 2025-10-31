@@ -15,6 +15,7 @@
   register: managed_zoaversion
   changed_when: false
   ignore_errors: true
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Debug: Check ZOAU installation"
   ansible.builtin.debug:
@@ -27,6 +28,7 @@
   register: managed_python_version
   changed_when: false
   ignore_errors: true
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Debug: Check Python installation"
   ansible.builtin.debug:
@@ -39,6 +41,7 @@
   register: managed_locale
   changed_when: false
   ignore_errors: true
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Gather environment variables"
   ansible.builtin.command:
@@ -47,6 +50,7 @@
   changed_when: false
   ignore_errors: true
   no_log: "{{ create_log_file }}"
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Gather system facts"
   block:
@@ -58,11 +62,13 @@
           - cpu
           - iodf
       register: zos_facts
+      environment: "{{ zos_environment }}"
   rescue:
     - name: "z/OS | Fallback: Attempt to get IPL info via zinfo shell command"
       ansible.builtin.shell: "zinfo -a"
       register: zos_facts_fallback
       ignore_errors: true
+      environment: "{{ zos_environment }}"
 
 - name: "z/OS | List installed pip packages"
   ansible.builtin.command:
@@ -70,6 +76,7 @@
   register: managed_pip_list
   changed_when: false
   ignore_errors: true
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Gather user limits"
   ansible.builtin.command:
@@ -77,6 +84,7 @@
   register: managed_ulimit
   changed_when: false
   ignore_errors: true
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Gather user's OMVS segment"
   ansible.builtin.shell:
@@ -85,6 +93,7 @@
   changed_when: false
   ignore_errors: true
   no_log: "{{ create_log_file }}"
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Extract paths from environment variables"
   ansible.builtin.set_fact:
@@ -116,6 +125,7 @@
   changed_when: false
   ignore_errors: true
   when: zoau_home_path is defined and zoau_home_path != 'not_found'
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Check APF bits in ZOAU bin directory"
   ansible.builtin.shell:
@@ -124,6 +134,7 @@
   changed_when: false
   ignore_errors: true
   when: zoau_home_path is defined and zoau_home_path != 'not_found'
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | Check Python home mount status (df)"
   ansible.builtin.shell:
@@ -132,6 +143,7 @@
   changed_when: false
   ignore_errors: true
   when: python_home_path is defined and python_home_path != 'not_found'
+  environment: "{{ zos_environment }}"
 
 - name: "z/OS | OPTIONAL: Gather operator command output"
   when: support_mode_gather_syslog
@@ -142,6 +154,7 @@
       register: managed_operator_output
       ignore_errors: true
       no_log: "{{ create_log_file }}"
+      environment: "{{ zos_environment }}"
 
     - name: "Run MVS operator command 'D OMVS,LIMITS'"
       ibm.ibm_zos_core.zos_operator:
@@ -149,6 +162,7 @@
       register: managed_omvs_limits
       ignore_errors: true
       no_log: "{{ create_log_file }}"
+      environment: "{{ zos_environment }}"
 
     - name: "Run MVS operator command 'D OMVS,OPTIONS'"
       ibm.ibm_zos_core.zos_operator:
@@ -156,6 +170,7 @@
       register: managed_omvs_options
       ignore_errors: true
       no_log: "{{ create_log_file }}"
+      environment: "{{ zos_environment }}"
   rescue:
     - name: "Note: Operator command failed"
       ansible.builtin.debug:
@@ -279,4 +294,4 @@
     dest: "{{ lookup('env', 'HOME') }}/support_mode_report_{{ inventory_hostname }}.yml"
     content: "{{ support_mode_managed_results | to_nice_yaml }}"
   delegate_to: localhost
-  when: support_mode_managed_results is defined and create_log_file
+  when: support_mode_managed_results is defined and create_log_file 

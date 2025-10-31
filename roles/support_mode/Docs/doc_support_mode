@@ -11,51 +11,60 @@
 
 DOCUMENTATION = r"""
 role: support_mode
-short_description: Gathers diagnostic facts from a z/OS managed node.
+short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible controller.
 description:
     - >
       The B(support_mode) role gathers a comprehensive set of diagnostic facts
-      from a z/OS managed node.
+      from both the z/OS managed node and the Ansible controller node.
     - >
-      This includes information about the ZOAU installation, Python version,
-      system locale, environment variables, user limits (ulimit),
-      pip packages, z/OS system facts, OMVS segment, filesystem mount status,
-      and APF attributes for ZOAU.
+      B(Managed Node (z/OS):) Gathers ZOAU version, Python version, locale,
+      environment variables, user limits, pip packages, z/OS system facts,
+      OMVS segment, filesystem mount status, and ZOAU APF attributes.
     - >
-      If C(create_log_file) is C(True) (the default), all gathered information
-      is consolidated and saved to a YAML report file
-      C(support_mode_report_<hostname>.yml) in the user's home
-      directory on the Ansible controller, and sensitive data is hidden
-      from the console.
+      B(Controller Node:) Gathers Ansible version, SSH version, Ansible config,
+      locale, installed collections, environment, and system facts.
     - >
-      If C(create_log_file) is C(False), no file is created, and all data
-      is printed to the console.
+      This role can create separate YAML report files for the z/OS node
+      (C(support_mode_report_<hostname>.yml)) and the controller node
+      (C(support_mode_report_localhost.yml)) in the user's home directory.
     - >
-      A fact named C(support_mode_managed_results) is also set on the
-      managed host with the same data.
+      Facts are also set on the respective hosts: C(support_mode_managed_results)
+      on the z/OS host and C(support_mode_controller_results) on localhost.
 author:
     - Rohitash Goyal (@Rohitcodes28)
 options:
+    control_node:
+        description:
+            - >
+              Controls whether the role will gather diagnostic facts from the
+              Ansible controller node.
+        required: False
+        type: bool
+        default: False
+    control_node_log_file:
+        description:
+            - >
+              Controls whether the role creates a YAML report file for the
+              controller node and hides sensitive data (C(no_log: true))
+              from the console for controller tasks.
+        required: False
+        type: bool
+        default: False
     support_mode_gather_syslog:
         description:
             - >
               If set to C(True), the role will also attempt to run the
               MVS operator commands C(D A,L), C(D OMVS,LIMITS), and
-              C(D OMVS,OPTIONS) to gather system activity and OMVS status.
+              C(D OMVS,OPTIONS) on the z/OS managed node.
         required: False
         type: bool
         default: False
     create_log_file:
         description:
             - >
-              Controls whether the role creates a YAML report file on the controller
-              and hides sensitive data from the console.
-            - >
-              If C(True), the report file is created and sensitive data
-              is hidden from the console (C(no_log: true)).
-            - >
-              If C(False), no report file is created and all gathered data,
-              including sensitive information, is printed to the console (C(no_log: false)).
+              Controls whether the role creates a YAML report file for the
+              z/OS managed node and hides sensitive data (C(no_log: true))
+              from the console for z/OS tasks.
         required: False
         type: bool
         default: True
@@ -173,4 +182,36 @@ support_mode_managed_results:
                 The output of the MVS operator command `D OMVS,OPTIONS`,
                 or 'N/A' if `support_mode_gather_syslog` is false.
             type: list
+support_mode_controller_results:
+    description: >
+        A fact set on control node containing all controller
+        diagnostic data. This data is also written to a YAML file on the
+        controller if C(control_node_log_file) is C(True).
+    returned: when C(control_node) is C(True)
+    type: dict
+    contains:
+        ansible_version:
+            description: The output of the `ansible --version` command.
+            type: str
+        ssh_version:
+            description: The output of the `ssh -V` command.
+            type: str
+        ansible_config_all:
+            description: A list of all Ansible configuration settings.
+            type: list
+        ansible_config_changed:
+            description: A list of changed Ansible configuration settings.
+            type: list
+        locale:
+            description: A list of locale settings from the controller.
+            type: list
+        collections:
+            description: A list of installed Ansible collections.
+            type: list
+        environment:
+            description: A list of environment variables from the controller.
+            type: list
+        controller_facts:
+            description: A dictionary of facts from the controller.
+            type: dict
 """

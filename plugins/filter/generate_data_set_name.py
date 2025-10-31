@@ -60,12 +60,12 @@ def get_random_q():
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process
     while count < 5 and not re.fullmatch(
-           r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
-           random_q,
-           re.IGNORECASE,
-           ):
-            random_q = ''.join(random.choice(letters)for iteration in range(7))
-            count += 1
+        r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
+        random_q,
+        re.IGNORECASE,
+    ):
+        random_q = ''.join(random.choice(letters)for iteration in range(7))
+        count += 1
     return random_q
 
 

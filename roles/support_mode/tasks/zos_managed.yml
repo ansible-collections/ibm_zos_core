@@ -1,3 +1,13 @@
+# Copyright (c) IBM Corporation 2020, 2025
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ---
 - name: "z/OS | Check ZOAU installation and version"
   ansible.builtin.command:
@@ -49,23 +59,14 @@
           - iodf
       register: zos_facts
   rescue:
-    - name: "z/OS | Fallback: Attempt to get IPL info via zinfo"
-      ansible.builtin.command: |
-        python3 -c
-        "
-        from zoautil_py import zsystem
-        import sys
-        print('Fallback zinfo query via Python: {0}'.format(sys.version))
-        result=zsystem.zinfo(facts=['iplinfo'])
-        if result:
-            print(result)
-        "
+    - name: "z/OS | Fallback: Attempt to get IPL info via zinfo shell command"
+      ansible.builtin.shell: "zinfo -a"
       register: zos_facts_fallback
       ignore_errors: true
 
 - name: "z/OS | List installed pip packages"
   ansible.builtin.command:
-    cmd: "pip3 list"
+    cmd: "python3 -m pip list"
   register: managed_pip_list
   changed_when: false
   ignore_errors: true

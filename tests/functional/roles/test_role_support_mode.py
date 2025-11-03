@@ -45,17 +45,17 @@ def cleanup_test_directory(hosts, path):
     hosts.localhost.file(path=path, state="absent")
 
 
-def test_support_mode_role_default(ansible_zos_module):
+def test_gather_diagnostics_role_default(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
-            support_mode_output_dir=TMP_DIRECTORY
+            gather_diagnostics_output_dir=TMP_DIRECTORY
         )
         results = hosts.all.include_role(
-            name="support_mode"
+            name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
         assert_controller_file_exists(hosts, controller_report)
@@ -63,18 +63,18 @@ def test_support_mode_role_default(ansible_zos_module):
     finally:
         cleanup_test_directory(hosts, TMP_DIRECTORY)
 
-def test_support_mode_role_with_syslog_false(ansible_zos_module):
+def test_gather_diagnostics_role_with_syslog_false(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
-            support_mode_output_dir=TMP_DIRECTORY,
-            support_mode_gather_syslog=False
+            gather_diagnostics_output_dir=TMP_DIRECTORY,
+            gather_diagnostics_gather_syslog=False
         )
         results = hosts.all.include_role(
-            name="support_mode"
+            name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
         assert_controller_file_exists(hosts, controller_report)
@@ -83,19 +83,19 @@ def test_support_mode_role_with_syslog_false(ansible_zos_module):
     finally:
         cleanup_test_directory(hosts, TMP_DIRECTORY)
 
-def test_support_mode_role_with_log_false(ansible_zos_module):
+def test_gather_diagnostics_role_with_log_false(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
-            support_mode_output_dir=TMP_DIRECTORY,
+            gather_diagnostics_output_dir=TMP_DIRECTORY,
             controller_node_log_file=False,
             managed_node_log_file=False
         )
         results = hosts.all.include_role(
-            name="support_mode"
+            name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
         assert_controller_file_does_not_exist(hosts, controller_report)

@@ -574,6 +574,12 @@ def get_changed_plugins(path, branch="origin/dev"):
                 path_corrected_line = line.split("|", 1)[0].strip()
             if "plugins/modules/" in line:
                 path_corrected_line = line.split("|", 1)[0].strip()
+            if "plugins/filter/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "functional/filters/" in line:
+                if re.match('..', line):
+                    line = line.replace("..", "tests")
+                path_corrected_line = line.split("|", 1)[0].strip()
             if "functional/modules/" in line:
                 if re.match('...', line):
                     line = line.replace("...", "tests")

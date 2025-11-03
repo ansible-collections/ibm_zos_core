@@ -10,10 +10,10 @@
 # limitations under the License.
 ---
 # Operator PCON command
-support_mode_gather_syslog: true
-# Weather to get the controller node logs
+gather_diagnostics_gather_syslog: true
+# Wether to get the controller node logs
 controller_node: true
-# Weather to create the managed node logs
+# Wether to create the managed node logs
 managed_node: true
 # Set to true to create the YAML report files.
 # If set to false, no report will be created, all sensitive data will be printed to the console.
@@ -21,6 +21,6 @@ managed_node_log_file: true
 # Creates separate file for control node logs
 controller_node_log_file: true
 # NEW: Directory to write reports to. Defaults to controller's home dir.
-support_mode_output_dir: "{{ lookup('env', 'HOME') }}"
+gather_diagnostics_output_dir: "{{ lookup('env', 'HOME') }}"
 # environment vars empty so that the test case and local host can take their own defined vars.
 environment_vars: {}

@@ -104,7 +104,7 @@
 
 - name: "CONTROLLER | Consolidate all results into one variable"
   ansible.builtin.set_fact:
-    support_mode_controller_results:
+    gather_diagnostics_controller_results:
       ansible_version: "{{ controller_ansible_version.stdout | default('N/A') }}"
       ssh_version: "{{ controller_ssh_version.stderr | default('N/A') }}"
       ansible_config_all: "{{ controller_ansible_config_dump.stdout_lines | default('N/A') }}"
@@ -117,6 +117,6 @@
 
 - name: "CONTROLLER | Save controller node results to a YAML file"
   ansible.builtin.copy:
-    dest: "{{ support_mode_output_dir }}/support_mode_report_controller.yml"
-    content: "{{ support_mode_controller_results | to_nice_yaml }}"
-  when: (support_mode_controller_results is defined) and controller_node_log_file
+    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_controller.yml"
+    content: "{{ gather_diagnostics_controller_results | to_nice_yaml }}"
+  when: (gather_diagnostics_controller_results is defined) and controller_node_log_file

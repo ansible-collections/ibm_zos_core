@@ -134,7 +134,7 @@
   when: python_home_path is defined and python_home_path != 'not_found'
 
 - name: "z/OS | OPTIONAL: Gather operator command output"
-  when: support_mode_gather_syslog
+  when: gather_diagnostics_gather_syslog
   block:
     - name: "Run MVS operator command 'D A,L'"
       ibm.ibm_zos_core.zos_operator:
@@ -159,7 +159,7 @@
   rescue:
     - name: "Note: Operator command failed"
       ansible.builtin.debug:
-        msg: "The 'zos_operator' command failed. This may be due to 'support_mode_gather_syslog' being true but the user lacking operator authority."
+        msg: "The 'zos_operator' command failed. This may be due to 'gather_diagnostics_gather_syslog' being true but the user lacking operator authority."
 
 # --- DISPLAY MANAGED NODE RESULTS ---
 
@@ -254,10 +254,10 @@
 
 - name: "z/OS | Consolidate all results into one variable"
   ansible.builtin.set_fact:
-    support_mode_managed_results:
+    gather_diagnostics_managed_results:
       zoau_version: "{{ managed_zoaversion.stdout | default('N/A') }}"
       zoau_version_stderr: "{{ managed_zoaversion.stderr | default('N/A') }}"
-      python_version_stdout: "{{ managed_python_version.stdout | default('N/A') }}"
+      python_version: "{{ managed_python_version.stdout | default('N/A') }}"
       python_version_stderr: "{{ managed_python_version.stderr | default('N/A') }}"
       locale: "{{ managed_locale.stdout_lines | default('N/A') }}"
       environment: "{{ managed_env.stdout_lines | default('N/A') }}"
@@ -276,7 +276,7 @@
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
-    dest: "{{ support_mode_output_dir }}/support_mode_report_managed_node.yml"
-    content: "{{ support_mode_managed_results | to_nice_yaml }}"
+    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_managed_node.yml"
+    content: "{{ gather_diagnostics_managed_results | to_nice_yaml }}"
   delegate_to: localhost
-  when: support_mode_managed_results is defined and managed_node_log_file
+  when: gather_diagnostics_managed_results is defined and managed_node_log_file

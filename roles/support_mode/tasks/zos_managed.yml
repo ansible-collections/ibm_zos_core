@@ -268,7 +268,7 @@
       omvs_segment: "{{ managed_omvs_segment.stdout_lines | default('N/A') }}"
       df_zoau_path: "{{ managed_df_zoau.stdout_lines | default('N/A') }}"
       zoau_bin_attributes: "{{ managed_bin_apf_bits.stdout_lines | default('N/A') }}"
-      df_python_path: "{{ managed_df_python.stdout_lines | default('N/AN/A') }}"
+      df_python_path: "{{ managed_df_python.stdout_lines | default('N/A') }}"
       operator_d_a_l: "{{ managed_operator_output.content | default('N/A', true) }}"
       operator_d_omvs_limits: "{{ managed_omvs_limits.content | default('N/A', true) }}"
       operator_d_omvs_options: "{{ managed_omvs_options.content | default('N/A', true) }}"
@@ -276,7 +276,7 @@
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/support_mode_report_{{ inventory_hostname }}.yml"
+    dest: "{{ support_mode_output_dir }}/support_mode_report_managed_node.yml"
     content: "{{ support_mode_managed_results | to_nice_yaml }}"
   delegate_to: localhost
   when: support_mode_managed_results is defined and managed_node_log_file

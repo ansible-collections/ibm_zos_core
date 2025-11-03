@@ -16,26 +16,90 @@ from __future__ import absolute_import, division, print_function
 import pytest
 __metaclass__ = type
 
+TMP_DIRECTORY = "/tmp/pytest-support-mode-output"
+
+def assert_module_did_not_fail(results):
+    for result in results.contacted.values():
+        assert (
+            result.get("failed", False) is not True
+            and not result.get("exception", "")
+            and "error" not in result.get("msg", "").lower()
+            )
+
+def assert_controller_file_exists(hosts, path):
+    results = hosts.localhost.stat(path=path)
+    for result in results.contacted.values():
+        assert result.get("stat").get("exists") is True
+
+def assert_controller_file_does_not_exist(hosts, path):
+    results = hosts.localhost.stat(path=path)
+    for result in results.contacted.values():
+        assert result.get("stat").get("exists") is False
+
+def setup_test_directory(hosts, path):
+    hosts.localhost.file(path=path, state="absent")
+    hosts.localhost.file(path=path, state="directory")
+
+
+def cleanup_test_directory(hosts, path):
+    hosts.localhost.file(path=path, state="absent")
+
+
 def test_support_mode_role_default(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.set_fact(support_mode_gather_syslog= False)
-    hosts.all.set_fact(create_log_file= True)
-    results = hosts.all.include_role(name="support_mode")
-    for result in results.contacted.values():
-        assert not result.get("failed", False), "Role failed to execute"
+    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    try:
+        setup_test_directory(hosts, TMP_DIRECTORY)
+        hosts.all.set_fact(
+            support_mode_output_dir=TMP_DIRECTORY
+        )
+        results = hosts.all.include_role(
+            name="support_mode"
+        )
+        assert_module_did_not_fail(results)
+        assert_controller_file_exists(hosts, controller_report)
+        assert_controller_file_exists(hosts, managed_report)
+    finally:
+        cleanup_test_directory(hosts, TMP_DIRECTORY)
 
-def test_support_mode_role_with_syslog_true(ansible_zos_module):
+def test_support_mode_role_with_syslog_false(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.set_fact(support_mode_gather_syslog= True)
-    hosts.all.set_fact(create_log_file= True)
-    results = hosts.all.include_role(name="support_mode")
-    for result in results.contacted.values():
-        assert not result.get("failed", False), "Role failed with syslog=true"
+    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    try:
+        setup_test_directory(hosts, TMP_DIRECTORY)
+        hosts.all.set_fact(
+            support_mode_output_dir=TMP_DIRECTORY,
+            support_mode_gather_syslog=False
+        )
+        results = hosts.all.include_role(
+            name="support_mode"
+        )
+        assert_module_did_not_fail(results)
+        assert_controller_file_exists(hosts, controller_report)
+        assert_controller_file_exists(hosts, managed_report)
 
-def test_support_mode_role_with_create_log_false(ansible_zos_module):
+    finally:
+        cleanup_test_directory(hosts, TMP_DIRECTORY)
+
+def test_support_mode_role_with_log_false(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.set_fact(support_mode_gather_syslog= True)
-    hosts.all.set_fact(create_log_file= False)
-    results = hosts.all.include_role(name="support_mode")
-    for result in results.contacted.values():
-        assert not result.get("failed", False), "Role failed with syslog=true"
+    controller_report = f"{TMP_DIRECTORY}/support_mode_report_controller.yml"
+    managed_report = f"{TMP_DIRECTORY}/support_mode_report_managed_node.yml"
+    try:
+        setup_test_directory(hosts, TMP_DIRECTORY)
+        hosts.all.set_fact(
+            support_mode_output_dir=TMP_DIRECTORY,
+            controller_node_log_file=False,
+            managed_node_log_file=False
+        )
+        results = hosts.all.include_role(
+            name="support_mode"
+        )
+        assert_module_did_not_fail(results)
+        assert_controller_file_does_not_exist(hosts, controller_report)
+        assert_controller_file_does_not_exist(hosts, managed_report)
+
+    finally:
+        cleanup_test_directory(hosts, TMP_DIRECTORY)

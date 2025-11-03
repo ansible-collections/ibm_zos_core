@@ -117,6 +117,6 @@
 
 - name: "CONTROLLER | Save controller node results to a YAML file"
   ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/support_mode_report_localhost.yml"
+    dest: "{{ support_mode_output_dir }}/support_mode_report_controller.yml"
     content: "{{ support_mode_controller_results | to_nice_yaml }}"
   when: (support_mode_controller_results is defined) and controller_node_log_file

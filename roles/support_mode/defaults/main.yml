@@ -20,3 +20,7 @@ managed_node: true
 managed_node_log_file: true
 # Creates separate file for control node logs
 controller_node_log_file: true
+# NEW: Directory to write reports to. Defaults to controller's home dir.
+support_mode_output_dir: "{{ lookup('env', 'HOME') }}"
+# environment vars empty so that the test case and local host can take their own defined vars.
+environment_vars: {}

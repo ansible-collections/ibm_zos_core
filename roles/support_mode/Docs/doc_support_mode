@@ -25,8 +25,8 @@ description:
       locale, installed collections, environment, and system facts.
     - >
       This role can create separate YAML report files for the z/OS node
-      (C(support_mode_report_<hostname>.yml)) and the controller node
-      (C(support_mode_report_localhost.yml)) in the user's home directory.
+      (C(support_mode_report_managed_node.yml)) and the controller node
+      (C(support_mode_report_controller.yml)) in the user's home directory.
     - >
       Facts are also set on the respective hosts: C(support_mode_managed_results)
       on the z/OS host and C(support_mode_controller_results) on localhost.
@@ -68,6 +68,14 @@ options:
         required: False
         type: bool
         default: True
+    support_mode_output_dir:
+        description:
+            - >
+              Controls where the role creates a YAML report file for the
+              z/OS managed node and controller to hide sensitive data (C(no_log: true))
+              from the console.
+        required: False
+        type: str
 """
 
 EXAMPLES = r"""
@@ -124,6 +132,11 @@ EXAMPLES = r"""
         name: support_mode
       vars:
         managed_node: false
+"""
+
+Note = r"""
+1. If  C(environment- '{{ environment_vars }}')  is defined in the main playbook before the controller node execution.
+it will fail as the controller node tasks will assume them as local environment variables.
 """
 
 # Roles don't return anything.

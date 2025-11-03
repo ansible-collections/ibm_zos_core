@@ -50,7 +50,7 @@
   register: controller_env
   changed_when: false
   ignore_errors: true
-  no_log: "{{ control_node_log_file }}"
+  no_log: "{{ controller_node_log_file }}"
 
 - name: "CONTROLLER | Gather Ansible facts"
   ansible.builtin.setup:
@@ -93,7 +93,7 @@
   ansible.builtin.debug:
     var: controller_env.stdout_lines
   when: controller_env.stdout_lines is defined
-  no_log: "{{ control_node_log_file }}"
+  no_log: "{{ controller_node_log_file }}"
 
 - name: "CONTROLLER | Core Facts"
   ansible.builtin.debug:
@@ -113,10 +113,10 @@
       collections: "{{ controller_galaxy_list.stdout_lines | default('N/A') }}"
       environment: "{{ controller_env.stdout_lines | default('N/A') }}"
       controller_facts: "{{ controller_setup_facts.ansible_facts | default('N/A') }}"
-  no_log: "{{ control_node_log_file }}"
+  no_log: "{{ controller_node_log_file }}"
 
 - name: "CONTROLLER | Save controller node results to a YAML file"
   ansible.builtin.copy:
     dest: "{{ lookup('env', 'HOME') }}/support_mode_report_localhost.yml"
     content: "{{ support_mode_controller_results | to_nice_yaml }}"
-  when: (support_mode_controller_results is defined) and control_node_log_file
+  when: (support_mode_controller_results is defined) and controller_node_log_file

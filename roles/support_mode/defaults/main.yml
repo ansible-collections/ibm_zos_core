@@ -10,12 +10,13 @@
 # limitations under the License.
 ---
 # Operator PCON command
-support_mode_gather_syslog: false
-# Set to true to create the YAML report file.
-# If set to false, no report will be created, all sensitive data will be printed to the console.
-create_log_file: true
+support_mode_gather_syslog: true
 # Weather to get the controller node logs
-control_node: false
+controller_node: true
+# Weather to create the managed node logs
+managed_node: true
+# Set to true to create the YAML report files.
+# If set to false, no report will be created, all sensitive data will be printed to the console.
+managed_node_log_file: true
 # Creates separate file for control node logs
-control_node_log_file: false
-managed_node: false
+controller_node_log_file: true

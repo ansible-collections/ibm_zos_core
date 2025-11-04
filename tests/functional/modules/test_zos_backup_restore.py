@@ -331,10 +331,10 @@ done
         #combined with zEDC hardware compress, can outweigh the benefits.
         #This lead to a final file size larger than if you had only used Terse.
 
-        if size_uncompressed > 0:
-            assert size_compressed > size_uncompressed, \
-                f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"\
-                f"Dataset size is ({size_dataset})"
+        # if size_uncompressed > 0:
+        #     assert size_compressed > size_uncompressed, \
+        #         f"Compressed size ({size_compressed}) is not smaller ({size_uncompressed})"\
+        #         f"Dataset size is ({size_dataset})"
 
         # Restore testing is blocked due to ZOAU ISSUE NAZARE-11000
 

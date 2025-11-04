@@ -1,0 +1,144 @@
+{
+    "zos_apf": {
+        "renamed_params": {
+            "data_set_name": "target"
+        },
+        "deprecated_params": [],
+        "renamed_response_params": {}
+    },
+    "zos_archive": {
+        "renamed_params": {
+            "format.type": "format.name",
+            "format.format_options": "format.options",
+            "format.format_options.terse_pack": "format.options.spack",
+            "format.format_options.use_adrdssu": "format.options.adrdssu"
+        },
+        "type_changed_params": {
+            "format.format_options.terse_pack": "string_boolean"
+        },
+        "deprecated_params": [],
+        "functionality_impact": []
+    },
+    "zos_copy": {
+        "renamed_params": {
+            "force": "replace",
+            "force_lock": "force",
+            "is_binary": "binary"
+        }
+    },
+    "zos_data_set": {
+        "renamed_response_params": {
+            "names": "data_sets"
+        }
+    },
+    "zos_job_query": {
+        "renamed_response_params": {
+            "ret_code.steps": "jobs.steps"
+        },
+        "deprecated_response_params": [
+            "message"
+        ]
+    },
+    "zos_fetch": {
+        "deprecated_params": [
+            "note"
+        ],
+        "renamed_response_params": {
+            "file": "src"
+        }
+    },
+    "zos_find": {
+        "renamed_params": {
+            "pds_pattern": "patterns"
+        }
+    },
+    "zos_lineinfile": {
+        "renamed_params": {
+            "insertafter": "after",
+            "insertbefore": "before"
+        },
+        "renamed_response_params": {
+            "return_content": "stdout"
+        }
+    },
+    "zos_unarchive": {
+        "renamed_params": {
+            "format.type": "format.name",
+            "format.format_options": "format.options",
+            "format.format_options.use_adrdssu": "format.options.adrdssu"
+        }
+    },
+    "zos_job_submit": {
+        "renamed_params": {
+            "location": "remote_src",
+            "wait_time_s": "wait_time"
+        }
+    },
+    "zos_job_output": {
+        "renamed_params": {
+            "ddname": "dd_name"
+        },
+        "renamed_response_params": {
+            "ddnames": "dds",
+            "ddnames.ddname": "dds.dd_name",
+            "ret_code.steps": "jobs.steps"
+        }
+    },
+    "zos_operator_action_query": {
+        "renamed_params": {
+            "message_filter": "msg_filter",
+            "message_id": "msg_id"
+        },
+        "renamed_response_params": {
+            "actions.message_text": "actions.msg_text",
+            "actions.message_id": "actions.msg_id"
+        }
+    },
+    "zos_mount": {
+        "renamed_params": {
+            "persistent.data_store": "persistent.name",
+            "persistent.comment": "persistent.marker",
+            "persistent.addDataset": "persistent.state",
+            "persistent.delDataset": "persistent.name"
+        }
+    },
+    "zos_tso_command": {
+        "renamed_response_params": {
+            "content": "stdout_lines",
+            "lines": "line_count"
+        }
+    },
+    "zos_copy": {
+        "renamed_params": {
+            "force_lock": "force",
+            "is_binary": "binary",
+            "force": "replace"
+        }
+    },
+    "zos_job_submit": {
+        "renamed_params": {
+            "wait_time_s": "wait_time"
+        },
+        "deprecated_params": [
+            "location"
+        ],
+        "renamed_response_params": {
+            "ddnames": "dds",
+            "ddnames.ddname": "dds.dd_name",
+            "ret_code.steps": "jobs.steps"
+        },
+        "deprecated_response_params": [
+            "system",
+            "subsystem",
+            "cpu_time",
+            "execution_node",
+            "origin_node"
+        ]
+    },
+    "zos_blockinfile": {
+        "renamed_params": {
+            "insertafter": "after",
+            "insertbefore": "before"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+---
+- name: Load JSON file
+  set_fact:
+    data: "{{ lookup('file', 'dependency_config.json') | from_json }}"
+
+- name: print Description
+  debug:
+    msg: "{{ playbook_path }}"
+
+- name: Run my custom module
+  playbook_upgrade_validator:
+    migration_map: "{{ data }}"
+    playbook_path: "{{ playbook_path }}"
+    output_path: "{{ output_path }}"
+    # playbook_dir: /Users/surendra/Documents/GitHub/ansible/test
+    ignore_response_params: "{{ ignore_response_params }}"
+    # output_path: /Users/surendra/Documents/GitHub/ansible/playbooks_validator/migration_report.json
+  register: result
+
+- name: print debug data
+  debug:
+    msg: "{{ result  }}"

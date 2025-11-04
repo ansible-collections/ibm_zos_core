@@ -1,0 +1,63 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2023, 2025
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DOCUMENTATION = r'''
+---
+role: job_status
+author:
+  - "Ravella Surendra Babu (@surendrababuravella)"
+short_description: Validates playbooks against ibm_zos_core 2.0 and provides migration actions.
+description:
+  - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
+    based on migration rules for IBM z/OS core collection version 2.0.
+  - Provides line numbers, affected modules, and suggests corrective actions.
+options:
+  playbook_path:
+    description:
+      - The path to the directory containing one or more Ansible playbooks.
+    required: true
+    type: str
+  output_path:
+    description:
+      - File path where validation results should be written in JSON format.
+    required: true
+    type: str
+  ignore_response_params:
+    description:
+      - Indicates whether information about response parameter changes should be included.
+    default: false
+    type: bool
+notes:
+  - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.
+  - Supports reading tasks, blocks, and nested includes.
+'''
+
+EXAMPLES = r'''
+- name: Validate all playbooks under test directory
+  playbook_upgrade_validator:
+    playbook_path: "/path/to/playbooks/*.yml"
+    output_path: "{{ role_path }}/reports/validation_report.json"
+    ignore_response_params: false
+'''
+
+RETURN = r'''
+output_path:
+  description: Path where the validation report was written.
+  returned: always
+  type: str
+results:
+  description: List of all issues found across all playbooks.
+  returned: always
+  type: list
+'''

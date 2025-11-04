@@ -1274,10 +1274,10 @@ def to_dzip_args(**kwargs):
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
 
-    if kwargs.get("compress"):
+    if kwargs.get("compress") is not None:
         zoau_args["compress"] = kwargs.get("compress")
 
-    if kwargs.get("terse"):
+    if kwargs.get("terse") is not None:
         zoau_args["terse"] = kwargs.get("terse")
 
     if kwargs.get("space"):

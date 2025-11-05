@@ -2097,7 +2097,8 @@ def run_module():
             data_set_param_list = get_individual_data_set_parameters(params)
 
             for data_set_params in data_set_param_list:
-                data_set_params["noscratch"] = not determine_scratch(data_set_params)
+                data_set_params["scratch"] = determine_scratch(data_set_params)
+                data_set_params["noscratch"] = not data_set_params["scratch"]
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(

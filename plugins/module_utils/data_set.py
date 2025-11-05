@@ -2849,7 +2849,6 @@ class MVSDataSet():
         return True
 
     def merge_attributes_from_zoau_data_set(self, zoau_data_set):
-        # print(zoau_data_set)
         self.name = zoau_data_set.name
         self.record_format = zoau_data_set.record_format and zoau_data_set.record_format.lower()
         self.record_length = zoau_data_set.record_length

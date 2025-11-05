@@ -69,6 +69,7 @@ def get_python_version_info():
 def get_python_version():
     return f"{sys.version_info.major}.{sys.version_info.minor}.0"
 
+
 import json
 def get_zos_version(module=None):
     if zsystem is None:
@@ -91,7 +92,7 @@ def get_zos_version(module=None):
     except Exception as e:
         if module:
             module.warn(f"Failed to fetch z/OS version: {e}")
-        logger.warning(f"Failed to fetch z/OS version: {e}")
+        logger.warning("Failed to fetch z/OS version: %s", e)
         return None
 
 
@@ -107,12 +108,12 @@ def validate_dependencies(module):
     if zos_version_str is None:
         logger.warning("get_zos_version() returned None. Possible ZOAU or module issue.")
     else:
-        logger.debug(f"z/OS version retrieved successfully: {zos_version_str}")
+        logger.debug("z/OS version retrieved successfully: %s", zos_version_str)
     collection_version = version.__version__
-    logger.debug(f"Detected versions - ZOAU: {zoau_version}, Python: {python_version_str}, "
-              f"z/OS: {zos_version_str}, Collection: {collection_version}")
-
-
+    logger.debug(
+        f"Detected versions - ZOAU: {zoau_version}, Python: {python_version_str}, "
+        f"z/OS: {zos_version_str}, Collection: {collection_version}"
+    )
     if not all([zoau_version, python_version_str, collection_version]):
         logger.error("Failed to fetch one or more required dependencies.")
         module.fail_json(
@@ -129,7 +130,7 @@ def validate_dependencies(module):
     # Find compatibility entry
     compat_list = COMPATIBILITY_MATRIX.get(collection_version, [])
     if not compat_list:
-        logger.error(f"No compatibility info found for collection version: {collection_version}")
+        logger.error("No compatibility info found for collection version: %s", collection_version)
         module.fail_json(msg=f"No compatibility information for collection version: {collection_version}")
 
     matched_compat = None
@@ -146,14 +147,6 @@ def validate_dependencies(module):
         )
         logger.error(msg)
         module.fail_json(msg=msg)
-        # module.fail_json(
-        #     msg=(
-        #         f"Incompatible ZOAU version: {zoau_version}. "
-        #         f"For collection version {collection_version}, "
-        #         f"the minimum required ZOAU version is {compat_list[0]['min_zoau_version']}."
-        #     )
-
-        # )
 
     # --- Validation logic ---
     warnings = []

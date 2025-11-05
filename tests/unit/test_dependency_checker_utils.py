@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -*- coding: utf-8 -*-
 import pytest
 from unittest.mock import patch
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import dependency_checker

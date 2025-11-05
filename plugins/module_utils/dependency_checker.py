@@ -110,11 +110,14 @@ def validate_dependencies(module):
     if zos_version_str is None:
         logger.warning("get_zos_version() returned None. Possible ZOAU or module issue.")
     else:
-        logger.debug(f"z/OS version retrieved successfully: {zos_version_str}")
+        logger.debug("z/OS version retrieved successfully: %s", zos_version_str)
     collection_version = version.__version__
     logger.debug(
-        f"Detected versions - ZOAU: {zoau_version}, Python: {python_version_str}, "
-        f"z/OS: {zos_version_str}, Collection: {collection_version}"
+        "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
+        zoau_version,
+        python_version_str,
+        zos_version_str,
+        collection_version,
     )
     if not all([zoau_version, python_version_str, collection_version]):
         logger.error("Failed to fetch one or more required dependencies.")

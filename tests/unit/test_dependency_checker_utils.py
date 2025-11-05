@@ -34,9 +34,9 @@ class FakeModule:
 @pytest.fixture(autouse=True)
 def patch_logger(monkeypatch):
     logger_instance = SingletonLogger().get_logger(verbosity=3)
-    monkeypatch.setattr(logger_instance, "debug", lambda msg: None)
-    monkeypatch.setattr(logger_instance, "warning", lambda msg: None)
-    monkeypatch.setattr(logger_instance, "error", lambda msg: None)
+    monkeypatch.setattr(logger_instance, "debug", lambda *a, **kw: None)
+    monkeypatch.setattr(logger_instance, "warning", lambda *a, **kw: None)
+    monkeypatch.setattr(logger_instance, "error", lambda *a, **kw: None)
     yield
 
 # ------------------------------

@@ -966,6 +966,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+
 
 if PY3:
     import pathlib
@@ -1188,7 +1190,7 @@ class CopyHandler(object):
             True if every copy operation was successful, False otherwise.
         """
         src_view = gdgs.GenerationDataGroupView(src)
-        generations = src_view.generations()
+        generations = src_view.generations
         copy_args = {
             "options": ""
         }
@@ -2757,8 +2759,8 @@ def does_destination_allow_copy(
         src_view = gdgs.GenerationDataGroupView(src)
         dest_view = gdgs.GenerationDataGroupView(dest)
 
-        src_allocated_gens = len(src_view.generations())
-        dest_allocated_gens = len(dest_view.generations())
+        src_allocated_gens = len(src_view.generations)
+        dest_allocated_gens = len(dest_view.generations)
 
         if src_allocated_gens > (dest_view.limit - dest_allocated_gens):
             return False
@@ -3446,6 +3448,11 @@ def run_module(module, arg_def):
         is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # Validation for copy from a member
     if src_member:

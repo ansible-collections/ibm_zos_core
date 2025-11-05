@@ -727,7 +727,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             # Assert src_data_set is removed
             cmd_result = hosts.all.shell(cmd = f"dls '{src_data_set}'")
             for c_result in cmd_result.contacted.values():
-                assert f"BGYSC1103E No datasets match pattern: {src_data_set}." in c_result.get("stderr")
+                assert f"BGYSC1103E No datasets match pattern: {src_data_set}" in c_result.get("stderr")
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")

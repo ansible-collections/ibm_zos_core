@@ -28,7 +28,7 @@ __metaclass__ = type
 # ------------------------------------------------------------------------------
 COMPATIBILITY_MATRIX = {
     "2.0.0": [
-        {"min_zoau_version": "1.3.6.0", "min_python_version": "3.12", "min_zos_version": 2.5},
+        {"min_zoau_version": "1.4.0", "min_python_version": "3.12", "min_zos_version": 2.5},
     ],
     "2.1.0": [
         {"min_zoau_version": "1.4.1", "min_python_version": "3.12", "min_zos_version": 2.5},

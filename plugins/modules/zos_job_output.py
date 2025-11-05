@@ -484,6 +484,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 try:
     from zoautil_py import exceptions as zoau_exceptions
 except Exception:
@@ -513,6 +516,9 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    # Validate dependencies
+    validate_dependencies(module)
+
 
     args_def = dict(
         job_id=dict(type="job_identifier", required=False),

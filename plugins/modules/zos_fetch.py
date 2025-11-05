@@ -320,6 +320,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 try:
@@ -854,6 +857,7 @@ def run_module():
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
+    validate_dependencies(module)
 
     src = module.params.get("src")
     hlq = None

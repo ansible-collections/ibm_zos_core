@@ -324,6 +324,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 try:
@@ -636,6 +639,7 @@ def main():
         argument_spec=module_args,
         supports_check_mode=True
     )
+    validate_dependencies(module)
     result = dict(changed=False, cmd='', found=0)
 
     arg_defs = dict(

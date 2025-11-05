@@ -955,6 +955,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet, GenerationDataGroup, MVSDataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+
 
 import re
 
@@ -2079,6 +2083,7 @@ def run_module():
     result = dict(changed=False)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure

@@ -963,6 +963,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
     idcams
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 if PY3:
     import pathlib
@@ -4115,6 +4118,7 @@ def main():
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
     )
+    validate_dependencies(module)
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),

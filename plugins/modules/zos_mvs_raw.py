@@ -1770,6 +1770,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawInputDefinition,
     RawOutputDefinition,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from ansible.module_utils.basic import AnsibleModule
@@ -2012,6 +2015,7 @@ def run_module():
     # ---------------------------------------------------------------------------- #
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     # ---------------------------------------------------------------------------- #
     #                                  Main Logic                                  #

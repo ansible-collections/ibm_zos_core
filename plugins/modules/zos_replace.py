@@ -705,9 +705,9 @@ def run_module():
                     pass
                 content = [line.rstrip() for line in full_text]
                 full_text = "\n".join(content)
-                rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
-                if rc_write != 0:
-                    raise Exception("Non zero return code from datasets.write.")
+                rc_write = datasets.write(dataset_name=src, content=full_text)
+                if rc_write is not None:
+                    raise Exception(f"There was an error executing datasets.write rc: {rc_write}")
             except Exception as e:
                 module.fail_json(
                     msg=f"Unable to write on data set {src}. {e}",

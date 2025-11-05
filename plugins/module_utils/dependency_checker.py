@@ -71,6 +71,8 @@ def get_python_version():
 
 
 import json
+
+
 def get_zos_version(module=None):
     if zsystem is None:
         if module:
@@ -108,7 +110,7 @@ def validate_dependencies(module):
     if zos_version_str is None:
         logger.warning("get_zos_version() returned None. Possible ZOAU or module issue.")
     else:
-        logger.debug("z/OS version retrieved successfully: %s", zos_version_str)
+        logger.debug(f"z/OS version retrieved successfully: {zos_version_str}")
     collection_version = version.__version__
     logger.debug(
         f"Detected versions - ZOAU: {zoau_version}, Python: {python_version_str}, "

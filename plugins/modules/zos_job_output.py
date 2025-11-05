@@ -518,8 +518,6 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     # Validate dependencies
     validate_dependencies(module)
-
-
     args_def = dict(
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),

@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# -*- coding: utf-8 -*-
 import pytest
 from unittest.mock import patch
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import dependency_checker
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
 class FakeModule:
@@ -26,6 +28,17 @@ class FakeModule:
     def warn(self, msg):
         self.warned.append(msg)
 
+
+# ------------------------------------------------------------------------------
+# Common fixture to silence logging during tests
+# ------------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def patch_logger(monkeypatch):
+    logger_instance = SingletonLogger().get_logger(verbosity=3)
+    monkeypatch.setattr(logger_instance, "debug", lambda msg: None)
+    monkeypatch.setattr(logger_instance, "warning", lambda msg: None)
+    monkeypatch.setattr(logger_instance, "error", lambda msg: None)
+    yield
 
 # ------------------------------
 # Test: Python above max triggers warning
@@ -105,8 +118,8 @@ def test_zos_below_min(monkeypatch):
 # ------------------------------
 # Test: ZOAU below minimum version triggers failure
 # ------------------------------
-def test_zoau_below_min_fails(monkeypatch):
-    monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.3.9")
+def test_zoau_below_min_failsdcmdec(monkeypatch):
+    monkeypatch.setattr(dependency_checker, "get_zoau_version", lambda mod=None: "1.3.5")
     monkeypatch.setattr(dependency_checker, "get_python_version_info", lambda: (3, 12))
     monkeypatch.setattr(dependency_checker, "get_python_version", lambda: "3.12.0")
     monkeypatch.setattr(dependency_checker, "get_zos_version", lambda mod=None: "2.6")

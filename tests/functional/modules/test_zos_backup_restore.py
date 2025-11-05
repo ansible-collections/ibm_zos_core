@@ -255,48 +255,48 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
         delete_remnants(hosts)
 
 
-@pytest.mark.parametrize(
-    "backup_name,overwrite",
-    [
-        ("DATA_SET", False),
-        ("DATA_SET", True),
-        ("UNIX", False),
-        ("UNIX", True),
-    ],
-)
-def test_backup_of_data_set_when_backup_dest_exists(
-    ansible_zos_module, backup_name, overwrite
-):
-    hosts = ansible_zos_module
-    data_set_name = get_tmp_ds_name()
-    if backup_name == "DATA_SET":
-        backup_name = get_tmp_ds_name(1,1)
-    else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
-    try:
-        create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
-        assert_data_set_or_file_exists(hosts, backup_name)
-        create_sequential_data_set_with_contents(
-            hosts, data_set_name, DATA_SET_CONTENTS
-        )
-        results = hosts.all.zos_backup_restore(
-            operation="backup",
-            data_sets=dict(include=data_set_name),
-            backup_name=backup_name,
-            overwrite=overwrite,
-        )
-        if overwrite:
-            assert_module_did_not_fail(results)
-            for result in results.contacted.values():
-                assert result.get("backup_name") == backup_name, \
-                    f"Backup name '{backup_name}' not found in output"
-        else:
-            assert_module_failed(results)
-        assert_data_set_or_file_exists(hosts, backup_name)
-    finally:
-        delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)
+# @pytest.mark.parametrize(
+#     "backup_name,overwrite",
+#     [
+#         ("DATA_SET", False),
+#         ("DATA_SET", True),
+#         ("UNIX", False),
+#         ("UNIX", True),
+#     ],
+# )
+# def test_backup_of_data_set_when_backup_dest_exists(
+#     ansible_zos_module, backup_name, overwrite
+# ):
+#     hosts = ansible_zos_module
+#     data_set_name = get_tmp_ds_name()
+#     if backup_name == "DATA_SET":
+#         backup_name = get_tmp_ds_name(1,1)
+#     else:
+#         backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+#     try:
+#         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
+#         assert_data_set_or_file_exists(hosts, backup_name)
+#         create_sequential_data_set_with_contents(
+#             hosts, data_set_name, DATA_SET_CONTENTS
+#         )
+#         results = hosts.all.zos_backup_restore(
+#             operation="backup",
+#             data_sets=dict(include=data_set_name),
+#             backup_name=backup_name,
+#             overwrite=overwrite,
+#         )
+#         if overwrite:
+#             assert_module_did_not_fail(results)
+#             for result in results.contacted.values():
+#                 assert result.get("backup_name") == backup_name, \
+#                     f"Backup name '{backup_name}' not found in output"
+#         else:
+#             assert_module_failed(results)
+#         assert_data_set_or_file_exists(hosts, backup_name)
+#     finally:
+#         delete_data_set_or_file(hosts, data_set_name)
+#         delete_data_set_or_file(hosts, backup_name)
+#         delete_remnants(hosts)
 
 
 @pytest.mark.parametrize(

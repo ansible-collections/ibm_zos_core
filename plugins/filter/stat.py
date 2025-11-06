@@ -16,7 +16,7 @@ VALID_FIELDS = {
     'data_set': [
         'type',
         'dsorg',
-        'has_extended_attributes',
+        'has_extended_attrs',
         'extended_attrs_bits',
         'creation_date',
         'expiration_date',

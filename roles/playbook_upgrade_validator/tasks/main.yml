@@ -1,4 +1,9 @@
 ---
+- name: Ensure ruamel.yaml is installed
+  ansible.builtin.pip:
+    name: ruamel.yaml
+    state: present
+
 - name: Load JSON file
   set_fact:
     data: "{{ lookup('file', 'dependency_config.json') | from_json }}"

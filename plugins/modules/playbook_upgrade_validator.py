@@ -48,11 +48,13 @@ notes:
 '''
 
 EXAMPLES = r'''
-- name: Validate all playbooks under test directory
-  playbook_upgrade_validator:
-    playbook_path: "{{ lookup('fileglob', '/path/to/playbooks/*.yml', wantlist=True) }}"
-    migration_map: "<< migrating changes json >>"
-    output_path: "{{ role_path }}/reports/validation_report.json"
+- name: execute playbook_upgrade_validator role
+  include_role: 
+    name: ibm.ibm_zos_core.playbook_upgrade_validator
+  vars:
+    playbook_path: "/path/to/playbooks/*.yml"
+    output_path: "/path/to/reports/validation_report.json"
+    ignore_response_params: false
 '''
 
 RETURN = r'''

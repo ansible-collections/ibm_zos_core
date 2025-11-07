@@ -480,7 +480,7 @@ def parsing_jobs(jobs_raw):
 
         elif "CC" in status_raw:
             # status = 'Completed normally'
-             ret_code["msg"] = status_raw
+            ret_code["msg"] = status_raw
 
         elif "ABEND" in status_raw:
             # status = 'Ended abnormally'

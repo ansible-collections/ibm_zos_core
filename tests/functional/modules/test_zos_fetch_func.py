@@ -556,8 +556,8 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            assert result.get("failed") is True
             assert "msg" in result.keys()
-            assert "stderr" in result.keys()
     finally:
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
@@ -661,8 +661,8 @@ def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            assert result.get("failed") is True
             assert "msg" in result.keys()
-            assert "stderr" in result.keys()
     except Exception:
         raise
 
@@ -679,7 +679,7 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert "msg" in result.keys()
-            assert result.get("stderr") != ""
+            assert result.get("msg") != ""
     except Exception:
         raise
 

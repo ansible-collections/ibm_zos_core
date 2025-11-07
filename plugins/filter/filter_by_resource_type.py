@@ -167,7 +167,7 @@ def filter_stat(attributes, resource):
     """
     if not isinstance(attributes, dict):
         raise AnsibleFilterError("The 'attributes' object passed is not a dictionary. This filter needs a dictionary to filter.")
-    if not resource in ['data_set', 'file', 'aggregate', 'gdg']:
+    if resource not in ['data_set', 'file', 'aggregate', 'gdg']:
         raise AnsibleFilterError(f"The given resource {resource} is not one of 'data_set', 'file', 'aggregate' or 'gdg'.")
 
     attributes = attributes.get('stat', {})

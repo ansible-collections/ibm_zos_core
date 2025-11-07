@@ -28,7 +28,7 @@ def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifie
         list -- the total dataset names valid
     """
     if value is None or value == "":
-        raise AnsibleFilterError(f"Require to be provide a HLQ.")
+        raise AnsibleFilterError("Require to be provide a HLQ.")
 
     hlq = validate_qualifier(qualifier=value)
     mlq = ""

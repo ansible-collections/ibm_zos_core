@@ -206,6 +206,6 @@ class FilterModule(object):
 
     def filters(self):
         filters = {
-            "stat": filter_stat,
+            "filter_by_resource_type": filter_stat,
         }
         return filters

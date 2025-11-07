@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 DOCUMENTATION:
-  name: stat
+  name: filter_by_resource_type
   author: Alex Moreno (@rexemin)
   version_added: "2.0.0"
   short_description: filter returned fields from zos_stat
@@ -38,7 +38,7 @@ DOCUMENTATION:
 
 EXAMPLES: |
   # Get only data set specific attributes.
-  clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set')}}"
+  clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set')}}"
 
 RETURN:
   _value:

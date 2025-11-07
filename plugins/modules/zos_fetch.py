@@ -83,6 +83,7 @@ options:
     required: false
     default: "false"
     type: bool
+    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
@@ -719,7 +720,7 @@ class FetchHandler:
         dir_path = tempfile.mkdtemp()
 
         data_group = gdgs.GenerationDataGroupView(src)
-        for current_gds in data_group.generations():
+        for current_gds in data_group.generations:
             if current_gds.organization in data_set.DataSet.MVS_SEQ:
                 self._fetch_mvs_data(
                     current_gds.name,
@@ -857,6 +858,7 @@ def run_module():
 
     src = module.params.get("src")
     hlq = None
+
     if module.params.get("use_qualifier"):
         hlq = datasets.get_hlq()
         module.params["src"] = hlq + "." + src
@@ -901,7 +903,6 @@ def run_module():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
     fetch_handler = FetchHandler(module)
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)

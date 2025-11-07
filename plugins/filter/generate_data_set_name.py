@@ -15,18 +15,21 @@ import re
 from ansible.errors import AnsibleFilterError
 
 
-def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifier="", generations=1):
+def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifier="", num_names=1):
     """Filter to generate valid data set names
 
     Args:
         value {str} -- value of high level qualifier to use on data set names
         middle_level_qualifier {str,optional} --  str of a possible qualifier
         last_level_qualifier {str, optional} -- str of a possible qualifier
-        generations {int, optional} -- number of dataset names to generate. Defaults to 1.
+        num_names {int, optional} -- number of dataset names to generate. Defaults to 1.
 
     Returns:
         list -- the total dataset names valid
     """
+    if value is None or value == "":
+        raise AnsibleFilterError(f"Require to be provide a HLQ.")
+
     hlq = validate_qualifier(qualifier=value)
     mlq = ""
     llq = ""
@@ -37,9 +40,9 @@ def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifie
     if bool(last_level_qualifier):
         llq = validate_qualifier(qualifier=last_level_qualifier)
 
-    if generations > 1:
+    if num_names > 1:
         dataset_names = []
-        for generation in range(generations):
+        for generation in range(num_names):
             name = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, last_level_qualifier=llq)
             dataset_names.append(name)
     else:

@@ -1436,7 +1436,7 @@ class DataSet(object):
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name, noscratch=noscratch)
+        rc = datasets.delete(name, no_scratch=noscratch)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -1859,8 +1859,9 @@ class DataSet(object):
                 # Fail if we are trying to resolve a future generation.
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
-            generations = gdg.generations()
-            gds = generations[rel_generation - 1]
+            generations = gdg.generations
+            # From ZOAU 1.4 version relative notation 0 or -1 is on automatic give
+            gds = generations[rel_generation]
         except Exception:
             raise GDSNameResolveError(relative_name)
 
@@ -2189,7 +2190,7 @@ class DataSet(object):
         # We need to unescape because this call to the system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
-        idcams_cmd = f" LISTCAT ALIAS ENTRIES('{name}')ALL"
+        idcams_cmd = f""" LISTCAT -\n ENTRIES('{name}') -\n ALIAS ALL"""
         response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
         if response.rc == 0:
@@ -2848,7 +2849,6 @@ class MVSDataSet():
         return True
 
     def merge_attributes_from_zoau_data_set(self, zoau_data_set):
-        # print(zoau_data_set)
         self.name = zoau_data_set.name
         self.record_format = zoau_data_set.record_format and zoau_data_set.record_format.lower()
         self.record_length = zoau_data_set.record_length
@@ -3001,6 +3001,14 @@ class GenerationDataGroup():
                 msg="GDG creation failed: dataset name exceeds 35 characters."
             )
 
+    @staticmethod
+    def _validate_gdg_name(name):
+        """Validates the length of a GDG name."""
+        if name and len(name) > 35:
+            raise GenerationDataGroupCreateError(
+                msg="GDG creation failed: dataset name exceeds 35 characters."
+            )
+
     def create(self):
         """Creates the GDG.
 
@@ -3075,7 +3083,7 @@ class GenerationDataGroup():
             changed = True
         return changed
 
-    def ensure_absent(self, force):
+    def ensure_absent(self, force, noscratch=False):
         """Ensure gdg base is deleted. If force is True and there is an
         existing GDG with active generations it will remove them and delete
         the GDG.
@@ -3092,7 +3100,7 @@ class GenerationDataGroup():
         # Check whether GDG exists or not
         if gdgs.exists(name=self.name):
             # Try to delete
-            rc = datasets.delete(self.name)
+            rc = datasets.delete(self.name, no_scratch=noscratch)
             if rc > 0:
                 if force:
                     try:

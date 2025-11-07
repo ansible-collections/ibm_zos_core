@@ -25,8 +25,8 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-NO_AUTO_INCREMENT= """- hosts : zvm
-  collections :
+NO_AUTO_INCREMENT= """- hosts: zvm
+  collections:
     - ibm.ibm_zos_core
   gather_facts: False
   vars:
@@ -987,7 +987,7 @@ def test_fail_operation(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
-    size = 200
+    size = 50
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -1002,7 +1002,6 @@ def test_fail_operation(ansible_zos_module):
 #############################
 # No auto increment playbook
 #############################
-
 
 def test_no_auto_increase_wrapper(get_config):
     path = get_config

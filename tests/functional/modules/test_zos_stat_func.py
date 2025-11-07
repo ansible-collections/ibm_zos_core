@@ -1270,7 +1270,7 @@ def test_filter_seq_data_set(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1371,7 +1371,7 @@ def test_filter_pdse_data_set(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1479,7 +1479,7 @@ def test_filter_vsam_data_set(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1556,7 +1556,7 @@ def test_filter_data_set_option_no_data_set_output(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('data_set') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1623,7 +1623,7 @@ def test_filter_file(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('file') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('file') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1717,7 +1717,7 @@ def test_filter_aggregate(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('aggregate') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('aggregate') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -1783,7 +1783,7 @@ def test_filter_gdg(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.stat('gdg') }}")
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('gdg') }}")
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None

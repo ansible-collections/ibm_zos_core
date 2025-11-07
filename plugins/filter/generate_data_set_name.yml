@@ -21,6 +21,16 @@ DOCUMENTATION:
         - High level qualifier.
       type: str
       required: true
+    middle_level_qualifier:
+      description:
+        - Possible valid middle level qualifier.
+      type: str
+      required: false
+    last_level_qualifier:
+      description:
+        - Possible valid last level qualifier.
+      type: str
+      required: false
     generations:
       description:
         - Number of data set names that you require to generate.
@@ -30,8 +40,18 @@ DOCUMENTATION:
 EXAMPLES: |
   # Get only one data set name.
   clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name}}"
+  # Get a data set name with a specific middle level qualifier.
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM")}}"
+  # Get a data set name with a specific last level qualifier.
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier="LLQADM")}}"
+  # Get a data set name with a specific middle and last level qualifier.
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM", last_level_qualifier="LLQADM")}}"
   # Get 10 data set names.
-  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(10)}}"
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(generations=10)}}"
+  # Get 3 data set names with a specific last level qualifier.
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier="LLQADM", generations=3)}}"
+  # Get 5 data set names with specific middle level qualifier.
+  clean_output: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM", generations=5)}}"
 
 RETURN:
   _value:

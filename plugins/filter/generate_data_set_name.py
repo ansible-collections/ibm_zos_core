@@ -15,45 +15,68 @@ import re
 from ansible.errors import AnsibleFilterError
 
 
-def generate_data_set_name(value, generations=1):
+def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifier="", generations=1):
     """Filter to generate valid data set names
 
     Args:
         value {str} -- value of high level qualifier to use on data set names
+        middle_level_qualifier {str,optional} --  str of a possible qualifier
+        last_level_qualifier {str, optional} -- str of a possible qualifier
         generations {int, optional} -- number of dataset names to generate. Defaults to 1.
 
     Returns:
         list -- the total dataset names valid
     """
-    if len(value) > 8:
-        raise AnsibleFilterError("The high level qualifier is too long for the data set name")
+    hlq = validate_qualifier(qualifier=value)
+    mlq = ""
+    llq = ""
+
+    if bool(middle_level_qualifier):
+        mlq = validate_qualifier(qualifier=middle_level_qualifier)
+
+    if bool(last_level_qualifier):
+        llq = validate_qualifier(qualifier=last_level_qualifier)
 
     if generations > 1:
         dataset_names = []
         for generation in range(generations):
-            name = value + get_tmp_ds_name()
+            name = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, last_level_qualifier=llq)
             dataset_names.append(name)
     else:
-        dataset_names = value + get_tmp_ds_name()
+        dataset_names = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, last_level_qualifier=llq)
 
     return dataset_names
 
 
-def get_tmp_ds_name():
+def get_tmp_ds_name(middle_level_qualifier="", last_level_qualifier=""):
     """Unify the random qualifiers generate in one name.
+
+    Args:
+        middle_level_qualifier {str,optional} -- valid str of a qualifier
+        last_level_qualifier {str, optional} -- valid str of a qualifier
 
     Returns:
         str: valid data set name
     """
     ds = "."
-    ds += "P" + get_random_q() + "."
-    ds += "T" + get_random_q() + "."
-    ds += "C" + get_random_q()
+
+    if bool(middle_level_qualifier):
+        ds+= middle_level_qualifier + "."
+    else:
+        ds += "P" + get_random_q() + "."
+
+    ds += "C" + get_random_q() + "."
+
+    if bool(last_level_qualifier):
+        ds += last_level_qualifier
+    else:
+        ds += "T" + get_random_q()
+
     return ds
 
 
 def get_random_q():
-    """ Function or test to ensure random hlq of datasets"""
+    """Function or test to ensure random hlq of datasets"""
     # Generate the first random hlq of size pass as parameter
     letters = string.ascii_uppercase + string.digits
     random_q = ''.join(secrets.choice(letters)for iteration in range(7))
@@ -67,6 +90,31 @@ def get_random_q():
         random_q = ''.join(secrets.choice(letters)for iteration in range(7))
         count += 1
     return random_q
+
+
+def validate_qualifier(qualifier):
+    """Function to validate a qualifier with naming rules.
+
+    Args:
+        qualifier (str): Str to validate as a Qualifier.
+
+    Raises:
+        AnsibleFilterError: Error of the valid len on the qualifier.
+        AnsibleFilterError: Error on naming convention on the qualifier.
+
+    Returns:
+        str: Valid qualifier in upper case.
+    """
+    qualifier = qualifier.upper()
+
+    if len(qualifier) > 8:
+        raise AnsibleFilterError(f"The qualifier {qualifier} is too long for the data set name.")
+
+    pattern = r'^[A-Z@#$][A-Z0-9@#$]{0,7}$'
+    if bool(re.fullmatch(pattern, qualifier)):
+        return qualifier
+    else:
+        raise AnsibleFilterError(f"The qualifier {qualifier} is not following the rules for naming conventions.")
 
 
 class FilterModule(object):

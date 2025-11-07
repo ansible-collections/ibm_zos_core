@@ -1,6 +1,6 @@
 # ibm.ibm_zos_core.job_status
 
-This role gathers job status and if the jos is active about a giving a job_id.
+This role gathers job status information and checks if a job is active, given a specific job ID.
 
 ## Role Variables
 

@@ -57,6 +57,7 @@ options:
     required: false
     default: 10
     type: int
+    aliases: [wait_time]
     description:
       - Option I(wait_time) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job

@@ -293,6 +293,7 @@ def run_module():
         module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
+
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")

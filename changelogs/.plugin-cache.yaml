@@ -120,6 +120,11 @@ plugins:
       name: zos_script
       namespace: ''
       version_added: 1.8.0
+    zos_started_task:
+      description: Perform operations on started tasks.
+      name: zos_started_task
+      namespace: ''
+      version_added: 1.16.0
     zos_stat:
       description: Retrieve facts from MVS data sets, USS files, aggregates and generation
         data groups

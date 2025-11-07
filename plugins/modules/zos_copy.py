@@ -236,6 +236,7 @@ options:
     type: bool
     default: false
     required: false
+    aliases: [binary]
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -1207,9 +1208,23 @@ class CopyHandler(object):
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
                 # Perform the copy operation
-            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
-            if rc != 0:
-                success = False
+
+            try:
+                result = datasets.copy(gds.name, dest_gen_name, **copy_args)
+                rc = result.rc if hasattr(result, 'rc') else result
+                if rc != 0:
+                    success = False
+            except zoau_exceptions.ZOAUException as e:
+                stderr = getattr(e.response, 'stderr_response', str(e))
+                if "BGYSC0514E" in stderr :
+                    raise GenerationDataGroupCreateError(
+                        msg=(
+                            "BGYSC0514E An error occurred while attempting to define the file."
+                            " This might be because the GDS part of the src GDG is being used by another process."
+                        )
+                    ) from e
+                else:
+                    raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e
         return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
@@ -4362,6 +4377,13 @@ class CopyOperationError(Exception):
         self.overwritten_members = overwritten_members
         self.new_members = new_members
         super().__init__(msg)
+
+
+class GenerationDataGroupCreateError(Exception):
+    def __init__(self, msg):
+        """Error during copy of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
 
 
 if __name__ == "__main__":

@@ -1393,22 +1393,22 @@ def test_backup_uss_file(ansible_zos_module, backup):
             hosts.all.file(path=backup_name_result, state="absent")
 
 
-# @pytest.mark.uss
-# def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     src_path = get_random_file_name(dir=TMP_DIRECTORY)
-#     dest = "/tmp"
-#     try:
-#         open(src_path, "w").close()
-#         os.chmod(src_path, 0)
-#         copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
-#         for result in copy_res.contacted.values():
-#             assert result.get("msg") is not None
-#             assert "read permission" in result.get("msg")
-#     finally:
-#         if os.path.exists(src_path):
-#             os.remove(src_path)
-#
+@pytest.mark.uss
+def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_path = get_random_file_name(dir=TMP_DIRECTORY)
+    dest = "/tmp"
+    try:
+        open(src_path, "w").close()
+        os.chmod(src_path, 0)
+        copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is not None
+            assert "read permission" in result.get("msg")
+    finally:
+        if os.path.exists(src_path):
+            os.remove(src_path)
+
 
 @pytest.mark.uss
 @pytest.mark.parametrize("is_remote", [False, True])

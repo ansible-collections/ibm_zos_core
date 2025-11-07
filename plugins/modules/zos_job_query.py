@@ -465,12 +465,37 @@ def parsing_jobs(jobs_raw):
     for job in jobs_raw:
         ret_code = job.get("ret_code")
         # Easier to see than checking for an empty string, JOB NOT FOUND was
-        # replaced with None in the jobs.py and msg_txt field describes the job query instead
+        # replaced with None in the jobs.py and msg_txt field describes the job query instead        
         if job.get("ret_code") is None:
             status_raw = "JOB NOT FOUND"
             ret_code["msg"] = status_raw
         elif job.get("ret_code").get("msg", "JOB NOT FOUND") is None:
             status_raw = "JOB NOT FOUND"
+            ret_code["msg"] = status_raw
+        else:
+            status_raw = job.get("ret_code").get("msg", "JOB NOT FOUND")
+
+        if "AC" in status_raw:
+            ret_code["msg"] = status_raw
+
+        elif "CC" in status_raw:
+            # status = 'Completed normally'
+             ret_code["msg"] = status_raw
+
+        elif "ABEND" in status_raw:
+            # status = 'Ended abnormally'
+            ret_code["msg"] = status_raw
+
+        elif "ABENDU" in status_raw:
+            # status = 'Ended abnormally'
+            ret_code["msg"] = status_raw
+
+        elif "CANCELED" in status_raw or "JCLERR" in status_raw or "JCL ERROR" in status_raw or "JOB NOT FOUND" in status_raw:
+            # status = status_raw
+            ret_code["msg"] = status_raw
+
+        else:
+            # status = 'Unknown'
             ret_code["msg"] = status_raw
 
         job_dict = {

@@ -48,19 +48,19 @@ def test_generate_data_set_name_mlq_multiple_generations_filter(ansible_zos_modu
     hosts = ansible_zos_module
     input_string = "OMVSADM"
     mlq = "mlqadm"
-    generations = 5
+    num_names = 5
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"middle_level_qualifier='{mlq}', "
-        f"generations={generations}"
+        f"num_names={num_names}"
         f") }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
-        assert len(result.get('msg')) == generations
+        assert len(result.get('msg')) == num_names
         assert input_string in result.get('msg')[0]
         assert mlq.upper() in result.get('msg')[0]
 
@@ -85,19 +85,19 @@ def test_generate_data_set_name_llq_multiple_generations_filter(ansible_zos_modu
     hosts = ansible_zos_module
     input_string = "OMVSADM"
     llq = "llqadm"
-    generations = 5
+    num_names = 5
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"last_level_qualifier='{llq}', "
-        f"generations={generations}"
+        f"num_names={num_names}"
         f") }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
-        assert len(result.get('msg')) == generations
+        assert len(result.get('msg')) == num_names
         assert input_string in result.get('msg')[0]
         assert llq.upper() in result.get('msg')[0]
 
@@ -125,20 +125,20 @@ def test_generate_data_set_name_mlq_llq_multiple_generations_filter(ansible_zos_
     input_string = "OMVSADM"
     mlq = "mlqadm"
     llq = "llqadm"
-    generations = 3
+    num_names = 3
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"middle_level_qualifier='{mlq}', "
         f"last_level_qualifier='{llq}', "
-        f"generations={generations}"
+        f"num_names={num_names}"
         f") }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
-        assert len(result.get('msg')) == generations
+        assert len(result.get('msg')) == num_names
         assert input_string in result.get('msg')[0]
         assert mlq.upper() in result.get('msg')[0]
         assert llq.upper() in result.get('msg')[0]
@@ -146,11 +146,11 @@ def test_generate_data_set_name_mlq_llq_multiple_generations_filter(ansible_zos_
 def test_generate_data_set_name_filter_multiple_generations(ansible_zos_module):
     hosts = ansible_zos_module
     input_string = "OMVSADM"
-    generations = 10
+    num_names = 10
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
-        f"generations={generations}"
+        f"num_names={num_names}"
         f") }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
@@ -202,3 +202,21 @@ def test_generate_data_set_name_mlq_bad_llq(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get('failed') is True
         assert result.get('msg') == f"The qualifier {llq.upper()} is too long for the data set name."
+
+def test_generate_data_set_name_filter_no_hlq(ansible_zos_module):
+    hosts = ansible_zos_module
+    input_string = "OMVSADMONE"
+    results = hosts.all.debug(msg="{{ generate_data_set_name }}")
+
+    for result in results.contacted.values():
+        assert result.get('failed') is True
+
+def test_generate_data_set_name_filter_bad_hlq(ansible_zos_module):
+    hosts = ansible_zos_module
+    input_string = ""
+    hosts.all.set_fact(input_string=input_string)
+    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
+
+    for result in results.contacted.values():
+        assert result.get('failed') is True
+        assert result.get('msg') == "Require to be provide a HLQ."

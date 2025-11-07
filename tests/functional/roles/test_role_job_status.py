@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 __metaclass__ = type
 
-def test_my_role_with_vars(ansible_zos_module):
+def test_job_status_setting_vars(ansible_zos_module):
     hosts = ansible_zos_module
 
     jobs = hosts.all.zos_job_query(job_id="*", owner="*")
@@ -28,3 +28,71 @@ def test_my_role_with_vars(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("msg").get("job_active") is not None
         assert result.get("msg").get("job_status") is not None
+
+def test_job_status_CC(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    jobs = hosts.all.zos_job_query(job_id="*", owner="*")
+    for job in jobs.contacted.values():
+        jobs = job.get("jobs")
+    
+    for job in jobs:
+        rc = job.get("ret_code")
+        if rc.get("msg_txt") == "CC":
+            job_id = job.get("job_id")
+            break
+
+    hosts.all.set_fact(job_id=job_id)
+    results = hosts.all.include_role(name="job_status")
+    for result in results.contacted.values():
+        assert result.get("msg").get("job_active") is False
+        assert result.get("msg").get("job_status") == "CC"
+
+def test_job_status_AC(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    jobs = hosts.all.zos_job_query(job_id="*", owner="*")
+    for job in jobs.contacted.values():
+        jobs = job.get("jobs")
+    
+    for job in jobs:
+        rc = job.get("ret_code")
+        if rc.get("msg_txt") == "AC":
+            job_id = job.get("job_id")
+            break
+
+    hosts.all.set_fact(job_id=job_id)
+    results = hosts.all.include_role(name="job_status")
+    for result in results.contacted.values():
+        assert result.get("msg").get("job_active") is True
+        assert result.get("msg").get("job_status") == "AC"
+
+def test_job_status_NOEXEC(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    jobs = hosts.all.zos_job_query(job_id="*", owner="*")
+    for job in jobs.contacted.values():
+        jobs = job.get("jobs")
+    
+    for job in jobs:
+        rc = job.get("ret_code")
+        if rc.get("msg_txt") == "NOEXEC":
+            job_id = job.get("job_id")
+            break
+
+    hosts.all.set_fact(job_id=job_id)
+    results = hosts.all.include_role(name="job_status")
+    for result in results.contacted.values():
+        assert result.get("msg").get("job_active") is False
+        assert result.get("msg").get("job_status") == "NOEXEC"
+
+def test_job_status_job_id_does_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    job_id = "NOJOBID"
+
+    hosts.all.set_fact(job_id=job_id)
+    results = hosts.all.include_role(name="job_status")
+    for result in results.contacted.values():
+        assert result.get("msg").get("job_active") == "JOB_NOT_FOUND"
+        assert result.get("msg").get("job_status") == "JOB_NOT_FOUND" 

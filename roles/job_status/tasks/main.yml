@@ -5,6 +5,7 @@
     owner: "*"
     job_id: "{{ job_id }}"
   register: jobs_status
+  ignore_errors: true
 
 - name: Normalize return values
   ansible.builtin.set_fact:
@@ -35,10 +36,10 @@
     job_status: "{{ job_status | trim }}"
 
 - name: Verify if {{ job_id }} is found
-  when: jobs_list is not defined or jobs_list | length == 0
   set_fact:
     job_status: "JOB_NOT_FOUND"
     job_active_from_msg: "JOB_NOT_FOUND"
+  when: jobs_status is failed or jobs_list is not defined or jobs_list | length == 0
 
 - name: See job_status and job_active from {{ job_id }}
   ansible.builtin.debug:

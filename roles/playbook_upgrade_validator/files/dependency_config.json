@@ -68,12 +68,6 @@
             "format.format_options.use_adrdssu": "format.options.adrdssu"
         }
     },
-    "zos_job_submit": {
-        "renamed_params": {
-            "location": "remote_src",
-            "wait_time_s": "wait_time"
-        }
-    },
     "zos_job_output": {
         "renamed_params": {
             "ddname": "dd_name"
@@ -117,6 +111,7 @@
     },
     "zos_job_submit": {
         "renamed_params": {
+            "location": "remote_src",
             "wait_time_s": "wait_time"
         },
         "deprecated_params": [

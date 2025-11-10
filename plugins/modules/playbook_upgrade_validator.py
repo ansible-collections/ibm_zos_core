@@ -26,20 +26,24 @@ description:
     based on migration rules for IBM z/OS core collection version 2.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
-  playbook_path:
+  ignore_response_params:
     description:
-      - List of Ansible playbook file paths to validate.
-    required: true
-    type: list
-    elements: str
+      - Indicates whether information about response parameter changes should be included.
+    default: false
+    type: bool
   migration_map:
     description:
-      - Json which has migration changes for ibm_zos_core 2.0 modules.
+      - File path where validation results should be written in JSON format.
     required: true
     type: dict
   output_path:
     description:
       - File path where validation results should be written in JSON format.
+    required: true
+    type: str
+  playbook_path:
+    description:
+      - The path to the directory containing one or more Ansible playbooks.
     required: true
     type: str
 notes:
@@ -48,11 +52,13 @@ notes:
 '''
 
 EXAMPLES = r'''
-- name: Validate all playbooks under test directory
-  playbook_upgrade_validator:
-    playbook_path: "{{ lookup('fileglob', '/path/to/playbooks/*.yml', wantlist=True) }}"
-    migration_map: "<< migrating changes json >>"
-    output_path: "{{ role_path }}/reports/validation_report.json"
+- name: execute playbook_upgrade_validator role
+  include_role:
+    name: ibm.ibm_zos_core.playbook_upgrade_validator
+  vars:
+    playbook_path: "/path/to/playbooks/*.yml"
+    output_path: "/path/to/reports/validation_report.json"
+    ignore_response_params: false
 '''
 
 RETURN = r'''
@@ -69,15 +75,20 @@ results:
 from ansible.module_utils.basic import AnsibleModule
 import os
 import json
-from ruamel.yaml import YAML
-
-yaml = YAML()
-yaml.preserve_quotes = True
-yaml.allow_duplicate_keys = True
 
 
 def load_playbook(path):
     """Load playbook YAML and preserve line numbers."""
+    try:
+        from ruamel.yaml import YAML
+    except ImportError:
+        raise ImportError(
+            "This module requires 'ruamel.yaml'. Please install it using 'pip install ruamel.yaml'."
+        )
+
+    yaml = YAML()
+    yaml.preserve_quotes = True
+    yaml.allow_duplicate_keys = True
     with open(path, "r") as f:
         data = yaml.load(f)
         if isinstance(data, dict):
@@ -104,12 +115,14 @@ def walk_tasks(tasks, play_name):
 
         # Identify the module name (skip non-module keys)
         module_name = next(
-            (k for k in task.keys()
-             if k not in [
-                 "name", "register", "vars", "when", "tags", "args",
-                 "block", "rescue", "always", "delegate_to", "environment",
-                 "become", "notify", "loop", "with_items", "with_dict"
-             ]),
+            (
+                k for k in task.keys()
+                if k not in [
+                    "name", "register", "vars", "when", "tags", "args",
+                    "block", "rescue", "always", "delegate_to", "environment",
+                    "become", "notify", "loop", "with_items", "with_dict"
+                ]
+            ),
             None
         )
 
@@ -151,8 +164,7 @@ def get_tasks_from_playbook(playbook_path):
         if not isinstance(play, dict):
             continue
         play_name = play.get("name", "unknown")
-        for task in walk_tasks(play.get("tasks", []), play_name):
-            yield task
+        yield from walk_tasks(play.get("tasks", []), play_name)
 
 
 def validate_tasks(playbook_path, migration_map, ignore_response_params):
@@ -228,7 +240,7 @@ def main():
     output_path = module.params["output_path"]
     ignore_response_params = module.params["ignore_response_params"]
     all_results = []
-    for root, _, files in os.walk(playbook_path):
+    for root, dirs, files in os.walk(playbook_path):
         for file in files:
             if file.endswith((".yml", ".yaml")):
                 path = os.path.join(root, file)

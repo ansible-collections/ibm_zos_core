@@ -1,22 +1,30 @@
 ---
+- name: Ensure ruamel.yaml is installed
+  ansible.builtin.pip:
+    name: ruamel.yaml
+    state: present
+  delegate_to: localhost
+
 - name: Load JSON file
   set_fact:
     data: "{{ lookup('file', 'dependency_config.json') | from_json }}"
+  delegate_to: localhost
 
 - name: print Description
   debug:
     msg: "{{ playbook_path }}"
+  delegate_to: localhost
 
 - name: Run my custom module
-  playbook_upgrade_validator:
+  ibm.ibm_zos_core.playbook_upgrade_validator:
     migration_map: "{{ data }}"
     playbook_path: "{{ playbook_path }}"
     output_path: "{{ output_path }}"
-    # playbook_dir: /Users/surendra/Documents/GitHub/ansible/test
     ignore_response_params: "{{ ignore_response_params }}"
-    # output_path: /Users/surendra/Documents/GitHub/ansible/playbooks_validator/migration_report.json
   register: result
+  delegate_to: localhost
 
 - name: print debug data
   debug:
     msg: "{{ result  }}"
+  delegate_to: localhost

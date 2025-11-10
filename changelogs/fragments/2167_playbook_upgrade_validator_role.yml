@@ -1,0 +1,3 @@
+minor_changes:
+   - playbook_upgrade_validator - Adding a role that automatically scans the playbooks in the directory and advises of migration actions.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2399)

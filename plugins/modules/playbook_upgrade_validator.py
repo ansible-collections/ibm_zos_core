@@ -20,7 +20,7 @@ module: playbook_upgrade_validator
 version_added: "1.0.0"
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Validate playbooks against ibm_zos_core 2.0
+short_description: Validates playbooks against ibm_zos_core 2.0 and provides migration actions.
 description:
   - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
     based on migration rules for IBM z/OS core collection version 2.0.
@@ -33,7 +33,8 @@ options:
     type: bool
   migration_map:
     description:
-      - File path where validation results should be written in JSON format.
+      - A structured set of migration rules that specifies deprecated, renamed, and modified parameters
+        to help upgrade playbooks from ibm_zos_core 1.x to 2.0.
     required: true
     type: dict
   output_path:
@@ -62,14 +63,38 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+changed:
+  description:
+    - Always false as there is no state changes happen in this process.
+  returned: always
+  type: bool
 output_path:
-  description: Path where the validation report was written.
+  description: File path where validation results should be written in JSON format.
+  returned: always
+  type: str
+playbook_path:
+  description: The path to the directory containing one or more Ansible playbooks.
   returned: always
   type: str
 results:
-  description: List of all issues found across all playbooks.
+  description: List of issues identified in all scanned playbooks, along with detailed information.
   returned: always
   type: list
+  sample:
+    [
+        {
+            "line": 9,
+            "migration_actions": [
+                "[MUST_FIX] Param 'force_lock' is renamed to 'force' in zos_copy",
+                "[MUST_FIX] Param 'is_binary' is renamed to 'binary' in zos_copy",
+                "[MUST_FIX] Param 'force' is renamed to 'replace' in zos_copy"
+            ],
+            "module": "zos_copy",
+            "play_name": "Execute z/OS modules",
+            "playbook": "/path/to/playbook/copy_file.yml",
+            "task_name": "copy file to z/os"
+        }
+    ]
 '''
 
 from ansible.module_utils.basic import AnsibleModule

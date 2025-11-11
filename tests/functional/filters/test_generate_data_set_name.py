@@ -219,4 +219,4 @@ def test_generate_data_set_name_filter_bad_hlq(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('msg') == "Require to be provide a HLQ."
+        assert result.get('msg') == "A High-Level Qualifier is required."

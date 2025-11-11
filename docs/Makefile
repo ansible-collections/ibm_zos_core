@@ -22,7 +22,7 @@ help:
 	@echo "$(line_header)"
 	@echo "  make clean;make role-doc;make html;make view-html;"
 	@echo "  make clean;make module-doc;make html;make view-html;"
-	@echo "  make clean;make module-doc;make role-doc;make html;make view-html;"
+	@echo "  make clean;make filter-doc;make module-doc;make role-doc;make html;make view-html;"
 	@echo "  make clean;"
 
 	@echo $(line_header)
@@ -96,7 +96,7 @@ clean:
 	mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
 	fi
 
-	@echo "Completed cleanup, run 'make module-doc' or 'make role-doc'."
+	@echo "Completed cleanup, run 'make module-doc', 'male filter-doc' or 'make role-doc'."
 
 filter-doc:
 	@echo $(line_header)

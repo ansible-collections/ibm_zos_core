@@ -71,7 +71,7 @@ def test_generate_data_set_name_llq_filter(ansible_zos_module):
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
-        f"last_level_qualifier='{llq}'"
+        f"low_level_qualifier='{llq}'"
         f") }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
@@ -89,7 +89,7 @@ def test_generate_data_set_name_llq_multiple_generations_filter(ansible_zos_modu
     hosts.all.set_fact(input_string=input_string)
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
-        f"last_level_qualifier='{llq}', "
+        f"low_level_qualifier='{llq}', "
         f"num_names={num_names}"
         f") }}}}"
     )
@@ -110,7 +110,7 @@ def test_generate_data_set_name_mlq_llq_filter(ansible_zos_module):
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"middle_level_qualifier='{mlq}', "
-        f"last_level_qualifier='{llq}') }}}}"
+        f"low_level_qualifier='{llq}') }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
 
@@ -130,7 +130,7 @@ def test_generate_data_set_name_mlq_llq_multiple_generations_filter(ansible_zos_
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"middle_level_qualifier='{mlq}', "
-        f"last_level_qualifier='{llq}', "
+        f"low_level_qualifier='{llq}', "
         f"num_names={num_names}"
         f") }}}}"
     )
@@ -195,7 +195,7 @@ def test_generate_data_set_name_mlq_bad_llq(ansible_zos_module):
     jinja_expr = (
         f"{{{{ input_string | generate_data_set_name("
         f"middle_level_qualifier='{mlq}', "
-        f"last_level_qualifier='{llq}') }}}}"
+        f"low_level_qualifier='{llq}') }}}}"
     )
     results = hosts.all.debug(msg=jinja_expr)
 

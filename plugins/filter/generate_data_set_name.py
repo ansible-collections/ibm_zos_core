@@ -26,12 +26,13 @@ options:
         - High level qualifier to be used in the data set names.
       type: str
       required: true
+      samples: USER
     middle_level_qualifier:
       description:
         - Middle level qualifier to be used in the data set names.
       type: str
       required: false
-    last_level_qualifier:
+    low_level_qualifier:
       description:
         - Low level qualifier to be used in the data set names.
       type: str
@@ -52,21 +53,21 @@ EXAMPLES = r'''
   set_fact:
     data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM') }}"
 
-- name: Filter to generate a data set name with a specific last level qualifier
+- name: Filter to generate a data set name with a specific low level qualifier
   set_fact:
-    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM') }}"
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(low_level_qualifier='LLQADM') }}"
 
-- name: Filter to generate a data set name with a specific middle and last level qualifier
+- name: Filter to generate a data set name with a specific middle and low level qualifier
   set_fact:
-    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', last_level_qualifier='LLQADM') }}"
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', low_level_qualifier='LLQADM') }}"
 
 - name: Filter to generate 10 data set names
   set_fact:
     data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(num_names=10) }}"
 
-- name: Filter to generate 3 data set names with a specific last level qualifier
+- name: Filter to generate 3 data set names with a specific low level qualifier
   set_fact:
-    data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM', num_names=3) }}"
+    data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(low_level_qualifier='LLQADM', num_names=3) }}"
 
 - name: Filter to generate 5 data set names with a specific middle level qualifier
   set_fact:
@@ -87,13 +88,13 @@ import re
 from ansible.errors import AnsibleFilterError
 
 
-def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifier="", num_names=1):
+def generate_data_set_name(value, middle_level_qualifier="", low_level_qualifier="", num_names=1):
     """Filter to generate valid data set names
 
     Args:
         value {str} -- value of high level qualifier to use on data set names
         middle_level_qualifier {str,optional} --  str of a possible qualifier
-        last_level_qualifier {str, optional} -- str of a possible qualifier
+        low_level_qualifier {str, optional} -- str of a possible qualifier
         num_names {int, optional} -- number of dataset names to generate. Defaults to 1.
 
     Returns:
@@ -109,26 +110,26 @@ def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifie
     if bool(middle_level_qualifier):
         mlq = validate_qualifier(qualifier=middle_level_qualifier)
 
-    if bool(last_level_qualifier):
-        llq = validate_qualifier(qualifier=last_level_qualifier)
+    if bool(low_level_qualifier):
+        llq = validate_qualifier(qualifier=low_level_qualifier)
 
     if num_names > 1:
         dataset_names = []
         for generation in range(num_names):
-            name = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, last_level_qualifier=llq)
+            name = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, low_level_qualifier=llq)
             dataset_names.append(name)
     else:
-        dataset_names = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, last_level_qualifier=llq)
+        dataset_names = hlq + get_tmp_ds_name(middle_level_qualifier=mlq, low_level_qualifier=llq)
 
     return dataset_names
 
 
-def get_tmp_ds_name(middle_level_qualifier="", last_level_qualifier=""):
+def get_tmp_ds_name(middle_level_qualifier="", low_level_qualifier=""):
     """Unify the random qualifiers generated into one name.
 
     Args:
         middle_level_qualifier {str,optional} -- valid str of a qualifier
-        last_level_qualifier {str, optional} -- valid str of a qualifier
+        low_level_qualifier {str, optional} -- valid str of a qualifier
 
     Returns:
         str: valid data set name
@@ -142,8 +143,8 @@ def get_tmp_ds_name(middle_level_qualifier="", last_level_qualifier=""):
 
     ds += "C" + get_random_q() + "."
 
-    if bool(last_level_qualifier):
-        ds += last_level_qualifier
+    if bool(low_level_qualifier):
+        ds += low_level_qualifier
     else:
         ds += "T" + get_random_q()
 

@@ -11,6 +11,49 @@
 
 from ansible.errors import AnsibleFilterError
 
+__metaclass__ = type
+
+DOCUMENTATION = r"""
+name: filter_by_resource_type
+author: Alex Moreno (@rexemin)
+version_added: "2.0.0"
+short_description: filter returned fields from zos_stat
+description:
+  - Extract only the relevant fields for a resource from the output of zos_stat.
+  - Choose between data set, file, aggregate or GDG fields.
+options:
+  attributes:
+    description:
+      - Output from zos_stat.
+    type: dict
+    required: true
+  resource:
+    description:
+      - Type of resource which fields should be filtered from the returned JSON of zos_stat.
+      - If the resource is a data set, the filter will only include the relevant fields for
+        the specific type of data set queried by zos_stat. When C(isdataset=False), only
+        common data sets attribute fields will be returned.
+    type: str
+    required: true
+    choices:
+      - data_set
+      - file
+      - aggregate
+      - gdg
+"""
+
+EXAMPLES = r"""
+- name: Get only data set specific attributes.
+  set_fact:
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}"
+"""
+
+RETURN = r"""
+  _value:
+    description: Stripped-down dictionary containing the fields relevant for the selected resource.
+    type: dict
+"""
+
 
 VALID_FIELDS = {
     'data_set': [

@@ -14,7 +14,12 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds, get_volume_and_unit, get_volumes_sms_mgmt_class
+from ibm_zos_core.tests.helpers.volumes import (
+    get_volumes, get_volumes_with_vvds,
+    get_volume_and_unit,
+    get_volumes_sms_mgmt_class,
+    get_volume_with_less_datasets
+    )
 from ansible.plugins.action import ActionBase
 import sys
 from mock import MagicMock
@@ -190,6 +195,22 @@ def volumes_sms_systems(ansible_zos_module, request):
     volumes_with_sms = get_volumes_sms_mgmt_class(ansible_zos_module, list_volumes)
     yield volumes_with_sms
 
+
+@pytest.fixture(scope="session")
+def volumes_on_systems_with_less_ds(ansible_zos_module, request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory")
+    list_volumes = None
+
+    # If path is None, check if zinventory-raw is used instead and if so, extract the
+    # volumes dictionary and pass it along.
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volume_with_less_datasets(ansible_zos_module)
+    yield list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
 # * because automatic teardown is not performed, leading to mock pollution

@@ -120,7 +120,7 @@ def get_volumes(ansible_zos_module, path):
             continue
         vol_w_info = info.split()
         if len(vol_w_info)>3:
-            if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
+            if (vol_w_info[2] == 'O' or vol_w_info[2] == 'A') and vol_w_info[4] == "STRG/RSDNT":
                 storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in storage_online:
@@ -293,3 +293,51 @@ def validate_ds_creation_on_volume(ansible_zos_module, vol, type):
             valid = True
             hosts.all.zos_data_set(name=dataset, state="absent")
     return valid
+
+def get_volume_with_less_datasets(ansible_zos_module):
+    """Get an array of available volumes, and it's unit"""
+    # Using the command d u,dasd,online to fill an array of available volumes with the priority
+    # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed, the
+    # private ones but actives then to get a flag if is available or not every volumes
+    # is a instance of a class to manage the use.
+    hosts = ansible_zos_module
+    list_volumes = []
+    all_volumes_list = []
+    flag = False
+    iteration = 5
+    volumes_datasets = []
+    # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
+    # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
+    while not flag and iteration > 0:
+        all_volumes = hosts.all.zos_operator(cmd="d u,dasd,online,,65536")
+        time.sleep(1)
+        if all_volumes is not None:
+            for volume in all_volumes.contacted.values():
+                temp = volume.get('content')
+                if temp is not None:
+                    all_volumes_list += temp
+            flag = True if len(all_volumes_list) > 5 else False
+        iteration -= 1
+    # Check if the volume is of storage and is active on prefer but also online as a correct option
+    for info in all_volumes_list:
+        if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
+            continue
+        vol_w_info = info.split()
+
+        if len(vol_w_info)>3:
+            if (vol_w_info[2] == 'O' or vol_w_info[2] == 'A') and vol_w_info[4] == "STRG/RSDNT":
+                # The next creation of dataset is to validate if the volume will work properly for the test suite
+                valid = validate_ds_creation_on_volume(hosts, vol_w_info[3], "pds")
+                # When is a valid volume is required to get the datasets present on the volume
+                if valid:
+                    ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
+                    for ds in ds_on_vol.contacted.values():
+                        datasets = str(ds.get("stdout")).split("\n")
+                        if len(datasets) > 0:
+                            volumes_datasets.append([len(datasets), vol_w_info[3]])
+
+    # To ensure we use the best volume available the order of the volumes will help
+    sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0], reverse=False)
+    list_volumes = [x[1] for x in sorted_volumes]
+
+    return list_volumes

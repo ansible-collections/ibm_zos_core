@@ -135,6 +135,7 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
+        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")
@@ -931,42 +932,39 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
         delete_remnants(hosts)
 
 # Commented this test because it was commented previously and keeps failing. Tracked on https://github.com/ansible-collections/ibm_zos_core/issues/2348
-# def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module, volumes_on_systems):
-#     hosts = ansible_zos_module
-#     data_set_name = get_tmp_ds_name()
-#     data_set_restore_location = get_tmp_ds_name()
-#     hlqs = "TMPHLQ"
-#     try:
-#         volumes = Volume_Handler(volumes_on_systems)
-#         volume_1 = volumes.get_available_vol()
-#         volume_2 = volumes.get_available_vol()
-#         delete_data_set_or_file(hosts, data_set_name)
-#         delete_data_set_or_file(hosts, data_set_restore_location)
-#         create_sequential_data_set_with_contents(
-#             hosts, data_set_name, DATA_SET_CONTENTS, volume_1
-#         )
-#         results = hosts.all.zos_backup_restore(
-#             operation="backup",
-#             data_sets=dict(include=data_set_name),
-#             volume=volume_1,
-#             backup_name=data_set_restore_location,
-#             overwrite=True,
-#         )
-#         assert_module_did_not_fail(results)
-#         assert_data_set_or_file_exists(hosts, data_set_restore_location)
-#         results = hosts.all.zos_backup_restore(
-#             operation="restore",
-#             backup_name=data_set_restore_location,
-#             overwrite=True,
-#             volume=volume_2,
-#             hlq=hlqs,
-#         )
-#         assert_module_did_not_fail(results)
-#         assert_data_set_exists(hosts, data_set_restore_location)
-#     finally:
-#         delete_data_set_or_file(hosts, data_set_name)
-#         delete_data_set_or_file(hosts, data_set_restore_location)
-#         delete_remnants(hosts, hlqs)
+def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module, volumes_on_systems_with_less_ds):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_restore_location = get_tmp_ds_name()
+    try:
+        volumes = Volume_Handler(volumes_on_systems_with_less_ds)
+        volume = volumes.get_available_vol()
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_restore_location)
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            volume='000000',
+            full_volume=True,
+            sms=dict(sms_storage_class="DB2SMS10"),
+            backup_name=data_set_restore_location,
+            overwrite=True,
+            space=500,
+            space_type="m",
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, data_set_restore_location)
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=data_set_restore_location,
+            overwrite=True,
+            full_volume=True,
+            volume=volume,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, data_set_restore_location)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_restore_location)
 
 
 def test_backup_and_restore_of_sms_group(ansible_zos_module, volumes_sms_systems):

@@ -17,28 +17,28 @@ DOCUMENTATION = r'''
 name: generate_data_set_name
 author: Marcel Gutierrez (@AndreMarcel99)
 version_added: "2.0.0"
-short_description: Filter returned valid data set names
+short_description: Filter HLQs to generate a new random valid data set name.
 description:
     - Provide a valid temporary data set name.
 options:
     value:
       description:
-        - High level qualifier.
+        - High level qualifier to be used in the data set names.
       type: str
       required: true
     middle_level_qualifier:
       description:
-        - Possible valid middle level qualifier.
+        - Middle level qualifier to be used in the data set names.
       type: str
       required: false
     last_level_qualifier:
       description:
-        - Possible valid last level qualifier.
+        - Low level qualifier to be used in the data set names.
       type: str
       required: false
     num_names:
       description:
-        - Number of data set names that you require to generate.
+        - Number of data set names to be generated.
       type: int
       required: false
 '''

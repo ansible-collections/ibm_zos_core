@@ -4,8 +4,8 @@
 .. _generate_data_set_name_module:
 
 
-generate_data_set_name -- Filter returned valid data set names
-==============================================================
+generate_data_set_name -- Filter HLQs to generate a new random valid data set name.
+===================================================================================
 
 
 
@@ -27,28 +27,28 @@ Parameters
 
 
 value
-  High level qualifier.
+  High level qualifier to be used in the data set names.
 
   | **required**: True
   | **type**: str
 
 
 middle_level_qualifier
-  Possible valid middle level qualifier.
+  Middle level qualifier to be used in the data set names.
 
   | **required**: False
   | **type**: str
 
 
 last_level_qualifier
-  Possible valid last level qualifier.
+  Low level qualifier to be used in the data set names.
 
   | **required**: False
   | **type**: str
 
 
 num_names
-  Number of data set names that you require to generate.
+  Number of data set names to be generated.
 
   | **required**: False
   | **type**: int

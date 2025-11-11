@@ -52,7 +52,7 @@ def generate_data_set_name(value, middle_level_qualifier="", last_level_qualifie
 
 
 def get_tmp_ds_name(middle_level_qualifier="", last_level_qualifier=""):
-    """Unify the random qualifiers generate in one name.
+    """Unify the random qualifiers generated into one name.
 
     Args:
         middle_level_qualifier {str,optional} -- valid str of a qualifier

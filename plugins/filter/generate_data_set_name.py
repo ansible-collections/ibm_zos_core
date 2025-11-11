@@ -45,27 +45,34 @@ options:
 
 EXAMPLES = r'''
 - name: Filter to get one data set name
-    set_fact:
-      data_set_name: {{ hlq | ibm.ibm_zos_core.generate_data_set_name}}"
+  set_fact:
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name }}"
+
 - name: Filter to get a data set name with a specific middle level qualifier
-    set_fact:
-      data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM")}}"
-- name: Filter to generate a data set name with a specific last level qualifier.
-    set_fact:
-      data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier="LLQADM")}}"
-- name: Filter to generate a data set name with a specific middle and last level qualifier.
-    set_fact:
-      data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM", last_level_qualifier="LLQADM")}}"
+  set_fact:
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM') }}"
+
+- name: Filter to generate a data set name with a specific last level qualifier
+  set_fact:
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM') }}"
+
+- name: Filter to generate a data set name with a specific middle and last level qualifier
+  set_fact:
+    data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', last_level_qualifier='LLQADM') }}"
+
 - name: Filter to generate 10 data set names
-    set_fact:
-      data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(num_names=10)}}"
-- name: Filter to generate 3 data set names with a specific last level qualifier.
-    set_fact:
-      data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier="LLQADM", num_names=3)}}"
-- name: Filter to generate 5 data set names with a specific middle level qualifier.
-    set_fact:
-      data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier="MLQADM", num_names=5)}}"
+  set_fact:
+    data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(num_names=10) }}"
+
+- name: Filter to generate 3 data set names with a specific last level qualifier
+  set_fact:
+    data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM', num_names=3) }}"
+
+- name: Filter to generate 5 data set names with a specific middle level qualifier
+  set_fact:
+    data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', num_names=5) }}"
 '''
+
 
 RETURN = r'''
   _value:

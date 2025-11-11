@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,13 +12,13 @@
 DOCUMENTATION = r'''
 ---
 module: playbook_upgrade_validator
-version_added: "1.0.0"
+version_added: "2.0.0"
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Validates playbooks against ibm_zos_core 2.0 and provides migration actions.
+short_description: Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 description:
   - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
-    based on migration rules for IBM z/OS core collection version 2.0.
+    based on migration rules for IBM z/OS Core collection version 2.0.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
   ignore_response_params:
@@ -29,26 +29,26 @@ options:
   migration_map:
     description:
       - A structured set of migration rules that specifies deprecated, renamed, and modified parameters
-        to help upgrade playbooks from ibm_zos_core 1.x to 2.0.
+        to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
     required: true
     type: dict
   output_path:
     description:
-      - File path where validation results should be written in JSON format.
+      - Path to the output JSON file where results should be saved.
     required: true
     type: str
   playbook_path:
     description:
-      - The path to the directory containing one or more Ansible playbooks.
+      - Path to the directory containing the Ansible playbooks to be validated.
     required: true
     type: str
 notes:
-  - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.
+  - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.0.
   - Supports reading tasks, blocks, and nested includes.
 '''
 
 EXAMPLES = r'''
-- name: execute playbook_upgrade_validator role
+- name: execute playbook_upgrade_validator role to list migration changes
   include_role:
     name: ibm.ibm_zos_core.playbook_upgrade_validator
   vars:
@@ -60,15 +60,15 @@ EXAMPLES = r'''
 RETURN = r'''
 changed:
   description:
-    - Always false as there is no state changes happen in this process.
+    - Always false as there are no state changes happening in this process.
   returned: always
   type: bool
 output_path:
-  description: File path where validation results should be written in JSON format.
+  description: Path to the output JSON file containing validation results.
   returned: always
   type: str
 playbook_path:
-  description: The path to the directory containing one or more Ansible playbooks.
+  description: The path to the directory containing the Ansible playbooks to be validated.
   returned: always
   type: str
 results:

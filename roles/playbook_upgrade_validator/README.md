@@ -1,11 +1,11 @@
 # ibm.ibm_zos_core.playbook_upgrade_validator
 
-This role validates playbooks against ibm_zos_core 2.0 and provides migration actions.
+This role validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 
 ## Role Variables
 
-The only variable required is:
+The following variables are required:
 
-- `playbook_path`: The path to the directory containing one or more Ansible playbooks.
-- `output_path`: File path where validation results should be written in JSON format.
+- `playbook_path`: Path to the directory containing the Ansible playbooks to be validated.
+- `output_path`: Path to the output JSON file where results should be saved.
 - `ignore_response_params`: Indicates whether information about response parameter changes should be included.

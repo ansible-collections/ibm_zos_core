@@ -1,7 +1,6 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,13 +16,13 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: playbook_upgrade_validator
-version_added: "1.0.0"
+version_added: "2.0.0"
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Validates playbooks against ibm_zos_core 2.0 and provides migration actions.
+short_description: Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 description:
   - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
-    based on migration rules for IBM z/OS core collection version 2.0.
+    based on migration rules for IBM z/OS Core collection version 2.0.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
   ignore_response_params:
@@ -34,26 +33,26 @@ options:
   migration_map:
     description:
       - A structured set of migration rules that specifies deprecated, renamed, and modified parameters
-        to help upgrade playbooks from ibm_zos_core 1.x to 2.0.
+        to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
     required: true
     type: dict
   output_path:
     description:
-      - File path where validation results should be written in JSON format.
+      - Path to the output JSON file where results should be saved.
     required: true
     type: str
   playbook_path:
     description:
-      - The path to the directory containing one or more Ansible playbooks.
+      - Path to the directory containing the Ansible playbooks to be validated.
     required: true
     type: str
 notes:
-  - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.
+  - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.0.
   - Supports reading tasks, blocks, and nested includes.
 '''
 
 EXAMPLES = r'''
-- name: execute playbook_upgrade_validator role
+- name: execute playbook_upgrade_validator role to list migration changes
   include_role:
     name: ibm.ibm_zos_core.playbook_upgrade_validator
   vars:
@@ -65,15 +64,15 @@ EXAMPLES = r'''
 RETURN = r'''
 changed:
   description:
-    - Always false as there is no state changes happen in this process.
+    - Always false as there are no state changes happening in this process.
   returned: always
   type: bool
 output_path:
-  description: File path where validation results should be written in JSON format.
+  description: Path to the output JSON file containing validation results.
   returned: always
   type: str
 playbook_path:
-  description: The path to the directory containing one or more Ansible playbooks.
+  description: The path to the directory containing the Ansible playbooks to be validated.
   returned: always
   type: str
 results:
@@ -97,9 +96,10 @@ results:
     ]
 '''
 
-from ansible.module_utils.basic import AnsibleModule
 import os
+import argparse
 import json
+import sys
 
 
 def load_playbook(path):
@@ -250,20 +250,18 @@ def validate_tasks(playbook_path, migration_map, ignore_response_params):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            playbook_path=dict(type="str", required=True),
-            migration_map=dict(type="dict", required=True),
-            output_path=dict(type="str", required=True),
-            ignore_response_params=dict(type="bool", default=False)
-        ),
-        supports_check_mode=True
-    )
+    parser = argparse.ArgumentParser(description="Sample Python script for z/OS Ansible role")
+    parser.add_argument("--playbook_path", type=str, required=True)
+    parser.add_argument("--migration_map", type=json.loads, required=True)
+    parser.add_argument("--output_path", type=str, required=True)
+    parser.add_argument("--ignore_response_params", type=bool, default=False)
 
-    playbook_path = module.params["playbook_path"]
-    migration_map = module.params["migration_map"]
-    output_path = module.params["output_path"]
-    ignore_response_params = module.params["ignore_response_params"]
+    args = parser.parse_args()
+
+    playbook_path = args.playbook_path
+    migration_map = args.migration_map
+    output_path = args.output_path
+    ignore_response_params = args.ignore_response_params
     all_results = []
     for root, dirs, files in os.walk(playbook_path):
         for file in files:
@@ -276,9 +274,19 @@ def main():
         with open(output_path, 'w') as out:
             json.dump(all_results, out, indent=2)
     except Exception as e:
-        module.fail_json(msg=f"Failed to write output into file: {str(e)}")
+        print(json.dumps({
+            "failed": True,
+            "msg": f"Failed to write output to file: {str(e)}"
+        }), file=sys.stderr)
+        sys.exit(1)
 
-    module.exit_json(changed=False, playbook_path=playbook_path, output_path=output_path, results=all_results)
+    result = {
+        "playbook_path": playbook_path,
+        "output_path": output_path,
+        "results": all_results
+    }
+    print(json.dumps(result))
+    sys.exit(0)
 
 
 if __name__ == "__main__":

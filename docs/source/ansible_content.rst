@@ -29,3 +29,4 @@ expedite their proficiency in record time.
    plugins
    modules
    filters
+   roles

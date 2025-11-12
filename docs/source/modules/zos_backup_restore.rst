@@ -150,6 +150,26 @@ overwrite
   | **default**: False
 
 
+compress
+  When *operation=backup*, enables compression of partitioned data sets using system-level compression features. If supported, this may utilize zEDC hardware compression.
+
+  This option can reduce the size of the temporary dataset generated during backup operations either before the AMATERSE step when *terse* is True or the resulting backup when *terse* is False.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
+terse
+  When *operation=backup*, executes an AMATERSE step to compress and pack the temporary data set for the backup. This creates a backup with a format suitable for transferring off-platform.
+
+  If *operation=backup* and if *dataset=False* then option *terse* must be True.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: True
+
+
 sms_storage_class
   When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
 
@@ -194,6 +214,7 @@ space_type
 
   | **required**: False
   | **type**: str
+  | **default**: m
   | **choices**: k, m, g, cyl, trk
 
 
@@ -264,6 +285,15 @@ Examples
          include:
            - user.gdg(-1)
            - user.gdg(0)
+       backup_name: my.backup.dzp
+
+   - name: Backup datasets using compress
+     zos_backup_restore:
+       operation: backup
+       compress: true
+       terse: true
+       data_sets:
+         include: someds.name.here
        backup_name: my.backup.dzp
 
    - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.

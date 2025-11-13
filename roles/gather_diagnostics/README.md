@@ -40,3 +40,9 @@ The following variables, typically defined in `default/main.yml`, control the ex
 * **`gather_diagnostics_output_dir`**
     * **Description**: Controls where the role creates a YAML reports from managed node and controller.
     * **Type**: `str`
+
+* **`gather_ssh_config`**
+    * **Description**:  Controls whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and
+    /etc/ssh/ssh_config for z/OS managed node.
+    * **Type**: `bool`
+    * **Default**: `true`

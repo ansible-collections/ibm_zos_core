@@ -13,7 +13,7 @@
 gather_diagnostics_gather_syslog: true
 # Whether to get controller logs
 controller_node: true
-# Wether to create the managed node logs
+# Whether to create the managed node logs
 managed_node: true
 # If set to true, it will create YAML report files.
 # If set to false, no report will be created, all sensitive data will be printed to the console.
@@ -24,3 +24,5 @@ controller_node_log_file: true
 gather_diagnostics_output_dir: "{{ lookup('env', 'HOME') }}"
 # Environment vars empty so that the test case and local host can take their own defined vars.
 environment_vars: {}
+# Whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and /etc/ssh/ssh_config
+gather_ssh_config: true

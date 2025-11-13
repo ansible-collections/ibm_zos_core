@@ -76,6 +76,14 @@ options:
               from the console.
         required: False
         type: str
+    gather_ssh_config:
+        description:
+            - >
+              Controls whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and
+              /etc/ssh/ssh_config for z/OS managed node
+        required: False
+        type: bool
+        default: True
 """
 
 EXAMPLES = r"""
@@ -110,6 +118,17 @@ EXAMPLES = r"""
         name: gather_diagnostics
       vars:
         gather_diagnostics_gather_syslog: false
+
+- name: Run gather_diagnostics and not collect ssh data
+  hosts: zos_host
+  gather_facts: false
+  collections:
+    - ibm.ibm_zos_core
+  tasks:
+    - include_role:
+        name: gather_diagnostics
+      vars:
+        gather_ssh_config: false
 
 - name: Run gather_diagnostics only for z/OS node diagnostics
   hosts: zos_host

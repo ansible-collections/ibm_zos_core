@@ -161,6 +161,42 @@
       ansible.builtin.debug:
         msg: "The 'zos_operator' command failed. This may be due to 'gather_diagnostics_gather_syslog' being true but the user lacking operator authority."
 
+- name: "z/OS Gather SSH configuration files"
+  when: gather_ssh_config
+  block:
+    - name: "z/OS | Gather user's ~/.ssh/rc"
+      ansible.builtin.shell: "cat ~/.ssh/rc"
+      register: managed_ssh_rc
+      changed_when: false
+      ignore_errors: true
+      no_log: "{{ managed_node_log_file }}"
+
+    - name: "z/OS | Gather system /etc/ssh/sshrc"
+      ansible.builtin.shell: "cat /etc/ssh/sshrc"
+      register: managed_etc_ssh_rc
+      changed_when: false
+      ignore_errors: true
+      no_log: "{{ managed_node_log_file }}"
+
+    - name: "z/OS | Gather system /etc/ssh/ssh_config"
+      ansible.builtin.shell: "cat /etc/ssh/ssh_config"
+      register: managed_etc_ssh_config
+      changed_when: false
+      ignore_errors: true
+      no_log: "{{ managed_node_log_file }}"
+
+    - name: "z/OS | Gather system /etc/ssh/sshd_config"
+      ansible.builtin.shell: "cat /etc/ssh/sshd_config"
+      register: managed_etc_sshd_config
+      changed_when: false
+      ignore_errors: true
+      no_log: "{{ managed_node_log_file }}"
+
+  rescue:
+    - name: "SSH config file gathering failed"
+      ansible.builtin.debug:
+        msg: "The attempt to gather SSH config files failed. This may be due to permission issues or files not existing."
+
 # --- DISPLAY MANAGED NODE RESULTS ---
 
 - name: "z/OS | --- RESULTS (sensitive data is hidden if managed_node_log_file=true) ---"
@@ -252,6 +288,30 @@
   when: managed_omvs_options is defined and managed_omvs_options.content is defined
   no_log: "{{ managed_node_log_file }}"
 
+- name: "z/OS | User ~/.ssh/rc"
+  ansible.builtin.debug:
+    var: managed_ssh_rc.stdout_lines
+  when: gather_ssh_config and managed_ssh_rc is defined and managed_ssh_rc.rc is defined
+  no_log: "{{ managed_node_log_file }}"
+
+- name: "z/OS | System /etc/ssh/sshrc"
+  ansible.builtin.debug:
+    var: managed_etc_ssh_rc.stdout_lines
+  when: gather_ssh_config and managed_etc_ssh_rc is defined and managed_etc_ssh_rc.rc is defined
+  no_log: "{{ managed_node_log_file }}"
+
+- name: "z/OS | System /etc/ssh/ssh_config"
+  ansible.builtin.debug:
+    var: managed_etc_ssh_config.stdout_lines
+  when: gather_ssh_config and managed_etc_ssh_config is defined and managed_etc_ssh_config.rc is defined
+  no_log: "{{ managed_node_log_file }}"
+
+- name: "z/OS | System /etc/ssh/sshd_config"
+  ansible.builtin.debug:
+    var: managed_etc_sshd_config.stdout_lines
+  when: gather_ssh_config and managed_etc_sshd_config is defined and managed_etc_sshd_config.rc is defined
+  no_log: "{{ managed_node_log_file }}"
+
 - name: "z/OS | Consolidate all results into one variable"
   ansible.builtin.set_fact:
     gather_diagnostics_managed_results:
@@ -272,6 +332,10 @@
       operator_d_a_l: "{{ managed_operator_output.content | default('N/A', true) }}"
       operator_d_omvs_limits: "{{ managed_omvs_limits.content | default('N/A', true) }}"
       operator_d_omvs_options: "{{ managed_omvs_options.content | default('N/A', true) }}"
+      ssh_rc_content: "{{ managed_ssh_rc.stdout_lines | default('N/A', true) }}"
+      etc_ssh_rc_content: "{{ managed_etc_ssh_rc.stdout_lines | default('N/A', true) }}"
+      etc_ssh_config_content: "{{ managed_etc_ssh_config.stdout_lines | default('N/A', true) }}"
+      etc_sshd_config_content: "{{ managed_etc_sshd_config.stdout_lines | default('N/A', true) }}"
   no_log: "{{ managed_node_log_file }}"
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"

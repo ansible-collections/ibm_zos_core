@@ -29,7 +29,7 @@ options:
     required: true
   resource:
     description:
-      - Type of resource which fields should be filtered from the returned JSON of zos_stat.
+      - Type of resource whose fields should be filtered from the zos_stat JSON output.
       - If the resource is a data set, the filter will only include the relevant fields for
         the specific type of data set queried by zos_stat. When C(isdataset=False), only
         common data sets attribute fields will be returned.

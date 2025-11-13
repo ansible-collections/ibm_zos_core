@@ -269,6 +269,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import zoau_io, datasets
@@ -607,6 +610,7 @@ def run_module():
         ),
         supports_check_mode=False
     )
+    validate_dependencies(module)
     args_def = dict(
         after=dict(type='str', default=''),
         backup=dict(type='bool', default=False, required=False),

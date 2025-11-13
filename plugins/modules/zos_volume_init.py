@@ -238,6 +238,9 @@ content:
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # pylint: disable=import-error
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 def run_module():
@@ -268,6 +271,7 @@ def run_module():
         argument_spec=module_args,
         supports_check_mode=False
     )
+    validate_dependencies(module)
 
     # sms managed and index are defined by ickdsf init as mutually exclusive.
     if module.params['sms_managed'] and not module.params['index']:

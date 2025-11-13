@@ -358,6 +358,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 from shlex import quote
 
@@ -1230,6 +1233,7 @@ def run_module(module):
     fail_json
         Failed to process size.
     """
+    validate_dependencies(module)
     # Parameter initialization
     pds_paths = None
     age = module.params.get('age')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -573,6 +573,12 @@ def get_changed_plugins(path, branch="origin/dev"):
             if "plugins/action/" in line:
                 path_corrected_line = line.split("|", 1)[0].strip()
             if "plugins/modules/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "roles/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "functional/roles/" in line:
+                if re.match('..', line):
+                    line = line.replace("..", "tests")
                 path_corrected_line = line.split("|", 1)[0].strip()
             if "functional/modules/" in line:
                 if re.match('...', line):

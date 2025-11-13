@@ -17,7 +17,7 @@ DOCUMENTATION = r"""
 name: filter_by_resource_type
 author: Alex Moreno (@rexemin)
 version_added: "2.0.0"
-short_description: filter returned fields from zos_stat
+short_description: Filter returned fields from zos_stat
 description:
   - Extract only the relevant fields for a resource from the output of zos_stat.
   - Choose between data set, file, aggregate or GDG fields.

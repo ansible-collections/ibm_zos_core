@@ -22,7 +22,7 @@ help:
 	@echo "$(line_header)"
 	@echo "  make clean;make role-doc;make html;make view-html;"
 	@echo "  make clean;make module-doc;make html;make view-html;"
-	@echo "  make clean;make module-doc;make role-doc;make html;make view-html;"
+	@echo "  make clean;make filter-doc;make module-doc;make role-doc;make html;make view-html;"
 	@echo "  make clean;"
 
 	@echo $(line_header)
@@ -81,6 +81,11 @@ clean:
 	rm -rf source/roles; \
 	fi
 
+	@if test -d source/filters; then \
+	echo "Deleting filters '$(ROOT_DIR)/source/filters'."; \
+	rm -rf source/filters; \
+	fi
+
 	@if test -d ../plugins/modules/rexx_module_doc; then \
 	echo "Deleting directory '../plugins/modules/rexx_module_doc'."; \
 	rm -rf ../plugins/modules/rexx_module_doc; \
@@ -91,7 +96,40 @@ clean:
 	mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
 	fi
 
-	@echo "Completed cleanup, run 'make module-doc' or 'make role-doc'."
+	@echo "Completed cleanup, run 'make module-doc', 'make filter-doc' or 'make role-doc'."
+
+filter-doc:
+	@echo $(line_header)
+	@echo "Running Target filter-doc"
+	@echo $(line_header)
+
+	@if ! test -d build; then \
+	mkdir build; \
+    echo "Make $(ROOT_DIR)/build directory for Sphinx generated HTML."; \
+	fi
+
+	@if ! test -d source/filters; then \
+	mkdir -p source/filters; \
+    echo "Make $(ROOT_DIR)/source/filters directory for Sphinx generated HTML."; \
+	fi
+
+	@if test -e ../plugins/filter/__init__.py; then \
+	echo "Rename file '../plugins/filter/__init__.py' to ../plugins/filter/__init__.py.skip to avoid reading empty python file.'"; \
+	mv ../plugins/filter/__init__.py ../plugins/filter/__init__.py.skip; \
+	fi
+
+	@echo "Generating ReStructuredText for all ansible modules found at '../plugins/filter/' to 'source/filters'."
+	@ansible-doc-extractor --template templates/module.rst.j2 source/filters ../plugins/filter/*.py
+
+
+	@if test -e ../plugins/filter/__init__.py.skip; then \
+    echo "Rename file '../plugins/filter/__init__.py.skip' back to ../plugins/filter/__init__.py.'"; \
+	mv -f ../plugins/filter/__init__.py.skip ../plugins/filter/__init__.py; \
+	fi
+
+	@echo $(line_header)
+	@echo "Completed ReStructuredText generation for filters; next run 'make html'"
+	@echo $(line_header)
 
 role-doc:
 	@echo $(line_header)

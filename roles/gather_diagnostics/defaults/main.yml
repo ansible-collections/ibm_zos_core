@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,16 +11,16 @@
 ---
 # Operator PCON command
 gather_diagnostics_gather_syslog: true
-# Wether to get the controller node logs
+# Whether to get controller logs
 controller_node: true
 # Wether to create the managed node logs
 managed_node: true
-# Set to true to create the YAML report files.
+# If set to true, it will create YAML report files.
 # If set to false, no report will be created, all sensitive data will be printed to the console.
 managed_node_log_file: true
-# Creates separate file for control node logs
+# Creates a separate file for controller logs
 controller_node_log_file: true
-# NEW: Directory to write reports to. Defaults to controller's home dir.
+# Directory to write reports to. Defaults to controller's home dir.
 gather_diagnostics_output_dir: "{{ lookup('env', 'HOME') }}"
-# environment vars empty so that the test case and local host can take their own defined vars.
+# Environment vars empty so that the test case and local host can take their own defined vars.
 environment_vars: {}

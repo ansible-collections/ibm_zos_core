@@ -17,7 +17,7 @@ recommend migration actions between version 1 and version 2, collect
 diagnostic facts for support and debugging, and easily determine whether a job
 is currently running.
 
-The **IBM z/OS core** provides many roles.
+The **IBM z/OS core** collection provides many roles.
 Reference material for each role contains documentation on how to use certain
 roles in your playbook.
 

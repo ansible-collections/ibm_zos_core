@@ -20,11 +20,15 @@ import re
 import pytest
 import string
 import random
+import yaml
+import json
+import subprocess
 import tempfile
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
 from datetime import datetime
+from shellescape import quote
 
 from shellescape import quote
 
@@ -33,6 +37,7 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 
 __metaclass__ = type
 
@@ -87,6 +92,61 @@ VSAM_RECORDS = """00000001A record
 00000003A record
 """
 
+INVENTORY = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
+
+BECOME_USER="""- hosts: zvm
+  collections :
+    - ibm.ibm_zos_core
+  gather_facts: False
+  ignore_errors: True
+  vars:
+    ZOAU: "{0}"
+    PYZ: "{1}"
+    ansible_become_user: {2}
+
+    ansible_become_method: {3}
+    ansible_su_prompt_l10n: {4} {{ansible_become_user}}
+  environment:
+    _BPXK_AUTOCVT: "ALL"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{5}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+  tasks:
+    - name: Fetch PDSE member while escalating privileges.
+      zos_fetch:
+        src: {6}
+        dest: /tmp/
+        flat: true
+      become: true
+"""
+
+ANSIBLE_CFD = """[defaults]
+forks = 25
+become_password_file = ./key.txt
+
+[connection]
+pipelining = True
+
+[ssh_connection]
+pipelining = True
+
+[colors]
+verbose = green"""
+
+KEY = "{0}"
 
 def extract_member_name(data_set):
     start = data_set.find("(")
@@ -1031,3 +1091,96 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     finally:
         if os.path.exists(dest):
             os.remove(dest)
+
+
+def test_become_option_with_restricted_user(ansible_zos_module, z_python_interpreter, get_config_for_become, capsys):
+    """
+    This tests check the become method it will pass the escalation but fail to execute the module because of lack of
+    permissions on on the system.
+    """
+    with capsys.disabled():
+        managed_user = None
+        managed_user_test_case_name = "managed_user_limited_become_method"
+        become = get_config_for_become
+        try:
+            # Initialize the Managed user API from the pytest fixture.
+            managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+            # Important: Execute the test case with the managed users execution utility.
+            # For become method is better to have verbose and debug as False only available for debug options.
+            managed_user.execute_managed_user_become_test(
+                managed_user_test_case = managed_user_test_case_name, become_method = become, debug = False,
+                verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+        finally:
+            # Delete the managed user on the remote host to avoid proliferation of users.
+            managed_user.delete_managed_user()
+
+def managed_user_limited_become_method(get_config_for_become, get_config_raw, capsys):
+    with capsys.disabled():
+        ds_name = get_tmp_ds_name()
+        ds_name = ds_name + "(MEMBER)"
+
+        # Get values from the command
+        adm_user = get_config_for_become["user"]
+        method = get_config_for_become["method"]
+        promp = get_config_for_become["promp"]
+        password = get_config_for_become["key"]
+
+        # Get values from the new configuration file
+        configuration = json.loads(get_config_raw)
+        ssh_key = configuration["ssh_key"]
+        hosts = configuration["host"]
+        user = configuration["user"]
+        python_path = configuration["python_interpreter"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = configuration["zoau"]
+        python_version = cut_python_path.split('/')[2]
+
+        try:
+            playbook = "playbook.yml"
+            inventory = "inventory.yml"
+            ansible_cfd = "ansible.cfd"
+            key_file = "key.txt"
+
+            os.system("echo {0} > {1}".format(quote(BECOME_USER.format(
+                zoau,
+                cut_python_path,
+                adm_user,
+                method,
+                promp,
+                python_version,
+                ds_name,
+            )), playbook))
+
+            os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )), inventory))
+
+            os.system("echo {0} > {1}".format(quote(ANSIBLE_CFD), ansible_cfd))
+            os.system("echo {0} > {1}".format(quote(KEY.format(
+                password
+            )), key_file))
+
+            command = "ansible-playbook -vvv -i {0} {1}".format(
+                inventory,
+                playbook
+            )
+
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                shell=True,
+                timeout=120,
+                encoding='utf-8'
+            )
+
+            assert result.returncode == 0
+        finally:
+            os.remove(playbook)
+            os.remove(inventory)
+            os.remove(key_file)
+            os.remove(ansible_cfd)

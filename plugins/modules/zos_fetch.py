@@ -938,7 +938,7 @@ def run_module():
     )
     src_data_set = None
     ds_type = None
-
+    is_member = False
     try:
         # Checking the source actually exists on the system.
         if "/" in src:  # USS

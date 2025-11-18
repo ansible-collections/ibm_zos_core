@@ -1235,6 +1235,7 @@ def run_module(module):
     """
     validate_dependencies(module)
     # Parameter initialization
+    pds_paths = None
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
     contains = module.params.get('contains')

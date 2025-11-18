@@ -83,6 +83,7 @@ options:
     required: false
     default: "false"
     type: bool
+    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
@@ -861,6 +862,7 @@ def run_module():
 
     src = module.params.get("src")
     hlq = None
+
     if module.params.get("use_qualifier"):
         hlq = datasets.get_hlq()
         module.params["src"] = hlq + "." + src
@@ -905,7 +907,6 @@ def run_module():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
     fetch_handler = FetchHandler(module)
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -941,7 +942,7 @@ def run_module():
     )
     src_data_set = None
     ds_type = None
-
+    is_member = False
     try:
         # Checking the source actually exists on the system.
         if "/" in src:  # USS

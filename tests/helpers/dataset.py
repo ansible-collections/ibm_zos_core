@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2024
+# Copyright (c) IBM Corporation 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -76,3 +76,10 @@ def get_random_qs(size=7):
         random_q = random_q.replace(random_char, random.choice(special_chars))
         count += 1
     return random_q
+
+def get_tmp_member():
+    # Generate a random length between 3 and 7
+    length = random.randint(2, 6)
+    random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    return random_str.upper()

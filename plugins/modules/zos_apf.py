@@ -556,6 +556,7 @@ def main():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

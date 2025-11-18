@@ -6,6 +6,27 @@
 Releases
 ========
 
+Version 1.15.1
+==============
+
+Bugfixes
+--------
+
+- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
+- zos_copy - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
+- zos_replace - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided ``encoding`` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
+
+Availability
+------------
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
 Version 1.15.0
 ==============
 

@@ -349,6 +349,7 @@ class ActionModule(ActionBase):
             be removed.
         """
         result = dict()
+        _scp_action = ''
         _sftp_action = 'get'
 
         if src_type == "PO" or src_type == "GDG":
@@ -360,7 +361,7 @@ class ActionModule(ActionBase):
         version_minor = version_inf['minor']
 
         # Override the Ansible Connection behavior for this module and track users configuration
-        sftp_transfer_method = "sftp"
+        # sftp_transfer_method = "scp"
         user_ssh_transfer_method = None
         is_ssh_transfer_method_updated = False
 
@@ -368,22 +369,23 @@ class ActionModule(ActionBase):
             if version_major == 2 and version_minor >= 11:
                 user_ssh_transfer_method = self._connection.get_option('ssh_transfer_method')
 
-                if user_ssh_transfer_method != sftp_transfer_method:
-                    self._connection.set_option('ssh_transfer_method', sftp_transfer_method)
-                    is_ssh_transfer_method_updated = True
+                # if user_ssh_transfer_method != sftp_transfer_method:
+                #     self._connection.set_option('ssh_transfer_method', sftp_transfer_method)
+                #     is_ssh_transfer_method_updated = True
 
             elif version_major == 2 and version_minor <= 10:
                 user_ssh_transfer_method = self._play_context.ssh_transfer_method
 
-                if user_ssh_transfer_method != sftp_transfer_method:
-                    self._play_context.ssh_transfer_method = sftp_transfer_method
-                    is_ssh_transfer_method_updated = True
+                # if user_ssh_transfer_method != sftp_transfer_method:
+                #     self._play_context.ssh_transfer_method = sftp_transfer_method
+                #     is_ssh_transfer_method_updated = True
 
             if is_ssh_transfer_method_updated:
                 display.vvv(u"ibm_zos_fetch SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
-            display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
+            display.vvv(u"SSH transfer method set: {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
+            display.vvv(u"{0} {1} TO {2}".format(_scp_action, remote_path, dest), host=self._play_context.remote_addr)
             (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
 
             display.vvv(u"ibm_zos_fetch return code: {0}".format(returncode), host=self._play_context.remote_addr)

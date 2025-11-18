@@ -117,6 +117,6 @@
 
 - name: "CONTROLLER | Save controller node results to a YAML file"
   ansible.builtin.copy:
-    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_controller.yml"
+    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_controller.log"
     content: "{{ gather_diagnostics_controller_results | to_nice_yaml }}"
   when: (gather_diagnostics_controller_results is defined) and controller_node_log_file

@@ -340,7 +340,7 @@
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
-    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_managed_node.yml"
+    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_managed_node.log"
     content: "{{ gather_diagnostics_managed_results | to_nice_yaml }}"
   delegate_to: localhost
   when: gather_diagnostics_managed_results is defined and managed_node_log_file

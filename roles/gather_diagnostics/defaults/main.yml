@@ -25,4 +25,4 @@ gather_diagnostics_output_dir: "{{ lookup('env', 'HOME') }}"
 # Environment vars empty so that the test case and local host can take their own defined vars.
 environment_vars: {}
 # Whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and /etc/ssh/ssh_config
-gather_ssh_config: true
+gather_ssh_config: false

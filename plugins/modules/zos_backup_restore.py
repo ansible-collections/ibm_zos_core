@@ -559,6 +559,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
     DataSet
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets
@@ -623,6 +626,7 @@ def main():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+    validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
         operation = params.get("operation")

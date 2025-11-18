@@ -174,6 +174,7 @@ options:
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
       - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
+    default: m
     choices:
       - k
       - m
@@ -412,7 +413,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"], default="m"),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -431,7 +432,7 @@ def main():
         operation = params.get("operation")
         data_sets = params.get("data_sets", {})
         space = params.get("space")
-        space_type = params.get("space_type")
+        space_type = params.get("space_type", "m")
         volume = params.get("volume")
         full_volume = params.get("full_volume")
         temp_volume = params.get("temp_volume")

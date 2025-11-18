@@ -655,10 +655,10 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
+                assert int(out.get("stdout")) != 0
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -687,10 +687,10 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
+                assert int(out.get("stdout")) != 0
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -736,10 +736,10 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
+                assert int(out.get("stdout")) != 0
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -762,10 +762,10 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" | wc -l".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
+                assert int(out.get("stdout")) != 0
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 

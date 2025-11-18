@@ -244,6 +244,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import opercmd
@@ -278,6 +281,7 @@ def run_module():
 
     result = dict(changed=False, count=0, actions=[])
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+    validate_dependencies(module)
     requests = []
     try:
         new_params = parse_params(module.params)

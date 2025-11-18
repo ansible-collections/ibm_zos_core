@@ -356,6 +356,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 def run_module():
@@ -377,6 +380,8 @@ def run_module():
     result = dict(changed=False)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    # Validate dependencies
+    validate_dependencies(module)
 
     args_def = dict(
         job_name=dict(type="job_identifier", required=False),

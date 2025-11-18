@@ -159,11 +159,14 @@ notes:
   - When querying a partitioned data set (PDS), if the Ansible user has
     RACF READ authority on it, the last referenced date will be updated by
     the query operation.
+  - If you need to filter the output from the module, you can use the filter_by_resource_type
+    filter inside of a playbook.
 
 seealso:
   - module: ansible.builtin.stat
   - module: zos_find
   - module: zos_gather_facts
+  - module: filter_by_resource_type
 """
 
 EXAMPLES = r"""

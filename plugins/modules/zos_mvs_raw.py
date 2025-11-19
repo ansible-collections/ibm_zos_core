@@ -1318,7 +1318,7 @@ notes:
     - 3. When executing a program, refer to the programs documentation as each programs requirments
       can vary fom DDs, instream-data indentation and continuation characters.
 seealso:
-- module: zos_data_set
+- module: ibm.ibm_zos_core.zos_data_set
 """
 
 RETURN = r"""

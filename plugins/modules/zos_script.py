@@ -144,8 +144,8 @@ notes:
     remote machine.
 
 seealso:
-  - module: zos_copy
-  - module: zos_tso_command
+  - module: ibm.ibm_zos_core.zos_copy
+  - module: ibm.ibm_zos_core.zos_tso_command
 """
 
 EXAMPLES = r"""

@@ -20,9 +20,20 @@
   register: python_path_result
 
 - name: Load migration changes from JSON file
-  set_fact:
+  ansible.builtin.set_fact:
     data: "{{ lookup('file', 'dependency_config.json') | from_json }}"
   delegate_to: localhost
+
+- name: Create logs directory when output_path is not defined
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/logs"
+    state: directory
+  when: output_path is not defined
+
+- name: Set output_path variable if it was not defined
+  ansible.builtin.set_fact:
+    output_path: "{{ playbook_dir }}/logs/migration_report.json"
+  when: output_path is not defined
 
 - name: Run playbook upgrade validator to list migration changes
   ansible.builtin.command:

@@ -35,7 +35,8 @@ options:
   output_path:
     description:
       - Path to the output JSON file where results should be saved.
-    required: true
+      - Default path is <<playbook_dir>>/logs/migration_report.json
+    required: false
     type: str
   playbook_path:
     description:

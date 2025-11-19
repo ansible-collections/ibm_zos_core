@@ -1493,7 +1493,7 @@ class RACFHandler():
             sysin_file = None
 
             if not datasets.exists(self.database):
-                return 1, "", f"The RACF database {self.database} does not exist. No purge was not performed.", None
+                return 1, "", f"The RACF database {self.database} does not exist. No purge was performed.", None
             database_listing = datasets.list_datasets(self.database)[0]
             database_total_space = math.ceil(database_listing.total_space / 1000)
 

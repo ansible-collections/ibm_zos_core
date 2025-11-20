@@ -339,6 +339,46 @@ force
   | **default**: False
 
 
+encoding
+  Specifies the character encoding conversion to be applied to the source files before archiving.
+
+  Supported character sets rely on the charset conversion utility ``iconv`` version the most common character sets are supported.
+
+  After conversion the files are stored in same location and name as src and the same src is taken in consideration for archive.
+
+  Source files will be converted to the new encoding and will not be restored to their original encoding.
+
+  If encoding fails for any file in a set of multiple files, an exception will be raised and archiving will be skipped.
+
+  The original files in ``src`` will be converted. The module will revert the encoding conversion after a successful archive, but no backup will be created. If you need to encode using a backup and then archive take a look at `zos_encode <./zos_encode.html>`_ module.
+
+  | **required**: False
+  | **type**: dict
+
+
+  from
+    The character set of the source *src*.
+
+    | **required**: False
+    | **type**: str
+
+
+  to
+    The destination *dest* character set for the files to be written as.
+
+    | **required**: False
+    | **type**: str
+
+
+  skip_encoding
+    List of names to skip encoding before archiving. This is only used if *encoding* is set, otherwise is ignored.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+
+
+
 
 
 Attributes
@@ -428,6 +468,32 @@ Examples
          format_options:
            use_adrdssu: true
 
+   - name: Encode the source data set into Latin-1 before archiving into a terse data set
+     zos_archive:
+       src: "USER.ARCHIVE.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+
+   - name: Encode and archive multiple data sets but skip encoding for a few.
+     zos_archive:
+       src:
+         - "USER.ARCHIVE1.TEST"
+         - "USER.ARCHIVE2.TEST"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+         format_options:
+           use_adrdssu: true
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
+         skip_encoding:
+           - "USER.ARCHIVE2.TEST"
+
 
 
 
@@ -512,5 +578,23 @@ expanded_exclude_sources
   The list of matching exclude paths from the exclude option.
 
   | **returned**: always
+  | **type**: list
+
+encoded
+  List of files or data sets that were successfully encoded.
+
+  | **returned**: success
+  | **type**: list
+
+failed_on_encoding
+  List of files or data sets that were failed while encoding.
+
+  | **returned**: success
+  | **type**: list
+
+skipped_encoding_targets
+  List of files or data sets that were skipped while encoding.
+
+  | **returned**: success
   | **type**: list
 

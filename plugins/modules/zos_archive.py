@@ -51,7 +51,7 @@ options:
     type: dict
     required: false
     suboptions:
-      name:
+      type:
         description:
           - The compression format to use.
         type: str
@@ -65,27 +65,27 @@ options:
           - terse
           - xmit
           - pax
-      format_options:
+        aliases: [ name ]
+      options:
         description:
           - Options specific to a compression format.
         type: dict
         required: false
+        aliases: [ format_options ]
         suboptions:
-          terse_pack:
+          spack:
             description:
               - Compression option for use with the terse format,
-                I(name=terse).
+                I(type=terse).
               - Pack will compress records in a data set so that the output
                 results in lossless data compression.
               - Spack will compress records in a data set so the output results
                 in complex data compression.
               - Spack will produce smaller output and take approximately 3
                 times longer than pack compression.
-            type: str
+            type: bool
             required: false
-            choices:
-              - pack
-              - spack
+            default: true
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -97,7 +97,7 @@ options:
               - When providing the I(xmit_log_data_set) name, ensure there
                 is adequate space.
             type: str
-          use_adrdssu:
+          adrdssu:
             description:
               - If set to true, the C(zos_archive) module will use Data
                 Facility Storage Management Subsystem data set services
@@ -105,6 +105,7 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
+            aliases: [ use_adrdssu ]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -318,6 +319,10 @@ options:
         be restored to their original encoding.
       - If encoding fails for any file in a set of multiple files, an
         exception will be raised and archiving will be skipped.
+      - The original files in C(src) will be converted. The module will
+        revert the encoding conversion after a successful archive, but
+        no backup will be created. If you need to encode using a backup
+        and then archive take a look at L(zos_encode,./zos_encode.html) module.
     type: dict
     required: false
     suboptions:
@@ -354,7 +359,7 @@ notes:
     retrieve to the controller and then zos_copy or zos_unarchive for
     copying to a remote or send to the remote and then unpack the archive
     respectively.
-  - When packing and using C(use_adrdssu) flag the module will take up to two
+  - When packing and using C(adrdssu) flag the module will take up to two
     times the space indicated in C(dest_data_set).
   - tar, zip, bz2 and pax are archived using python C(tarfile) library which
     uses the latest version available for each format, for compatibility when
@@ -374,7 +379,7 @@ EXAMPLES = r'''
     src: /tmp/archive/foo.txt
     dest: /tmp/archive/foo_archive_test.tar
     format:
-      name: tar
+      type: tar
 
 # Archive multiple files
 - name: Archive list of files into a zip
@@ -384,7 +389,7 @@ EXAMPLES = r'''
       - /tmp/archive/bar.txt
     dest: /tmp/archive/foo_bar_archive_test.zip
     format:
-    name: zip
+    type: zip
 
 # Archive one data set into terse
 - name: Archive data set into a terse
@@ -392,7 +397,7 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
 
 # Use terse with different options
 - name: Archive data set into a terse, specify pack algorithm and use adrdssu
@@ -400,10 +405,10 @@ EXAMPLES = r'''
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
-      format_options:
-        terse_pack: "spack"
-        use_adrdssu: true
+      type: terse
+      options:
+        spack: true
+        adrdssu: true
 
 # Use a pattern to store
 - name: Archive data set pattern using xmit
@@ -412,7 +417,7 @@ EXAMPLES = r'''
     exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
     dest: "USER.ARCHIVE.RESULT.XMIT"
     format:
-      name: xmit
+      type: xmit
 
 - name: Archive multiple GDSs into a terse
   zos_archive:
@@ -422,25 +427,25 @@ EXAMPLES = r'''
       - "USER.GDG(-2)"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
-      format_options:
-        use_adrdssu: true
+      type: terse
+      options:
+        adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
   zos_archive:
     src: "USER.ARCHIVE.*"
     dest: "USER.GDG(+1)"
     format:
-      name: terse
-      format_options:
-        use_adrdssu: true
+      type: terse
+      options:
+        adrdssu: true
 
 - name: Encode the source data set into Latin-1 before archiving into a terse data set
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -452,9 +457,9 @@ EXAMPLES = r'''
       - "USER.ARCHIVE2.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
-      format_options:
-        use_adrdssu: true
+      type: terse
+      options:
+        adrdssu: true
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -463,6 +468,12 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+dest:
+    description:
+        - The remote absolute path or data set where the archive was
+          created.
+    type: str
+    returned: always
 state:
     description:
         - The state of the input C(src).
@@ -539,6 +550,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, mvs_cmd, validation, encode)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets
@@ -570,7 +584,7 @@ def get_archive_handler(module):
         The archive format for the module.
 
     """
-    format = module.params.get("format").get("name")
+    format = module.params.get("format").get("type")
     if format in ["tar", "gz", "bz2", "pax"]:
         return TarArchive(module)
     elif format == "terse":
@@ -701,7 +715,7 @@ class Archive():
         """
         self.module = module
         self.dest = module.params['dest']
-        self.format = module.params.get("format").get("name")
+        self.format = module.params.get("format").get("type")
         self.remove = module.params['remove']
         self.changed = False
         self.errors = []
@@ -778,6 +792,10 @@ class Archive():
 
     @abc.abstractmethod
     def encode_source(self):
+        pass
+
+    @abc.abstractmethod
+    def revert_encoding(self):
         pass
 
     @property
@@ -1045,6 +1063,23 @@ class USSArchive(Archive):
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.to_encoding, self.from_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.from_encoding)
+
+            except Exception as e:
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
+                raise EncodeError(warning_message) from e
+
 
 class TarArchive(USSArchive):
     def __init__(self, module):
@@ -1154,7 +1189,7 @@ class MVSArchive(Archive):
         ----------
         original_checksums : str
             The SHA256 hash of the contents of input file.
-        use_adrdssu : bool
+        adrdssu : bool
             Whether to use Data Facility Storage Management Subsystem data set services
             program ADRDSSU to uncompress data sets or not.
         expanded_sources : list[str]
@@ -1173,13 +1208,14 @@ class MVSArchive(Archive):
         super(MVSArchive, self).__init__(module)
         self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
-        self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
+        self.adrdssu = module.params.get("format").get("options").get("adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+        self.ds_types = {}
 
     def open(self):
         pass
@@ -1295,7 +1331,7 @@ class MVSArchive(Archive):
         if space_type is None:
             arguments.update(space_type="m")
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
     def create_dest_ds(self, name):
@@ -1313,18 +1349,6 @@ class MVSArchive(Archive):
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
         data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
-        # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
-        # rc, out, err = self.module.run_command(cmd)
-
-        # if not changed:
-        #     self.module.fail_json(
-        #         msg="Failed preparing {0} to be used as an archive".format(name),
-        #         stdout=out,
-        #         stderr=err,
-        #         stdout_lines=cmd,
-        #         rc=rc,
-        #     )
         return name
 
     def dump_into_temp_ds(self, temp_ds):
@@ -1536,7 +1560,8 @@ class MVSArchive(Archive):
             try:
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
-                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                    ds_type = "PS"
+                self.ds_types[target] = ds_type
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1546,7 +1571,7 @@ class MVSArchive(Archive):
                     dest_type=ds_type,
                     tmphlq=self.tmphlq
                 )
-                self.encoded.append(os.path.abspath(target))
+                self.encoded.append(target)
             except Exception:
                 self.failed_on_encoding.append(os.path.abspath(target))
         return {
@@ -1554,6 +1579,27 @@ class MVSArchive(Archive):
             "failed_on_encoding": self.failed_on_encoding,
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
+
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                ds_type = self.ds_types.get(target, "PS")
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.to_encoding,
+                    self.from_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+            except Exception as e:
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
+                raise EncodeError(warning_message) from e
 
 
 class AMATerseArchive(MVSArchive):
@@ -1571,13 +1617,10 @@ class AMATerseArchive(MVSArchive):
             Compression option for use with the terse format.
         """
         super(AMATerseArchive, self).__init__(module)
-        self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
+        spack = module.params.get("format").get("options").get("spack")
         # We store pack_ard in uppercase because the AMATerse command requires
         # it in uppercase.
-        if self.pack_arg is None:
-            self.pack_arg = "SPACK"
-        else:
-            self.pack_arg = self.pack_arg.upper()
+        self.pack_arg = "SPACK" if spack else "PACK"
 
     def add(self, src, archive):
         """Archive src into archive using AMATERSE program.
@@ -1617,9 +1660,9 @@ class AMATerseArchive(MVSArchive):
         Raises
         ------
         fail_json
-            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
+            To archive multiple source data sets, you must use option 'adrdssu=True'.
         """
-        if self.use_adrdssu:
+        if self.adrdssu:
             source, changed = self._create_dest_data_set(
                 type="seq",
                 record_format="u",
@@ -1634,7 +1677,7 @@ class AMATerseArchive(MVSArchive):
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.targets) > 1:
                 self.module.fail_json(
-                    msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
+                    msg="To archive multiple source data sets, you must use option 'adrdssu=True'.")
             source = self.targets[0]
         dataset = data_set.MVSDataSet(
             name=self.dest,
@@ -1666,7 +1709,7 @@ class XMITArchive(MVSArchive):
             The name of the data set to store xmit log output.
         """
         super(XMITArchive, self).__init__(module)
-        self.xmit_log_data_set = module.params.get("format").get("format_options").get("xmit_log_data_set")
+        self.xmit_log_data_set = module.params.get("format").get("options").get("xmit_log_data_set")
 
     def add(self, src, archive):
         """Archive src into archive using TSO XMIT.
@@ -1711,9 +1754,9 @@ class XMITArchive(MVSArchive):
         Raises
         ------
         fail_json
-            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
+            To archive multiple source data sets, you must use option 'adrdssu=True'.
         """
-        if self.use_adrdssu:
+        if self.adrdssu:
             source, changed = self._create_dest_data_set(
                 type="seq",
                 record_format="u",
@@ -1728,7 +1771,7 @@ class XMITArchive(MVSArchive):
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.sources) > 1:
                 self.module.fail_json(
-                    msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
+                    msg="To archive multiple source data sets, you must use option 'adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
         dataset = data_set.MVSDataSet(
@@ -1823,25 +1866,49 @@ def run_module():
             format=dict(
                 type='dict',
                 options=dict(
-                    name=dict(
+                    type=dict(
                         type='str',
                         default='gz',
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                        aliases=['name'],
+                        deprecated_aliases=[
+                            dict(
+                                name='name',
+                                version='3.0.0',
+                                collection_name='ibm.ibm_zos_core'
+                            )
+                        ],
                     ),
-                    format_options=dict(
+                    options=dict(
                         type='dict',
                         required=False,
+                        aliases=['format_options'],
+                        deprecated_aliases=[
+                            dict(
+                                name='format_options',
+                                version='3.0.0',
+                                collection_name='ibm.ibm_zos_core'
+                            )
+                        ],
                         options=dict(
-                            terse_pack=dict(
-                                type='str',
-                                choices=['pack', 'spack'],
+                            spack=dict(
+                                type='bool',
+                                default=True,
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
                             ),
-                            use_adrdssu=dict(
+                            adrdssu=dict(
                                 type='bool',
                                 default=False,
+                                aliases=['use_adrdssu'],
+                                deprecated_aliases=[
+                                    dict(
+                                        name='use_adrdssu',
+                                        version='3.0.0',
+                                        collection_name='ibm.ibm_zos_core'
+                                    )
+                                ],
                             )
                         ),
                     ),
@@ -1910,6 +1977,7 @@ def run_module():
         ),
         supports_check_mode=True,
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(type='list', elements='str', required=True),
@@ -1918,41 +1986,44 @@ def run_module():
         format=dict(
             type='dict',
             options=dict(
-                name=dict(
+                type=dict(
                     type='str',
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
+                    aliases=['name'],
                 ),
-                format_options=dict(
+                options=dict(
                     type='dict',
                     required=False,
                     options=dict(
-                        terse_pack=dict(
-                            type='str',
+                        spack=dict(
+                            type='bool',
                             required=False,
-                            choices=['pack', 'spack'],
+                            default=True,
                         ),
                         xmit_log_data_set=dict(
                             type='str',
                             required=False,
                         ),
-                        use_adrdssu=dict(
+                        adrdssu=dict(
                             type='bool',
                             default=False,
+                            aliases=['use_adrdssu'],
                         )
                     ),
                     default=dict(
-                        terse_pack="spack",
+                        spack=True,
                         xmit_log_data_set="",
-                        use_adrdssu=False),
+                        adrdssu=False),
+                    aliases=['format_options'],
                 ),
             ),
             default=dict(
-                name="",
-                format_options=dict(
-                    terse_pack="spack",
+                type="",
+                options=dict(
+                    spack=True,
                     xmit_log_data_set="",
-                    use_adrdssu=False
+                    adrdssu=False
                 )
             ),
         ),
@@ -1997,6 +2068,7 @@ def run_module():
         original_message='',
         message=''
     )
+
     if module.check_mode:
         module.exit_json(**result)
 
@@ -2013,8 +2085,10 @@ def run_module():
     if archive.dest_exists() and not archive.force:
         module.fail_json(msg="%s file exists. Use force flag to replace dest" % archive.dest)
 
+    encoding_result = None
     archive.find_targets()
     if archive.targets_exist():
+        # encoding the source if encoding is provided.
         if encoding:
             archive.encoding_targets()
             encoding_result = archive.encode_source()
@@ -2031,6 +2105,9 @@ def run_module():
         if archive.dest_type() == "USS":
             archive.update_permissions()
         archive.changed = archive.is_different_from_original()
+        # after successful archive revert the source encoding for all the files encoded.
+        if encoding_result:
+            archive.revert_encoding()
     archive.get_state()
 
     module.exit_json(**archive.result)

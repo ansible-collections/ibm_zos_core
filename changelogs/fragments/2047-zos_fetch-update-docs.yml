@@ -1,3 +1,0 @@
-minor_changes:
-   - zos_fetch - Updated the documentation to correctly state what the default behavior of the module is.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2047).

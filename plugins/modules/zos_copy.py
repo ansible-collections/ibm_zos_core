@@ -44,7 +44,7 @@ options:
       - If neither C(src) or C(dest) have record format Fixed Block with ANSI
         format (FBA) or Variable Block with ANSI format (VBA), the module
         will fail.
-      - This option is only valid for text files. If C(is_binary) is C(true)
+      - This option is only valid for text files. If C(binary) is C(true)
         or C(executable) is C(true) as well, the module will fail.
     type: bool
     default: false
@@ -114,7 +114,7 @@ options:
         process outlined here and in the C(volume) option.
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of
         C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the
-        remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block
+        remaining attributes will be computed. If I(binary=true), C(dest) will have a Fixed Block
         (FB) record format with a record length of 80, block size of 32720, and the remaining
         attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
@@ -154,7 +154,7 @@ options:
       - If C(encoding) is not provided, the module determines which local and remote
         charsets to convert the data from and to. Note that this is only done for text
         data and not binary data.
-      - Only valid if C(is_binary) is false.
+      - Only valid if C(binary) is false.
     type: dict
     required: false
     suboptions:
@@ -176,7 +176,7 @@ options:
         that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
-  force:
+  replace:
     description:
       - If set to C(true) and the remote file or data set C(dest) is empty,
         the C(dest) will be reused.
@@ -193,14 +193,14 @@ options:
     type: bool
     default: false
     required: false
-  force_lock:
+  force:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
-        process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
+        process with DISP=SHR or DISP=OLD the module will fail. Use C(force)
         to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
-      - Using C(force_lock) uses operations that are subject to race conditions
+      - Using C(force) uses operations that are subject to race conditions
         and can lead to data loss, use with caution.
       - If a data set member has aliases, and is not a program
         object, copying that member to a dataset that is in use will result in
@@ -225,17 +225,18 @@ options:
     required: false
     default: true
     version_added: "1.4.0"
-  is_binary:
+  binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a
         binary file or data set.
-      - When I(is_binary=true), no encoding conversion is applied to the content,
+      - When I(binary=true), no encoding conversion is applied to the content,
         all content transferred retains the original state.
-      - Use I(is_binary=true) when copying a Database Request Module (DBRM) to
+      - Use I(binary=true) when copying a Database Request Module (DBRM) to
         retain the original state of the serialized SQL statements of a program.
     type: bool
     default: false
     required: false
+    aliases: [binary]
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -656,7 +657,7 @@ EXAMPLES = r"""
   zos_copy:
     src: /path/to/binary/file
     dest: HLQ.SAMPLE.PDSE(MEMBER)
-    is_binary: true
+    binary: true
 
 - name: Copy a sequential data set to a PDS member
   zos_copy:
@@ -682,14 +683,14 @@ EXAMPLES = r"""
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
-    force: true
+    replace: true
 
 - name: Copy PDS member to a new PDS member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(SRCMEM)
     dest: HLQ.NEW.PDSE(DESTMEM)
     remote_src: true
-    force: true
+    replace: true
 
 - name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
   zos_copy:
@@ -897,7 +898,7 @@ state:
     sample: file
 note:
     description: A note to the user after module terminates.
-    returned: When ``force=true`` and ``dest`` exists
+    returned: When ``replace=true`` and ``dest`` exists
     type: str
     sample: No data was copied
 msg:
@@ -963,6 +964,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
     idcams
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+
 
 if PY3:
     import pathlib
@@ -986,12 +992,12 @@ class CopyHandler(object):
     def __init__(
         self,
         module,
-        is_binary=False,
+        binary=False,
         executable=False,
         aliases=False,
         asa_text=False,
         backup_name=None,
-        force_lock=False,
+        force=False,
         identical_gdg_copy=False,
         tmphlq=None
     ):
@@ -1005,7 +1011,7 @@ class CopyHandler(object):
 
         Keyword Parameters
         ------------------
-        is_binary : bool
+        binary : bool
             Whether the file or data set to be copied
             contains binary data.
         executable : bool
@@ -1018,7 +1024,7 @@ class CopyHandler(object):
         backup_name : str
             The USS path or data set name of destination
             backup.
-        force_lock : str
+        force : str
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
@@ -1030,7 +1036,7 @@ class CopyHandler(object):
         module : AnsibleModule
             The AnsibleModule object from currently
             running module.
-        is_binary : bool
+        binary : bool
             Whether the file or data set to be copied
             contains binary data.
         executable : bool
@@ -1043,7 +1049,7 @@ class CopyHandler(object):
         backup_name : str
             The USS path or data set name of destination
             backup.
-        force_lock : str
+        force : str
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
@@ -1051,12 +1057,12 @@ class CopyHandler(object):
             High Level Qualifier for temporary datasets.
         """
         self.module = module
-        self.is_binary = is_binary
+        self.binary = binary
         self.executable = executable
         self.asa_text = asa_text
         self.aliases = aliases
         self.backup_name = backup_name
-        self.force_lock = force_lock
+        self.force = force
         self.identical_gdg_copy = identical_gdg_copy
         self.tmphlq = tmphlq
 
@@ -1110,7 +1116,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force=self.force)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -1122,11 +1128,11 @@ class CopyHandler(object):
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
-            if self.is_binary or self.asa_text:
+            if self.binary or self.asa_text:
                 copy_args["options"] = "-B"
 
             try:
-                datasets.copy(new_src, dest, force=self.force_lock, **copy_args)
+                datasets.copy(new_src, dest, force=self.force, **copy_args)
             except zoau_exceptions.ZOAUException as copy_exception:
                 raise CopyOperationError(
                     msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -1150,7 +1156,7 @@ class CopyHandler(object):
         CopyOperationError
             When REPRO fails to copy the data set.
         """
-        out_dsp = "shr" if self.force_lock else "old"
+        out_dsp = "shr" if self.force else "old"
         dds = {"OUT": "{0},{1}".format(dest.upper(), out_dsp)}
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
@@ -1185,11 +1191,11 @@ class CopyHandler(object):
             True if every copy operation was successful, False otherwise.
         """
         src_view = gdgs.GenerationDataGroupView(src)
-        generations = src_view.generations()
+        generations = src_view.generations
         copy_args = {
             "options": ""
         }
-        if self.is_binary or self.asa_text:
+        if self.binary or self.asa_text:
             copy_args["options"] = "-B"
 
         success = True
@@ -1205,9 +1211,23 @@ class CopyHandler(object):
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
                 # Perform the copy operation
-            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
-            if rc != 0:
-                success = False
+
+            try:
+                result = datasets.copy(gds.name, dest_gen_name, **copy_args)
+                rc = result.rc if hasattr(result, 'rc') else result
+                if rc != 0:
+                    success = False
+            except zoau_exceptions.ZOAUException as e:
+                stderr = getattr(e.response, 'stderr_response', str(e))
+                if "BGYSC0514E" in stderr :
+                    raise GenerationDataGroupCreateError(
+                        msg=(
+                            "BGYSC0514E An error occurred while attempting to define the file."
+                            " This might be because the GDS part of the src GDG is being used by another process."
+                        )
+                    ) from e
+                else:
+                    raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e
         return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
@@ -1471,7 +1491,7 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r is bytes 0d
+                # In UTF-8, \r is bytes 0d
                 if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)
@@ -1563,7 +1583,7 @@ class USSCopyHandler(CopyHandler):
     def __init__(
         self,
         module,
-        is_binary=False,
+        binary=False,
         executable=False,
         asa_text=False,
         aliases=False,
@@ -1584,7 +1604,7 @@ class USSCopyHandler(CopyHandler):
         common_file_args : dict
             Mode, group and owner information to be
             applied to destination file.
-        is_binary : bool
+        binary : bool
             Whether the file to be copied contains binary data.
         backup_name : str
             The USS path or data set name of destination backup.
@@ -1599,7 +1619,7 @@ class USSCopyHandler(CopyHandler):
         """
         super().__init__(
             module,
-            is_binary=is_binary,
+            binary=binary,
             executable=executable,
             asa_text=asa_text,
             aliases=aliases,
@@ -1616,7 +1636,7 @@ class USSCopyHandler(CopyHandler):
         src_ds_type,
         src_member,
         member_name,
-        force,
+        replace,
         content_copy,
     ):
         """Copy a file or data set to a USS location.
@@ -1638,7 +1658,7 @@ class USSCopyHandler(CopyHandler):
             Whether src is a data set member.
         member_name : str
             The name of the source data set member.
-        force : bool
+        replace : bool
             Whether to copy files to an already existing directory.
         content_copy : bool
             Whether copy is using content option or not.
@@ -1682,7 +1702,7 @@ class USSCopyHandler(CopyHandler):
                 dest = self._copy_to_file(src, dest, content_copy, conv_path)
                 changed_files = None
             else:
-                dest, changed_files = self._copy_to_dir(src, dest, conv_path, force)
+                dest, changed_files = self._copy_to_dir(src, dest, conv_path, replace)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -1732,8 +1752,8 @@ class USSCopyHandler(CopyHandler):
             dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
         new_src = conv_path or src
         try:
-            if self.is_binary:
-                copy.copy_uss_mvs(new_src, dest, is_binary=True)
+            if self.binary:
+                copy.copy_uss_mvs(new_src, dest, binary=True)
             else:
                 opts = dict()
                 opts["options"] = ""
@@ -1765,7 +1785,7 @@ class USSCopyHandler(CopyHandler):
         src_dir,
         dest_dir,
         conv_path,
-        force
+        replace
     ):
         """Helper function to copy a USS directory to another USS directory.
         If the path for dest_dir does not end with a trailing slash ("/"),
@@ -1779,7 +1799,7 @@ class USSCopyHandler(CopyHandler):
             USS dest directory.
         conv_path : str
             Path to the converted source directory.
-        force :bool
+        replace :bool
             Whether to copy files to an already existing directory.
 
         Returns
@@ -1804,7 +1824,7 @@ class USSCopyHandler(CopyHandler):
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
             # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
-            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=replace)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
@@ -1978,7 +1998,7 @@ class USSCopyHandler(CopyHandler):
                     result = copy.copy_gdg2uss(
                         src,
                         dest,
-                        is_binary=self.is_binary,
+                        binary=self.binary,
                         asa_text=self.asa_text
                     )
 
@@ -2010,7 +2030,7 @@ class USSCopyHandler(CopyHandler):
                     copy.copy_uss_mvs(
                         src,
                         dest,
-                        is_binary=self.is_binary
+                        binary=self.binary
                     )
         except CopyOperationError as err:
             raise err
@@ -2022,12 +2042,12 @@ class PDSECopyHandler(CopyHandler):
     def __init__(
         self,
         module,
-        is_binary=False,
+        binary=False,
         executable=False,
         aliases=False,
         asa_text=False,
         backup_name=None,
-        force_lock=False,
+        force=False,
         tmphlq=None
     ):
         """ Utility class to handle copying to partitioned data sets or
@@ -2041,7 +2061,7 @@ class PDSECopyHandler(CopyHandler):
 
         Keyword Parameters
         ------------------
-        is_binary : bool
+        binary : bool
             Whether the data set to be copied contains
             binary data.
         backup_name : str
@@ -2051,12 +2071,12 @@ class PDSECopyHandler(CopyHandler):
         """
         super().__init__(
             module,
-            is_binary=is_binary,
+            binary=binary,
             executable=executable,
             aliases=aliases,
             asa_text=asa_text,
             backup_name=backup_name,
-            force_lock=force_lock,
+            force=force,
             tmphlq=tmphlq
         )
 
@@ -2107,7 +2127,7 @@ class PDSECopyHandler(CopyHandler):
                 path, dirs, files = next(os.walk(new_src))
 
             src_members = [
-                os.path.normpath("{0}/{1}".format(path, file)) if (self.is_binary or self.executable)
+                os.path.normpath("{0}/{1}".format(path, file)) if (self.binary or self.executable)
                 else normalize_line_endings("{0}/{1}".format(path, file), encoding)
                 for file in files
             ]
@@ -2229,16 +2249,16 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force=self.force)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
-            if self.is_binary or self.asa_text:
+            if self.binary or self.asa_text:
                 opts["options"] = "-B"
 
             try:
-                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, force=self.force_lock, **opts)
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, force=self.force, **opts)
                 out = ""
                 err = ""
             except zoau_exceptions.ZOAUException as copy_exception:
@@ -2285,14 +2305,14 @@ def get_file_record_length(file):
     return max_line_length
 
 
-def dump_data_set_member_to_file(data_set_member, is_binary):
+def dump_data_set_member_to_file(data_set_member, binary):
     """Dumps a data set member into a file in USS.
 
     Parameters
     ----------
     data_set_member : str
         Name of the data set member to dump.
-    is_binary : bool
+    binary : bool
         Whether the data set member contains binary data.
 
     Returns
@@ -2309,7 +2329,7 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     os.close(fd)
 
     copy_args = dict()
-    if is_binary:
+    if binary:
         copy_args["options"] = "-B"
 
     response = datasets.copy(data_set_member, temp_path, **copy_args)
@@ -2322,7 +2342,7 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
 def get_data_set_attributes(
     name,
     size,
-    is_binary,
+    binary,
     asa_text=False,
     record_format=None,
     record_length=None,
@@ -2349,7 +2369,7 @@ def get_data_set_attributes(
         Name of the new sequential data set.
     size : int
         Number of bytes needed for the new data set.
-    is_binary : bool
+    binary : bool
         Whether or not the data set will have binary data.
     asa_text : bool
         Whether the data set will have ASA control characters.
@@ -2374,14 +2394,14 @@ def get_data_set_attributes(
 
     # set default value - record_format
     if record_format is None:
-        if is_binary:
+        if binary:
             record_format = "FB"
         else:
             record_format = "VB"
 
     # set default value - record_length
     if record_length is None:
-        if is_binary:
+        if binary:
             record_length = 80
         else:
             record_length = 1028
@@ -2419,8 +2439,8 @@ def get_data_set_attributes(
 def create_seq_dataset_from_file(
     file,
     dest,
-    force,
-    is_binary,
+    replace,
+    binary,
     asa_text,
     record_length=None,
     volume=None,
@@ -2435,9 +2455,9 @@ def create_seq_dataset_from_file(
         Path of the source file.
     dest : str
         Name of the data set.
-    force : bool
+    replace : bool
         Whether to replace an existing data set.
-    is_binary : bool
+    binary : bool
         Whether the file has binary data.
     asa_text bool
         Whether the file has ASA control characters.
@@ -2458,7 +2478,7 @@ def create_seq_dataset_from_file(
 
     # When src is a binary file, the module will use default attributes
     # for the data set, such as a record format of "VB".
-    if not is_binary:
+    if not binary:
         record_format = "FB"
         if not record_length:
             record_length = get_file_record_length(file)
@@ -2472,14 +2492,14 @@ def create_seq_dataset_from_file(
     dest_params = get_data_set_attributes(
         name=dest,
         size=src_size,
-        is_binary=is_binary,
+        binary=binary,
         asa_text=asa_text,
         record_format=record_format,
         record_length=record_length,
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+    data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -2692,7 +2712,7 @@ def does_destination_allow_copy(
     member_exists,
     dest_type,
     is_uss,
-    force,
+    replace,
     volume=None,
     tmphlq=None
 ):
@@ -2715,7 +2735,7 @@ def does_destination_allow_copy(
         Type of the destination (SEQ/PARTITIONED/VSAM/USS).
     is_uss : bool
         Whether or not the destination is inside USS.
-    force : bool
+    replace : bool
         Whether or not the module can replace existing destinations.
     volume : str, optional
         Volume where the destination should be.
@@ -2731,21 +2751,21 @@ def does_destination_allow_copy(
     # If the destination is inside USS and the module doesn't have permission to replace it,
     # it fails.
     if is_uss and dest_exists:
-        if src_type == "USS" and os.path.isdir(dest) and os.path.isdir(src) and not force:
+        if src_type == "USS" and os.path.isdir(dest) and os.path.isdir(src) and not replace:
             return False
-        elif os.path.isfile(dest) and not force:
+        elif os.path.isfile(dest) and not replace:
             return False
 
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
     if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
         is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
-        if not (is_dest_empty or force):
+        if not (is_dest_empty or replace):
             return False
 
     # When the destination is a partitioned data set, the module will have to be able to replace
     # existing members inside of it, if needed.
-    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
+    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not replace:
         return False
 
     # When the destination is an existing GDG, we'll check that we have enough free generations
@@ -2754,8 +2774,8 @@ def does_destination_allow_copy(
         src_view = gdgs.GenerationDataGroupView(src)
         dest_view = gdgs.GenerationDataGroupView(dest)
 
-        src_allocated_gens = len(src_view.generations())
-        dest_allocated_gens = len(dest_view.generations())
+        src_allocated_gens = len(src_view.generations)
+        dest_allocated_gens = len(dest_view.generations)
 
         if src_allocated_gens > (dest_view.limit - dest_allocated_gens):
             return False
@@ -2851,7 +2871,7 @@ def get_attributes_of_any_dataset_created(
     src_ds_type,
     src,
     src_name,
-    is_binary,
+    binary,
     asa_text,
     volume=None
 ):
@@ -2868,7 +2888,7 @@ def get_attributes_of_any_dataset_created(
         Name of the source data set, used as a model when appropiate.
     src_name : str
         Extraction of the source name without the member pattern.
-    is_binary : bool
+    binary : bool
         Whether the data set will contain binary data.
     asa_text : bool
         Whether the data set will contain ASA control characters.
@@ -2888,7 +2908,7 @@ def get_attributes_of_any_dataset_created(
             params = get_data_set_attributes(
                 dest,
                 size=size,
-                is_binary=is_binary,
+                binary=binary,
                 asa_text=asa_text,
                 volume=volume
             )
@@ -2897,7 +2917,7 @@ def get_attributes_of_any_dataset_created(
             params = get_data_set_attributes(
                 dest,
                 size=size,
-                is_binary=is_binary,
+                binary=binary,
                 asa_text=asa_text,
                 volume=volume
             )
@@ -2907,7 +2927,7 @@ def get_attributes_of_any_dataset_created(
         params = get_data_set_attributes(
             dest,
             size=size,
-            is_binary=is_binary,
+            binary=binary,
             asa_text=asa_text,
             volume=volume
         )
@@ -2920,8 +2940,8 @@ def allocate_destination_data_set(
     src_ds_type,
     dest_ds_type,
     dest_exists,
-    force,
-    is_binary,
+    replace,
+    binary,
     executable,
     asa_text,
     is_gds,
@@ -2946,9 +2966,9 @@ def allocate_destination_data_set(
         Type of the destination data set.
     dest_exists : bool
         Whether the destination data set already exists.
-    force : bool
+    replace : bool
         Whether to replace an existent data set.
-    is_binary : bool
+    binary : bool
         Whether the data set will contain binary data.
     executable : bool
         Whether the data to copy is an executable dataset or file.
@@ -2977,7 +2997,8 @@ def allocate_destination_data_set(
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
 
-    # Replacing an existing dataset only when it's not empty. We don't know whether that
+    # Replace in datasets.
+    # Reuse empty datasets when replace is not true. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
@@ -2987,6 +3008,8 @@ def allocate_destination_data_set(
     if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
         return False, dest_params, dest
 
+    if dest_exists and is_dest_empty and not replace:
+        return False, dest_params, dest
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:
@@ -3018,14 +3041,14 @@ def allocate_destination_data_set(
             del dest_params["purge"]
             del dest_params["extended"]
             del dest_params["fifo"]
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume, tmphlq=tmphlq)
+            create_seq_dataset_from_file(src, dest, replace, binary, asa_text, volume=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
@@ -3039,12 +3062,12 @@ def allocate_destination_data_set(
                 # size for the new data set.
                 src_attributes = datasets.list_datasets(src_name)[0]
                 record_length = int(src_attributes.record_length)
-                temp_dump = dump_data_set_member_to_file(src, is_binary)
+                temp_dump = dump_data_set_member_to_file(src, binary)
                 create_seq_dataset_from_file(
                     temp_dump,
                     dest,
-                    force,
-                    is_binary,
+                    replace,
+                    binary,
                     asa_text,
                     record_length=record_length,
                     volume=volume,
@@ -3070,14 +3093,14 @@ def allocate_destination_data_set(
             dest_params = get_data_set_attributes(
                 dest,
                 size,
-                is_binary,
+                binary,
                 asa_text,
                 record_format=record_format,
                 record_length=record_length,
                 type="PDSE",
                 volume=volume
             )
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -3085,7 +3108,7 @@ def allocate_destination_data_set(
                 record_format = record_length = None
                 type_ds = "PDSE"
 
-                if is_binary:
+                if binary:
                     record_format = "FB"
                     record_length = 80
                 else:
@@ -3105,7 +3128,7 @@ def allocate_destination_data_set(
                 dest_params = get_data_set_attributes(
                     dest,
                     size,
-                    is_binary,
+                    binary,
                     asa_text,
                     record_format=record_format,
                     record_length=record_length,
@@ -3119,7 +3142,7 @@ def allocate_destination_data_set(
 
                 if executable:
                     dest_params = get_data_set_attributes(
-                        dest, size, is_binary,
+                        dest, size, binary,
                         record_format='U',
                         record_length=0,
                         type="LIBRARY",
@@ -3129,13 +3152,13 @@ def allocate_destination_data_set(
                     dest_params = get_data_set_attributes(
                         dest,
                         size,
-                        is_binary,
+                        binary,
                         asa_text,
                         type="PDSE",
                         volume=volume
                     )
 
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
@@ -3170,7 +3193,7 @@ def allocate_destination_data_set(
             src_ds_type,
             src,
             src_name,
-            is_binary,
+            binary,
             asa_text,
             volume
         )
@@ -3183,8 +3206,8 @@ def allocate_destination_data_set(
 
 
 def normalize_line_endings(src, encoding=None):
-    """Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
-    its line endings to LF.
+    """Normalizes src's encoding to UTF-8, then normalizes
+    its line endings to LF and after encodes back as per encoding param.
 
     Parameters
     ----------
@@ -3201,7 +3224,7 @@ def normalize_line_endings(src, encoding=None):
     # Before copying into a destination dataset, we'll make sure that
     # the source file doesn't contain any carriage returns that would
     # result in empty records in the destination.
-    # Due to the differences between encodings, we'll normalize to IBM-037
+    # Due to the differences between encodings, we'll normalize to UTF-8
     # before checking the EOL sequence.
     enc_utils = encode.EncodeUtils()
     src_tag = enc_utils.uss_file_tag(src)
@@ -3211,10 +3234,11 @@ def normalize_line_endings(src, encoding=None):
         # This should only be true when src is a remote file and no encoding
         # was specified by the user.
         if not encoding:
-            encoding = {"from": encode.Defaults.get_default_system_charset()}
-        src_tag = encoding["from"]
-
-    if src_tag != "IBM-037":
+            src_tag = encode.Defaults.get_default_system_charset()
+        else:
+            src_tag = encoding["to"]
+    is_convertedto_utf8 = False
+    if src_tag != "UTF-8":
         fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
 
@@ -3222,13 +3246,27 @@ def normalize_line_endings(src, encoding=None):
             src,
             converted_src,
             src_tag,
-            "IBM-037"
+            "UTF-8"
         )
-        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        copy_handler._tag_file_encoding(converted_src, "UTF-8")
         src = converted_src
+        is_convertedto_utf8 = True
 
     if copy_handler.file_has_crlf_endings(src):
         src = copy_handler.create_temp_with_lf_endings(src)
+
+    if is_convertedto_utf8:
+        fd, converted_source = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_source,
+            "UTF-8",
+            src_tag
+        )
+        copy_handler._tag_file_encoding(converted_src, src_tag)
+        src = converted_source
 
     return src
 
@@ -3256,15 +3294,18 @@ def update_result(res_args, original_args):
     src = res_args.get("src")
     note = res_args.get("note")
     backup_name = res_args.get("backup_name")
+    dest_created = res_args.get("dest_created")
     dest_data_set_attrs = res_args.get("dest_data_set_attrs")
+
     updated_result = dict(
         dest=res_args.get("dest"),
-        is_binary=original_args.get("is_binary"),
         changed=res_args.get("changed"),
         invocation=dict(module_args=original_args),
+        dest_created=dest_created,
     )
+
     if src:
-        updated_result["src"] = original_args.get("src")
+        updated_result["src"] = src
     if note:
         updated_result["note"] = note
     if backup_name:
@@ -3338,7 +3379,7 @@ def run_module(module, arg_def):
     fail_json
         Cannot write a partitioned data set (PDS) to a USS file.
     fail_json
-        Destination already exists on the system, unable to overwrite unless force=True is specified.
+        Destination already exists on the system, unable to overwrite unless replace=True is specified.
     fail_json
         Unable to allocate destination data set.
     """
@@ -3346,6 +3387,17 @@ def run_module(module, arg_def):
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check
     # ********************************************************************
+    originalsrc = module.params.get('src')
+    originaldest = module.params.get('dest')
+    issrcpoundexists = False
+    isdestpoundexists = False
+    # Replacing pound with dollar in src and dest if exists
+    if "£" in module.params["src"]:
+        issrcpoundexists = True
+        module.params["src"] = module.params["src"].replace("£", "$")
+    if "£" in module.params["dest"]:
+        isdestpoundexists = True
+        module.params["dest"] = module.params["dest"].replace("£", "$")
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parser.parse_args(module.params)
@@ -3360,7 +3412,7 @@ def run_module(module, arg_def):
     src = module.params.get('src')
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
-    is_binary = module.params.get('is_binary')
+    binary = module.params.get('binary')
     executable = module.params.get('executable')
     asa_text = module.params.get('asa_text')
     aliases = module.params.get('aliases')
@@ -3373,8 +3425,8 @@ def run_module(module, arg_def):
     encoding = module.params.get('encoding')
     volume = module.params.get('volume')
     tmphlq = module.params.get('tmp_hlq')
+    replace = module.params.get('replace')
     force = module.params.get('force')
-    force_lock = module.params.get('force_lock')
     content = module.params.get('content')
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
 
@@ -3411,6 +3463,11 @@ def run_module(module, arg_def):
         is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # Validation for copy from a member
     if src_member:
@@ -3486,7 +3543,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_binary and not is_uss and not executable:
+            if not binary and not is_uss and not executable:
                 new_src = src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -3512,7 +3569,7 @@ def run_module(module, arg_def):
                     )
 
                     # Creating the handler just for tagging, we're not copying yet!
-                    copy_handler = CopyHandler(module, is_binary=is_binary)
+                    copy_handler = CopyHandler(module, binary=binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
             if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
@@ -3662,7 +3719,7 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
-        if not force_lock:
+        if not force:
             is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
             if is_dest_lock:
                 module.fail_json(
@@ -3760,12 +3817,12 @@ def run_module(module, arg_def):
         dest_member_exists,
         dest_ds_type,
         is_uss,
-        force,
+        replace,
         volume,
         tmphlq
     ):
         module.fail_json(
-            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(raw_dest),
+            msg="{0} already exists on the system, unable to overwrite unless replace=True is specified.".format(raw_dest),
             changed=False,
             dest=dest
         )
@@ -3785,8 +3842,8 @@ def run_module(module, arg_def):
                 src_ds_type,
                 dest_ds_type,
                 dest_exists,
-                force,
-                is_binary,
+                replace,
+                binary,
                 executable,
                 asa_text,
                 is_dest_gds,
@@ -3795,6 +3852,10 @@ def run_module(module, arg_def):
                 volume=volume,
                 tmphlq=tmphlq
             )
+            if res_args["changed"]:
+                res_args["dest_created"] = True
+            else:
+                res_args["dest_created"] = False
     except Exception as err:
         if converted_src:
             src = original_src
@@ -3816,11 +3877,11 @@ def run_module(module, arg_def):
     # ********************************************************************
     copy_handler = CopyHandler(
         module,
-        is_binary=is_binary,
+        binary=binary,
         executable=executable,
         asa_text=asa_text,
         backup_name=backup_name,
-        force_lock=force_lock,
+        force=force,
         identical_gdg_copy=module.params.get('identical_gdg_copy', False),
         tmphlq=tmphlq
     )
@@ -3838,13 +3899,13 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         if is_uss:
             # Removing the carriage return characters
-            if src_ds_type == "USS" and not is_binary and not executable:
+            if src_ds_type == "USS" and not binary and not executable:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):
                     conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
-                is_binary=is_binary,
+                binary=binary,
                 executable=executable,
                 asa_text=asa_text,
                 aliases=aliases,
@@ -3855,7 +3916,10 @@ def run_module(module, arg_def):
 
             original_checksum = None
             if dest_exists:
+                res_args["dest_created"] = False
                 original_checksum = get_file_checksum(dest)
+            else:
+                res_args["dest_created"] = True
 
             dest = uss_copy_handler.copy_to_uss(
                 src,
@@ -3864,7 +3928,7 @@ def run_module(module, arg_def):
                 src_ds_type,
                 src_member,
                 member_name,
-                force,
+                replace,
                 bool(content)
             )
             res_args['size'] = os.stat(dest).st_size
@@ -3892,7 +3956,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
             # TODO: check how ASA behaves with this
-            if src_ds_type == "USS" and not is_binary:
+            if src_ds_type == "USS" and not binary:
                 new_src = conv_path or src
                 conv_path = normalize_line_endings(new_src, encoding)
 
@@ -3912,12 +3976,12 @@ def run_module(module, arg_def):
 
             pdse_copy_handler = PDSECopyHandler(
                 module,
-                is_binary=is_binary,
+                binary=binary,
                 executable=executable,
                 asa_text=asa_text,
                 aliases=aliases,
                 backup_name=backup_name,
-                force_lock=force_lock,
+                force=force,
                 tmphlq=tmphlq
             )
 
@@ -3952,8 +4016,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=module.params.get('src') if is_src_alias else src,
-            dest=module.params.get('dest') if is_dest_alias else dest,
+            src=originalsrc if issrcpoundexists or is_src_alias else src,
+            dest=originaldest if isdestpoundexists or is_dest_alias else dest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,
@@ -3975,7 +4039,7 @@ def main():
         argument_spec=dict(
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
-            is_binary=dict(type='bool', default=False),
+            binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
             aliases=dict(type='bool', default=False, required=False),
@@ -4068,31 +4132,34 @@ def main():
                     autoescape=dict(type='bool', default=True),
                 )
             ),
+            replace=dict(type='bool', default=False),
             force=dict(type='bool', default=False),
-            force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
             owner=dict(type='str', required=False),
             group=dict(type='str', required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
     )
+    validate_dependencies(module)
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
-        is_binary=dict(arg_type='bool', required=False, default=False),
+        binary=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
         aliases=dict(arg_type='bool', required=False, default=False),
+        identical_gdg_copy=dict(type='bool', default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
-        checksum=dict(arg_type='str', required=False),
+        ignore_sftp_stderr=dict(type='bool', default=True),
         validate=dict(arg_type='bool', required=False),
         volume=dict(arg_type='str', required=False),
-        force_lock=dict(type='bool', default=False),
+        replace=dict(type='bool', default=False),
+        force=dict(type='bool', default=False),
 
         dest_data_set=dict(
             arg_type='dict',
@@ -4147,7 +4214,7 @@ def main():
     if (
         not module.params.get("encoding").get("to")
         and not module.params.get("remote_src")
-        and not module.params.get("is_binary")
+        and not module.params.get("binary")
         and not module.params.get("executable")
     ):
         module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
@@ -4185,7 +4252,6 @@ def main():
             shutil.rmtree(path)
         elif os.path.exists(default_path):
             shutil.rmtree(default_path)
-
         res_args = update_result(res_args=res_args, original_args=module.params)
         module.exit_json(**res_args)
     except CopyOperationError as err:
@@ -4315,6 +4381,13 @@ class CopyOperationError(Exception):
         self.overwritten_members = overwritten_members
         self.new_members = new_members
         super().__init__(msg)
+
+
+class GenerationDataGroupCreateError(Exception):
+    def __init__(self, msg):
+        """Error during copy of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
 
 
 if __name__ == "__main__":

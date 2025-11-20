@@ -1,3 +1,0 @@
-trivial:
-  - tests/sanity - Add sanity ignore for ansible 2.18.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2058).

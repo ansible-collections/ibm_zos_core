@@ -1017,6 +1017,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DatasetCreateError,
     GDSNameResolveError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets, gdgs
@@ -2232,7 +2235,7 @@ class GenerationDataGroupHandler(DataSetHandler):
             'order': self.gdg_view.order,
             'purge': self.gdg_view.purge,
             'extended': self.gdg_view.extended,
-            'active_gens': [generation.name for generation in self.gdg_view.generations()]
+            'active_gens': [generation.name for generation in self.gdg_view.generations]
         }
 
         # Now we call LISTCAT to get the creation time.
@@ -2566,6 +2569,7 @@ def run_module():
         },
         supports_check_mode=True
     )
+    validate_dependencies(module)
 
     args_def = {
         'name': {

@@ -1,3 +1,0 @@
-trivial:
-  - ac - Removed development scripts from the repository.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2033)

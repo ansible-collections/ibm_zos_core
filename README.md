@@ -4,7 +4,9 @@ The **IBM z/OS core** collection enables Ansible to interact with z/OS Data Sets
 
 ## Description
 
-The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, perform program authorizations, run operator operations, and execute both JES and MVS commands as well as execute shell, python, and REXX scripts. It supports data set creation, searching, copying, fetching, and encoding. It provides both archiving and unarchiving of data sets, initializing volumes, resizing aggregates, performing backups and supports Jinja templating.
+The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, perform program authorizations, run operator operations, and execute both JES and MVS commands as well as execute shell, python, and REXX scripts. It supports data set creation, searching, copying, fetching, and encoding. It provides both archiving and unarchiving of data sets, performing backups and supports Jinja templating.
+
+It can manage other z/OS core operations like initializing volumes, resizing aggregates; starting, modifying, stopping and canceling started tasks.
 
 <br/>System programmers can enable pipelines to setup, tear down and deploy applications while system administrators can automate time consuming repetitive tasks inevitably freeing up their time. New z/OS users can find comfort in Ansible's familiarity and expedite their proficiency in record time.
 
@@ -132,11 +134,11 @@ All releases will meet the following test criteria.
 
 <br/>This release of the collection was tested with following dependencies.
 
-* ansible-core v2.15.x
-* Python 3.11.x
+* ansible-core v2.16.x
+* Python 3.12.x
 * IBM Open Enterprise SDK for Python 3.12.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.4.x
-* z/OS V2R5
+* IBM Z Open Automation Utilities (ZOAU) 1.3.5.x
+* z/OS V2R5 or V3R1
 
 ## Contributing
 
@@ -152,6 +154,7 @@ If you would like to communicate with this community, you can do so through the 
 * GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
 * [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
 * Discord [System Z Enthusiasts](https://discord.gg/sze) room `ansible`.
+* LinkedIn [Ansible for IBM Z](https://www.linkedin.com/groups/14515630/).
 * Matrix general usage questions [room](https://matrix.to/#/#users:ansible.com).
 
 ## Support

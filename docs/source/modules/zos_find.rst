@@ -115,7 +115,7 @@ pds_patterns
 
 
 resource_type
-  The type of resource to search.
+  The types of resources to search.
 
   ``nonvsam`` refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
 
@@ -123,10 +123,25 @@ resource_type
 
   ``gdg`` refers to Generation Data Groups. The module searches based on the GDG base name.
 
+  ``migrated`` refers to listing migrated datasets. Only ``excludes`` and ``migrated_type`` options can be used along with this option. The module only searches based on dataset patterns.
+
   | **required**: False
-  | **type**: str
+  | **type**: list
+  | **elements**: str
   | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index, gdg
+  | **choices**: nonvsam, cluster, data, index, gdg, migrated
+
+
+migrated_type
+  A migrated data set related attribute, only valid when ``resource_type=migrated``.
+
+  If provided, will search for only those types of migrated datasets.
+
+  | **required**: False
+  | **type**: list
+  | **elements**: str
+  | **default**: ['cluster', 'data', 'index', 'nonvsam']
+  | **choices**: nonvsam, cluster, data, index
 
 
 volume
@@ -231,7 +246,7 @@ Examples
      zos_find:
        patterns: 'IMS.LIB.*'
        contains: 'hello'
-       excludes: '*.TEST'
+       excludes: '.*TEST'
 
    - name: Find all members starting with characters 'TE' in a given list of PDS patterns
      zos_find:
@@ -253,16 +268,27 @@ Examples
      zos_find:
        patterns:
          - USER.*
-       resource_type: cluster
+       resource_type:
+         - 'cluster'
 
    - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
      zos_find:
        patterns:
          - USER.*
-       resource_type: gdg
+       resource_type:
+         - 'gdg'
        limit: 30
        scratch: true
        purge: true
+
+   - name: Find all migrated and nonvsam data sets starting with the word 'USER'
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - 'migrated'
+       migrated_type:
+         - 'nonvsam'
 
 
 
@@ -280,6 +306,8 @@ Notes
    The time taken to execute the module is proportional to the number of data sets present on the system and how large the data sets are.
 
    When searching for content within data sets, only non-binary content is considered.
+
+   As a migrated data set's information can't be retrieved without recalling it first, other options besides ``excludes`` and ``migrated_type`` are not supported.
 
 
 

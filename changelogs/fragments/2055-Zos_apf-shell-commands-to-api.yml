@@ -1,3 +1,0 @@
-trivial:
-   - zos_apf - Updated the module to use the API instead of shell commands. 
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2055).

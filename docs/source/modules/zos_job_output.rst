@@ -22,6 +22,7 @@ Synopsis
 - The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
 - The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
 - If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
+- If SYSIN DDs are needed, *sysin_dd* should be set to ``true``.
 
 
 
@@ -57,6 +58,14 @@ ddname
 
   | **required**: False
   | **type**: str
+
+
+sysin_dd
+  Whether to include SYSIN DDs as part of the output.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
 
 
 
@@ -97,6 +106,11 @@ Examples
        owner: "IBMUSER"
        ddname: "?"
 
+   - name: Query a job's output including SYSIN DDs
+     zos_job_output:
+       job_id: "JOB00548"
+       sysin_dd: true
+
 
 
 
@@ -124,6 +138,7 @@ jobs
             {
                 "class": "R",
                 "content_type": "JOB",
+                "cpu_time": 1414,
                 "ddnames": [
                     {
                         "byte_count": "775",
@@ -232,10 +247,12 @@ jobs
                     }
                 ],
                 "duration": 0,
+                "execution_node": "STL1",
                 "execution_time": "00:00:03",
                 "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
+                "origin_node": "STL1",
                 "owner": "OMVSADM",
                 "priority": "1",
                 "program_name": "IEBGENER",
@@ -252,7 +269,8 @@ jobs
                         }
                     ]
                 },
-                "subsystem": "STL1"
+                "subsystem": "STL1",
+                "system": "STL1"
             }
         ]
 
@@ -268,8 +286,32 @@ jobs
     | **type**: str
     | **sample**: HELLO
 
+  system
+    The job entry system that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
   subsystem
     The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  cpu_time
+    Sum of the CPU time used by each job step, in microseconds.
+
+    | **type**: int
+    | **sample**: 5
+
+  execution_node
+    Execution node that picked the job and executed it.
+
+    | **type**: str
+    | **sample**: STL1
+
+  origin_node
+    Origin node that submitted the job.
 
     | **type**: str
     | **sample**: STL1

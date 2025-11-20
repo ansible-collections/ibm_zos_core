@@ -291,13 +291,17 @@ options:
     default: false
   scratch:
     description:
-      - Sets the I(scratch) attribute for Generation Data Groups.
-      - Specifies what action is to be taken for a generation data set located on disk
+      - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+      - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+      - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
+        This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+      - When C(state=present) option B(scratch) sets the I(scratch) attribute for Generation Data Groups and is
+        ignored for any other data set type.
+      - When C(state=present) and C(type=GDG) specifies what action is to be taken for a generation data set located on disk
         volumes when the data set is uncataloged from the GDG base as a result of
         EMPTY/NOEMPTY processing.
     type: bool
     required: false
-    default: false
   volumes:
     description:
       - >
@@ -609,13 +613,13 @@ options:
         default: false
       scratch:
         description:
-          - Sets the I(scratch) attribute for Generation Data Groups.
-          - Specifies what action is to be taken for a generation data set located on disk
-            volumes when the data set is uncataloged from the GDG base as a result of
-            EMPTY/NOEMPTY processing.
+          - "When C(state=absent), specifies whether to physically remove the data set from the volume."
+          - If C(scratch=true), the data set is deleted and its entry is removed from the volume's VTOC.
+          - If C(scratch=false), the data set is uncataloged but not physically removed from the volume.
+            This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
+          - The default is C(true) for non-GDG data sets and C(false) for GDG data sets.
         type: bool
         required: false
-        default: false
       volumes:
         description:
           - >
@@ -734,6 +738,13 @@ EXAMPLES = r"""
     name: someds.name.here
     state: absent
 
+- name: Uncatalog a data set but do not remove it from the volume.
+  zos_data_set:
+    name: someds.name.here
+    type: seq
+    state: absent
+    scratch: false
+
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:
     name: someds.name.here
@@ -801,11 +812,127 @@ EXAMPLES = r"""
       - "222222"
 """
 RETURN = r"""
-names:
-  description: The data set names, including temporary generated data set names, in the order provided to the module.
+data_sets:
+  description: The affected data set, including temporary generated data set, in the order provided to the module.
   returned: always
   type: list
   elements: str
+  contains:
+    name:
+      description: The data set name.
+      type: str
+      returned: always
+    state:
+      description: The final state desired for specified data set.
+      type: str
+      returned: always
+    type:
+      description: The data set type.
+      type: str
+      returned: always
+    space_primary:
+      description: The amount of primary space allocated for the dataset.
+      type: int
+      returned: always
+    space_secondary:
+      description: The amount of secondary space allocated for the dataset.
+      type: int
+      returned: always
+    space_type:
+      description: The unit of measurement used when defining primary and secondary space.
+      type: str
+      returned: always
+    record_format:
+      description: The format of the data set.
+      type: str
+      sample: fb
+      returned: always
+    sms_storage_class:
+      description:
+        - The storage class for the SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    sms_data_class:
+      description:
+        - The data class for an SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    sms_management_class:
+      description:
+        - The management class for an SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    record_length:
+      description:  The length, in bytes, of each record in the data set.
+      type: int
+      returned: always
+    block_size:
+      description: The block size used for the data set.
+      type: int
+      returned: always
+    directory_blocks:
+      description:
+        - The number of directory blocks to allocate to the data set.
+      type: int
+      returned: always
+    key_offset:
+      description: The key offset used when creating a KSDS data set.
+      type: int
+      returned: always
+    key_length:
+      description: The key length used when creating a KSDS data set.
+      type: int
+      returned: always
+    empty:
+      description:
+        - I(empty) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    extended:
+      description:
+        - I(extended) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    fifo:
+      description:
+        - I(fifo) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    limit:
+      description:
+        - I(limit) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: int
+      returned: always
+    purge:
+      description:
+        - I(purge) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    scratch:
+      description:
+        - I(scratch) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    volumes:
+      description:
+        - Specifies the name of the volume(s) where the data set is located.
+        - Returned empty if volume was not provided.
+      type: list
+      returned: always
+msg:
+    description: A string with a generic message relayed to the user.
+    returned: always
+    type: str
+    sample: Error while gathering data set information
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -815,6 +942,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet, GenerationDataGroup, MVSDataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+
 
 import re
 
@@ -1404,7 +1535,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1437,9 +1568,9 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent" and data_set.data_set_type == "member":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_absent(force=force)
+        changed = data_set.ensure_absent(force=force, noscratch=noscratch)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
     elif state == "cataloged":
         changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
@@ -1568,8 +1699,7 @@ def parse_and_validate_args(params):
                 ),
                 scratch=dict(
                     type="bool",
-                    required=False,
-                    default=False
+                    required=False
                 ),
                 extended=dict(
                     type="bool",
@@ -1656,7 +1786,7 @@ def parse_and_validate_args(params):
         limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1701,6 +1831,63 @@ def parse_and_validate_args(params):
         key: value for key, value in parsed_args.items() if value is not None
     }
     return parsed_args
+
+
+def determine_scratch(data_set_params):
+    scratch = data_set_params.get("scratch")
+    if scratch is None:
+        if data_set_params.get("type") == "gdg" and data_set_params.get("state") == "present":
+            scratch = False
+        elif data_set_params.get("state") == "absent":
+            scratch = True
+    return scratch
+
+
+def build_return_schema(data_set_list):
+    """ Builds return values schema with empty values.
+
+        Parameters
+        ----------
+        data_set_list : dict
+            List of data sets.
+
+        Returns
+        -------
+        dict
+            Dictionary used to return values at execution finalization.
+    """
+    data_set_schema = {
+        "name": "",
+        "state": "",
+        "type": "",
+        "space_primary": "",
+        "space_secondary": "",
+        "space_type": "",
+        "record_format": "",
+        "sms_storage_class": "",
+        "sms_data_class": "",
+        "sms_management_class": "",
+        "record_length": "",
+        "block_size": "",
+        "directory_blocks": "",
+        "key_offset": "",
+        "key_length": "",
+        "empty": "",
+        "extended": "",
+        "fifo": "",
+        "limit": "",
+        "purge": "",
+        "scratch": "",
+        "volumes": [],
+    }
+
+    data_sets = [data_set_schema.copy() | data_set.attributes for data_set in data_set_list]
+    result = {
+        "data_sets": data_sets,
+        "msg": "",
+        "failed": False
+    }
+    return result
 
 
 def run_module():
@@ -1779,7 +1966,7 @@ def run_module():
                 limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False, default=False),
                 purge=dict(type="bool", required=False, default=False),
-                scratch=dict(type="bool", required=False, default=False),
+                scratch=dict(type="bool", required=False,),
                 extended=dict(type="bool", required=False, default=False),
                 fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
@@ -1849,7 +2036,7 @@ def run_module():
         limit=dict(type="int", required=False, no_log=False),
         empty=dict(type="bool", required=False, default=False),
         purge=dict(type="bool", required=False, default=False),
-        scratch=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False,),
         extended=dict(type="bool", required=False, default=False),
         fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
@@ -1869,9 +2056,10 @@ def run_module():
             default=False
         ),
     )
-    result = dict(changed=False, message="", names=[])
+    result = dict(changed=False)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure
@@ -1902,6 +2090,8 @@ def run_module():
             if module.params.get("record_format") is not None:
                 del module.params["record_format"]
 
+    data_set_list = []
+
     if not module.check_mode:
         try:
             # Update the dictionary for use by better arg parser by adding the
@@ -1910,9 +2100,10 @@ def run_module():
             module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
-            result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
+                data_set_params["scratch"] = determine_scratch(data_set_params)
+                data_set_params["noscratch"] = not data_set_params["scratch"]
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(
@@ -1921,12 +2112,14 @@ def run_module():
                     replace=data_set_params.get("replace"),
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
+                    noscratch=data_set_params.get("noscratch"),
                 )
+                data_set_list.append(data_set)
                 result["changed"] = result["changed"] or current_changed
+            # Build return schema from created data sets.
+            result.update(build_return_schema(data_set_list))
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-    if module.params.get("replace"):
-        result["changed"] = True
     module.exit_json(**result)
 
 

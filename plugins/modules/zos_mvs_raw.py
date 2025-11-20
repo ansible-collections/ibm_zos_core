@@ -100,6 +100,14 @@ options:
               - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
             type: str
             required: false
+          raw:
+            description:
+              - Create a new data set and let the MVS program assign its own default DCB attributes.
+              - When C(raw=true), all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
+              - Using C(raw) option is not possible for all programs, use this for cases where the MVS program that is called is able to assign
+                its own default dataset attributes.
+            type: bool
+            default: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -690,6 +698,37 @@ options:
               - The DD name.
             required: true
             type: str
+      dd_volume:
+        description:
+          - Use I(dd_volume) to specify the volume to use in the DD statement.
+        required: false
+        type: dict
+        suboptions:
+          dd_name:
+            description: The DD name.
+            required: true
+            type: str
+          volume_name:
+            description:
+              - The volume serial number.
+            type: str
+            required: true
+          unit:
+            description:
+              - Device type for the volume.
+              - This option is case sensitive.
+            type: str
+            required: true
+          disposition:
+            description:
+              - I(disposition) indicates the status of a data set.
+            type: str
+            required: true
+            choices:
+              - new
+              - shr
+              - mod
+              - old
       dd_concat:
         description:
           - I(dd_concat) is used to specify a data set concatenation.
@@ -726,6 +765,14 @@ options:
                       - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
                     type: str
                     required: false
+                  raw:
+                    description:
+                      - Create a new data set and let the MVS program assign its own default DCB attributes.
+                      - When C(raw=true), all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
+                      - Using C(raw) option is not possible for all programs, use this for cases where the MVS program that is called is able to assign
+                        its own default dataset attributes.
+                    type: bool
+                    default: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1351,6 +1398,57 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
+- name: Run ADRDSSU to dump a dataset without having to specify the DCB attributes for dd_data_set by using raw option.
+  zos_mvs_raw:
+    program_name: ADRDSSU
+    auth: true
+    verbose: true
+    dds:
+      - dd_data_set:
+          dd_name: OUTDD
+          data_set_name: "USER.TEST.DUMP"
+          raw: true
+      - dd_input:
+          dd_name: SYSIN
+          content: |
+            DUMP DATASET(INCLUDE(USER.TEST.SOURCE)) -
+            OUTDDNAME(OUTDD)
+      - dd_output:
+          dd_name: SYSPRINT
+          return_content:
+            type: text
+
+- name: Full volume dump using ADDRDSU.
+  zos_mvs_raw:
+    program_name: adrdssu
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: dumpdd
+          data_set_name: mypgm.output.ds
+          disposition: new
+          disposition_normal: catalog
+          disposition_abnormal: delete
+          space_type: cyl
+          space_primary: 10
+          space_secondary: 10
+          record_format: u
+          record_length: 0
+          block_size: 32760
+          type: seq
+      - dd_volume:
+          dd_name: voldd
+          volume_name: "000000"
+          unit: "3390"
+          disposition: old
+      - dd_input:
+          dd_name: sysin
+          content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.
   zos_mvs_raw:
@@ -1698,6 +1796,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     DDStatement,
     DummyDefinition,
     VIODefinition,
+    VolumeDefinition,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import (
@@ -1706,6 +1805,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawFileDefinition,
     RawInputDefinition,
     RawOutputDefinition,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
@@ -1752,6 +1854,7 @@ def run_module():
 
     dd_data_set_base = dict(
         data_set_name=dict(type="str"),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -1907,7 +2010,11 @@ def run_module():
             ),
         )
     )
-
+    dd_volume_base = dict(
+        volume_name=dict(type="str", required=True),
+        unit=dict(type="str", required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
+    )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
@@ -1915,6 +2022,7 @@ def run_module():
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -1934,6 +2042,7 @@ def run_module():
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
     )
@@ -1943,6 +2052,7 @@ def run_module():
     # ---------------------------------------------------------------------------- #
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     # ---------------------------------------------------------------------------- #
     #                                  Main Logic                                  #
@@ -2010,6 +2120,7 @@ def parse_and_validate_args(params):
 
     dd_data_set_base = dict(
         data_set_name=dict(type="data_set", required=True),
+        raw=dict(type="bool", default=False),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
@@ -2148,7 +2259,11 @@ def parse_and_validate_args(params):
             ),
         )
     )
-
+    dd_volume_base = dict(
+        volume_name=dict(type="str", required=True),
+        unit=dict(type="str", required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
+    )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
@@ -2156,6 +2271,7 @@ def parse_and_validate_args(params):
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -2176,6 +2292,7 @@ def parse_and_validate_args(params):
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
         # verbose=dict(type="bool", required=False),
@@ -2666,9 +2783,11 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
+        raw_flag = dd.get("dd_data_set").get("raw", False)
         data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
                                                             dd.get("dd_data_set").get("disposition"),
-                                                            dd.get("dd_data_set").get("type"))
+                                                            dd.get("dd_data_set").get("type"),
+                                                            raw=raw_flag)
         dd.get("dd_data_set")["data_set_name"] = data_set_name
         dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"
@@ -2690,6 +2809,9 @@ def get_dd_name_and_key(dd):
     elif dd.get("dd_concat"):
         dd_name = dd.get("dd_concat").get("dd_name")
         key = "dd_concat"
+    elif dd.get("dd_volume"):
+        dd_name = dd.get("dd_volume").get("dd_name")
+        key = "dd_volume"
     return dd_name, key
 
 
@@ -2715,7 +2837,7 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset, disposition, type):
+def resolve_data_set_names(dataset, disposition, type, raw=False):
     """Resolve cases for data set names as relative gds or positive
       that could be accepted if disposition is new.
       Parameters
@@ -2724,8 +2846,6 @@ def resolve_data_set_names(dataset, disposition, type):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
-      type : str
-          Type of dataset
       Returns
       -------
       str
@@ -2733,18 +2853,21 @@ def resolve_data_set_names(dataset, disposition, type):
       str
           The disposition base on the system
     """
+    if raw:
+        return dataset, disposition or "shr"
     if disposition:
         disp = disposition
     else:
         disp = "shr"
-
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
                 if type:
-                    return str(datasets.create(dataset, type).name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type=type)
+                    return new_generation.name, "shr"
                 else:
-                    return str(datasets.create(dataset, "seq").name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type="seq")
+                    return new_generation.name, "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:
@@ -2763,6 +2886,33 @@ def resolve_data_set_names(dataset, disposition, type):
         return dataset, disp
 
 
+def validate_raw_parameter(dd_params):
+    """Validate that when raw=true, no other dataset parameters are specified."""
+    if dd_params.get('raw'):
+        # Parameters that should not be used with raw=true
+        incompatible_params = [
+            'disposition_normal', 'disposition_abnormal',
+            'space_type', 'space_primary', 'space_secondary', 'volumes',
+            'sms_management_class', 'sms_storage_class', 'sms_data_class',
+            'block_size', 'directory_blocks', 'key_label', 'type',
+            'encryption_key_1', 'encryption_key_2', 'key_length', 'key_offset',
+            'record_length', 'record_format'
+        ]
+
+        specified_params = []
+        for param in incompatible_params:
+            if dd_params.get(param) is not None:
+                specified_params.append(param)
+
+        if specified_params:
+            raise ValueError(
+                "The following parameters cannot be used when 'raw=true': {}. "
+                "When using raw datasets, the program determines all dataset attributes. "
+                "Either remove these parameters or set raw=false.".format(
+                    ', '.join(specified_params))
+            )
+
+
 def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
@@ -2779,6 +2929,7 @@ def build_data_definition(dd):
     """
     data_definition = None
     if dd.get("dd_data_set"):
+        validate_raw_parameter(dd.get("dd_data_set"))
         data_definition = RawDatasetDefinition(
             **(dd.get("dd_data_set")))
         if data_definition.backup:
@@ -2797,6 +2948,14 @@ def build_data_definition(dd):
             dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
+    elif dd.get("dd_volume"):
+        volume_args = dd["dd_volume"]
+        data_definition = VolumeDefinition(
+            volume_name=volume_args.get("volume_name"),
+            unit=volume_args.get("unit"),
+            disposition=volume_args.get("disposition"),
+        )
+
     elif dd.get("dd_concat"):
         data_definition = []
         for single_dd in dd.get("dd_concat").get("dds", []):

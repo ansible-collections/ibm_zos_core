@@ -89,6 +89,12 @@ state
   If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
 
 
+  If *state=present*, the data set is already cataloged and *volumes* is provided, the module will compare the volumes where it is cataloged against the provided *volumes*. If they don't match, the module will fail with an error indicating the data set is cataloged on a different volume. To resolve this, you must first uncatalog the data set before creating it on the new volume.
+
+
+  If *state=present*, the data set is already cataloged, *volumes* is provided, and the volumes match exactly, no action is taken and the module completes successfully with *changed=False*.
+
+
   | **required**: False
   | **type**: str
   | **default**: present
@@ -296,13 +302,18 @@ purge
 
 
 scratch
-  Sets the *scratch* attribute for Generation Data Groups.
+  When ``state=absent``, specifies whether to physically remove the data set from the volume.
 
-  Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+  If ``scratch=true``, the data set is deleted and its entry is removed from the volume's VTOC.
+
+  If ``scratch=false``, the data set is uncataloged but not physically removed from the volume. This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+  When ``state=present`` option **scratch** sets the *scratch* attribute for Generation Data Groups and is ignored for any other data set type.
+
+  When ``state=present`` and ``type=GDG`` specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
   | **required**: False
   | **type**: bool
-  | **default**: False
 
 
 volumes
@@ -638,13 +649,16 @@ batch
 
 
   scratch
-    Sets the *scratch* attribute for Generation Data Groups.
+    When ``state=absent``, specifies whether to physically remove the data set from the volume.
 
-    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+    If ``scratch=true``, the data set is deleted and its entry is removed from the volume's VTOC.
+
+    If ``scratch=false``, the data set is uncataloged but not physically removed from the volume. This is the equivalent of using ``NOSCRATCH`` in an ``IDCAMS DELETE`` command.
+
+    The default is ``true`` for non-GDG data sets and ``false`` for GDG data sets.
 
     | **required**: False
     | **type**: bool
-    | **default**: False
 
 
   volumes
@@ -776,6 +790,13 @@ Examples
      zos_data_set:
        name: someds.name.here
        state: absent
+
+   - name: Uncatalog a data set but do not remove it from the volume.
+     zos_data_set:
+       name: someds.name.here
+       type: seq
+       state: absent
+       scratch: false
 
    - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
      zos_data_set:

@@ -6,8 +6,177 @@
 Releases
 ========
 
-Version 1.14.0-beta.1
+Version 1.16.0-beta.1
 =====================
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - Adds new alias ``target`` for ``data_set_name`` and a warning message that it will be deprecated on 2.0.0.
+- ``zos_archive``
+
+   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0.
+   - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0.
+   - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0.
+
+- ``zos_backup_restore``
+
+   - Adds ``compress`` option to enable compression of partitioned data sets using hardware compression if available.
+   - Adds ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
+
+- ``zos_copy``
+
+   - Adds a better error message that gives user a hint that copy issue can be due to a GDS part of ``src`` GDG is being used by another process.
+   - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+   - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0.
+
+- ``zos_data_set``
+
+   - Enhances error messages when creating a Generation Data Group fails.
+   - Enhances error messages when deleting a Generation Data Group fails.
+   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows uncataloging a data set without deleting it from the volume's VTOC.
+
+- ``zos_fetch`` - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+- ``zos_job_output``
+
+   - Adds new alias ``dd_name`` for ``ddname`` and warning message that will be alias on 2.0.0.
+   - Adds support to query SYSIN DDs from a job with new option input.
+
+- ``zos_job_submit``
+
+   - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+   - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.
+
+- ``zos_mount``
+
+   - Adds new alias ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0.
+   - Adds new alias ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0.
+
+- ``zos_mvs_raw`` - Adds new ``raw`` option under ``dd_data_set`` that lets the MVS program create datasets with its own DCB attributes without the user having to specify them.
+- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+- ``zos_unarchive``
+
+   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0.
+   - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
+   - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
+
+
+Bugfixes
+--------
+
+- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type, which is ``m`` for megabytes.
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_started_task - Perform operations on started tasks.
+
+Availability
+------------
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
+Version 1.15.0
+==============
+
+Minor Changes
+-------------
+
+- ``zos_archive``
+
+   - Adds support for encoding before archiving files.
+   - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them.
+   - Adds support for reverting the encoding of a source's files after archiving them.
+
+- ``zos_copy``
+
+   - Adds new option `identical_gdg_copy` in the module. This allows copying GDG generations from a source base to a destination base while preserving generation data set absolute names when the destination base does not exist prior to the copy.
+   - Adds support of using alias names in src and dest parameters for PS, PDS and PDSE data sets.
+   - Added support for british pound character usage in file content and data set names for both source and destination when copying.
+
+- ``zos_fetch`` - Updated the documentation to correctly state what the default behavior of the module is.
+- ``zos_find``
+
+   - Adds functionality to find migrated data sets.
+   - Adds functionality to find different types of data sets at the same time.
+
+- ``zos_job_output`` - Adds new fields cpu_time, origin_node and execution_node to response.
+- ``zos_job_query`` - Adds new fields cpu_time, origin_node and execution_node to response.
+- ``zos_job_submit`` - Adds new fields cpu_time, origin_node and execution_node to response.
+
+- ``zos_mvs_raw``
+
+   - Before this addition, you could not put anything in columns 1 or 2, were reserved for JCL processing. Change now allows add reserved_cols option and validate that the module get access to modify dd_content option base on the value, if not retain the previous behavior or work.
+   - Adds support for volume data definition.
+
+- ``zos_stat``
+
+   - Added support to recall migrated data sets and return its attributes.
+   - Adds new fields that describe the type of the resource that was queried. These new fields are ``isfile``, ``isdataset``, ``isaggregate`` and ``isgdg``.
+   - Adds support to query data sets using their aliases.
+   - Module now returns whether the resource queried exists on the managed node with the `exists` field inside `stat`.
+
+- ``zos_unarchive`` - Added encoding support in the zos_unarchive module. This allows users to encode the files after unarchiving them.
+
+Bugfixes
+--------
+- ``zos_backup_restore`` - Return value ``backup_name`` was empty upon successful result. Fix now returns ``backup_name`` populated.
+- ``zos_data_set`` - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume.
+- ``zos_fetch`` - Previously, the use of `become` would result in a permissions error  while trying to fetch a data set or a member. Fix now allows a user to escalate privileges when fetching resources.
+- ``zos_lineinfile``
+
+   - Return values ``return_content`` and ``backup_name`` were not always being returned. Fix now ensure that these values are always present in the module's response.
+   - The module would report a false negative when certain special characters where present in the `line` option. Fix now reports the successful operation.
+
+- ``zos_mount`` - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored.
+
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
+
+Availability
+------------
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
+Version 1.14.1
+==============
+
+Bugfixes
+--------
+
+- ``zos_copy`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_job_submit`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_script`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_unarchive`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
+Version 1.14.0
+==============
 
 Minor Changes
 -------------
@@ -18,6 +187,7 @@ Minor Changes
    - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
    - Adds support for copying in asynchronous mode inside playbooks.
    - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked.
+   - Previously, when trying to copy into remote and ansible's default temporary directory was not created before execution the copy task would fail. Fix now creates the temporary directory if possible.
 
 - ``zos_job_output`` - Add execution_time return value in the modules response.
 - ``zos_job_query``
@@ -31,6 +201,7 @@ Minor Changes
    - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
    - Add execution_time return value in the modules response.
    - Loads correct bytes size value for dds when using zoau 1.3.4 or later.
+   - Previously, the use of `become` would result in a permissions error while trying to execute a job from a local file. Fix now allows a user to escalate privileges when executing a job transferred from the controller node.
 
 - ``zos_script``
 
@@ -70,12 +241,18 @@ New Modules
 Availability
 ------------
 
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
 Known Issues
 ------------
 - ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_job_submit`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_script`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_unarchive`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_fetch`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
 
 
 

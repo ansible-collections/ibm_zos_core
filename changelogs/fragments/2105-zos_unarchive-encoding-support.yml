@@ -1,4 +1,0 @@
-minor_changes:
-  - zos_unarchive - Added encoding support for the unarchive module.
-    This allows users to encode the files after unarchiving them in a perticular encoding.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2105)

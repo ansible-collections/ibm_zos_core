@@ -51,12 +51,12 @@ class ActionModule(ActionBase):
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
-        force = _process_boolean(task_args.get('force'), default=True)
+        replace = _process_boolean(task_args.get('replace'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
-        is_binary = _process_boolean(task_args.get('is_binary'), default=False)
-        force_lock = _process_boolean(task_args.get('force_lock'), default=False)
+        binary = _process_boolean(task_args.get('binary'), default=False)
+        force = _process_boolean(task_args.get('force'), default=False)
         executable = _process_boolean(task_args.get('executable'), default=False)
         asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=True)
@@ -104,7 +104,7 @@ class ActionModule(ActionBase):
             msg = "'src' or 'content' is required"
             return self._exit_action(result, msg, failed=True)
 
-        if encoding and is_binary:
+        if encoding and binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
@@ -112,8 +112,8 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
-        if is_binary and asa_text:
-            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+        if binary and asa_text:
+            msg = "Both 'binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
         if executable and asa_text:
@@ -130,9 +130,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
-        if force_lock:
+        if force:
             display.warning(
-                msg="Using force_lock uses operations that are subject to race conditions and can lead to data loss, use with caution.")
+                msg="Using force uses operations that are subject to race conditions and can lead to data loss, use with caution.")
         template_dir = None
 
         if not remote_src:
@@ -155,7 +155,7 @@ class ActionModule(ActionBase):
                 try:
                     local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(
-                        local_content, ignore_stderr=ignore_sftp_stderr
+                        local_content, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                     )
                 finally:
                     os.remove(local_content)
@@ -243,7 +243,7 @@ class ActionModule(ActionBase):
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
-                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                 )
 
             temp_path = transfer_res.get("temp_path")
@@ -291,9 +291,9 @@ class ActionModule(ActionBase):
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            self._connection.exec_command(f"rm -rf {path}*")
+            rm_res = self._connection.exec_command(f"rm -rf {path}*")
 
-        if copy_res.get("note") and not force:
+        if copy_res.get("note") and not replace:
             result["note"] = copy_res.get("note")
             return result
 
@@ -319,18 +319,29 @@ class ActionModule(ActionBase):
 
         return copy_res
 
-    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
+    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False, task_vars=None):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
-        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(self.tmp_dir))
+        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
+
+        rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(temp_path))
+        display.vvv(f"ibm_zos_copy: remote mkdir result {rc}, {stdout}, {stderr} path {temp_path}")
         if rc > 0:
-            msg = f"Failed to resolve remote temporary directory {self.tmp_dir}. Ensure that the directory exists and user has proper access."
+            msg = f"Failed to create remote temporary directory in {self.tmp_dir}. Ensure that user has proper access."
             return self._exit_action({}, msg, failed=True)
-        self.tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
-        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name(), os.path.basename(src))
-        self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
-        _src = src.replace("#", "\\#")
+
+        # The temporary dir was created successfully using ssh connection user.
+        rc, stdout, stderr = self._connection.exec_command(F"cd {temp_path} && pwd")
+        display.vvv(f"ibm_zos_copy: remote pwd result {rc}, {stdout}, {stderr} path {temp_path}")
+        if rc > 0:
+            msg = f"Failed to resolve remote temporary directory {temp_path}. Ensure that user has proper access."
+            return self._exit_action({}, msg, failed=True)
+        temp_path = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+
         _sftp_action = 'put'
+
+        temp_path = os.path.join(temp_path, os.path.basename(src))
+        _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 
         if is_dir:
@@ -370,6 +381,7 @@ class ActionModule(ActionBase):
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
             display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
 
             display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
@@ -400,7 +412,7 @@ class ActionModule(ActionBase):
 
             if returncode != 0 or (err and not ignore_stderr):
                 return dict(
-                    msg="Error transfering source '{0}' to remote z/OS system".format(src),
+                    msg="Error transferring source '{0}' to remote z/OS system".format(src),
                     rc=returncode,
                     stderr=err,
                     stderr_lines=err.splitlines(),
@@ -409,7 +421,6 @@ class ActionModule(ActionBase):
 
         finally:
             # Restore the users defined option `ssh_transfer_method` if it was overridden
-
             if is_ssh_transfer_method_updated:
                 if version_major == 2 and version_minor >= 11:
                     self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)

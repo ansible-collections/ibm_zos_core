@@ -110,11 +110,21 @@ plugins:
       name: zos_ping
       namespace: ''
       version_added: 1.1.0
+    zos_replace:
+      description: Replace all instances of a pattern within a file or data set.
+      name: zos_replace
+      namespace: ''
+      version_added: 1.15.0
     zos_script:
       description: Run scripts in z/OS
       name: zos_script
       namespace: ''
       version_added: 1.8.0
+    zos_started_task:
+      description: Perform operations on started tasks.
+      name: zos_started_task
+      namespace: ''
+      version_added: 1.16.0
     zos_stat:
       description: Retrieve facts from MVS data sets, USS files, aggregates and generation
         data groups
@@ -146,4 +156,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 1.14.0-beta.1
+version: 1.15.0

@@ -78,7 +78,7 @@ def _validate_path(path):
     return parsed_args.get("path")
 
 
-def copy_uss_mvs(src, dest, is_binary=False):
+def copy_uss_mvs(src, dest, binary=False):
     """Wrapper function for datasets.copy that handles possible
     exceptions that may occur.
 
@@ -91,7 +91,7 @@ def copy_uss_mvs(src, dest, is_binary=False):
 
     Keyword Parameters
     ------------------
-    is_binary : bool
+    binary : bool
         Whether to perform a binary copy.
 
     Returns
@@ -109,7 +109,7 @@ def copy_uss_mvs(src, dest, is_binary=False):
         "options": ""
     }
 
-    if is_binary:
+    if binary:
         copy_args["options"] = "-B"
 
     try:
@@ -125,7 +125,7 @@ def copy_uss_mvs(src, dest, is_binary=False):
     return 0, "", ""
 
 
-def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
+def copy_gdg2uss(src, dest, binary=False, asa_text=False):
     """Copy a whole GDG to a USS path.
 
     Parameters
@@ -137,7 +137,7 @@ def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
 
     Keyword Parameters
     ------------------
-    is_binary : bool
+    binary : bool
         Whether the file to be copied contains binary data.
     asa_text : bool
         Whether the file to be copied contains ASA control
@@ -149,13 +149,13 @@ def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
         True if all copies were successful, False otherwise.
     """
     src_view = gdgs.GenerationDataGroupView(src)
-    generations = src_view.generations()
+    generations = src_view.generations
 
     copy_args = {
         "options": ""
     }
 
-    if is_binary or asa_text:
+    if binary or asa_text:
         copy_args["options"] = "-B"
 
     for gds in generations:
@@ -209,7 +209,7 @@ def copy_vsam_ps(src, dest, tmphlq=None):
     return rc, out, err
 
 
-def copy_asa_uss2mvs(src, dest, tmphlq=None, force_lock=False):
+def copy_asa_uss2mvs(src, dest, tmphlq=None, force=False):
     """Copy a file from USS to an ASA sequential data set or PDS/E member.
 
     Parameters
@@ -220,7 +220,7 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None, force_lock=False):
         The MVS destination data set or member.
     tmphlq : str
         High Level Qualifier for temporary datasets.
-    force_lock : bool
+    force : bool
         Whether to open the destination in SHR mode.
 
     Returns
@@ -236,7 +236,7 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None, force_lock=False):
     # Removes escaping to execute this command
     dest = dest.replace('\\', '')
     src = src.replace('\\', '')
-    dest_dsp = "shr" if force_lock else "old"
+    dest_dsp = "shr" if force else "old"
 
     ocopy_cmd = "OCOPY INDD(DSSRC) OUTDD(DSTAR) TEXT"
     ocopy_dds = {

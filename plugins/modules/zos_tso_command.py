@@ -150,6 +150,9 @@ from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 def run_tso_command(commands, module, max_rc):
@@ -315,6 +318,7 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
     result = dict(
         changed=False,
         failed=True,

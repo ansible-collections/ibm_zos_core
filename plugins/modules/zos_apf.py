@@ -326,6 +326,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 import traceback
 
 try:
@@ -509,6 +512,7 @@ def main():
             ['batch', 'operation'],
         ],
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         library=dict(arg_type='str', required=False, aliases=['lib', 'name']),

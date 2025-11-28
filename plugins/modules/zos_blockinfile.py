@@ -375,6 +375,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets
@@ -566,6 +569,7 @@ def main():
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),

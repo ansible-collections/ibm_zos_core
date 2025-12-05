@@ -956,6 +956,8 @@ try:
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+
 
 class CopyHandler(object):
     def __init__(
@@ -1032,6 +1034,8 @@ class CopyHandler(object):
         self.backup_name = backup_name
         self.force_lock = force_lock
         self.tmphlq = tmphlq
+        logger = SingletonLogger().get_logger()
+        logger.info('Initializing CopyHandler.')
 
     def run_command(self, cmd, **kwargs):
         """Wrapper for AnsibleModule.run_command.
@@ -1521,6 +1525,8 @@ class USSCopyHandler(CopyHandler):
             Code, group and owner information to be
             applied to destination file.
         """
+        logger = SingletonLogger().get_logger()
+        logger.info("Creating USSCopyhandler class")
         super().__init__(
             module,
             is_binary=is_binary,
@@ -1573,6 +1579,7 @@ class USSCopyHandler(CopyHandler):
             Destination where the file was copied to.
         """
         changed_files = None
+        logger = SingletonLogger().get_logger()
 
         if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
@@ -1583,6 +1590,7 @@ class USSCopyHandler(CopyHandler):
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
         else:
+            logger.info("Normalizing file paths.")
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
             if PY3:
@@ -1602,10 +1610,13 @@ class USSCopyHandler(CopyHandler):
                     if "File exists" not in err:
                         raise CopyOperationError(msg=to_native(err))
 
+            logger.info("Checking if src is a file.")
             if os.path.isfile(conv_path or src):
+                logger.info("Copying to a file.")
                 dest = self._copy_to_file(src, dest, content_copy, conv_path)
                 changed_files = None
             else:
+                logger.info("Copying to a dir.")
                 dest, changed_files = self._copy_to_dir(src, dest, conv_path, force)
 
         if self.common_file_args is not None:
@@ -1614,17 +1625,25 @@ class USSCopyHandler(CopyHandler):
             owner = self.common_file_args.get("owner")
             if mode is not None:
                 if not os.path.isdir(dest):
+                    logger.info("Setting mode to the file.")
                     self.module.set_mode_if_different(dest, mode, False)
+                    logger.info("Finished setting mode to the file.")
                 if changed_files:
+                    logger.info("Setting modes to the files.")
                     self.module.set_mode_if_different(dest, mode, False)
                     for filepath in changed_files:
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
                         )
+                    logger.info("Finished setting mode to the file.")
             if group is not None:
+                logger.info("Changing group for the file.")
                 self.module.set_group_if_different(dest, group, False)
+                logger.info("Changed group for the file.")
             if owner is not None:
+                logger.info("Changing owner for the file.")
                 self.module.set_owner_if_different(dest, owner, False)
+                logger.info("Changed owner for the file.")
         return dest
 
     def _copy_to_file(self, src, dest, content_copy, conv_path):
@@ -1651,6 +1670,7 @@ class USSCopyHandler(CopyHandler):
         CopyOperationError
             When copying into the file fails.
         """
+        logger = SingletonLogger().get_logger()
         src_path = os.path.basename(src) if not content_copy else "inline_copy"
         if os.path.isdir(dest):
             dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
@@ -1661,8 +1681,34 @@ class USSCopyHandler(CopyHandler):
             else:
                 opts = dict()
                 opts["options"] = ""
-                datasets.copy(new_src, dest, **opts)
+                logger.info("Copying using dcp ")
+                logger.info(f"Copying from {new_src} to {dest}")
+                logger.info(f"Options are {opts}")
+                # datasets.copy(new_src, dest, **opts)
+                log_file = SingletonLogger().get_log_file_path()
+                import subprocess
+                with open(log_file, "w") as f:
+                    logger.info(f"Executing subprocess popen")
+                    process = subprocess.Popen(
+                        ["dcp", '-d', '-v', new_src, dest],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,  # Ensures output is in string format, not bytes
+                        bufsize=1   # Line-buffered
+                    )
+
+                    # Stream output line by line
+                    for line in process.stdout:
+                        f.write(line)
+                        f.flush()  # Ensure it's written immediately
+
+                    process.stdout.close()
+                    return_code = process.wait()
+                    logger.info(f"dcp return code: {return_code}")
+                logger.info(f"Finalized dcp ")
+                logger.info(f"Copying stat from {new_src} to {dest} following symlinks.")
                 shutil.copystat(new_src, dest, follow_symlinks=True)
+                logger.info(f"Finalized shutil.copystat")
                 # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
@@ -3281,6 +3327,7 @@ def run_module(module, arg_def):
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
     content = module.params.get('content')
+    log_file = module.params.get('log_file')
 
     # Set temporary directory at os environment level
     os.environ['TMPDIR'] = f"{os.path.realpath(module.tmpdir)}/"
@@ -3304,6 +3351,15 @@ def run_module(module, arg_def):
     src_member = is_member(src)
     raw_src = src
     raw_dest = dest
+
+    # Initialize logger
+    if not log_file:
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        log_file = temp_file.name
+    singleton_logger = SingletonLogger(log_file)
+    logger = singleton_logger.get_logger()
+    logger.info(f"Logger initialized in {log_file}")
+
 
     # Validation for copy from a member
     if src_member:
@@ -3344,6 +3400,7 @@ def run_module(module, arg_def):
     # 2. Capture the file or data sets mode bits when mode param is set
     #    to 'preserve'
     # ********************************************************************
+    logger.info(f"Verifying that source exists and is readable by the user.")
     if remote_src and "/" in src:
         # Keeping the trailing slash because the CopyHandler will do
         # different things depending on its existence.
@@ -3515,6 +3572,7 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from dest_data_set.type
     # ********************************************************************
+    logger.info(f"Verifying that source and dest are compatible.")
     if not is_compatible(
         src_ds_type,
         dest_ds_type,
@@ -3636,6 +3694,7 @@ def run_module(module, arg_def):
 
         res_args["changed"] = True
 
+    logger.info(f"Verifying that destination allows copy.")
     if not does_destination_allow_copy(
         src,
         is_src_dir,
@@ -3698,6 +3757,7 @@ def run_module(module, arg_def):
     # Encoding conversion is only valid if the source is a local file,
     # local directory or a USS file/directory.
     # ********************************************************************
+    logger.info(f"Create Copyhandler.")
     copy_handler = CopyHandler(
         module,
         is_binary=is_binary,
@@ -3720,6 +3780,7 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
+            logger.info(f"Create USSCopyhandler.")
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
@@ -3734,7 +3795,7 @@ def run_module(module, arg_def):
             original_checksum = None
             if dest_exists:
                 original_checksum = get_file_checksum(dest)
-
+            logger.info(f"Copying uss file to uss file.")
             dest = uss_copy_handler.copy_to_uss(
                 src,
                 dest,
@@ -3747,16 +3808,21 @@ def run_module(module, arg_def):
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None
+            logger.info("Finished copying file.")
 
             try:
+                logger.info("Computing checksums.")
                 remote_checksum = get_file_checksum(src)
                 dest_checksum = get_file_checksum(dest)
+                logger.info("Finished computing checksums.")
 
                 if validate:
+                    logger.info("Validating checksums.")
                     res_args["checksum"] = dest_checksum
 
                     if remote_checksum != dest_checksum:
                         raise CopyOperationError(msg="Validation failed for copied files")
+                    logger.info("Validated checksums.")
 
                 res_args["changed"] = (
                     res_args.get("changed") or dest_checksum != original_checksum or os.path.isdir(dest)
@@ -3828,6 +3894,8 @@ def run_module(module, arg_def):
     except CopyOperationError as err:
         raise err
 
+    logger.info("Finalizing module execution.")
+    res_args["log_file"] = singleton_logger.get_log_file_path()
     res_args.update(
         dict(
             src=src,
@@ -3853,6 +3921,7 @@ def main():
         argument_spec=dict(
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
+            log_file=dict(type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
@@ -3957,6 +4026,7 @@ def main():
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
+        log_file=dict(type='data_set_or_path', required=False),
         is_binary=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
@@ -4048,14 +4118,34 @@ def main():
         )
 
     res_args = conv_path = None
+    import sys
     try:
         res_args, conv_path = run_module(module, arg_def)
+        # Set the trace function
+        sys.settrace(trace_calls)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])
+        sys.settrace(None)
+
+indent_level = 0
+def trace_calls(frame, event, arg):
+    global indent_level
+    logger = SingletonLogger().get_logger()
+    if event == 'call':
+        indent_level += 1
+        function_name = frame.f_code.co_name
+        file_name = frame.f_code.co_filename
+        logger.info(f"{'  ' * indent_level}--> Calling {function_name} in {file_name}")
+    elif event == 'return':
+        function_name = frame.f_code.co_name
+        logger.info(f"{'  ' * indent_level}<-- Returning from {function_name}")
+        indent_level -= 1
+    return trace_calls
+
 
 
 class EncodingConversionError(Exception):

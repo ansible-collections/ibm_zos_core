@@ -3438,107 +3438,42 @@ def run_module(module, arg_def):
         if volume:
             dest_data_set["volumes"] = [volume]
 
-    copy_member = is_member(dest)
-    # This section we initialize different variables
-    # that we used to pass from the action plugin.
-    is_src_dir = os.path.isdir(src)
-    is_uss = "/" in dest
-    is_mvs_src = is_data_set(data_set.extract_dsname(src))
-    is_src_gds = data_set.DataSet.is_gds_relative_name(src)
-    is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
-    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
-    is_dest_gds_active = False
-    is_pds = is_src_dir and is_mvs_dest
-    src_member = is_member(src)
-    raw_src = src
-    raw_dest = dest
-    is_src_alias = False
-    is_dest_alias = False
+    
 
-    if is_mvs_src and not src_member and not is_src_gds:
-        is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
-        if is_src_alias:
-            src = src_base_name
-    if is_mvs_dest and not copy_member and not is_dest_gds:
-        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
-        if is_dest_alias:
-            dest = dest_base_name
-
-    # Initialize logging module
-    module_verbosity_level = module._verbosity
-    logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
-
-    # Validation for copy from a member
-    if src_member:
-        if not (data_set.DataSet.data_set_member_exists(src)):
-            module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
-                data_set.extract_member_name(src)
-            ))
-
-    # Implementing the new MVSDataSet class by masking the values of
-    # src/raw_src and dest/raw_dest.
-    if is_mvs_src:
-        src_data_set_object = data_set.MVSDataSet(src)
-        src = src_data_set_object.name
-        raw_src = src_data_set_object.raw_name
-
-    if is_mvs_dest:
-        dest_data_set_object = data_set.MVSDataSet(dest)
-        dest = dest_data_set_object.name
-        raw_dest = dest_data_set_object.raw_name
-        is_dest_gds_active = dest_data_set_object.is_gds_active
-
-    # ********************************************************************
-    # When copying to and from a data set member, 'dest' or 'src' will be
-    # in the form DATA.SET.NAME(MEMBER). When this is the case, extract the
-    # actual name of the data set.
-    # ********************************************************************
-    dest_name = data_set.extract_dsname(dest)
-    dest_member = data_set.extract_member_name(dest) if copy_member else None
-    src_name = data_set.extract_dsname(src) if src else None
-    member_name = data_set.extract_member_name(src) if src_member else None
-
-    conv_path = src_ds_type = dest_ds_type = dest_exists = None
-    res_args = dict()
-
-    # ********************************************************************
-    # 1. When the source is a USS file or directory , verify that the file
-    #    or directory exists and has proper read permissions.
-    # 2. Capture the file or data sets mode bits when mode param is set
-    #    to 'preserve'
-    # ********************************************************************
-    if remote_src and "/" in src:
-        # Keeping the trailing slash because the CopyHandler will do
-        # different things depending on its existence.
-        if src.endswith("/"):
-            src = "{0}/".format(os.path.realpath(src))
-        else:
-            src = os.path.realpath(src)
-
-        if not os.path.exists(src):
-            module.fail_json(msg="Source {0} does not exist".format(raw_src))
-        if not os.access(src, os.R_OK):
-            module.fail_json(msg="Source {0} is not readable".format(raw_src))
-        if mode == "preserve":
-            mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
-
-    # ********************************************************************
-    # Use the DataSet class to gather the type and volume of the source
-    # and destination datasets, if needed.
-    # ********************************************************************
-    dest_member_exists = False
-    converted_src = None
-    # By default, we'll assume that src and dest don't have ASA control
-    # characters. We'll only update these variables when they are
-    # data sets with record format 'FBA' or 'VBA'.
-    src_has_asa_chars = dest_has_asa_chars = False
     try:
-        if "/" in src:
+        #### Source validation
+        raw_src = src
+        is_src_dir = os.path.isdir(src)
+        is_src_uss = "/" in src
+        is_src_dir = False
+        is_src_file = False
+        is_uss = "/" in dest
+        ### process if uss else
+        # ********************************************************************
+        # 1. When the source is a USS file or directory , verify that the file
+        #    or directory exists and has proper read permissions.
+        # 2. Capture the file or data sets mode bits when mode param is set
+        #    to 'preserve'
+        # ********************************************************************
+        if is_src_uss:
             src_ds_type = "USS"
+            if remote_src:
+                # Keeping the trailing slash because the CopyHandler will do
+                # different things depending on its existence.
+                if src.endswith("/"):
+                    src = "{0}/".format(os.path.realpath(src))
+                else:
+                    src = os.path.realpath(src)
 
-            if os.path.isdir(src):
-                is_src_dir = True
+                if not os.path.exists(src):
+                    is_src_dir = os.path.isdir(src)
+                    is_src_file = os.path.isfile(src)
+                else:
+                    module.fail_json(msg="Source {0} does not exist".format(raw_src))
+                if not os.access(src, os.R_OK):
+                    module.fail_json(msg="Source {0} is not readable".format(raw_src))
+                if mode == "preserve":
+                    mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
@@ -3572,10 +3507,36 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, binary=binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
-                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq)):
-                if src_member and not data_set.DataSet.data_set_member_exists(src):
-                    raise NonExistentSourceError(src)
+            src_name = data_set.extract_dsname(src) if src else None
+            is_mvs_src = is_data_set(src_name)
+            is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+            src_member = is_member(src)
+            is_src_alias = False
+            # Replace src with real name if src is alias
+            if is_mvs_src and not src_member and not is_src_gds:
+                is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
+                if is_src_alias:
+                    src = src_base_name
+            
+            # Validation for copy from a member
+            if src_member:
+                if not (data_set.DataSet.data_set_member_exists(src)):
+                    module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
+                        data_set.extract_member_name(src)
+                    ))
+                else:
+                    member_name = data_set.extract_member_name(src) if src_member else None
+            # Implementing the new MVSDataSet class by masking the values of
+            # src/raw_src and dest/raw_dest.
+            if is_mvs_src:
+                src_data_set_object = data_set.MVSDataSet(src)
+                src = src_data_set_object.name
+                raw_src = src_data_set_object.raw_name
+            
+            src_ds_name = src
+            if not is_src_gds:
+                src_ds_name = src_name
+            if data_set.DataSet.data_set_exists(src_ds_name, tmphlq=tmphlq):
                 src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
 
                 if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
@@ -3593,76 +3554,14 @@ def run_module(module, arg_def):
                     changed=False,
                     dest=dest
                 )
-
             if encoding:
                 module.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
-
-        if is_uss:
-            dest_ds_type = "USS"
-            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
-                src_basename = os.path.basename(src) if not content else "inline_copy"
-                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
-                if dest.startswith("//"):
-                    dest = dest.replace("//", "/")
-
-            if is_src_dir and not src.endswith("/"):
-                dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
-            else:
-                dest_exists = os.path.exists(dest)
-
-            if dest_exists and not os.access(dest, os.W_OK):
-                module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
-        else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
-
-            # When dealing with a new generation, we'll override its type to None
-            # so it will be the same type as the source (or whatever dest_data_set has)
-            # a couple lines down.
-            if is_dest_gds and not is_dest_gds_active:
-                dest_exists = False
-                dest_ds_type = None
-
-            # dest_data_set.type overrides `dest_ds_type` given precedence rules
-            if dest_data_set and dest_data_set.get("type"):
-                dest_ds_type = dest_data_set.get("type").upper()
-            elif executable:
-                # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
-                # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
-                # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
-                # and LIBRARY is not in MVS_PARTITIONED frozen set.
-                dest_ds_type = "PDSE"
-
-            if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
-                dest_has_asa_chars = True
-            elif not dest_exists and asa_text:
-                dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
-                dest_attributes = datasets.list_datasets(dest_name)[0]
-                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
-                    dest_has_asa_chars = True
-
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
-                # Checking if we need to copy a member when the user requests it implicitly.
-                # src is a file and dest was just the PDS/E dataset name.
-                if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
-                    copy_member = True
-                    dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
-                    dest = f"{dest_name}({dest_member})"
-
-                # Checking if the members that would be created from the directory files
-                # are already present on the system.
-                if copy_member:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
-                elif src_ds_type == "USS":
-                    root_dir = src
-                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
-                elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
     except Exception as err:
         module.fail_json(msg=str(err))
+
+    ### GDG validation
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
         # Validate destination GDG doesn't exist
@@ -3682,6 +3581,7 @@ def run_module(module, arg_def):
         if dest_generation < 1:
             module.fail_json(msg=f"Cannot copy to {dest}, the generation data set is not allocated.")
 
+    
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
@@ -4013,6 +3913,102 @@ def run_module(module, arg_def):
 
     except CopyOperationError as err:
         raise err
+    
+
+
+
+
+    ###### dest validation
+    copy_member = is_member(dest)
+    dest_name = data_set.extract_dsname(dest)
+    is_mvs_dest = is_data_set(dest_name)
+    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+    is_dest_gds_active = False
+    is_pds = is_src_dir and is_mvs_dest
+    raw_dest = dest
+    is_dest_alias = False
+    if is_mvs_dest and not copy_member and not is_dest_gds:
+        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+        if is_dest_alias:
+            dest = dest_base_name
+    if is_mvs_dest:
+        dest_data_set_object = data_set.MVSDataSet(dest)
+        dest = dest_data_set_object.name
+        raw_dest = dest_data_set_object.raw_name
+        is_dest_gds_active = dest_data_set_object.is_gds_active
+    
+    dest_member = data_set.extract_member_name(dest) if copy_member else None
+    
+    if is_uss:
+        dest_ds_type = "USS"
+        if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+            src_basename = os.path.basename(src) if not content else "inline_copy"
+            dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
+            if dest.startswith("//"):
+                dest = dest.replace("//", "/")
+
+        if is_src_dir and not src.endswith("/"):
+            dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
+        else:
+            dest_exists = os.path.exists(dest)
+
+        if dest_exists and not os.access(dest, os.W_OK):
+            module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
+    else:
+        dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
+        dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+
+        # When dealing with a new generation, we'll override its type to None
+        # so it will be the same type as the source (or whatever dest_data_set has)
+        # a couple lines down.
+        if is_dest_gds and not is_dest_gds_active:
+            dest_exists = False
+            dest_ds_type = None
+
+        # dest_data_set.type overrides `dest_ds_type` given precedence rules
+        if dest_data_set and dest_data_set.get("type"):
+            dest_ds_type = dest_data_set.get("type").upper()
+        elif executable:
+            # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
+            # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
+            # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+            # and LIBRARY is not in MVS_PARTITIONED frozen set.
+            dest_ds_type = "PDSE"
+
+        if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
+            dest_has_asa_chars = True
+        elif not dest_exists and asa_text:
+            dest_has_asa_chars = True
+        elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
+            dest_attributes = datasets.list_datasets(dest_name)[0]
+            if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
+                dest_has_asa_chars = True
+
+        if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+            # Checking if we need to copy a member when the user requests it implicitly.
+            # src is a file and dest was just the PDS/E dataset name.
+            if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
+                copy_member = True
+                dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
+                dest = f"{dest_name}({dest_member})"
+
+            # Checking if the members that would be created from the directory files
+            # are already present on the system.
+            if copy_member:
+                dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
+            elif src_ds_type == "USS":
+                root_dir = src
+                dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
+            elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
+                dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+
+
+
+
+
+
+
+
 
     res_args.update(
         dict(

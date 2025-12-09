@@ -2775,7 +2775,7 @@ def cleanup(src_list):
     tmp_prefix = os.environ['TMPDIR']
     tmp_dir = os.path.realpath("/" + tmp_prefix)
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
-    conv_list = glob.glob(tmp_dir + "/converted*")
+    conv_list = glob.glob(tmp_dir + "/``converted``*")
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
 
     for file in (dir_list + conv_list + tmp_list + src_list):
@@ -3359,6 +3359,7 @@ def run_module(module, arg_def):
     singleton_logger = SingletonLogger(log_file)
     logger = singleton_logger.get_logger()
     logger.info(f"Logger initialized in {log_file}")
+    logger.info(f"Logger initialized with build 12-05-25 1.13.0-alpha.1, disable cleanup routine.")
 
 
     # Validation for copy from a member
@@ -3905,8 +3906,62 @@ def run_module(module, arg_def):
             backup_name=backup_name,
         )
     )
+    # Getting additional file stats that were previously being manually cleaned up.
+    logger.info(f"Inspecting the remote temp directory for files and ownership.")
+
+    tmp_prefix = os.environ['TMPDIR']
+    logger.info(f"'tmp_prefix' is {tmp_prefix}")
+    tmp_dir = os.path.realpath("/" + tmp_prefix)
+    logger.info(f"'tmp_dir' is {tmp_dir}")
+    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
+    logger.info(f"'dir_list' is {dir_list}")
+    conv_list = glob.glob(tmp_dir + "/``converted``*")
+    logger.info(f"'conv_list' is {conv_list}")
+    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    logger.info(f"'tmp_list' is {tmp_list}")
+
+    listing=dir_list + conv_list + tmp_list + [conv_path]
+    for entry in listing:
+        get_file_info(entry, logger)
 
     return res_args, conv_path
+
+
+def get_file_info(filepath, logger):
+    # Localized imports as this is throw away code, consuming all execeptions
+    import pwd
+    import grp
+
+    try:
+        file_stat = os.stat(filepath)
+        mode = file_stat.st_mode
+        bit_permissions = oct(mode & 0o777)
+        human_permissions = ""
+        human_permissions += "r" if (mode & stat.S_IRUSR) else "-"
+        human_permissions += "w" if (mode & stat.S_IWUSR) else "-"
+        human_permissions += "x" if (mode & stat.S_IXUSR) else "-"
+        human_permissions += "r" if (mode & stat.S_IRGRP) else "-"
+        human_permissions += "w" if (mode & stat.S_IWGRP) else "-"
+        human_permissions += "x" if (mode & stat.S_IXGRP) else "-"
+        human_permissions += "r" if (mode & stat.S_IROTH) else "-"
+        human_permissions += "w" if (mode & stat.S_IWOTH) else "-"
+        human_permissions += "x" if (mode & stat.S_IXOTH) else "-"
+
+        owner_name = pwd.getpwuid(file_stat.st_uid).pw_name
+        group_name = grp.getgrgid(file_stat.st_gid).gr_name
+        is_directory = os.path.isdir(filepath)
+
+        logger.info(f"File path is: {filepath}")
+        logger.info(f"File path is directory: {is_directory}")
+        logger.info(f"  Bit permissions): {bit_permissions}")
+        logger.info(f"  Human permissions: {human_permissions}")
+        logger.info(f"  Owner is: {owner_name}")
+        logger.info(f"  Group is: {group_name}")
+
+    except FileNotFoundError:
+        logger.info(f"File not found at {filepath}")
+    except Exception as e:
+        logger.info(f"An error occurred for {filepath}: {e}")
 
 
 def main():
@@ -4125,11 +4180,20 @@ def main():
         sys.settrace(trace_calls)
         module.exit_json(**res_args)
     except CopyOperationError as err:
-        cleanup([])
+        # cleanup([])
         module.fail_json(**(err.json_args))
-    finally:
-        cleanup([conv_path])
-        sys.settrace(None)
+
+    # try:
+    #     res_args, conv_path = run_module(module, arg_def)
+    #     # Set the trace function
+    #     sys.settrace(trace_calls)
+    #     module.exit_json(**res_args)
+    # except CopyOperationError as err:
+    #     cleanup([])
+    #     module.fail_json(**(err.json_args))
+    # finally:
+    #     cleanup([conv_path])
+    #     sys.settrace(None)
 
 indent_level = 0
 def trace_calls(frame, event, arg):

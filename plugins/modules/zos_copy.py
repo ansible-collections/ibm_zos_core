@@ -3907,7 +3907,7 @@ def run_module(module, arg_def):
         )
     )
     # Getting additional file stats that were previously being manually cleaned up.
-    logger.info(f"Inspecting the remote temp directory for files and ownership.")
+    logger.info(f"Inspecting the remote directory for files and ownership.")
 
     tmp_prefix = os.environ['TMPDIR']
     logger.info(f"'tmp_prefix' is {tmp_prefix}")
@@ -3932,36 +3932,37 @@ def get_file_info(filepath, logger):
     import pwd
     import grp
 
-    try:
-        file_stat = os.stat(filepath)
-        mode = file_stat.st_mode
-        bit_permissions = oct(mode & 0o777)
-        human_permissions = ""
-        human_permissions += "r" if (mode & stat.S_IRUSR) else "-"
-        human_permissions += "w" if (mode & stat.S_IWUSR) else "-"
-        human_permissions += "x" if (mode & stat.S_IXUSR) else "-"
-        human_permissions += "r" if (mode & stat.S_IRGRP) else "-"
-        human_permissions += "w" if (mode & stat.S_IWGRP) else "-"
-        human_permissions += "x" if (mode & stat.S_IXGRP) else "-"
-        human_permissions += "r" if (mode & stat.S_IROTH) else "-"
-        human_permissions += "w" if (mode & stat.S_IWOTH) else "-"
-        human_permissions += "x" if (mode & stat.S_IXOTH) else "-"
+    if (filepath is not None):
+        try:
+            file_stat = os.stat(filepath)
+            mode = file_stat.st_mode
+            bit_permissions = oct(mode & 0o777)
+            human_permissions = ""
+            human_permissions += "r" if (mode & stat.S_IRUSR) else "-"
+            human_permissions += "w" if (mode & stat.S_IWUSR) else "-"
+            human_permissions += "x" if (mode & stat.S_IXUSR) else "-"
+            human_permissions += "r" if (mode & stat.S_IRGRP) else "-"
+            human_permissions += "w" if (mode & stat.S_IWGRP) else "-"
+            human_permissions += "x" if (mode & stat.S_IXGRP) else "-"
+            human_permissions += "r" if (mode & stat.S_IROTH) else "-"
+            human_permissions += "w" if (mode & stat.S_IWOTH) else "-"
+            human_permissions += "x" if (mode & stat.S_IXOTH) else "-"
 
-        owner_name = pwd.getpwuid(file_stat.st_uid).pw_name
-        group_name = grp.getgrgid(file_stat.st_gid).gr_name
-        is_directory = os.path.isdir(filepath)
+            owner_name = pwd.getpwuid(file_stat.st_uid).pw_name
+            group_name = grp.getgrgid(file_stat.st_gid).gr_name
+            is_directory = os.path.isdir(filepath)
 
-        logger.info(f"File path is: {filepath}")
-        logger.info(f"File path is directory: {is_directory}")
-        logger.info(f"  Bit permissions): {bit_permissions}")
-        logger.info(f"  Human permissions: {human_permissions}")
-        logger.info(f"  Owner is: {owner_name}")
-        logger.info(f"  Group is: {group_name}")
+            logger.info(f"File path is: {filepath}")
+            logger.info(f"File path is directory: {is_directory}")
+            logger.info(f"  Bit permissions): {bit_permissions}")
+            logger.info(f"  Human permissions: {human_permissions}")
+            logger.info(f"  Owner is: {owner_name}")
+            logger.info(f"  Group is: {group_name}")
 
-    except FileNotFoundError:
-        logger.info(f"File not found at {filepath}")
-    except Exception as e:
-        logger.info(f"An error occurred for {filepath}: {e}")
+        except FileNotFoundError:
+            logger.info(f"File not found at {filepath}")
+        except Exception as e:
+            logger.info(f"An error occurred for filepath {filepath}: {e}")
 
 
 def main():

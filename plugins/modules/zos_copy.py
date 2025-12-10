@@ -4208,17 +4208,22 @@ def main():
 
     res_args = conv_path = None
     import sys
+    res_args, conv_path = None, None
+    logger = SingletonLogger().get_logger()
     try:
         res_args, conv_path = run_module(module, arg_def)
         # Set the trace function
         sys.settrace(trace_calls)
-        module.exit_json(**res_args)
+        # module.exit_json(**res_args)
     except CopyOperationError as err:
+        logger.info('CopyOperationError err.')
         cleanup2([])
         module.fail_json(**(err.json_args))
     finally:
+        logger.info('Finally.')
         cleanup2([conv_path])
         sys.settrace(None)
+        module.exit_json(**res_args)
 
     # try:
     #     res_args, conv_path = run_module(module, arg_def)

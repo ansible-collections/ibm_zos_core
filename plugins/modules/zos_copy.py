@@ -4218,6 +4218,7 @@ def main():
         module.exit_json(**res_args)
         logger.info(f"ALPHA 1: Main finish exit_json")
     except CopyOperationError as err:
+        # Logger will not exist at this point
         cleanup2([], logger)
         module.fail_json(**(err.json_args))
     finally:

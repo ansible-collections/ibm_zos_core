@@ -2781,7 +2781,7 @@ def cleanup2(src_list, logger):
 
     logger.info(f"In cleanup2")
     module.fail_json(
-        msg="FORCE FAILURE"
+        msg="FORCE FAIL"
     )
     for file in (dir_list + conv_list + tmp_list + src_list):
         try:

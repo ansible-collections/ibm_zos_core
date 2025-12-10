@@ -2779,6 +2779,7 @@ def cleanup2(src_list, logger):
     conv_list = glob.glob(tmp_dir + "/``converted``*")
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
 
+    logger.info(f"In cleanup2")
     for file in (dir_list + conv_list + tmp_list + src_list):
         try:
             if file and os.path.exists(file):
@@ -4213,7 +4214,7 @@ def main():
         res_args, conv_path, logger = run_module(module, arg_def)
         # Set the trace function
         sys.settrace(trace_calls)
-        # module.exit_json(**res_args)
+        module.exit_json(**res_args)
     except CopyOperationError as err:
         logger.info('CopyOperationError err.')
         cleanup2([], logger)
@@ -4222,7 +4223,6 @@ def main():
         logger.info('Finally.')
         cleanup2([conv_path], logger)
         sys.settrace(None)
-        module.exit_json(**res_args)
 
     # try:
     #     res_args, conv_path = run_module(module, arg_def)

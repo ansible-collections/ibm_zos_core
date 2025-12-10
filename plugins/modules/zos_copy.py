@@ -958,8 +958,6 @@ except ImportError:
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
-log_file = None
-
 
 class CopyHandler(object):
     def __init__(
@@ -3959,7 +3957,7 @@ def run_module(module, arg_def):
     for entry in listing:
         get_file_info(entry, logger)
 
-    return res_args, conv_path
+    return res_args, conv_path, logger
 
 
 def get_file_info(filepath, logger):
@@ -4211,10 +4209,8 @@ def main():
     res_args = conv_path = None
     import sys
     res_args, conv_path = None, None
-    singleton_logger = SingletonLogger(log_file)
-    logger = singleton_logger.get_logger()
     try:
-        res_args, conv_path = run_module(module, arg_def)
+        res_args, conv_path, logger = run_module(module, arg_def)
         # Set the trace function
         sys.settrace(trace_calls)
         # module.exit_json(**res_args)

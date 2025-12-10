@@ -458,8 +458,8 @@ class ActionModule(ActionBase):
         remote system to its original state. Which means deleting any newly
         created files or data sets.
         """
+        host = self._play_context.remote_addr
         if dest_exists is False:
-            host = self._play_context.remote_addr
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             display.vvv(u"{0} ibm_zos_copy executing cleanup from action plugin ".format(now), host)
             if "/" in dest:

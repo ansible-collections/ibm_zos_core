@@ -4218,13 +4218,8 @@ def main():
         module.exit_json(**res_args)
         logger.info(f"ALPHA 1: Main finish exit_json")
     except CopyOperationError as err:
-        logger.info(f"ALPHA 1: Main CopyOperationError err found")
-        logger.info(f"ALPHA 1: Main cleanup2 running")
         cleanup2([], logger)
-        logger.info(f"ALPHA 1: Main cleanup2 finished")
-        logger.info(f"ALPHA 1: Main fail_json run")
         module.fail_json(**(err.json_args))
-        logger.info(f"ALPHA 1: Main fail_json finished")
     finally:
         logger.info(f"ALPHA 1: Main finally")
         logger.info(f"ALPHA 1: Main finally cleanup2 run")

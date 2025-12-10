@@ -958,6 +958,8 @@ except ImportError:
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
+log_file = None
+
 
 class CopyHandler(object):
     def __init__(
@@ -2762,8 +2764,8 @@ def get_file_checksum(src):
     return hash_digest.hexdigest()
 
 
-def cleanup2(src_list):
-    logger = SingletonLogger().get_logger()
+def cleanup2(src_list, logger):
+
     """Remove all files or directories listed in src_list. Also perform
     additional cleanup of the tmp directory.
 
@@ -4209,7 +4211,8 @@ def main():
     res_args = conv_path = None
     import sys
     res_args, conv_path = None, None
-    logger = SingletonLogger().get_logger()
+    singleton_logger = SingletonLogger(log_file)
+    logger = singleton_logger.get_logger()
     try:
         res_args, conv_path = run_module(module, arg_def)
         # Set the trace function
@@ -4217,11 +4220,11 @@ def main():
         # module.exit_json(**res_args)
     except CopyOperationError as err:
         logger.info('CopyOperationError err.')
-        cleanup2([])
+        cleanup2([], logger)
         module.fail_json(**(err.json_args))
     finally:
         logger.info('Finally.')
-        cleanup2([conv_path])
+        cleanup2([conv_path], logger)
         sys.settrace(None)
         module.exit_json(**res_args)
 

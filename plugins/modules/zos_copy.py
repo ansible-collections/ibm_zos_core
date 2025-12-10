@@ -2775,22 +2775,22 @@ def cleanup2(src_list, logger):
 
     module = AnsibleModuleHelper(argument_spec={})
     tmp_prefix = os.environ['TMPDIR']
-    logger.info(f"'tmp_prefix' is {tmp_prefix}")
+    logger.info(f"ALPHA 1: 'tmp_prefix' is {tmp_prefix}")
 
     tmp_dir = os.path.realpath("/" + tmp_prefix)
-    logger.info(f"'tmp_dir' is {tmp_dir}")
+    logger.info(f"ALPHA 1: 'tmp_dir' is {tmp_dir}")
 
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
-    logger.info(f"'dir_list' is {dir_list}")
+    logger.info(f"ALPHA 1: 'dir_list' is {dir_list}")
 
     conv_list = glob.glob(tmp_dir + "/``converted``*")
-    logger.info(f"'conv_list' is {conv_list}")
+    logger.info(f"ALPHA 1: 'conv_list' is {conv_list}")
 
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
-    logger.info(f"'tmp_list' is {tmp_list}")
+    logger.info(f"ALPHA 1: 'tmp_list' is {tmp_list}")
 
-    logger.info(f"Inspecting the proposed cleanup files for ownership.")
-    listing=dir_list + conv_list + tmp_list + [src_list]
+    logger.info(f"ALPHA 1: Inspecting the proposed cleanup files for ownership.")
+    listing=dir_list + conv_list + tmp_list + src_list
     for entry in listing:
         get_file_info(entry, logger)
 
@@ -2798,16 +2798,16 @@ def cleanup2(src_list, logger):
         try:
             if file and os.path.exists(file):
                 if os.path.isfile(file):
-                    logger.info(f"Removing {file}")
+                    logger.info(f"ALPHA 1: Removing {file}")
                     os.remove(file)
                 else:
-                    logger.info(f"Removing directory {file}")
+                    logger.info(f"ALPHA 1: Removing directory {file}")
                     shutil.rmtree(file)
         except OSError as err:
             err = str(err)
-            logger.info(f"Permisson error {str(err)}")
+            logger.info(f"ALPHA 1: Permisson error {str(err)}")
             if "Permission denied" not in err:
-                logger.info(f"Permisson denied not in err msg {err}")
+                logger.info(f"ALPHA 1: Permisson denied not in err msg {err}")
                 module.fail_json(
                     msg="Error during clean up of file {0}".format(file), stderr=err
                 )
@@ -4210,17 +4210,27 @@ def main():
     import sys
     res_args, conv_path = None, None
     try:
+        logger.info(f"ALPHA 1: Main running run_module")
         res_args, conv_path, logger = run_module(module, arg_def)
+        logger.info(f"ALPHA 1: Main finished run_module")
         # Set the trace function
         sys.settrace(trace_calls)
+        logger.info(f"ALPHA 1: Main running exit_json")
         module.exit_json(**res_args)
+        logger.info(f"ALPHA 1: Main finish exit_json")
     except CopyOperationError as err:
-        logger.info('CopyOperationError err found.')
+        logger.info(f"ALPHA 1: Main CopyOperationError err found")
+        logger.info(f"ALPHA 1: Main cleanup2 running")
         cleanup2([], logger)
+        logger.info(f"ALPHA 1: Main cleanup2 finished")
+        logger.info(f"ALPHA 1: Main fail_json run")
         module.fail_json(**(err.json_args))
+        logger.info(f"ALPHA 1: Main fail_json finished")
     finally:
-        logger.info('Finally block called.')
+        logger.info(f"ALPHA 1: Main finally")
+        logger.info(f"ALPHA 1: Main finally cleanup2 run")
         cleanup2([conv_path], logger)
+        logger.info(f"ALPHA 1: Main finally cleanup2 finished")
         sys.settrace(None)
 
     # try:

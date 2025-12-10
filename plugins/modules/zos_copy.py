@@ -2762,6 +2762,39 @@ def get_file_checksum(src):
     return hash_digest.hexdigest()
 
 
+def cleanup2(src_list):
+    logger = SingletonLogger().get_logger()
+    """Remove all files or directories listed in src_list. Also perform
+    additional cleanup of the tmp directory.
+
+    Parameters
+    ----------
+    src_list : list
+        A list of file paths.
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    tmp_prefix = os.environ['TMPDIR']
+    tmp_dir = os.path.realpath("/" + tmp_prefix)
+    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
+    conv_list = glob.glob(tmp_dir + "/``converted``*")
+    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+
+    for file in (dir_list + conv_list + tmp_list + src_list):
+        try:
+            if file and os.path.exists(file):
+                if os.path.isfile(file):
+                    logger.info(f"File to be removed is: {file}")
+                else:
+                    logger.info(f"Directory to be removed is: {file}")
+        except OSError as err:
+            err = str(err)
+            if "Permission denied" not in err:
+                logger.info(f"Permission denied not in err, will move to fail_json now.")
+                module.fail_json(
+                    msg="Error during clean up of file {0}".format(file), stderr=err
+                )
+                logger.info(f"Permission denied not in err, after fail_json.")
+
 def cleanup(src_list):
     """Remove all files or directories listed in src_list. Also perform
     additional cleanup of the tmp directory.
@@ -4181,8 +4214,11 @@ def main():
         sys.settrace(trace_calls)
         module.exit_json(**res_args)
     except CopyOperationError as err:
-        # cleanup([])
+        cleanup2([])
         module.fail_json(**(err.json_args))
+    finally:
+        cleanup2([conv_path])
+        sys.settrace(None)
 
     # try:
     #     res_args, conv_path = run_module(module, arg_def)

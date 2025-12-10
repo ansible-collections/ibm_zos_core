@@ -3998,7 +3998,7 @@ def get_file_info(filepath, logger):
             logger.info(f"An error occurred for filepath {filepath}: {e}")
 
 
-def main(logger):
+def main():
     """Run the zos_copy module core functions.
 
     Raises

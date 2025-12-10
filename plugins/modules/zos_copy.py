@@ -2772,31 +2772,47 @@ def cleanup2(src_list, logger):
     src_list : list
         A list of file paths.
     """
+
     module = AnsibleModuleHelper(argument_spec={})
     tmp_prefix = os.environ['TMPDIR']
-    tmp_dir = os.path.realpath("/" + tmp_prefix)
-    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
-    conv_list = glob.glob(tmp_dir + "/``converted``*")
-    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    logger.info(f"'tmp_prefix' is {tmp_prefix}")
 
-    logger.info(f"In cleanup2")
+    tmp_dir = os.path.realpath("/" + tmp_prefix)
+    logger.info(f"'tmp_dir' is {tmp_dir}")
+
+    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
+    logger.info(f"'dir_list' is {dir_list}")
+
+    conv_list = glob.glob(tmp_dir + "/``converted``*")
+    logger.info(f"'conv_list' is {conv_list}")
+
+    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    logger.info(f"'tmp_list' is {tmp_list}")
+
+    logger.info(f"Inspecting the proposed cleanup files for ownership.")
+    listing=dir_list + conv_list + tmp_list + [src_list]
+    for entry in listing:
+        get_file_info(entry, logger)
+
     for file in (dir_list + conv_list + tmp_list + src_list):
         try:
             if file and os.path.exists(file):
                 if os.path.isfile(file):
-                    logger.info(f"File to be removed is: {file}")
+                    logger.info(f"Removing {file}")
+                    os.remove(file)
                 else:
-                    logger.info(f"Directory to be removed is: {file}")
+                    logger.info(f"Removing directory {file}")
+                    shutil.rmtree(file)
         except OSError as err:
             err = str(err)
+            logger.info(f"Permisson error {str(err)}")
             if "Permission denied" not in err:
-                logger.info(f"Permission denied not in err, will move to fail_json now.")
+                logger.info(f"Permisson denied not in err msg {err}")
                 module.fail_json(
                     msg="Error during clean up of file {0}".format(file), stderr=err
                 )
-                logger.info(f"Permission denied not in err, after fail_json.")
 
-def cleanup(src_list):
+def cleanup(src_list, logger):
     """Remove all files or directories listed in src_list. Also perform
     additional cleanup of the tmp directory.
 
@@ -3940,23 +3956,6 @@ def run_module(module, arg_def):
             backup_name=backup_name,
         )
     )
-    # Getting additional file stats that were previously being manually cleaned up.
-    logger.info(f"Inspecting the remote directory for files and ownership.")
-
-    tmp_prefix = os.environ['TMPDIR']
-    logger.info(f"'tmp_prefix' is {tmp_prefix}")
-    tmp_dir = os.path.realpath("/" + tmp_prefix)
-    logger.info(f"'tmp_dir' is {tmp_dir}")
-    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
-    logger.info(f"'dir_list' is {dir_list}")
-    conv_list = glob.glob(tmp_dir + "/``converted``*")
-    logger.info(f"'conv_list' is {conv_list}")
-    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
-    logger.info(f"'tmp_list' is {tmp_list}")
-
-    listing=dir_list + conv_list + tmp_list + [conv_path]
-    for entry in listing:
-        get_file_info(entry, logger)
 
     return res_args, conv_path, logger
 
@@ -4216,11 +4215,11 @@ def main():
         sys.settrace(trace_calls)
         module.exit_json(**res_args)
     except CopyOperationError as err:
-        logger.info('CopyOperationError err.')
+        logger.info('CopyOperationError err found.')
         cleanup2([], logger)
         module.fail_json(**(err.json_args))
     finally:
-        logger.info('Finally.')
+        logger.info('Finally block called.')
         cleanup2([conv_path], logger)
         sys.settrace(None)
 

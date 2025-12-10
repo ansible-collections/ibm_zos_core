@@ -74,8 +74,10 @@ class ActionModule(ActionBase):
 
         self.tmp_dir = None
 
-        now = datetime.now()
-        display.vvv(u"{0} ibm_zos_copy Starting validations".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+        host = self._play_context.remote_addr
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        display.vvv(u"{0} ibm_zos_copy Starting validations".format(now), host)
         if dest:
             if not isinstance(dest, string_types):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
@@ -157,20 +159,20 @@ class ActionModule(ActionBase):
                 return self._exit_action(result, msg, failed=True)
 
             if content:
-                now = datetime.now()
-                display.vvv(u"{0} ibm_zos_copy copying content ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                display.vvv(u"{0} ibm_zos_copy copying content ".format(now), host)
                 try:
-                    now = datetime.now()
-                    display.vvv(u"{0} ibm_zos_copy writing content to file ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    display.vvv(u"{0} ibm_zos_copy writing content to file ".format(now), host)
                     local_content = _write_content_to_temp_file(content)
-                    now = datetime.now()
-                    display.vvv(u"{0} ibm_zos_copy copying content file to remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    display.vvv(u"{0} ibm_zos_copy copying content file to remote ".format(now), host)
                     transfer_res = self._copy_to_remote(
                         local_content, ignore_stderr=ignore_sftp_stderr
                     )
                 finally:
-                    now = datetime.now()
-                    display.vvv(u"{0} ibm_zos_copy removing local content ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    display.vvv(u"{0} ibm_zos_copy removing local content ".format(now), host)
                     transfer_res = self._copy_to_remote(
                         local_content, ignore_stderr=ignore_sftp_stderr
                     )
@@ -250,19 +252,19 @@ class ActionModule(ActionBase):
 
                         src = rendered_file
 
-                display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
-                now = datetime.now()
-                display.vvv(u"{0} ibm_zos_copy copying file to remote  ".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                display.vvv(u"ibm_zos_copy calculated size: {0}".format(now), host)
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                display.vvv(u"{0} ibm_zos_copy copying file to remote  ".format(now), host)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
-                now = datetime.now()
-                display.vvv(u"{0} ibm_zos_copy copied file to remote".format(now.strftime("%Y-%m-%d %H:%M:%S")), host=self._play_context.remote_addr)
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                display.vvv(u"{0} ibm_zos_copy copied file to remote".format(now), host)
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
                 return transfer_res
-            display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host)
 
         if not encoding:
             encoding = {
@@ -290,39 +292,36 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
-        now = datetime.now()
-        display.vvv(u"{0} ibm_zos_copy executing zos_copy module from action plugin ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        display.vvv(u"{0} ibm_zos_copy executing zos_copy module from action plugin ".format(now), host)
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
         )
-        now = datetime.now()
-        display.vvv(u"{0} ibm_zos_copy finalized executing zos_copy module from action plugin ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        display.vvv(u"{0} ibm_zos_copy finalized executing zos_copy module from action plugin ".format(now), host)
 
         # Erasing all rendered Jinja2 templates from the controller.
         if template_dir:
-            now = datetime.now()
-            display.vvv(u"{0} ibm_zos_copy removing template dir ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy removing template dir ".format(now), host)
             shutil.rmtree(template_dir, ignore_errors=True)
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
-            now = datetime.now()
-            display.vvv(u"{0} ibm_zos_copy removing temporary directory from remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy removing temporary directory from remote ".format(now), host)
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             self._connection.exec_command(f"rm -rf {path}*")
-            display.vvv(u"{0} ibm_zos_copy Finalize temp dir removal from remote ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-            host=self._play_context.remote_addr)
+            display.vvv(u"{0} ibm_zos_copy Finalize temp dir removal from remote ".format(now), host)
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result
 
         if copy_res.get("msg"):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy get msg content to update result ".format(now), host)
             result.update(
                 dict(
                     msg=copy_res.get("msg"),
@@ -334,23 +333,23 @@ class ActionModule(ActionBase):
                     invocation=dict(module_args=self._task.args),
                 )
             )
+
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
-            now = datetime.now()
-            display.vvv(u"{0} ibm_zos_copy Started a remote cleanup ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy Started a remote cleanup ".format(now),host)
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
-            now = datetime.now()
-            display.vvv(u"{0} ibm_zos_copy Finalized remote cleanup ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy Finalized remote cleanup ".format(now), host)
             return result
 
-        display.vvv(u"{0} ibm_zos_copy Finalize run and update result ".format(now.strftime("%Y-%m-%d %H:%M:%S")),
-                    host=self._play_context.remote_addr)
+        display.vvv(u"{0} ibm_zos_copy Finalize run and update result ".format(now), host)
         return _update_result(is_binary, copy_res, self._task.args, original_src)
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
+        host = self._play_context.remote_addr
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(self.tmp_dir))
         if rc > 0:
@@ -397,18 +396,18 @@ class ActionModule(ActionBase):
 
             if is_ssh_transfer_method_updated:
                 display.vvv(u"ibm_zos_copy SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
-                            sftp_transfer_method), host=self._play_context.remote_addr)
+                            sftp_transfer_method), host)
 
-            display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host)
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
 
-            display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
-            display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
-            display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host)
+            display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host)
+            display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host)
 
             ansible_verbosity = None
             ansible_verbosity = display.verbosity
-            display.vvv(u"play context verbosity: {0}".format(ansible_verbosity), host=self._play_context.remote_addr)
+            display.vvv(u"play context verbosity: {0}".format(ansible_verbosity), host)
 
             # ************************************************************************* #
             # When plugin shh connection member _build_command(..) detects verbosity    #
@@ -447,7 +446,7 @@ class ActionModule(ActionBase):
                 elif version_major == 2 and version_minor <= 10:
                     self._play_context.ssh_transfer_method = user_ssh_transfer_method
 
-                display.vvv(u"ibm_zos_copy SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
+                display.vvv(u"ibm_zos_copy SSH transfer method restored to {0}".format(user_ssh_transfer_method), host)
                 is_ssh_transfer_method_updated = False
 
         return dict(temp_path=full_temp_path)
@@ -460,9 +459,16 @@ class ActionModule(ActionBase):
         created files or data sets.
         """
         if dest_exists is False:
+            host = self._play_context.remote_addr
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            display.vvv(u"{0} ibm_zos_copy executing cleanup from action plugin ".format(now), host)
             if "/" in dest:
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                display.vvv(u"{0} ibm_zos_copy cleanup for UNIX file system type ".format(now), host)
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                display.vvv(u"{0} ibm_zos_copy cleanup for dataset type ".format(now), host)
                 module_args = dict(name=dest, state="absent")
                 if is_member(dest):
                     module_args["type"] = "member"
@@ -471,6 +477,8 @@ class ActionModule(ActionBase):
                     module_args=module_args,
                     task_vars=task_vars,
                 )
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        display.vvv(u"{0} ibm_zos_copy completed cleanup from action plugin ".format(now), host)
 
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""

@@ -2780,9 +2780,6 @@ def cleanup2(src_list, logger):
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
 
     logger.info(f"In cleanup2")
-    module.fail_json(
-        msg="FORCE FAIL"
-    )
     for file in (dir_list + conv_list + tmp_list + src_list):
         try:
             if file and os.path.exists(file):

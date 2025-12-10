@@ -3998,7 +3998,7 @@ def get_file_info(filepath, logger):
             logger.info(f"An error occurred for filepath {filepath}: {e}")
 
 
-def main():
+def main(logger):
     """Run the zos_copy module core functions.
 
     Raises
@@ -4208,9 +4208,8 @@ def main():
 
     res_args = conv_path = None
     import sys
-    res_args, conv_path = None, None
+    res_args, conv_path, logger = None, None, None
     try:
-        logger.info(f"ALPHA 1: Main running run_module")
         res_args, conv_path, logger = run_module(module, arg_def)
         logger.info(f"ALPHA 1: Main finished run_module")
         # Set the trace function

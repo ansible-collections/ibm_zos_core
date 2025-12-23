@@ -3575,13 +3575,13 @@ def run_module(module, arg_def):
                 )
 
         ### Dest validation
+        raw_dest = dest
         copy_member = is_member(dest)
         dest_name = data_set.extract_dsname(dest)
         is_mvs_dest = is_data_set(dest_name)
         is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
         is_dest_gds_active = False
         is_pds = is_src_dir and is_mvs_dest
-        raw_dest = dest
         is_dest_alias = False
         if is_mvs_dest and not copy_member and not is_dest_gds:
             is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
@@ -3631,13 +3631,13 @@ def run_module(module, arg_def):
                 # and LIBRARY is not in MVS_PARTITIONED frozen set.
                 dest_ds_type = "PDSE"
 
-            if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
+            if dest_data_set and (dest_data_set.get('record_format', '') in ('fba', 'vba')):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
             elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
                 dest_attributes = datasets.list_datasets(dest_name)[0]
-                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
+                if dest_attributes.record_format in ('FBA', 'VBA'):
                     dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:

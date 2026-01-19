@@ -255,7 +255,7 @@ def main():
     parser.add_argument("--playbook_path", type=str, required=True)
     parser.add_argument("--migration_map", type=json.loads, required=True)
     parser.add_argument("--output_path", type=str, required=True)
-    parser.add_argument("--ignore_response_params", type=bool, default=False)
+    parser.add_argument("--ignore_response_params", action="store_true")
 
     args = parser.parse_args()
 

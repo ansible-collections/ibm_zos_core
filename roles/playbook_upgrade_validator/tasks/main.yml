@@ -41,7 +41,9 @@
       "{{ python_path_result.stdout }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
       --playbook_path "{{ playbook_path }}"
       --output_path "{{ output_path }}"
-      --ignore_response_params "{{ ignore_response_params }}"
+      {% if ignore_response_params %}
+      --ignore_response_params
+      {% endif %}
       --migration_map '{{ data | to_json }}'
   register: result
   delegate_to: localhost

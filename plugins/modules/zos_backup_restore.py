@@ -179,8 +179,8 @@ options:
     description:
       - When I(operation=backup), specifies if an existing data set or UNIX file matching
         I(backup_name) should be deleted.
-      - When I(operation=restore), specifies if the module should overwrite existing data sets
-        with matching name on the target device.
+    #   - When I(operation=restore), specifies if the module should overwrite existing data sets
+    #     with matching name on the target device.
     type: bool
     default: False
   compress:
@@ -292,12 +292,12 @@ options:
     required: false
     aliases:
       - unit
-  hlq:
-    description:
-      - Specifies the new HLQ to use for the data sets being restored.
-      - If no value is provided, the data sets will be restored with their original HLQs.
-    type: str
-    required: false
+#   hlq:
+#     description:
+#       - Specifies the new HLQ to use for the data sets being restored.
+#       - If no value is provided, the data sets will be restored with their original HLQs.
+#     type: str
+#     required: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary
@@ -322,6 +322,51 @@ options:
     type: bool
     required: false
     default: false
+  output:
+    description:
+      - Specifies how a backup will be restored to the filesystem when I(operation=restore).
+      - Option C(output) does not perform any operations when I(operation=backup), it will be ignored.
+    type: dict
+    elements: dict
+    required: false
+    suboptions:
+      write:
+        description:
+          - Specifies the how the module should write to the file system when performing a restore operation.
+          - When C(write) is used with option C(names), the restore operation can filter on data set names and replace.
+          - When choice is C(conditional) and C(names), if a data set with the old name exists, the module will allocate
+            and restore the data set with the new name. Otherwise, the data set is restored with the old name.
+          - When choice is C(unconditional) and C(names), whether or not a data set with the old name exists, the module
+            will allocate and restore the data set with the new name. Otherwise, the data set is not restored.
+          - When choice is C(replace) and C(names), the source data set names or provided C(names) are used to replace
+            and allocate data sets whether or not they exist.
+        required: false
+        type: str
+        choices:
+          - conditional
+          - unconditional
+          - replace
+        default: replace
+      names:
+        description:
+          - Specifies the data set names to be used for both filtering and replacing.
+          - Names must be a list of dictionaries where the dictionary is a `key-value` pair. The only keys supported for
+            a dictionary are `old` and `new`.
+          - Dictionary key `old` is the original data set name, the value must be a valid data set name or generic.
+          - Dictionary key `new` is the new data set name or generic, so that the value is used to replace the matching
+            `old` data set.
+        required: false
+        type: list
+        element: dict
+        default: None
+      hlq:
+        description:
+          - Specifies the new HLQ to use for the data sets being restored.
+          - Mutually exclusive with I(names), you can either set a I(hlq) or I(names) but not both.
+          - Defaults to none so that the original HLQ remains unchanged.
+        type: str
+        required: false
+        default: None
 
 attributes:
   action:
@@ -619,13 +664,35 @@ def main():
                 disable_automatic_management_class=dict(type="bool", required=False, default=False),
             )
         ),
-        hlq=dict(type="str", required=False),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
+                names=dict(type="list",
+                           elements="dict",
+                           required=False, 
+                           default=None,
+                           options=dict(
+                                old=dict(type='str', required=True),
+                                new=dict(type='str', required=True),
+                            )
+                      ),
+                hlq=dict(type="str", required=False, default=None),
+            )
+        ),
+        # hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
     )
 
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+    module = AnsibleModule(argument_spec=module_args,
+                           mutually_exclusive=[
+                                ['output.hlq', 'output.names']
+                            ],
+                           supports_check_mode=False
+            )
     validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
@@ -642,7 +709,8 @@ def main():
         compress = params.get("compress")
         terse = params.get("terse")
         sms = params.get("sms")
-        hlq = params.get("hlq")
+        # hlq = params.get("hlq")
+        output = params.get("output")
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
         access = params.get('access')
@@ -685,7 +753,7 @@ def main():
                 temp_volume=temp_volume,
                 overwrite=overwrite,
                 recover=recover,
-                hlq=hlq,
+                output=output,
                 space=space,
                 space_type=space_type,
                 sms=sms,
@@ -783,7 +851,24 @@ def parse_and_validate_args(params):
                 disable_automatic_management_class=dict(type="bool", required=False),
             )
         ),
-        hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                write=dict(type="str", required=False, default="replace"),
+                names=dict(type="list",
+                           elements="dict",
+                           required=False, 
+                           default=None,
+                           options=dict(
+                                old=dict(type='str', required=True),
+                                new=dict(type='str', required=True),
+                            )
+                       ),
+                hlq=dict(type="str", required=False, default=None),
+            )
+        ),
+        # hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
@@ -865,7 +950,7 @@ def restore(
     temp_volume,
     overwrite,
     recover,
-    hlq,
+    output,
     space,
     space_type,
     sms,

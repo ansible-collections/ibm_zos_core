@@ -35,6 +35,11 @@
     output_path: "{{ playbook_dir }}/logs/migration_report.json"
   when: output_path is not defined
 
+- name: Set ignore_response_params variable if it was not defined
+  ansible.builtin.set_fact:
+    ignore_response_params: False
+  when: ignore_response_params is not defined
+
 - name: Run playbook upgrade validator to list migration changes
   ansible.builtin.command:
     cmd: >

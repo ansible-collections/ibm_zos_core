@@ -28,7 +28,7 @@ options:
   ignore_response_params:
     description:
       - Indicates whether information about response parameter changes should be included.
-    default: false
+    required: false
     type: bool
   migration_map:
     description:

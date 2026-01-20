@@ -368,8 +368,8 @@ notes:
 
 
 seealso:
-  - module: ibm.ibm_zos_core.zos_fetch
-  - module: ibm.ibm_zos_core.zos_unarchive
+  - module: zos_fetch
+  - module: zos_unarchive
 '''
 
 EXAMPLES = r'''
@@ -1331,7 +1331,7 @@ class MVSArchive(Archive):
         if space_type is None:
             arguments.update(space_type="m")
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed, _ = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
     def create_dest_ds(self, name):

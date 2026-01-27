@@ -937,6 +937,7 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
     data_set_name = get_tmp_ds_name()
     data_set_restore_location = get_tmp_ds_name()
     hlqs = "TMPHLQ"
+    print("test case started...")
     try:
         volumes = Volume_Handler(volumes_on_systems)
         volume_1 = volumes.get_available_vol()
@@ -964,6 +965,7 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
         )
         assert_module_did_not_fail(results)
         assert_data_set_exists(hosts, data_set_restore_location)
+        print("test case ended...")
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_restore_location)

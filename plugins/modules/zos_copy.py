@@ -3456,14 +3456,13 @@ def run_module(module, arg_def):
     logger.info("Logger initialized successfully")
 
     try:
-        #### Source validation
+        # Source validation
         raw_src = src
         is_src_dir = os.path.isdir(src)
         is_src_uss = "/" in src
         is_src_dir = False
         is_src_file = False
         is_uss = "/" in dest
-        ### process if uss else
         # ********************************************************************
         # 1. When the source is a USS file or directory , verify that the file
         #    or directory exists and has proper read permissions.
@@ -3574,7 +3573,7 @@ def run_module(module, arg_def):
                     msg="Encoding conversion is only valid for USS source"
                 )
 
-        ### Dest validation
+        # Destination validation
         raw_dest = dest
         copy_member = is_member(dest)
         dest_name = data_set.extract_dsname(dest)
@@ -3662,7 +3661,7 @@ def run_module(module, arg_def):
     except Exception as err:
         module.fail_json(msg=str(err))
 
-    ### GDG validation
+    # GDG validation
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
         # Validate destination GDG doesn't exist

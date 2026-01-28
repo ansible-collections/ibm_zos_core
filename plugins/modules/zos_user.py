@@ -1254,13 +1254,15 @@ class RACFHandler():
             if self.params[block] is None:
                 continue
 
-            for option in self.params[block]:
-                if self.params[block][option] == "":
-                    del self.params[block][option]
-                elif isinstance(self.params[block][option], dict):
-                    for suboption in self.params[block][option]:
-                        if self.params[block][option][suboption] == "":
-                            del self.params[block][option][suboption]
+            # Added isinstance condition check to prevent iteration over bool values
+            if not isinstance(self.params[block], bool):    
+                for option in self.params[block]:
+                    if self.params[block][option] == "":
+                        del self.params[block][option]
+                    elif isinstance(self.params[block][option], dict):
+                        for suboption in self.params[block][option]:
+                            if self.params[block][option][suboption] == "":
+                                del self.params[block][option][suboption]
 
     def filter_block(self, block, allowed_options):
         """Returns a new dictionary with values from only the allowed
@@ -1308,9 +1310,11 @@ class RACFHandler():
                 del clean_params[block]
                 continue
 
-            for option in self.params[block]:
-                if self.params[block][option] is None:
-                    del clean_params[block][option]
+            # Added isinstance condition check to prevent iteration over bool values
+            if not isinstance(self.params[block], bool):    
+                for option in self.params[block]:
+                    if self.params[block][option] is None:
+                        del clean_params[block][option]
 
         self.params = clean_params
 

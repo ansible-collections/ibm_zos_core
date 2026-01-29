@@ -179,8 +179,8 @@ options:
     description:
       - When I(operation=backup), specifies if an existing data set or UNIX file matching
         I(backup_name) should be deleted.
-    #   - When I(operation=restore), specifies if the module should overwrite existing data sets
-    #     with matching name on the target device.
+      - When I(operation=restore), specifies if the module should overwrite existing data sets
+        with matching name on the target device.
     type: bool
     default: False
   compress:
@@ -292,12 +292,6 @@ options:
     required: false
     aliases:
       - unit
-#   hlq:
-#     description:
-#       - Specifies the new HLQ to use for the data sets being restored.
-#       - If no value is provided, the data sets will be restored with their original HLQs.
-#     type: str
-#     required: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary
@@ -358,7 +352,6 @@ options:
     #     required: false
     #     type: list
     #     element: dict
-    #     default: None
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
@@ -708,7 +701,6 @@ def main():
         compress = params.get("compress")
         terse = params.get("terse")
         sms = params.get("sms")
-        # hlq = params.get("hlq")
         output = params.get("output")
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
@@ -864,10 +856,9 @@ def parse_and_validate_args(params):
                 #                 new=dict(type='str', required=True),
                 #             )
                 #        ),
-                hlq=dict(type="str", required=False, default=None),
+                hlq=dict(type=hlq_type, required=False),
             )
         ),
-        # hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),

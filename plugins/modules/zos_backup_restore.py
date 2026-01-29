@@ -323,34 +323,6 @@ options:
     type: dict
     required: false
     suboptions:
-    #   write:
-    #     description:
-    #       - Specifies the how the module should write to the file system when performing a restore operation.
-    #       - When C(write) is used with option C(names), the restore operation can filter on data set names and replace.
-    #       - When choice is C(conditional) and C(names), if a data set with the old name exists, the module will allocate
-    #         and restore the data set with the new name. Otherwise, the data set is restored with the old name.
-    #       - When choice is C(unconditional) and C(names), whether or not a data set with the old name exists, the module
-    #         will allocate and restore the data set with the new name. Otherwise, the data set is not restored.
-    #       - When choice is C(replace) and C(names), the source data set names or provided C(names) are used to replace
-    #         and allocate data sets whether or not they exist.
-    #     required: false
-    #     type: str
-    #     choices:
-    #       - conditional
-    #       - unconditional
-    #       - replace
-    #     default: replace
-    #   names:
-    #     description:
-    #       - Specifies the data set names to be used for both filtering and replacing.
-    #       - Names must be a list of dictionaries where the dictionary is a `key-value` pair. The only keys supported for
-    #         a dictionary are `old` and `new`.
-    #       - Dictionary key `old` is the original data set name, the value must be a valid data set name or generic.
-    #       - Dictionary key `new` is the new data set name or generic, so that the value is used to replace the matching
-    #         `old` data set.
-    #     required: false
-    #     type: list
-    #     element: dict
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
@@ -659,16 +631,6 @@ def main():
             type='dict',
             required=False,
             options=dict(
-                # write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
-                # names=dict(type="list",
-                #            elements="dict",
-                #            required=False, 
-                #            default=None,
-                #            options=dict(
-                #                 old=dict(type='str', required=True),
-                #                 new=dict(type='str', required=True),
-                #             )
-                #       ),
                 hlq=dict(type="str", required=False),
             )
         ),
@@ -677,12 +639,8 @@ def main():
         index=dict(type="bool", required=False, default=False),
     )
 
-    module = AnsibleModule(argument_spec=module_args,
-                        #    mutually_exclusive=[
-                        #         ['output.hlq', 'output.names']
-                        #     ],
-                           supports_check_mode=False
-            )
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
     validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
@@ -844,16 +802,6 @@ def parse_and_validate_args(params):
             type='dict',
             required=False,
             options=dict(
-                # write=dict(type="str", required=False, default="replace"),
-                # names=dict(type="list",
-                #            elements="dict",
-                #            required=False, 
-                #            default=None,
-                #            options=dict(
-                #                 old=dict(type='str', required=True),
-                #                 new=dict(type='str', required=True),
-                #             )
-                #        ),
                 hlq=dict(type=hlq_type, required=False),
             )
         ),

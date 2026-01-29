@@ -135,6 +135,7 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
+        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")
@@ -374,48 +375,48 @@ done
 
 # Commenting these tests because of issue https://github.com/ansible-collections/ibm_zos_core/issues/2235
 # which likely is a zoau bug that needs to be fixed.
-# @pytest.mark.parametrize(
-#     "backup_name,overwrite",
-#     [
-#         ("DATA_SET", False),
-#         ("DATA_SET", True),
-#         ("UNIX", False),
-#         ("UNIX", True),
-#     ],
-# )
-# def test_backup_of_data_set_when_backup_dest_exists(
-#     ansible_zos_module, backup_name, overwrite
-# ):
-#     hosts = ansible_zos_module
-#     data_set_name = get_tmp_ds_name()
-#     if backup_name == "DATA_SET":
-#         backup_name = get_tmp_ds_name(1,1)
-#     else:
-#         backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
-#     try:
-#         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
-#         assert_data_set_or_file_exists(hosts, backup_name)
-#         create_sequential_data_set_with_contents(
-#             hosts, data_set_name, DATA_SET_CONTENTS
-#         )
-#         results = hosts.all.zos_backup_restore(
-#             operation="backup",
-#             data_sets=dict(include=data_set_name),
-#             backup_name=backup_name,
-#             overwrite=overwrite,
-#         )
-#         if overwrite:
-#             assert_module_did_not_fail(results)
-#             for result in results.contacted.values():
-#                 assert result.get("backup_name") == backup_name, \
-#                     f"Backup name '{backup_name}' not found in output"
-#         else:
-#             assert_module_failed(results)
-#         assert_data_set_or_file_exists(hosts, backup_name)
-#     finally:
-#         delete_data_set_or_file(hosts, data_set_name)
-#         delete_data_set_or_file(hosts, backup_name)
-#         delete_remnants(hosts)
+@pytest.mark.parametrize(
+    "backup_name,overwrite",
+    [
+        ("DATA_SET", False),
+        ("DATA_SET", True),
+        ("UNIX", False),
+        ("UNIX", True),
+    ],
+)
+def test_backup_of_data_set_when_backup_dest_exists(
+    ansible_zos_module, backup_name, overwrite
+):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    try:
+        create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS
+        )
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=overwrite,
+        )
+        if overwrite:
+            assert_module_did_not_fail(results)
+            for result in results.contacted.values():
+                assert result.get("backup_name") == backup_name, \
+                    f"Backup name '{backup_name}' not found in output"
+        else:
+            assert_module_failed(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts)
 
 
 @pytest.mark.parametrize(
@@ -471,7 +472,7 @@ def test_backup_and_restore_of_data_set(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
             overwrite=overwrite,
         )
         assert_module_did_not_fail(results)
@@ -535,7 +536,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
         args = dict(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
             overwrite=True,
             space=space,
         )
@@ -592,7 +593,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
         )
         assert_module_did_not_fail(results)
         for result in results.contacted.values():
@@ -601,7 +602,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
             overwrite=overwrite,
         )
         if overwrite:
@@ -651,7 +652,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
         )
         assert_module_did_not_fail(results)
         for result in results.contacted.values():
@@ -698,7 +699,7 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
             backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
         )
         assert_module_did_not_fail(results)
         for result in results.contacted.values():
@@ -747,7 +748,7 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
         )
         assert_module_did_not_fail(results)
         for result in results.contacted.values():
@@ -791,7 +792,7 @@ def test_restore_of_data_set_when_backup_does_not_exist(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
         )
         assert_module_failed(results)
     finally:
@@ -882,7 +883,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=data_set_backup_location,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
             # volume=get_unused_volume_serial(hosts),
             volume="@@@@",
         )
@@ -959,7 +960,7 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
 #             backup_name=data_set_restore_location,
 #             overwrite=True,
 #             volume=volume_2,
-#             hlq=hlqs,
+#             output={"hlq": hlqs},
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_exists(hosts, data_set_restore_location)
@@ -1243,7 +1244,7 @@ def test_backup_and_restore_of_data_set_tmphlq(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=new_hlq,
+            output={"hlq": new_hlq},
             overwrite=overwrite,
             tmp_hlq="TMPHLQ",
         )

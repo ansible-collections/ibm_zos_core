@@ -330,43 +330,42 @@ options:
     elements: dict
     required: false
     suboptions:
-      write:
-        description:
-          - Specifies the how the module should write to the file system when performing a restore operation.
-          - When C(write) is used with option C(names), the restore operation can filter on data set names and replace.
-          - When choice is C(conditional) and C(names), if a data set with the old name exists, the module will allocate
-            and restore the data set with the new name. Otherwise, the data set is restored with the old name.
-          - When choice is C(unconditional) and C(names), whether or not a data set with the old name exists, the module
-            will allocate and restore the data set with the new name. Otherwise, the data set is not restored.
-          - When choice is C(replace) and C(names), the source data set names or provided C(names) are used to replace
-            and allocate data sets whether or not they exist.
-        required: false
-        type: str
-        choices:
-          - conditional
-          - unconditional
-          - replace
-        default: replace
-      names:
-        description:
-          - Specifies the data set names to be used for both filtering and replacing.
-          - Names must be a list of dictionaries where the dictionary is a `key-value` pair. The only keys supported for
-            a dictionary are `old` and `new`.
-          - Dictionary key `old` is the original data set name, the value must be a valid data set name or generic.
-          - Dictionary key `new` is the new data set name or generic, so that the value is used to replace the matching
-            `old` data set.
-        required: false
-        type: list
-        element: dict
-        default: None
+    #   write:
+    #     description:
+    #       - Specifies the how the module should write to the file system when performing a restore operation.
+    #       - When C(write) is used with option C(names), the restore operation can filter on data set names and replace.
+    #       - When choice is C(conditional) and C(names), if a data set with the old name exists, the module will allocate
+    #         and restore the data set with the new name. Otherwise, the data set is restored with the old name.
+    #       - When choice is C(unconditional) and C(names), whether or not a data set with the old name exists, the module
+    #         will allocate and restore the data set with the new name. Otherwise, the data set is not restored.
+    #       - When choice is C(replace) and C(names), the source data set names or provided C(names) are used to replace
+    #         and allocate data sets whether or not they exist.
+    #     required: false
+    #     type: str
+    #     choices:
+    #       - conditional
+    #       - unconditional
+    #       - replace
+    #     default: replace
+    #   names:
+    #     description:
+    #       - Specifies the data set names to be used for both filtering and replacing.
+    #       - Names must be a list of dictionaries where the dictionary is a `key-value` pair. The only keys supported for
+    #         a dictionary are `old` and `new`.
+    #       - Dictionary key `old` is the original data set name, the value must be a valid data set name or generic.
+    #       - Dictionary key `new` is the new data set name or generic, so that the value is used to replace the matching
+    #         `old` data set.
+    #     required: false
+    #     type: list
+    #     element: dict
+    #     default: None
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
           - Mutually exclusive with I(names), you can either set a I(hlq) or I(names) but not both.
-          - Defaults to none so that the original HLQ remains unchanged.
+          - If I(hlq) is not provided, the original HLQ remains unchanged.
         type: str
         required: false
-        default: None
 
 attributes:
   action:
@@ -668,16 +667,16 @@ def main():
             type='dict',
             required=False,
             options=dict(
-                write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
-                names=dict(type="list",
-                           elements="dict",
-                           required=False, 
-                           default=None,
-                           options=dict(
-                                old=dict(type='str', required=True),
-                                new=dict(type='str', required=True),
-                            )
-                      ),
+                # write=dict(type="str", required=False, choices=["conditional", "unconditional", "replace"], default="replace"),
+                # names=dict(type="list",
+                #            elements="dict",
+                #            required=False, 
+                #            default=None,
+                #            options=dict(
+                #                 old=dict(type='str', required=True),
+                #                 new=dict(type='str', required=True),
+                #             )
+                #       ),
                 hlq=dict(type="str", required=False, default=None),
             )
         ),
@@ -688,9 +687,9 @@ def main():
     )
 
     module = AnsibleModule(argument_spec=module_args,
-                           mutually_exclusive=[
-                                ['output.hlq', 'output.names']
-                            ],
+                        #    mutually_exclusive=[
+                        #         ['output.hlq', 'output.names']
+                        #     ],
                            supports_check_mode=False
             )
     validate_dependencies(module)
@@ -855,16 +854,16 @@ def parse_and_validate_args(params):
             type='dict',
             required=False,
             options=dict(
-                write=dict(type="str", required=False, default="replace"),
-                names=dict(type="list",
-                           elements="dict",
-                           required=False, 
-                           default=None,
-                           options=dict(
-                                old=dict(type='str', required=True),
-                                new=dict(type='str', required=True),
-                            )
-                       ),
+                # write=dict(type="str", required=False, default="replace"),
+                # names=dict(type="list",
+                #            elements="dict",
+                #            required=False, 
+                #            default=None,
+                #            options=dict(
+                #                 old=dict(type='str', required=True),
+                #                 new=dict(type='str', required=True),
+                #             )
+                #        ),
                 hlq=dict(type="str", required=False, default=None),
             )
         ),
@@ -1004,13 +1003,13 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    output = ""
+    dunzip_output = ""
     try:
         rc = datasets.dunzip(**zoau_args)
     except zoau_exceptions.ZOAUException as dunzip_exception:
-        output = dunzip_exception.response.stdout_response
-        output = output + dunzip_exception.response.stderr_response
-        rc = get_real_rc(output)
+        dunzip_output = dunzip_exception.response.stdout_response
+        dunzip_output = dunzip_output + dunzip_exception.response.stderr_response
+        rc = get_real_rc(dunzip_output)
     failed = False
     if rc > 0 and rc <= 4:
         if recover is not True:
@@ -1019,7 +1018,7 @@ def restore(
         failed = True
     if failed:
         raise zoau_exceptions.ZOAUException(
-            "{0}, RC={1}".format(output, rc)
+            "{0}, RC={1}".format(dunzip_output, rc)
         )
 
 
@@ -1087,7 +1086,7 @@ def set_bypassacs_str(ds):
     return datasets
 
 
-def get_real_rc(output):
+def get_real_rc(dunzip_output):
     """Parse out the final RC from MVS program output.
 
     Parameters
@@ -1103,7 +1102,7 @@ def get_real_rc(output):
     true_rc = None
     match = search(
         r"HIGHEST\sRETURN\sCODE\sIS\s([0-9]+)",
-        output,
+        dunzip_output,
     )
     if match:
         true_rc = int(match.group(1))
@@ -1439,10 +1438,11 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
-    if kwargs.get("hlq") is None:
-        zoau_args["keep_original_hlq"] = True
+    output = kwargs.get("output")
+    if output and output.get("hlq"):
+        zoau_args["high_level_qualifier"] = output.get("hlq")
     else:
-        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+        zoau_args["keep_original_hlq"] = True
 
     if kwargs.get("tmp_hlq"):
         zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))

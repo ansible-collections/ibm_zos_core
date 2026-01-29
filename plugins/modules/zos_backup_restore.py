@@ -321,7 +321,6 @@ options:
       - Specifies how a backup will be restored to the filesystem when I(operation=restore).
       - Option C(output) does not perform any operations when I(operation=backup), it will be ignored.
     type: dict
-    elements: dict
     required: false
     suboptions:
     #   write:
@@ -670,10 +669,9 @@ def main():
                 #                 new=dict(type='str', required=True),
                 #             )
                 #       ),
-                hlq=dict(type="str", required=False, default=None),
+                hlq=dict(type="str", required=False),
             )
         ),
-        # hlq=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),

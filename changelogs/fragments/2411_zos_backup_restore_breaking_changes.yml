@@ -1,0 +1,4 @@
+breaking_changes:
+  - zos_backup_restore - Add new dictionary option ``output`` to specify how backup will be restored.
+    Option ``hlq`` is deprecated in favor of ``output.hlq``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2412)

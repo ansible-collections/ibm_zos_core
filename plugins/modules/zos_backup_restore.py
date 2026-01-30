@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -326,7 +326,7 @@ options:
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
-          - Mutually exclusive with I(names), you can either set a I(hlq) or I(names) but not both.
+
           - If I(hlq) is not provided, the original HLQ remains unchanged.
         type: str
         required: false
@@ -806,7 +806,7 @@ def parse_and_validate_args(params):
             )
         ),
         tmp_hlq=dict(type=hlq_type, required=False),
-        # 2.0 redesign extra values for ADRDSSU keywords
+
         index=dict(type="bool", required=False, default=False),
     )
 

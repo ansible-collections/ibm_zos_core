@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -373,7 +373,8 @@ done
         delete_data_set_or_file(hosts, backup_name_compressed)
         delete_remnants(hosts)
 
-# Commenting these tests because of issue https://github.com/ansible-collections/ibm_zos_core/issues/2235
+
+
 # which likely is a zoau bug that needs to be fixed.
 @pytest.mark.parametrize(
     "backup_name,overwrite",

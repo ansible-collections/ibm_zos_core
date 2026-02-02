@@ -45,11 +45,6 @@ Minor Changes
 - zos_unarchive - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
 - zos_unarchive - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
 
-Bugfixes
---------
-
-- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2236).
-
 New Modules
 -----------
 

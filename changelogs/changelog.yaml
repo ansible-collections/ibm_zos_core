@@ -1027,10 +1027,6 @@ releases:
     release_date: '2026-02-02'
   1.16.0-beta.1:
     changes:
-      bugfixes:
-      - zos_backup_restore - Module documentation stated that default ``space_type``
-        for a backup was ``m`` but module would use bytes instead. Fix now uses the
-        correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2236).
       minor_changes:
       - zos_apf - Adds new alias ``target`` for ``data_set_name`` and a warning message
         that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).

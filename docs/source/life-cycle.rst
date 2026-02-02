@@ -1,7 +1,7 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2025                                          .
-.. File needs to be contributed by a collection, likely the ref's won't work
-.. since the source will be in another, so need to create an external link.
+.. © Copyright IBM Corporation 2025, 2026                                    .
+.. File needs to be contributed by a collection, likely the ref's won't work .
+.. since the source will be in another, so need to create an external link.  .
 .. ...........................................................................
 
 ==========
@@ -27,7 +27,7 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
-| 1.16.x     | In preview     | `1.16.x changelogs`_  | TBD              | TBD               | `Beta phase`            |
+| 1.16.x     | In preview     | `1.16.x changelogs`_  | February 6 2026  | February 6 2028   | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.15.x     | Released       | `1.15.x changelogs`_  | 30 September 2025| 30 September 2027 | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
@@ -46,7 +46,7 @@ its critical dates, and which type of support it's currently eligible for.
 .. Global Links
 .. .............................................................................
 .. _1.16.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.16.0-beta.1/CHANGELOG.rst
+    https://github.com/ansible-collections/ibm_zos_core/blob/v1.16.0/CHANGELOG.rst
 .. _1.15.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.15.0/CHANGELOG.rst
 .. _1.14.x changelogs:

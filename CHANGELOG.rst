@@ -4,13 +4,13 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
-v1.16.0-beta.1
-==============
+v1.16.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2025-10-31'
+Release Date: '2026-02-02'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -19,7 +19,7 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
 Minor Changes
 -------------
 
-- zos_apf - Adds new alias ``target`` for ``data_set_name``  and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
+- zos_apf - Adds new alias ``target`` for ``data_set_name`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
 - zos_archive - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
 - zos_archive - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
 - zos_archive - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).

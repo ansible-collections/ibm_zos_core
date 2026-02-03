@@ -375,7 +375,6 @@ done
 
 
 
-# which likely is a zoau bug that needs to be fixed.
 @pytest.mark.parametrize(
     "backup_name,overwrite",
     [

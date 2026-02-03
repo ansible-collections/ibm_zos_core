@@ -806,7 +806,6 @@ def parse_and_validate_args(params):
             )
         ),
         tmp_hlq=dict(type=hlq_type, required=False),
-
         index=dict(type="bool", required=False, default=False),
     )
 

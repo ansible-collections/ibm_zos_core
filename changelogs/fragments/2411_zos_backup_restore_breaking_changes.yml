@@ -4,5 +4,6 @@ breaking_changes:
     (https://github.com/ansible-collections/ibm_zos_core/pull/2412)
 
 trivial:
-  - zos_backup_restore - Uncommented testcase test_backup_and_restore_of_data_set_from_volume_to_new_volume.
+  - zos_backup_restore - Uncommented testcases test_backup_and_restore_of_data_set_from_volume_to_new_volume and
+    test_backup_of_data_set_when_backup_dest_exists.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2412)

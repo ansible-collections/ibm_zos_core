@@ -1963,7 +1963,7 @@ class UserHandler(RACFHandler):
         (('tso', 'region_size'), 'range', (0, 2_096_128, -1)),
         (('tso', 'max_region_size'), 'range', (0, 2_096_128, -1)),
         (('tso', 'unit_name'), 'length', ((0, 8),)),
-        (('tso', 'user_data'), 'format', ('[^\s*$]|[0-9a-zA-Z]{4}',)),
+        (('tso', 'user_data'), 'format', (r'[^\s*$]|[0-9a-zA-Z]{4}',)),
         (('operator', 'alt_group'), 'length', ((0, 8),)),
         (('operator', 'cmd_system'), 'length', ((0, 8),)),
         (('operator', 'search_key'), 'length', ((0, 8),)),

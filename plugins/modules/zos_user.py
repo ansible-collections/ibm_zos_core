@@ -685,10 +685,9 @@ options:
             required: false
           delete:
             description:
-              - Deletes this field from the profile.
-              - Mutually exclusive with the rest of the options
-                in this section.
-            type: bool
+              - Deletes the systems from this field.
+            type: list
+            elements: str
             required: false
       automated_msgs:
         description:
@@ -912,7 +911,7 @@ EXAMPLES = r"""
 - name: Update a user profile to change its TSO attributes and owner.
   zos_user:
     name: user
-    operation: create
+    operation: update
     scope: user
     general:
       owner: admin

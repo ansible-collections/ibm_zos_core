@@ -2469,12 +2469,16 @@ class UserHandler(RACFHandler):
             if operator.get('msg_scope') is not None:
                 if operator['msg_scope'].get('add') is not None:
                     scopes = operator['msg_scope']['add']
-                    cmd = f'{cmd}ADDMSCOPE( '
+                    # added MSCOPE command option for create option
+                    if self.operation == 'create':
+                        cmd = f'{cmd}MSCOPE( '
+                    elif self.operation == 'update':
+                        cmd = f'{cmd}ADDMSCOPE( '
                     for scope in scopes:
                         cmd = f'{cmd}{scope} '
                     cmd = f'{cmd}) '
-                elif operator['msg_scope'].get('add') is not None:
-                    categories = access['category']['delete']
+                elif operator['msg_scope'].get('delete') is not None:
+                    scopes = operator['msg_scope']['delete']
                     cmd = f'{cmd}DELMSCOPE( '
                     for scope in scopes:
                         cmd = f'{cmd}{scope} '
@@ -3149,7 +3153,8 @@ def run_module():
                                 'required': False
                             },
                             'delete': {
-                                'type': 'bool',
+                                'type': 'list',
+                                'elements': 'str',
                                 'required': False
                             }
                         }
@@ -3397,7 +3402,7 @@ def run_module():
                     'options': {
                         'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
                         'remove': {'arg_type': 'list', 'elements': 'str', 'required': False},
-                        'delete': {'arg_type': 'bool', 'required': False}
+                        'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
                     }
                 },
                 'automated_msgs': {'arg_type': 'bool', 'required': False},

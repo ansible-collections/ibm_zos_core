@@ -1335,7 +1335,7 @@ class RACFHandler():
             return True
 
         for block in self.valid_blocks[self.operation]:
-            if self.params[block] is not None:
+            if self.params.get(block) is not None:
                 return True
 
         return False

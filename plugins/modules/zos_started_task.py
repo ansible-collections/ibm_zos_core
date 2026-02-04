@@ -307,7 +307,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
-    asidx: 0014
+    asidx: "0014"
 
 - name: Modify a started task's parameters.
   zos_started_task:
@@ -336,7 +336,7 @@ EXAMPLES = r"""
     state: "stopped"
     task_name: "SAMPLE"
     identifier: "SAMPLE"
-    asidx: 00A5
+    asidx: "00A5"
 
 - name: Force a started task using it's task name.
   zos_started_task:

@@ -1356,7 +1356,7 @@ def run_module():
             ['identifier_name', 'task_id']
         ],
         # required_by={'retry_force': ['tcb_address']},
-        supports_check_mode = True
+        supports_check_mode=True
     )
 
     args_def = {

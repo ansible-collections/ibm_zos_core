@@ -27,19 +27,19 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
-| 1.16.x     | In preview     | `1.16.x changelogs`_  | February 6 2026  | February 6 2028   | `Full support`_         |
+| 1.16.x     | Released       | `1.16.x changelogs`_  | February 2026    | February 2028     | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.15.x     | Released       | `1.15.x changelogs`_  | 30 September 2025| 30 September 2027 | `Full support`_         |
+| 1.15.x     | Released       | `1.15.x changelogs`_  | September 2025   | September 2027    | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.14.x     | Released       | `1.14.x changelogs`_  | 30 June 2025     | 30 June 2027      | `Full support`_         |
+| 1.14.x     | Released       | `1.14.x changelogs`_  | June 2025        | June 2027         | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.13.x     | Released       | `1.13.x changelogs`_  | 31 March 2025    | 31 March 2027     | `Full support`_         |
+| 1.13.x     | Released       | `1.13.x changelogs`_  | March 2025       | March 2027        | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.12.x     | Released       | `1.12.x changelogs`_  | 06 December 2024 | 06 December 2026  | `Full support`_         |
+| 1.12.x     | Released       | `1.12.x changelogs`_  | December 2024    | December 2026     | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.11.x     | Released       | `1.11.x changelogs`_  | 01 October 2024  | 01 October 2026   | `Full support`_         |
+| 1.11.x     | Released       | `1.11.x changelogs`_  | October 2024     | October 2026      | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.10.x     | Released       | `1.10.x changelogs`_  | 21 June 2024     | 21 June 2026      | `Full support`_         |
+| 1.10.x     | Released       | `1.10.x changelogs`_  | June 2024        | June 2026         | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 
 .. .............................................................................

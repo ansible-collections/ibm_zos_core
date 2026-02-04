@@ -1823,8 +1823,7 @@ class GroupHandler(RACFHandler):
         if omvs is not None:
             if omvs.get('delete'):
                 cmd = f'{cmd} NOOMVS'
-
-            if omvs.get('uid') == 'auto':
+            elif omvs.get('uid') == 'auto':
                 cmd = f'{cmd} OMVS(AUTOGID)'
             elif omvs.get('uid') != 'none' and omvs.get('uid') in ('custom', 'shared'):
                 cmd = f"{cmd} OMVS(GID({omvs['custom_uid']})"

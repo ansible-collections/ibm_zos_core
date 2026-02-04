@@ -1695,7 +1695,7 @@ class GroupHandler(RACFHandler):
         },
         'update': {
             'flat': [
-                ('omvs', ('uid', 'custom_uid')),
+                ('omvs', ('uid', 'custom_uid', 'delete')),
             ]
         },
         'delete': {},
@@ -1827,12 +1827,12 @@ class GroupHandler(RACFHandler):
 
             if omvs.get('uid') == 'auto':
                 cmd = f'{cmd} OMVS(AUTOGID)'
-            elif omvs.get('uid') != 'none':
+            elif omvs.get('uid') != 'none' and omvs.get('uid') in ('custom', 'shared'):
                 cmd = f"{cmd} OMVS(GID({omvs['custom_uid']})"
                 if omvs['uid'] == 'shared':
                     cmd = f'{cmd}SHARED'
                 cmd = f'{cmd})'
-            else:
+            elif omvs.get('uid') == 'none':
                 cmd = f'{cmd} OMVS(NOGID)'
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
@@ -2254,11 +2254,11 @@ class UserHandler(RACFHandler):
 
             if omvs.get('uid') == 'auto':
                 cmd = f'{cmd} AUTOUID'
-            elif omvs.get('uid') != 'none':
+            elif omvs.get('uid') != 'none' and omvs.get('uid') in ('custom', 'shared'):
                 cmd = f"{cmd} UID({omvs['custom_uid']})"
                 if omvs['uid'] == 'shared':
                     cmd = f'{cmd}SHARED'
-            else:
+            elif omvs.get('uid') == 'none':
                 cmd = f'{cmd} NOUID'
 
             if omvs.get('home') is not None:

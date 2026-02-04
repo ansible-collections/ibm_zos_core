@@ -1294,7 +1294,9 @@ class RACFHandler():
         need them by using the information in self.filters.
         """
         for block in self.filters[self.operation].get('nested', {}):
-            if self.params.get(block[0], {}).get(block[1]) is not None:
+            first_level = self.params.get(block[0], {})
+            # Added check to ensure it's a dictionary and is not None 
+            if isinstance(first_level, dict) and first_level.get(block[1]) is not None:
                 filtered_params = self.filter_block(self.params[block[0]][block[1]], block[2])
                 self.params[block[0]][block[1]] = filtered_params if filtered_params else None
 

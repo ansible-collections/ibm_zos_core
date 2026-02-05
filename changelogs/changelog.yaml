@@ -990,7 +990,7 @@ releases:
       bugfixes:
       - zos_backup_restore - Module documentation stated that default ``space_type``
         for a backup was ``m`` but module would use bytes instead. Fix now uses the
-        correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
+        correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2236).
       - zos_copy - When a data set name had the maximum length of 44 characters, a
         check to see if it is an alias would fail. Fix now solves this issue so that
         any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
@@ -1007,6 +1007,7 @@ releases:
 
         the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
     fragments:
+    - 2236-space-type-default-zos_backup_restore.yml
     - 2372-fix-zos_replace.yml
     - 2391-fix-alias-command-length.yml
     - v1.15.1_summary.yml

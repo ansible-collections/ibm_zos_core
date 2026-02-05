@@ -326,7 +326,6 @@ options:
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
-
           - If I(hlq) is not provided, the original HLQ remains unchanged.
         type: str
         required: false

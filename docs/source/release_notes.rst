@@ -63,10 +63,11 @@ Minor Changes
 New Modules
 -----------
 
-- ibm.ibm_zos_core.zos_started_task - Perform operations on started tasks.
+- ``zos_started_task`` - Perform operations on started tasks such as start, display, modify, cancel, force and stop.
 
 Availability
 ------------
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 

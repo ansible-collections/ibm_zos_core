@@ -1,10 +1,10 @@
-# IBM® z/OS® core collection
+# IBM® z/OS core collection
 
 The **IBM z/OS core** collection enables Ansible to interact with z/OS Data Sets and USS files. The collection focuses on operating system fundamental operations such as managing encodings, creating data sets, and submitting jobs.
 
 ## Description
 
-The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, perform program authorizations, run operator operations, and execute both JES and MVS commands as well as execute shell, python, and REXX scripts. It supports data set creation, searching, copying, fetching, and encoding. It provides both archiving and unarchiving of data sets, performing backups and supports Jinja templating.
+The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z** offering that brings Ansible automation to IBM Z. This collection brings forward the possibility to manage batch jobs, perform program authorizations, run operator operations, and execute both JES and MVS commands as well as execute shell, python, and REXX scripts. It supports data set creation, searching, copying, fetching, and encoding. It provides both archive and unarchive of data sets, performing backups and supports Jinja templating.
 
 It can manage other z/OS core operations like initializing volumes, resizing aggregates; starting, modifying, stopping and canceling started tasks.
 
@@ -49,39 +49,9 @@ ansible-galaxy collection install ibm.ibm_zos_core:1.0.0
 ansible-galaxy collection install ibm.ibm_zos_core:1.10.0-beta.1
 ```
 
-<br/>As part of the installation, the collection [requirements](#Requirements) must be made available to Ansible through the use of [environment variables](https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/zos_core/configuration_guide.md#environment-variables). The preferred configuration is to place the environment variables in `group_vars` and `host_vars`, you can find examples of this configuration under any [playbook project](https://github.com/IBM/z_ansible_collections_samples), for example, review the **data set** example [configuration](https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/data_sets/data_set_basics#configuration) documentation.
+<br/>As part of the installation, the collection [requirements](#Requirements) must be made available to Ansible through [configuration](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/configuration.html).
 
 <br/>If you are testing a configuration, it can be helpful to set the environment variables in a playbook, an example of that can be reviewed [here](https://github.com/ansible-collections/ibm_zos_core/discussions/657).
-
-<br/>To learn more about the ZOAU Python wheel installation method, review the [documentation](https://www.ibm.com/docs/en/zoau/1.3.x?topic=installing-zoau#python-wheel-installation-method).
-
-<br/>If the wheel is installed using the `--target` option, it will install the package into the specified target directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /usr/zoau/wheels`. Using `--target` is recommended, else the wheel will be installed in Python's home directory which may not have write permissions or persist
-after an update.
-
-<br/>If the wheel is installed using the `--user` option, it will install the package into the user directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`.
-
-<br/>Environment variables:
-
-```sh
-PYZ: "path_to_python_installation_on_zos_target"
-ZOAU: "path_to_zoau_installation_on_zos_target"
-ZOAU_PYTHON_LIBRARY_PATH: "path_to_zoau_wheel_installation_directory"
-
-ansible_python_interpreter: "{{ PYZ }}/bin/python3"
-
-environment_vars:
-  _BPXK_AUTOCVT: "ON"
-  ZOAU_HOME: "{{ ZOAU }}"
-  PYTHONPATH: "{{ ZOAU_PYTHONPATH }}"
-  LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
-  PATH: "{{ ZOAU }}/bin:{{ PYZ }}/bin:/bin:/var/bin"
-  _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
-  _TAG_REDIR_ERR: "txt"
-  _TAG_REDIR_IN: "txt"
-  _TAG_REDIR_OUT: "txt"
-  LANG: "C"
-  PYTHONSTDINENCODING: "cp1047"
-```
 
 ## Use Cases
 
@@ -132,14 +102,6 @@ All releases will meet the following test criteria.
 * 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst).
 * 100% success for [ansible-lint](https://ansible.readthedocs.io/projects/lint/) allowing only false positives.
 
-<br/>This release of the collection was tested with following dependencies.
-
-* ansible-core v2.16.x
-* Python 3.12.x
-* IBM Open Enterprise SDK for Python 3.12.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.5.x
-* z/OS V2R5 or V3R1
-
 ## Contributing
 
 This community is not currently accepting contributions. However, we encourage you to open [git issues](https://github.com/ansible-collections/ibm_zos_core/issues) for bugs, comments or feature requests and check back periodically for when community contributions will be accepted in the near future.
@@ -173,7 +135,7 @@ for each collection. For a complete guide to support, review the **Ansible for I
 ## Related Information
 
 Example playbooks and use cases can be be found in the [z/OS playbook repository](https://github.com/IBM/z_ansible_collections_samples).
-Supplemental content on getting started with Ansible, architecture and use cases is available [here](https://ibm.github.io/z_ansible_collections_doc/reference/helpful_links.html).
+Supplemental content on getting started with Ansible, architecture and use cases is [available](https://ibm.github.io/z_ansible_collections_doc/reference/helpful_links.html).
 
 ## License Information
 

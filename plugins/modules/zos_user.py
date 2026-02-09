@@ -98,7 +98,7 @@ options:
           add:
             description:
               - Adds custom fields to this profile.
-              - Each custom field should be a C(key: value) pair.
+              - "Each custom field should be a C(key: value) pair."
             type: dict
             required: false
           delete:
@@ -114,7 +114,7 @@ options:
                 when creating one.
               - This option is mutually exclusive with C(add) and C(delete).
             type: bool
-            required: required
+            required: false
   group:
     description:
       - Options that change group-specific attributes in a RACF profile.

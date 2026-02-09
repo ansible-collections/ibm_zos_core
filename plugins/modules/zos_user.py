@@ -1029,6 +1029,7 @@ except Exception:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
 
+
 def dynamic_dict(contents, dependencies):
     """Validates options that are YAML dictionaries created by a user in a task.
 
@@ -1093,7 +1094,7 @@ def multiple_choice_display(contents, dependencies):
         if value not in allowed_values:
             raise ValueError(f'Invalid argument "{value}" for option operator.display.')
     if 'delete' in contents and len(contents) > 1:
-            raise ValueError(f'Cannot specify "delete" with other values for option operator.display.')
+        raise ValueError(f'Cannot specify "delete" with other values for option operator.display.')
     return contents
 
 
@@ -1136,7 +1137,7 @@ def multiple_choice_days(contents, dependencies):
         if value not in allowed_values:
             raise ValueError(f'Invalid argument "{value}" for option restrictions.days.')
     if 'anyday' in contents and len(contents) > 1:
-            raise ValueError(f'Cannot specify "anyday" with other values for option restrictions.days.')
+        raise ValueError(f'Cannot specify "anyday" with other values for option restrictions.days.')
     return contents
 
 
@@ -1254,7 +1255,7 @@ class RACFHandler():
                 continue
 
             # Added isinstance condition check to prevent iteration over bool values
-            if not isinstance(self.params[block], bool):    
+            if not isinstance(self.params[block], bool):
                 for option in self.params[block]:
                     if self.params[block][option] == "":
                         del self.params[block][option]
@@ -1294,7 +1295,7 @@ class RACFHandler():
         """
         for block in self.filters[self.operation].get('nested', {}):
             first_level = self.params.get(block[0], {})
-            # Added check to ensure it's a dictionary and is not None 
+            # Added check to ensure it's a dictionary and is not None
             if isinstance(first_level, dict) and first_level.get(block[1]) is not None:
                 filtered_params = self.filter_block(self.params[block[0]][block[1]], block[2])
                 self.params[block[0]][block[1]] = filtered_params if filtered_params else None
@@ -1312,7 +1313,7 @@ class RACFHandler():
                 continue
 
             # Added isinstance condition check to prevent iteration over bool values
-            if not isinstance(self.params[block], bool):    
+            if not isinstance(self.params[block], bool):
                 for option in self.params[block]:
                     if self.params[block][option] is None:
                         del clean_params[block][option]
@@ -1657,10 +1658,10 @@ class RACFHandler():
             # IRRRID00 includes EXIT as a safety feature to prevent accidental deletion
             # We need to remove it to allow the DELUSER/DELGROUP commands to execute
             clist_content = datasets.read(clist)
-            
+
             # Remove the EXIT statement (with surrounding whitespace)
             clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
-            
+
             # Write the modified CLIST back to the dataset
             datasets.write(clist, clist_content_modified, append=False)
 
@@ -1905,10 +1906,17 @@ class UserHandler(RACFHandler):
             'flat': [
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
                 ('language', ('primary', 'secondary')),
-                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size', 'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
-                ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class', 'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label', 'unit_name', 'user_data')),
-                ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card', 'maintenance_access', 'restricted', 'security_label', 'security_level')),
-                ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display', 'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs', 'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs', 'responses')),
+                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size',
+                          'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
+                ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class',
+                         'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label',
+                         'unit_name', 'user_data')),
+                ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card',
+                            'maintenance_access', 'restricted', 'security_label', 'security_level')),
+                ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display',
+                              'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs',
+                              'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs',
+                              'responses')),
                 ('restrictions', ('days', 'time', 'resume', 'revoke'))
             ]
         },
@@ -2012,13 +2020,13 @@ class UserHandler(RACFHandler):
         if self.params.get('omvs') is not None:
             if self.params['omvs'].get('nonshared_size') is not None:
                 nonshared_size = self.params['omvs']['nonshared_size']
-                nonshared_size = int(nonshared_size[:len(nonshared_size)-1])
+                nonshared_size = int(nonshared_size[:len(nonshared_size) - 1])
                 if nonshared_size < 0 or nonshared_size > 16_777_215:
                     raise ValueError('Value of omvs.nonshared_size is outside of its range.')
 
             if self.params['omvs'].get('shared_size') is not None:
                 shared_size = self.params['omvs']['shared_size']
-                shared_size = int(shared_size[:len(shared_size)-1])
+                shared_size = int(shared_size[:len(shared_size) - 1])
                 if shared_size < 1 or shared_size > 16_777_215:
                     raise ValueError('Value of omvs.shared_size is outside of its range.')
 
@@ -3475,6 +3483,7 @@ def run_module():
         module.fail_json(**result)
 
     module.exit_json(**result)
+
 
 if __name__ == '__main__':
     run_module()

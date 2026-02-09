@@ -1653,6 +1653,17 @@ class RACFHandler():
             ]
             irrrid00_response = mvscmd.execute('IRRRID00', dds=irrrid00_dds)
 
+            # Read the generated CLIST and remove the EXIT statement
+            # IRRRID00 includes EXIT as a safety feature to prevent accidental deletion
+            # We need to remove it to allow the DELUSER/DELGROUP commands to execute
+            clist_content = datasets.read(clist)
+            
+            # Remove the EXIT statement (with surrounding whitespace)
+            clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
+            
+            # Write the modified CLIST back to the dataset
+            datasets.write(clist, clist_content_modified, append=False)
+
             # TODO: update entities modified
             # TODO: add noexec option to not execute the CLIST
             cmd = f"EXEC '{clist}'"

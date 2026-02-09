@@ -1014,7 +1014,6 @@ import tempfile
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -1094,7 +1093,7 @@ def multiple_choice_display(contents, dependencies):
         if value not in allowed_values:
             raise ValueError(f'Invalid argument "{value}" for option operator.display.')
     if 'delete' in contents and len(contents) > 1:
-        raise ValueError(f'Cannot specify "delete" with other values for option operator.display.')
+        raise ValueError('Cannot specify "delete" with other values for option operator.display.')
     return contents
 
 
@@ -1137,7 +1136,7 @@ def multiple_choice_days(contents, dependencies):
         if value not in allowed_values:
             raise ValueError(f'Invalid argument "{value}" for option restrictions.days.')
     if 'anyday' in contents and len(contents) > 1:
-        raise ValueError(f'Cannot specify "anyday" with other values for option restrictions.days.')
+        raise ValueError('Cannot specify "anyday" with other values for option restrictions.days.')
     return contents
 
 

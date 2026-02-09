@@ -1584,8 +1584,8 @@ class RACFHandler():
             # TODO: use a temp HLQ.
             sysin_name = datasets.tmp_name()
             sysin_data_set = datasets.create(
-                sysin_name,
-                'SEQ',
+                name=sysin_name,
+                dataset_type='SEQ',
                 record_format='FB',
                 record_length=80,
                 device_unit='SYSDA',
@@ -1656,7 +1656,7 @@ class RACFHandler():
             # TODO: update entities modified
             # TODO: add noexec option to not execute the CLIST
             cmd = f"EXEC '{clist}'"
-            # rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
+            rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
         except Exception as err:
             return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
         finally:

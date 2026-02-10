@@ -135,5 +135,12 @@
             "insertafter": "after",
             "insertbefore": "before"
         }
+    },
+    "zos_backup_restore": {
+        "renamed_params": {
+            "sms_storage_class": "sms.storage_class",
+            "sms_management_class": "sms.management_class",
+            "hlq": "output.hlq"
+        }
     }
 }

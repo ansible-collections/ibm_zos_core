@@ -66,7 +66,6 @@ options:
     description:
       - Name of the RACF database to use for the purge operation.
       - This option is only applicable when I(operation=purge).
-      - If not specified, the default RACF database will be used.
     type: str
     required: false
   keep_dump:
@@ -1691,13 +1690,35 @@ class RACFHandler():
             # Remove the EXIT statement (with surrounding whitespace)
             clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
 
+            # Parse the CLIST to extract entities that will be modified
+            # Look for DELUSER and DELGROUP commands in the CLIST
+            entities_to_modify = []
+            deluser_pattern = re.compile(r'^\s*DELUSER\s+(\S+)', re.MULTILINE)
+            delgroup_pattern = re.compile(r'^\s*DELGROUP\s+(\S+)', re.MULTILINE)
+
+            # Find all DELUSER commands
+            for match in deluser_pattern.finditer(clist_content_modified):
+                entity_name = match.group(1).strip()
+                if entity_name and entity_name not in entities_to_modify:
+                    entities_to_modify.append(entity_name)
+
+            # Find all DELGROUP commands
+            for match in delgroup_pattern.finditer(clist_content_modified):
+                entity_name = match.group(1).strip()
+                if entity_name and entity_name not in entities_to_modify:
+                    entities_to_modify.append(entity_name)
+
             # Write the modified CLIST back to the dataset
             datasets.write(clist, clist_content_modified, append=False)
 
-            # TODO: update entities modified
             # TODO: add noexec option to not execute the CLIST
             cmd = f"EXEC '{clist}'"
             rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
+
+            # Update entities_modified based on successful execution
+            if rc == 0 and entities_to_modify:
+                self.num_entities_modified = len(entities_to_modify)
+                self.entities_modified = entities_to_modify
         except Exception as err:
             return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
         finally:

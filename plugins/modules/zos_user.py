@@ -62,6 +62,36 @@ options:
     choices:
       - user
       - group
+  database:
+    description:
+      - Name of the RACF database to use for the purge operation.
+      - This option is only applicable when I(operation=purge).
+      - If not specified, the default RACF database will be used.
+    type: str
+    required: false
+  keep_dump:
+    description:
+      - Whether to keep the database dump datasets after the purge operation completes.
+      - This option is only applicable when I(operation=purge).
+      - When set to C(true), the IRRDBU00 dump dataset and IRRRID00 CLIST will be retained
+        for debugging or auditing purposes.
+      - When set to C(false), these temporary datasets will be deleted after the purge operation.
+    type: bool
+    required: false
+    default: false
+  optimize_dump:
+    description:
+      - Whether to optimize the database dump operation by not locking the RACF database.
+      - This option is only applicable when I(operation=purge).
+      - When set to C(true), the IRRDBU00 utility will run with C(NOLOCKINPUT) option,
+        which allows other processes to access the database during the dump.
+      - When set to C(false), the IRRDBU00 utility will run with C(LOCKINPUT) option,
+        which locks the database during the dump to ensure consistency.
+      - Using C(true) can improve performance but may result in inconsistent data if the
+        database is being modified during the dump.
+    type: bool
+    required: false
+    default: true
   general:
     description:
       - Options that change common attributes in a RACF profile.
@@ -1671,17 +1701,19 @@ class RACFHandler():
         except Exception as err:
             return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
         finally:
-            # TODO: fix clean up
             # Cleaning up.
             if datasets.exists(sysin_name):
                 datasets.delete(sysin_name)
-            # if not self.keep_dump:
-            #     datasets.delete(clist)
-            #     datasets.delete(dump_data_set)
+            # Clean up dump datasets if keep_dump is False
+            if not self.keep_dump:
+                if datasets.exists(clist):
+                    datasets.delete(clist)
+                if datasets.exists(dump_data_set):
+                    datasets.delete(dump_data_set)
 
         self.database_dumped = True
         self.dump_kept = self.keep_dump
-        self.dump_name = dump_data_set
+        self.dump_name = dump_data_set if self.keep_dump else None
 
         rc, out, err = self.module.run_command(f"dcat {clist}")
 

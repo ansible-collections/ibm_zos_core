@@ -352,9 +352,9 @@ options:
       account_num:
         description:
           - User's default TSO account number when logging in.
-          - Value between 3 and 524,287.
-          - A value of 0 will delete this field from the profile.
-        type: int
+          - Maximum length of 40 characters.
+          - An empty value deletes this field.
+        type: str
         required: false
       logon_cmd:
         description:
@@ -492,28 +492,33 @@ options:
           - Whether the user's protected data sets are accessible to other users in the group.
         type: bool
         required: false
+        default: false
       group_operations:
         description:
           - Whether a user should have the group-OPERATIONS attribute when connected to a group.
         type: bool
         required: false
+        default: false
       auditor:
         description:
           - Whether a user should have auditor privileges for the group it is connected to.
         type: bool
         required: false
+        default: false
       adsp_attribute:
         description:
           - Whether to give a user the ADSP attribute, which tells RACF to automatically protect
             data sets it creates with discrete profiles.
         type: bool
         required: false
+        default: false
       special:
         description:
           - Whether to give a user profile the SPECIAL attribute.
           - This attribute lets a user change attributes of other profiles. Use with caution.
         type: bool
         required: false
+        default: false
   access:
     description:
       - Options that set different security attributes in a user profile.
@@ -549,6 +554,7 @@ options:
             resources.
         type: bool
         required: false
+        default: false
       category:
         description:
           - Security categories that the profile should have.
@@ -572,17 +578,20 @@ options:
           - Whether a user must supply an operator identification card when logging in.
         type: bool
         required: false
+        default: false
       maintenance_access:
         description:
           - Whether the user has authorization to do maintenance operations on all
             RACF-protected DASD data sets, tape volumes, and DASD volumes.
         type: bool
         required: false
+        default: false
       restricted:
         description:
           - Whether to give the profile the RESTRICTED attribute.
         type: bool
         required: false
+        default: false
       security_label:
         description:
           - Security label applied to the profile.
@@ -646,6 +655,7 @@ options:
             this console.
         type: bool
         required: false
+        default: false
       display:
         description:
           - Which information should be displayed when monitoring
@@ -654,9 +664,10 @@ options:
             C(sesst), C(status) and C(delete).
           - Multiple choices are allowed.
           - C(delete) will remove this field from the profile.
-        type: str
+        type: list
+        elements: str
+        choices: [jobnames, jobnamest, sess, sesst, status, delete]
         required: false
-        default: ['jobnames', 'sess']
       msg_level:
         description:
           - Specifies the messages that this console is to receive.
@@ -724,6 +735,7 @@ options:
             that have been automated by the MFP.
         type: bool
         required: false
+        default: false
       del_msgs:
         description:
           - Which delete operator message (DOM) requests the
@@ -742,12 +754,14 @@ options:
             that are directed to hardcopy.
         type: bool
         required: false
+        default: false
       internal_msgs:
         description:
           - Whether the console should receive messages that
             are directed to console ID zero.
         type: bool
         required: false
+        default: false
       routing_msgs:
         description:
           - Specifies the routing codes of messages this
@@ -763,17 +777,20 @@ options:
             messages.
         type: bool
         required: false
+        default: false
       unknown_msgs:
         description:
           - Whether the console should receive messages that
             are directed to unknown console IDs.
         type: bool
         required: false
+        default: false
       responses:
         description:
           - Whether command responses should be logged.
         type: bool
         required: false
+        default: true
       delete:
         description:
           - Delete the whole OPERPARM block from the profile.
@@ -797,6 +814,18 @@ options:
             C(wednesday), C(thursday), C(friday), C(saturday) and C(sunday).
         type: list
         elements: str
+        choices:
+          - anyday
+          - weekdays
+          - monday
+          - tuesday
+          - wednesday
+          - thursday
+          - friday
+          - saturday
+          - sunday
+        default:
+            - anyday
         required: false
       time:
         description:
@@ -807,6 +836,7 @@ options:
             user is free to login at any time of the day.
         type: str
         required: false
+        default: anytime
       resume:
         description:
           - Date when the user is allowed access to a system again.
@@ -3175,7 +3205,8 @@ def run_module():
                     },
                     'search_key': {
                         'type': 'str',
-                        'required': False
+                        'required': False,
+                        'no_log': False
                     },
                     'migration_id': {
                         'type': 'bool',
@@ -3183,10 +3214,10 @@ def run_module():
                         'default': False
                     },
                     'display': {
-                        'type': 'raw',
+                        'type': 'list',
+                        'elements': 'str',
                         'required': False,
-                        'default': ['jobnames', 'sess']
-                        # 'choices': ['jobnames', 'jobnamest', 'sess', 'sesst', 'status', 'delete']
+                        'choices': ['jobnames', 'jobnamest', 'sess', 'sesst', 'status', 'delete']
                     },
                     'msg_level': {
                         'type': 'str',
@@ -3283,9 +3314,11 @@ def run_module():
                 ],
                 'options': {
                     'days': {
-                        'type': 'raw',
+                        'type': 'list',
+                        'elements': 'str',
                         'required': False,
-                        'default': 'anyday'
+                        'choices': ['anyday', 'weekdays', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+                        'default': ['anyday']
                     },
                     'time': {
                         'type': 'str',

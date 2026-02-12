@@ -91,6 +91,17 @@ options:
     type: bool
     required: false
     default: true
+  no_exec:
+    description:
+      - Whether to skip execution of generated clist.
+      - This option is only applicable when I(operation=purge).
+      - When set to C(true), the module will generate the CLIST with DELUSER/DELGROUP
+        commands but will not execute it.
+      - When set to C(false), the CLIST will be generated and executed to purge the profiles.
+      - This option is useful for reviewing the purge commands before execution.
+    type: bool
+    required: false
+    default: false
   general:
     description:
       - Options that change common attributes in a RACF profile.
@@ -1264,6 +1275,7 @@ class RACFHandler():
         self.database = module_params['database']
         self.keep_dump = module_params['keep_dump']
         self.optimize_dump = module_params['optimize_dump']
+        self.no_exec = module_params['no_exec']
         # Nested params.
         params_copy = copy.deepcopy(module_params)
         del params_copy['name']
@@ -1717,38 +1729,52 @@ class RACFHandler():
             # We need to remove it to allow the DELUSER/DELGROUP commands to execute
             clist_content = datasets.read(clist)
 
-            # Remove the EXIT statement (with surrounding whitespace)
-            clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
-
-            # Parse the CLIST to extract entities that will be modified
-            # Look for DELUSER and DELGROUP commands in the CLIST
-            entities_to_modify = []
-            deluser_pattern = re.compile(r'^\s*DELUSER\s+(\S+)', re.MULTILINE)
-            delgroup_pattern = re.compile(r'^\s*DELGROUP\s+(\S+)', re.MULTILINE)
-
-            # Find all DELUSER commands
-            for match in deluser_pattern.finditer(clist_content_modified):
-                entity_name = match.group(1).strip()
-                if entity_name and entity_name not in entities_to_modify:
-                    entities_to_modify.append(entity_name)
-
-            # Find all DELGROUP commands
-            for match in delgroup_pattern.finditer(clist_content_modified):
-                entity_name = match.group(1).strip()
-                if entity_name and entity_name not in entities_to_modify:
-                    entities_to_modify.append(entity_name)
-
-            # Write the modified CLIST back to the dataset
-            datasets.write(clist, clist_content_modified, append=False)
-
             # TODO: add noexec option to not execute the CLIST
+            # Handle EXIT statement based on no_exec parameter
+
+            entities_to_modify = []
+            if not self.no_exec:
+                # Remove the EXIT statement (with surrounding whitespace)
+                clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
+
+                # Parse the CLIST to extract entities that will be modified
+                # Look for DELUSER and DELGROUP commands in the CLIST
+                deluser_pattern = re.compile(r'^\s*DELUSER\s+(\S+)', re.MULTILINE)
+                delgroup_pattern = re.compile(r'^\s*DELGROUP\s+(\S+)', re.MULTILINE)
+
+                # Find all DELUSER commands
+                for match in deluser_pattern.finditer(clist_content_modified):
+                    entity_name = match.group(1).strip()
+                    if entity_name and entity_name not in entities_to_modify:
+                        entities_to_modify.append(entity_name)
+
+                # Find all DELGROUP commands
+                for match in delgroup_pattern.finditer(clist_content_modified):
+                    entity_name = match.group(1).strip()
+                    if entity_name and entity_name not in entities_to_modify:
+                        entities_to_modify.append(entity_name)
+
+                # Write the modified CLIST back to the dataset
+                datasets.write(clist, clist_content_modified, append=False)
+
             cmd = f"EXEC '{clist}'"
             rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
 
             # Update entities_modified based on successful execution
-            if rc == 0 and entities_to_modify:
+            if rc == 0 and entities_to_modify and not self.no_exec:
                 self.num_entities_modified = len(entities_to_modify)
                 self.entities_modified = entities_to_modify
+            else:
+                self.num_entities_modified = 0
+                self.entities_modified = []
+
+            # Read CLIST content BEFORE cleanup (must be inside try block)
+            rc_dcat, out, err = self.module.run_command(f"dcat {clist}")
+
+            self.database_dumped = True
+            self.dump_kept = self.keep_dump
+            self.dump_name = dump_data_set if self.keep_dump else None
+
         except Exception as err:
             return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
         finally:
@@ -1762,14 +1788,8 @@ class RACFHandler():
                 if datasets.exists(dump_data_set):
                     datasets.delete(dump_data_set)
 
-        self.database_dumped = True
-        self.dump_kept = self.keep_dump
-        self.dump_name = dump_data_set if self.keep_dump else None
-
-        rc, out, err = self.module.run_command(f"dcat {clist}")
-
         # return rc, stdout, stderr, cmd
-        return 0, f"{dump_data_set}, {clist}: {out}", "", cmd
+        return 0, f"dump_data_set: {dump_data_set}, clist: {clist}: out: {out}", "", cmd
 
 
 class GroupHandler(RACFHandler):
@@ -2776,6 +2796,11 @@ def run_module():
                 'type': 'bool',
                 'default': True
             },
+            'no_exec': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
             'general': {
                 'type': 'dict',
                 'required': False,
@@ -3356,6 +3381,7 @@ def run_module():
         'database': {'arg_type': 'str', 'required': False},
         'keep_dump': {'arg_type': 'bool', 'required': True},
         'optimize_dump': {'arg_type': 'bool', 'required': True},
+        'no_exec': {'arg_type': 'bool', 'required': False},
         'general': {
             'arg_type': 'dict',
             'required': False,

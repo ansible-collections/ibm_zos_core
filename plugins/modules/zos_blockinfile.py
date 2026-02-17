@@ -207,7 +207,7 @@ notes:
   - When working with a backup of a sequential dataset, the backup name should also be a sequential dataset.
     This will avoid the false positive and error condition during backup.
 seealso:
-- module: zos_data_set
+- module: ibm.ibm_zos_core.zos_data_set
 '''
 
 EXAMPLES = r'''

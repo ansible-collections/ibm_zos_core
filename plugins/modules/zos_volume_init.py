@@ -130,7 +130,7 @@ options:
     required: false
     type: str
 seealso:
-- module: zos_backup_restore
+- module: ibm.ibm_zos_core.zos_backup_restore
 
 attributes:
   action:

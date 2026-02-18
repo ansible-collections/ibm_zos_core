@@ -1452,6 +1452,7 @@ def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
         os.chmod(src_path, 0)
         copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
         for result in copy_res.contacted.values():
+            print(result)
             assert result.get("msg") is not None
             assert "read permission" in result.get("msg")
     finally:

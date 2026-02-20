@@ -483,3 +483,345 @@ def test_group_create_error_custom_uid_missing(ansible_zos_module):
 # ============================================================================
 # END OF CREATE GROUP TESTS
 # ============================================================================
+
+# ============================================================================
+# GROUP UPDATE Tests
+# ============================================================================
+
+def test_group_update_general_attributes(ansible_zos_module):
+    """
+    Test: Update group general attributes (owner, installation_data).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={"installation_data": "Initial data"}
+        )
+        
+        # Update owner and installation data
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            general={
+                "owner": "SYS1",
+                "installation_data": "Updated installation data"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OWNER(SYS1)" in cmd
+            assert "DATA('Updated installation data')" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_clear_general_attributes(ansible_zos_module):
+    """
+    Test: Clear general group attributes using empty strings.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with data
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={"installation_data": "Data to clear"}
+        )
+        
+        # Clear installation data
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            general={"installation_data": ""}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NODATA" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_terminal_access(ansible_zos_module):
+    """
+    Test: Update group terminal access (enable/disable).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with terminal access disabled
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            group={"terminal_access": False}
+        )
+        
+        # Enable terminal access
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            group={"terminal_access": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "TERMUACC" in result.get("cmd", "") and "NOTERMUACC" not in result.get("cmd", "")
+        
+        # Disable terminal access
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            group={"terminal_access": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOTERMUACC" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_dfp_individual_attributes(ansible_zos_module):
+    """
+    Test: Update individual DFP attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with initial DFP
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            dfp={
+                "data_app_id": "OLDAPP",
+                "data_class": "DCOLD"
+            }
+        )
+        
+        # Update data app ID
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            dfp={"data_app_id": "NEWAPP"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "DATAAPPL(NEWAPP)" in result.get("cmd", "")
+        
+        # Update data class
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            dfp={"data_class": "DCNEW"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "DATACLAS(DCNEW)" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_all_dfp_attributes(ansible_zos_module):
+    """
+    Test: Update all DFP attributes together.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with initial DFP
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            dfp={
+                "data_app_id": "OLDAPP",
+                "data_class": "DCOLD",
+                "management_class": "MCOLD",
+                "storage_class": "SCOLD"
+            }
+        )
+        
+        # Update all DFP attributes
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            dfp={
+                "data_app_id": "NEWAPP",
+                "data_class": "DCNEW",
+                "management_class": "MCNEW",
+                "storage_class": "SCNEW"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATAAPPL(NEWAPP)" in cmd
+            assert "DATACLAS(DCNEW)" in cmd
+            assert "MGMTCLAS(MCNEW)" in cmd
+            assert "STORCLAS(SCNEW)" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_delete_dfp_block(ansible_zos_module):
+    """
+    Test: Delete entire DFP block from group.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with DFP
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            }
+        )
+        
+        # Delete DFP block
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            dfp={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NODFP" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_combined_attributes(ansible_zos_module):
+    """
+    Test: Update multiple attribute types together (general + group + DFP).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group"
+        )
+        
+        # Update multiple attribute types
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            general={
+                "owner": "SYS1",
+                "installation_data": "Combined update test"
+            },
+            group={
+                "terminal_access": True
+            },
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OWNER(SYS1)" in cmd
+            assert "DATA('Combined update test')" in cmd
+            assert "TERMUACC" in cmd
+            assert "DATACLAS(DCTEST)" in cmd
+            assert "STORCLAS(SCTEST)" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_omvs_and_delete(ansible_zos_module):
+    """
+    Test: OMVS segment deletion and error scenarios.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    nonexistent_group = "NONEXIST99"
+    
+    try:
+        # Update non-existent group
+        results = hosts.all.zos_user(
+            name=nonexistent_group,
+            operation="update",
+            scope="group",
+            general={"owner": "SYS1"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") != 0, "Expected failure for non-existent group"
+            assert result.get("changed") is False
+        
+        # Create group with auto gid
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            omvs={"uid": "auto"}
+        )
+        
+        # Delete OMVS segment
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="update",
+            scope="group",
+            omvs={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOOMVS" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+# ============================================================================
+# END OF GROUP UPDATE TESTS
+# ============================================================================

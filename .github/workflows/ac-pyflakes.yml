@@ -1,27 +1,34 @@
 name: Pyflakes Lint
-
 on:
-  push:
-    branches: ["main", "dev"]
   pull_request:
-    branches: ["main", "dev"]
-
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - dev
+      - staging*
+    paths:
+      - 'plugins/**'
 jobs:
   pyflakes:
-    name: Run pyflakes on plugins/
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install pyflakes
-        run: pip install pyflakes
-
-      - name: Run pyflakes on plugins/
-        run: python -m pyflakes plugins/
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Set up venv
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+        virtualenv venv
+    - name: Install dependencies
+      run: |
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install pyflakes
+    - name: Run pyflakes
+      run: |
+        source venv/bin/activate
+        python -m pyflakes plugins/

@@ -1128,3 +1128,970 @@ def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
 # ============================================================================
 # END OF GROUP DELETE AND PURGE TESTS
 # ============================================================================
+
+# ============================================================================
+# USER CREATE TESTS
+# ============================================================================
+
+def test_user_create_basic_racf_defaults(ansible_zos_module):
+    """
+    Test: Create new user profile with RACF defaults.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd") == f"ADDUSER ({user_name})"
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_owner(ansible_zos_module):
+    """
+    Test: Create new user profile with specific owner.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    owner = "SYS1"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": owner}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"OWNER({owner})" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_model(ansible_zos_module):
+    """
+    Test: Create new user profile using another user as model.
+    """
+    hosts = ansible_zos_module
+    model_user = generate_random_name("TSTU")
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create model user first
+        hosts.all.zos_user(
+            name=model_user,
+            operation="create",
+            scope="user"
+        )
+        
+        # Create user with model
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"model": model_user}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"MODEL({model_user})" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_user(hosts, model_user)
+
+
+def test_user_create_with_installation_data(ansible_zos_module):
+    """
+    Test: Create new user profile with installation data.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    install_data = "Test User - Installation Data"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"installation_data": install_data}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "DATA(" in result.get("cmd", "")
+            assert "Test User - Installation Data" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_dfp_attributes(ansible_zos_module):
+    """
+    Test: Create user with DFP attributes -data_app_id, data_class, management_class, storage_class.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            dfp={
+                "data_app_id": "APPID001",
+                "data_class": "DCLAS001",
+                "management_class": "MCLAS001",
+                "storage_class": "SCLAS001"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATAAPPL(APPID001)" in cmd
+            assert "DATACLAS(DCLAS001)" in cmd
+            assert "MGMTCLAS(MCLAS001)" in cmd
+            assert "STORCLAS(SCLAS001)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_language_settings(ansible_zos_module):
+    """
+    Test: Create user with language settings -primary and secondary.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            language={
+                "primary": "ENU",
+                "secondary": "JPN"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            pattern = r"LANGUAGE\s*\((?=.*PRIMARY\(ENU\))(?=.*SECONDARY\(JPN\)).*\)"
+            assert re.search(pattern, cmd)
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_basic_settings(ansible_zos_module):
+    """
+    Test: Create user with TSO class settings -account_num, job_class, hold_class, msg_class, sysout_class.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            tso={
+                "account_num": 30000,
+                "job_class": "A",
+                "hold_class": "H",
+                "msg_class": "X",
+                "sysout_class": "A"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "ACCTNUM(30000)" in cmd
+            assert "JOBCLASS(A)" in cmd
+            assert "HOLDCLASS(H)" in cmd
+            assert "MSGCLASS(X)" in cmd
+            assert "SYS(A)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_region_sizes(ansible_zos_module):
+    """
+    Test: Create user with TSO region sizes -region_size, max_region_size.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            tso={
+                "account_num": 32000,
+                "region_size": 8192,
+                "max_region_size": 16384
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "SIZE(8192)" in cmd
+            assert "MAXSIZE(16384)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_multiple_parameters(ansible_zos_module):
+    """
+    Test: Create user with multiple TSO parameters combined.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            tso={
+                "account_num": 33000,
+                "logon_proc": "IKJACCNT",
+                "region_size": 16384,
+                "max_region_size": 32768,
+                "job_class": "A",
+                "msg_class": "X",
+                "sysout_class": "A",
+                "hold_class": "H"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "ACCTNUM(33000)" in cmd
+            assert "PROC(IKJACCNT)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_auto_uid(ansible_zos_module):
+    """
+    Test: Create user with auto-assigned UID.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/sh"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "AUTOUID" in cmd
+            assert f"HOME({home_dir})" in cmd
+            assert "PROGRAM(/bin/sh)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_custom_uid(ansible_zos_module):
+    """
+    Test: Create user with custom UID.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    custom_uid = 5041
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            omvs={
+                "uid": "custom",
+                "custom_uid": custom_uid,
+                "home": home_dir,
+                "program": "/bin/bash"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert f"UID({custom_uid})" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_memory_limits(ansible_zos_module):
+    """
+    Test: Create user with memory limits configured- addr_space_size, map_size, nonshared_size, shared_size.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/sh",
+                "addr_space_size": 10485760,
+                "map_size": 2048,
+                "nonshared_size": "7g",
+                "shared_size": "5g"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "ASSIZEMAX(10485760)" in cmd
+            assert "MMAPAREAMAX(2048)" in cmd
+            assert "SHMEMMAX(5g)" in cmd
+            assert "MEMLIMIT(7g)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_process_limits(ansible_zos_module):
+    """
+    Test: Create user with process limits - max_cpu_time, max_files, max_threads, max_procs.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/bash",
+                "max_cpu_time": 3600,
+                "max_files": 2000,
+                "max_threads": 200,
+                "max_procs": 100
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "CPUTIMEMAX(3600)" in cmd
+            assert "FILEPROCMAX(2000)" in cmd
+            assert "THREADSMAX(200)" in cmd
+            assert "PROCUSERMAX(100)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_default_group_and_clauth(ansible_zos_module):
+    """
+    Test: Create new user profile with default group assignment and clauth.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # Create group first
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group"
+        )
+        
+        # Create user with default group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            access={
+                "default_group": group_name,
+                "clauth": {"add": ["TERMINAL"]}
+                }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"DFLTGRP({group_name})" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert "CLAUTH( TERMINAL )" in result.get("cmd", "")
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_create_with_access_attributes(ansible_zos_module):
+    """
+    Test: Create user with various access attributes- roaudit, operator_card, maintenance_access, restricted.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            access={
+                "roaudit": False,
+                "operator_card": False,
+                "maintenance_access": False,
+                "restricted": False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOROAUDIT" in cmd
+            assert "NOOIDCARD" in cmd
+            assert "NORESTRICTED" in cmd
+            assert "NOOPERATIONS" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_login_restrictions(ansible_zos_module):
+    """
+    Test: Create user with login restrictions - days, time.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            restrictions={
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "time": "0900:1700"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "WHEN(" in cmd
+            assert "DAYS( monday tuesday wednesday thursday friday )" in cmd
+            assert "TIME(0900:1700)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_operator_authority(ansible_zos_module):
+    """
+    Test: Create user with operator authority parameter like all, info, master, sys.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            operator={"authority": "info"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM" in cmd
+            assert "AUTH(info)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_error_already_exists(ansible_zos_module):
+    """
+    Test: Attempt to create user that already exists.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user first time
+        results1 = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user"
+        )
+        
+        for result in results1.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Attempt to create same user again (should fail)
+        results2 = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user"
+        )
+        
+        for result in results2.contacted.values():
+            assert result.get("rc") != 0
+            assert result.get("changed") is False
+            assert "INVALID USER" in result.get("stdout")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_create_with_operator_cmd_and_search_settings(ansible_zos_module):
+    """
+    Test: Create user with operator command system and search key.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "cmd_system": "MVS",
+                "search_key": "TST0705"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTH(info)" in cmd
+            assert "CMDSYS(MVS)" in cmd
+            assert "KEY(TST0705)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_operator_migration_and_display(ansible_zos_module):
+    """
+    Test: Create user with operator migration ID(enabled/disabled) and display settings.
+    """
+    hosts = ansible_zos_module
+    user_enabled = generate_random_name("TSTU")
+    user_disabled = generate_random_name("TSTU")
+    
+    try:
+        # Test with migration ID enabled and display settings
+        results_enabled = hosts.all.zos_user(
+            name=user_enabled,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "migration_id": True,
+                "display": ["jobnames", "sess"]
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "MIGID(YES)" in cmd
+            assert "MONITOR( jobnames sess ) " in cmd
+        
+        # Test with migration ID disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_disabled,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "migration_id": False
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "MIGID(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_enabled)
+        assert verify_user_exists(hosts, user_disabled)
+        
+    finally:
+        cleanup_user(hosts, user_enabled)
+        cleanup_user(hosts, user_disabled)
+
+
+def test_user_create_with_operator_message_settings(ansible_zos_module):
+    """
+    Test: Create user with operator message settings - msg_level, msg_format, msg_storage.
+    """
+    hosts = ansible_zos_module
+    user_all = generate_random_name("TSTU")
+    user_info = generate_random_name("TSTU")
+    
+    try:
+        # Test with msg_level=all
+        results_all = hosts.all.zos_user(
+            name=user_all,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "msg_level": "all",
+                "msg_format": "m",
+                "msg_storage": 1000
+            }
+        )
+        
+        for result in results_all.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "LEVEL(all)" in cmd
+            assert "MFORM(m)" in cmd
+            assert "STORAGE(1000)" in cmd
+        
+        # Test with msg_level=i (info)
+        results_info = hosts.all.zos_user(
+            name=user_info,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "msg_level": "i",
+                "msg_format": "m",
+                "msg_storage": 2000
+            }
+        )
+        
+        for result in results_info.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "LEVEL(i)" in cmd
+            assert "MFORM(m)" in cmd
+            assert "STORAGE(2000)" in cmd
+        
+        assert verify_user_exists(hosts, user_all)
+        assert verify_user_exists(hosts, user_info)
+        
+    finally:
+        cleanup_user(hosts, user_all)
+        cleanup_user(hosts, user_info)
+
+
+def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_module):
+    """
+    Test: Create user with automated and hardcopy message settings.
+    """
+    hosts = ansible_zos_module
+    user_auto_hc = generate_random_name("TSTU")
+    user_no_auto_no_hc = generate_random_name("TSTU")
+    
+    try:
+        # Test with automated and hardcopy enabled
+        results_enabled = hosts.all.zos_user(
+            name=user_auto_hc,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "automated_msgs": True,
+                "hardcopy_msgs": True
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTO(YES)" in cmd
+            assert "HC(YES)" in cmd
+        
+        # Test with automated and hardcopy disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_no_auto_no_hc,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "automated_msgs": False,
+                "hardcopy_msgs": False
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTO(NO)" in cmd
+            assert "HC(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_auto_hc)
+        assert verify_user_exists(hosts, user_no_auto_no_hc)
+        
+    finally:
+        cleanup_user(hosts, user_auto_hc)
+        cleanup_user(hosts, user_no_auto_no_hc)
+
+
+def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_module):
+    """
+    Test: Create user with unknown and undelivered message settings.
+    """
+    hosts = ansible_zos_module
+    user_enabled = generate_random_name("TSTU")
+    user_disabled = generate_random_name("TSTU")
+    
+    try:
+        # Test with unknown and undelivered messages enabled
+        results_enabled = hosts.all.zos_user(
+            name=user_enabled,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "unknown_msgs": True,
+                "undelivered_msgs": True
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "UNKNIDS(YES)" in cmd
+            assert "UD(YES)" in cmd
+        
+        # Test with unknown and undelivered messages disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_disabled,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "unknown_msgs": False,
+                "undelivered_msgs": False
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "UNKNIDS(NO)" in cmd
+            assert "UD(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_enabled)
+        assert verify_user_exists(hosts, user_disabled)
+        
+    finally:
+        cleanup_user(hosts, user_enabled)
+        cleanup_user(hosts, user_disabled)
+
+
+def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_module):
+    """
+    Test: Create user with internal messages and routing settings -internal_msgs (enabled/disabled), 
+    routing_msgs (single/multiple codes).
+    """
+    hosts = ansible_zos_module
+    user_internal_single = generate_random_name("TSTU")
+    user_no_internal_multi = generate_random_name("TSTU")
+    
+    try:
+        # Test with internal messages enabled and single routing code
+        results_single = hosts.all.zos_user(
+            name=user_internal_single,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "internal_msgs": True,
+                "routing_msgs": ["1"]
+            }
+        )
+        
+        for result in results_single.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "INTIDS(YES)" in cmd
+            assert "ROUTCODE( 1 )" in cmd
+        
+        # Test with internal messages disabled and multiple routing codes
+        results_multi = hosts.all.zos_user(
+            name=user_no_internal_multi,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "internal_msgs": False,
+                "routing_msgs": ["1", "2", "11"]
+            }
+        )
+        
+        for result in results_multi.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "INTIDS(NO)" in cmd
+            assert "ROUTCODE( 1 2 11 )" in cmd
+        
+        assert verify_user_exists(hosts, user_internal_single)
+        assert verify_user_exists(hosts, user_no_internal_multi)
+        
+    finally:
+        cleanup_user(hosts, user_internal_single)
+        cleanup_user(hosts, user_no_internal_multi)
+
+# ============================================================================
+# END OF USER CREATE TESTS
+# ============================================================================

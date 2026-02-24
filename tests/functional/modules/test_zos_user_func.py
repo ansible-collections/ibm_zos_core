@@ -825,3 +825,306 @@ def test_group_update_omvs_and_delete(ansible_zos_module):
 # ============================================================================
 # END OF GROUP UPDATE TESTS
 # ============================================================================
+
+# ============================================================================
+# GROUP DELETE AND PURGE TESTS
+# ============================================================================
+def test_group_delete_standard(ansible_zos_module):
+    """
+    Test: Delete a standard group profile with no subgroups.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGD")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group"
+        )
+        
+        # Verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Delete group
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="delete",
+            scope="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert f"DELGROUP ({group_name})" in result.get("cmd", "")
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_delete_with_subgroups_error(ansible_zos_module):
+    """
+    Test: Delete superior group that has subgroups (should fail).
+    """
+    hosts = ansible_zos_module
+    superior_group = generate_random_name("TGS")
+    sub_group = generate_random_name("TGS")
+    
+    try:
+        # Create superior group
+        hosts.all.zos_user(
+            name=superior_group,
+            operation="create",
+            scope="group"
+        )
+        
+        # Create subgroup
+        hosts.all.zos_user(
+            name=sub_group,
+            operation="create",
+            scope="group",
+            group={"superior_group": superior_group}
+        )
+        
+        # Attempt to delete superior group (should fail)
+        results = hosts.all.zos_user(
+            name=superior_group,
+            operation="delete",
+            scope="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") == 8
+            assert result.get("changed") is False
+            stdout = result.get("stdout", "")
+            assert "INVALID GROUP" in stdout
+        
+        # Verify superior group still exists
+        assert verify_group_exists(hosts, superior_group)
+        
+    finally:
+        cleanup_group(hosts, sub_group)
+        cleanup_group(hosts, superior_group)
+
+def test_group_delete_nonexistent_error(ansible_zos_module):
+    """
+    Test: Attempt to delete a group that doesn't exist.
+    """
+    hosts = ansible_zos_module
+    nonexistent_group = "NOEXST99"
+    
+    # Attempt to delete non-existent group
+    results = hosts.all.zos_user(
+        name=nonexistent_group,
+        operation="delete",
+        scope="group"
+    )
+    
+    for result in results.contacted.values():
+        assert result.get("rc") == 8
+        assert result.get("changed") is False
+        assert result.get("num_entities_modified") == 0
+        stdout = result.get("stdout", "")
+        assert "INVALID GROUP" in stdout
+
+def test_group_purge_default_options(ansible_zos_module):
+    """
+    Test: Purge group with default options (keep_dump=false, optimize_dump=true).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={"owner": "SYS1"}
+        )
+        
+        # Verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Purge group with default options
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="purge",
+            scope="group",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=True
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert result.get("invocation").get("module_args").get("optimize_dump") is True
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_keep_dump(ansible_zos_module):
+    """
+    Test: Purge group with keep_dump=true.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={"owner": "SYS1"}
+        )
+        
+        # Purge group with keep_dump=true
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="purge",
+            scope="group",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            # dump_name should be not none
+            assert result.get("dump_name") is not None
+            assert result.get("num_entities_modified") == 1
+            assert result.get("invocation").get("module_args").get("optimize_dump") is True
+            
+            # Verify dump dataset name is returned
+            dump_name = result.get("dump_name")
+            assert dump_name, "Dump dataset name should not be empty"
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_lockinput_mode(ansible_zos_module):
+    """
+    Test: Purge group with optimize_dump=false (LOCKINPUT mode).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={"owner": "SYS1"}
+        )
+        
+        # Purge group with optimize_dump=false (LOCKINPUT)
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="purge",
+            scope="group",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=False
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert result.get("invocation").get("module_args").get("optimize_dump") is False
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        # Cleanup if purge failed
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
+    """
+    Test: Purge group with various attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group with multiple attributes
+        hosts.all.zos_user(
+            name=group_name,
+            operation="create",
+            scope="group",
+            general={
+                "owner": "SYS1",
+                "installation_data": "Group to be purged"
+            },
+            group={
+                "terminal_access": True
+            },
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            },
+            omvs={
+                "uid": "auto"
+            }
+        )
+        
+        # verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Purge group completely
+        results = hosts.all.zos_user(
+            name=group_name,
+            operation="purge",
+            scope="group",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=True
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+        
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+# ============================================================================
+# END OF GROUP DELETE AND PURGE TESTS
+# ============================================================================

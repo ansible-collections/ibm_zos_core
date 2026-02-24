@@ -1890,6 +1890,7 @@ def test_zos_unarchive_async(ansible_zos_module, get_config):
         assert result.returncode == 0
         assert "ok=2" in result.stdout
         assert "changed=2" in result.stdout
-        assert result.stderr == ""
+        # Commented due to new alias messages
+        # assert result.stderr == ""
     finally:
         hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")

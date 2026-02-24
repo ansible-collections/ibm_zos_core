@@ -368,8 +368,8 @@ notes:
 
 
 seealso:
-  - module: zos_fetch
-  - module: zos_unarchive
+  - module: ibm.ibm_zos_core.zos_fetch
+  - module: ibm.ibm_zos_core.zos_unarchive
 '''
 
 EXAMPLES = r'''
@@ -550,6 +550,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, mvs_cmd, validation, encode)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets
@@ -1974,6 +1977,7 @@ def run_module():
         ),
         supports_check_mode=True,
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(type='list', elements='str', required=True),
@@ -2064,6 +2068,7 @@ def run_module():
         original_message='',
         message=''
     )
+
     if module.check_mode:
         module.exit_json(**result)
 

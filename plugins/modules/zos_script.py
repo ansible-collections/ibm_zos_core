@@ -144,8 +144,8 @@ notes:
     remote machine.
 
 seealso:
-  - module: zos_copy
-  - module: zos_tso_command
+  - module: ibm.ibm_zos_core.zos_copy
+  - module: ibm.ibm_zos_core.zos_tso_command
 """
 
 EXAMPLES = r"""
@@ -248,6 +248,9 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 
 def run_module():
@@ -306,6 +309,7 @@ def run_module():
         ),
         supports_check_mode=False
     )
+    validate_dependencies(module)
 
     args_def = dict(
         chdir=dict(arg_type='path', required=False),

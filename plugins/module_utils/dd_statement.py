@@ -356,6 +356,7 @@ class DatasetDefinition(DataDefinition):
         key_encoding1=None,
         key_label2=None,
         key_encoding2=None,
+        raw=False,
     ):
         """Dataset DD data type to be used in a DDStatement.
         Defaults and validation are handled my mvscmd.
@@ -539,19 +540,23 @@ class DatasetDefinition(DataDefinition):
         super().__init__(dataset_name)
         self.disposition = disposition
         self.type = type
-
-        if primary_unit and space_units.get(primary_unit.lower()) is not None:
-            primary_unit = space_units.get(primary_unit.lower())
-        if secondary_unit and space_units.get(secondary_unit.lower()) is not None:
-            secondary_unit = space_units.get(secondary_unit.lower())
-        if primary and primary_unit:
-            self.primary = str(primary) + primary_unit
+        self.raw = raw
+        if not raw:
+            if primary_unit and space_units.get(primary_unit.lower()) is not None:
+                primary_unit = space_units.get(primary_unit.lower())
+            if secondary_unit and space_units.get(secondary_unit.lower()) is not None:
+                secondary_unit = space_units.get(secondary_unit.lower())
+            if primary and primary_unit:
+                self.primary = str(primary) + primary_unit
+            else:
+                self.primary = primary
+            if secondary and secondary_unit:
+                self.secondary = str(secondary) + secondary_unit
+            else:
+                self.secondary = secondary
         else:
-            self.primary = primary
-        if secondary and secondary_unit:
-            self.secondary = str(secondary) + secondary_unit
-        else:
-            self.secondary = secondary
+            self.primary = None
+            self.secondary = None
 
         DISPOSITION_ARG_MAP = {"catlg": "catalog", "uncatlg": "uncatalog"}
         self.normal_disposition = (
@@ -591,68 +596,73 @@ class DatasetDefinition(DataDefinition):
         str
             String to be used by mvscmd/mvscmdauth.
         """
-        if not self.disposition:
-            return ""
-        mvscmd_string = ",{0}".format(self.disposition) if self.disposition else ""
-        mvscmd_string = self._append_mvscmd_string(mvscmd_string, "type", self.type)
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "primary", self.primary
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "secondary", self.secondary
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "normdisp", self.normal_disposition
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "conddisp", self.conditional_disposition
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "blksize", self.block_size
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "dirblks", self.directory_blocks
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "recfm", self.record_format
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "lrecl", self.record_length
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "storclas", self.storage_class
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "dataclas", self.data_class
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "mgmtclas", self.management_class
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keylen", self.key_length
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keyoffset", self.key_offset
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "volumes", self.volumes
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "dskeylbl", self.dataset_key_label
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keylab1", self.key_label1
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keylab2", self.key_label2
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keycd1", self.key_encoding1
-        )
-        mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "keycd2", self.key_encoding2
-        )
-        return mvscmd_string
+        if self.raw:
+            mvscmd_string = ",{0}".format(self.disposition) if self.disposition else ""
+            mvscmd_string += ",raw"
+            return mvscmd_string
+        else:
+            if not self.disposition:
+                return ""
+            mvscmd_string = ",{0}".format(self.disposition) if self.disposition else ""
+            mvscmd_string = self._append_mvscmd_string(mvscmd_string, "type", self.type)
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "primary", self.primary
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "secondary", self.secondary
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "normdisp", self.normal_disposition
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "conddisp", self.conditional_disposition
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "blksize", self.block_size
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "dirblks", self.directory_blocks
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "recfm", self.record_format
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "lrecl", self.record_length
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "storclas", self.storage_class
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "dataclas", self.data_class
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "mgmtclas", self.management_class
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keylen", self.key_length
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keyoffset", self.key_offset
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "volumes", self.volumes
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "dskeylbl", self.dataset_key_label
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keylab1", self.key_label1
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keylab2", self.key_label2
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keycd1", self.key_encoding1
+            )
+            mvscmd_string = self._append_mvscmd_string(
+                mvscmd_string, "keycd2", self.key_encoding2
+            )
+            return mvscmd_string
 
 
 class VolumeDefinition(DataDefinition):

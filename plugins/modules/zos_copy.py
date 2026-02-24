@@ -236,6 +236,7 @@ options:
     type: bool
     default: false
     required: false
+    aliases: [binary]
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -579,10 +580,10 @@ notes:
       and L(zos_tso_cmd,./zos_tso_cmd.html) for examples of how to recall migrated data sets
       using this collection.
 seealso:
-- module: zos_fetch
-- module: zos_data_set
-- module: zos_mvs_raw
-- module: zos_tso_cmd
+- module: ibm.ibm_zos_core.zos_fetch
+- module: ibm.ibm_zos_core.zos_data_set
+- module: ibm.ibm_zos_core.zos_mvs_raw
+- module: ibm.ibm_zos_core.zos_tso_cmd
 """
 
 EXAMPLES = r"""
@@ -963,6 +964,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
     idcams
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
@@ -1187,7 +1191,7 @@ class CopyHandler(object):
             True if every copy operation was successful, False otherwise.
         """
         src_view = gdgs.GenerationDataGroupView(src)
-        generations = src_view.generations()
+        generations = src_view.generations
         copy_args = {
             "options": ""
         }
@@ -1207,9 +1211,23 @@ class CopyHandler(object):
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
                 # Perform the copy operation
-            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
-            if rc != 0:
-                success = False
+
+            try:
+                result = datasets.copy(gds.name, dest_gen_name, **copy_args)
+                rc = result.rc if hasattr(result, 'rc') else result
+                if rc != 0:
+                    success = False
+            except zoau_exceptions.ZOAUException as e:
+                stderr = getattr(e.response, 'stderr_response', str(e))
+                if "BGYSC0514E" in stderr :
+                    raise GenerationDataGroupCreateError(
+                        msg=(
+                            "BGYSC0514E An error occurred while attempting to define the file."
+                            " This might be because the GDS part of the src GDG is being used by another process."
+                        )
+                    ) from e
+                else:
+                    raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e
         return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
@@ -2756,8 +2774,8 @@ def does_destination_allow_copy(
         src_view = gdgs.GenerationDataGroupView(src)
         dest_view = gdgs.GenerationDataGroupView(dest)
 
-        src_allocated_gens = len(src_view.generations())
-        dest_allocated_gens = len(dest_view.generations())
+        src_allocated_gens = len(src_view.generations)
+        dest_allocated_gens = len(dest_view.generations)
 
         if src_allocated_gens > (dest_view.limit - dest_allocated_gens):
             return False
@@ -4122,6 +4140,7 @@ def main():
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
     )
+    validate_dependencies(module)
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
@@ -4362,6 +4381,13 @@ class CopyOperationError(Exception):
         self.overwritten_members = overwritten_members
         self.new_members = new_members
         super().__init__(msg)
+
+
+class GenerationDataGroupCreateError(Exception):
+    def __init__(self, msg):
+        """Error during copy of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
 
 
 if __name__ == "__main__":

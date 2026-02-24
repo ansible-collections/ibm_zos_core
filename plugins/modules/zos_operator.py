@@ -214,6 +214,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import opercmd
@@ -287,12 +290,14 @@ def run_module():
 
     result = dict(changed=False)
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+    validate_dependencies(module)
 
     # Checking that we can actually use ZOAU.
     if isinstance(opercmd, ZOAUImportError):
         module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
+
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")

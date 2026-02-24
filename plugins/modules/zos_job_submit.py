@@ -57,6 +57,7 @@ options:
     required: false
     default: 10
     type: int
+    aliases: [wait_time]
     description:
       - Option I(wait_time) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
@@ -693,6 +694,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
@@ -945,6 +949,7 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     if module.params.get("encoding"):
         module.params.update(

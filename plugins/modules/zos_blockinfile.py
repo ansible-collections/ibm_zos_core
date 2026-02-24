@@ -207,7 +207,7 @@ notes:
   - When working with a backup of a sequential dataset, the backup name should also be a sequential dataset.
     This will avoid the false positive and error condition during backup.
 seealso:
-- module: zos_data_set
+- module: ibm.ibm_zos_core.zos_data_set
 '''
 
 EXAMPLES = r'''
@@ -374,6 +374,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 
 try:
@@ -566,6 +569,7 @@ def main():
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),

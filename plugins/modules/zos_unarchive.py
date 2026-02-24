@@ -369,7 +369,7 @@ notes:
     SCP, it will temporarily use SFTP for transfers, if not available, the module
     will fail.
 seealso:
-  - module: zos_archive
+  - module: ibm.ibm_zos_core.zos_archive
 '''
 
 EXAMPLES = r'''
@@ -492,6 +492,9 @@ import tarfile
 import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 
 try:
@@ -1602,7 +1605,7 @@ def run_module():
                     type=dict(
                         type='str',
                         required=True,
-                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                     ),
                     options=dict(
                         type='dict',
@@ -1692,6 +1695,7 @@ def run_module():
         ],
         supports_check_mode=True,
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(type='str', required=True),
@@ -1707,7 +1711,7 @@ def run_module():
                     type='str',
                     required=True,
                     default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                 ),
                 options=dict(
                     type='dict',
@@ -1719,7 +1723,7 @@ def run_module():
                         ),
                         dest_volumes=dict(
                             type='list',
-                            elements='str'
+                            elements='str',
                         ),
                         adrdssu=dict(
                             type='bool',

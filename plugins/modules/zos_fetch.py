@@ -83,6 +83,7 @@ options:
     required: false
     default: "false"
     type: bool
+    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
@@ -169,8 +170,8 @@ notes:
       back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for
       transfers, if not available, the module will fail.
 seealso:
-- module: zos_data_set
-- module: zos_copy
+- module: ibm.ibm_zos_core.zos_data_set
+- module: ibm.ibm_zos_core.zos_copy
 """
 
 EXAMPLES = r"""
@@ -319,6 +320,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 
 
@@ -719,7 +723,7 @@ class FetchHandler:
         dir_path = tempfile.mkdtemp()
 
         data_group = gdgs.GenerationDataGroupView(src)
-        for current_gds in data_group.generations():
+        for current_gds in data_group.generations:
             if current_gds.organization in data_set.DataSet.MVS_SEQ:
                 self._fetch_mvs_data(
                     current_gds.name,
@@ -854,9 +858,11 @@ def run_module():
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
+    validate_dependencies(module)
 
     src = module.params.get("src")
     hlq = None
+
     if module.params.get("use_qualifier"):
         hlq = datasets.get_hlq()
         module.params["src"] = hlq + "." + src
@@ -901,7 +907,6 @@ def run_module():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
     fetch_handler = FetchHandler(module)
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -937,7 +942,7 @@ def run_module():
     )
     src_data_set = None
     ds_type = None
-
+    is_member = False
     try:
         # Checking the source actually exists on the system.
         if "/" in src:  # USS

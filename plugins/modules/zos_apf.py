@@ -326,6 +326,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 import traceback
 
 try:
@@ -509,6 +512,7 @@ def main():
             ['batch', 'operation'],
         ],
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         library=dict(arg_type='str', required=False, aliases=['lib', 'name']),
@@ -552,6 +556,7 @@ def main():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
+
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 

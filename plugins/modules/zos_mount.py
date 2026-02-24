@@ -323,7 +323,7 @@ notes:
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
     - Uncataloged data sets can be cataloged using the L(zos_data_set,./zos_data_set.html) module.
 seealso:
-    - module: zos_data_set
+    - module: ibm.ibm_zos_core.zos_data_set
 """
 
 EXAMPLES = r"""
@@ -572,6 +572,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 try:
     from zoautil_py import datasets, zoau_io
@@ -765,6 +768,7 @@ def run_module(module, arg_def):
         name = persistent.get("name").upper()
         marker = persistent.get("marker")
         backup = persistent.get("backup")
+
         if backup:
             if persistent.get("backup_name"):
                 backup_name = persistent.get("backup_name").upper()
@@ -1192,6 +1196,7 @@ def main():
         ),
         supports_check_mode=True,
     )
+    validate_dependencies(module)
 
     arg_def = dict(
         src=dict(arg_type="data_set", required=True),

@@ -149,7 +149,7 @@ def copy_gdg2uss(src, dest, binary=False, asa_text=False):
         True if all copies were successful, False otherwise.
     """
     src_view = gdgs.GenerationDataGroupView(src)
-    generations = src_view.generations()
+    generations = src_view.generations
 
     copy_args = {
         "options": ""

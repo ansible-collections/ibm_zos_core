@@ -181,7 +181,7 @@ options:
         required: false
   dfp:
     description:
-      - Options that set DFP attributes from the Storage Management Subsytem.
+      - Options that set DFP attributes from the Storage Management Subsystem.
     required: false
     type: dict
     suboptions:
@@ -282,7 +282,7 @@ options:
         description:
           - Maximum number of bytes of nonshared memory that can be allocated
             by the user.
-          - Must be a number between 0 and 16,777,215 subfixed by a unit.
+          - Must be a number between 0 and 16,777,215 suffixed by a unit.
           - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
           - An empty string will delete the current limit set.
@@ -292,7 +292,7 @@ options:
         description:
           - Maximum number of bytes of shared memory that can be allocated
             by the user.
-          - Must be a number between 1 and 16,777,215 subfixed by a unit.
+          - Must be a number between 1 and 16,777,215 suffixed by a unit.
           - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
           - An empty string will delete the current limit set.

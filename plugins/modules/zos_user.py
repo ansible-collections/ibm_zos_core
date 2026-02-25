@@ -1610,7 +1610,7 @@ class RACFHandler():
             percent_used = int(percent_used_search[2])
             database_used_space = math.ceil((database_total_space * percent_used) / 100)
         except Exception as err:
-            return 1, "", f"An error ocurred while running the IRRUT200 utility: {traceback.format_exc()}", None
+            return 1, "", f"An error occurred while running the IRRUT200 utility: {traceback.format_exc()}", None
         finally:
             # Cleaning up.
             if sysin_file and os.path.exists(sysin_file[1]):
@@ -1647,7 +1647,7 @@ class RACFHandler():
             lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
             irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
         except Exception as err:
-            return 1, "", f"An error ocurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
+            return 1, "", f"An error occurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
 
         # Third step: run IRRRID00.
         # Putting the profile we want to search for in a text file.
@@ -1776,7 +1776,7 @@ class RACFHandler():
             self.dump_name = dump_data_set if self.keep_dump else None
 
         except Exception as err:
-            return 1, "", f"An error ocurred while running the IRRRID00 utility: {traceback.format_exc()}", None
+            return 1, "", f"An error occurred while running the IRRRID00 utility: {traceback.format_exc()}", None
         finally:
             # Cleaning up.
             if datasets.exists(sysin_name):
@@ -3590,7 +3590,7 @@ def run_module():
     if result['rc'] == 0:
         result['changed'] = True
     else:
-        result['msg'] = 'An error ocurred while executing the RACF command.'
+        result['msg'] = 'An error occurred while executing the RACF command.'
         module.fail_json(**result)
 
     module.exit_json(**result)

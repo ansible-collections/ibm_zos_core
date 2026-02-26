@@ -51,7 +51,7 @@ Minor Changes
    - Adds a new alias ``marker`` for option ``comment`` and warning message that ``comment`` will be deprecated in version 2.0.0.
    - Adds a new alias ``name`` for option ``data_store`` and warning message that ``data_store`` will be deprecated in version 2.0.0.
 
-- ``zos_mvs_raw`` - Adds new ``raw`` option under ``dd_data_set`` that lets the MVS program create datasets with its own DCB attributes without the user having to specify them.
+- ``zos_mvs_raw`` - Adds a new ``raw`` nodule option under ``dd_data_set`` that allows the MVS program create datasets with its own DCB attributes without the user having to specify them.
 - ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
 - ``zos_unarchive``
 

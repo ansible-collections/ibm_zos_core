@@ -584,7 +584,7 @@ seealso:
 - module: zos_fetch
 - module: zos_data_set
 - module: zos_mvs_raw
-- module: zos_tso_cmd
+- module: zos_tso_command
 """
 
 EXAMPLES = r"""

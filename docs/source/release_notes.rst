@@ -74,6 +74,7 @@ Availability
 Known Issues
 ------------
 - ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying program objects or load modules with module option ``executable=True`` may not retain an exact byte-for-byte match with source; functionality remains unaffected.
 
 
 Version 1.15.1

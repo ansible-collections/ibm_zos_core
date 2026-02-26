@@ -89,7 +89,7 @@ The z/OS managed node includes several shells, currently the only supported shel
 +---------+----------------------------+-----------------------------------------------------------+-------------------+-------------------+
 | Version | Controller                 | Managed Node                                              | GA                | End of Life       |
 +=========+============================+===========================================================+===================+===================+
-| 1.16.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R5 - V3Rx                                      | TBD               | TBD               |
+| 1.16.x  |- `ansible-core`_ >=2.16.x  |- `z/OS`_ V2R5 - V3Rx                                      | TBD               | TBD               |
 |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                            |                   |                   |
 |         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_                    |                   |                   |
 |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.9, <1.4.0       |                   |                   |

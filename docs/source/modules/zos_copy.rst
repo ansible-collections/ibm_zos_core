@@ -956,7 +956,7 @@ See Also
    - :ref:`zos_fetch_module`
    - :ref:`zos_data_set_module`
    - :ref:`zos_mvs_raw_module`
-   - :ref:`zos_tso_cmd_module`
+   - :ref:`zos_tso_command_module`
 
 
 

@@ -229,7 +229,6 @@ See Also
 
 .. seealso::
 
-   - :ref:`ansible.builtin.stat_module`
    - :ref:`zos_find_module`
    - :ref:`zos_gather_facts_module`
 

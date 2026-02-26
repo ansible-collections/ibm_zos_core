@@ -12,12 +12,12 @@ Version 1.16.0
 Minor Changes
 -------------
 
-- ``zos_apf`` - Adds new alias ``target`` for ``data_set_name`` and a warning message that it will be deprecated on 2.0.0.
+- ``zos_apf`` - Adds a new alias ``target`` for option ``data_set_name`` and a warning message that ``data_set_name`` will be deprecated in version 2.0.0.
 - ``zos_archive``
 
-   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0.
-   - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0.
-   - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0.
+   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and a warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``options`` for option ``format_options`` and a warning message that ``format_options`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``type`` for option ``name`` and a warning message that ``name`` will be deprecated in version 2.0.0.
 
 - ``zos_backup_restore``
 
@@ -26,39 +26,38 @@ Minor Changes
 
 - ``zos_copy``
 
-   - Adds a better error message that gives user a hint that copy issue can be due to a GDS part of ``src`` GDG is being used by another process.
-   - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0.
+   - Improved error message that identifies if a copy operation fails when a GDS in the ``src`` GDG being used by another process.
+   - Adds a new alias ``binary`` for option ``is_binary`` and warning message that ``is_binary`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``replace`` for option ``force`` and a warning message that ``force`` will be deprecated in version 2.0.0.
 
 - ``zos_data_set``
 
-   - Enhances error messages when creating a Generation Data Group fails.
-   - Enhances error messages when deleting a Generation Data Group fails.
-   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows uncataloging a data set without deleting it from the volume's VTOC.
+   - Improved error messages when creating or deleting a Generation Data Group fails.
+   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows a data set to be uncataloged without deleting it from the volume's VTOC.
 
-- ``zos_fetch`` - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+- ``zos_fetch`` - Adds new alias ``binary`` for option ``is_binary`` and warning message that ``is_binary`` will be deprecated in version 2.0.0.
 - ``zos_job_output``
 
-   - Adds new alias ``dd_name`` for ``ddname`` and warning message that will be alias on 2.0.0.
-   - Adds support to query SYSIN DDs from a job with new option input.
+   - Adds a new alias ``dd_name`` for option ``ddname`` and warning message that ``ddname`` will be alias on 2.0.0.
+   - Adds support to query **SYSIN DDs** from a job with module option ``input``.
 
 - ``zos_job_submit``
 
-   - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
-   - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.
+   - Adds a new alias ``wait_time`` for option ``wait_time_s`` and warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
+   - Adds support for jobs with ``TYPRUN=JCLHOLD`` and ``TYPRUN=HOLD``.
 
 - ``zos_mount``
 
-   - Adds new alias ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0.
+   - Adds a new alias ``marker`` for option ``comment`` and warning message that ``comment`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``name`` for option ``data_store`` and warning message that ``data_store`` will be deprecated in version 2.0.0.
 
 - ``zos_mvs_raw`` - Adds new ``raw`` option under ``dd_data_set`` that lets the MVS program create datasets with its own DCB attributes without the user having to specify them.
-- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
 - ``zos_unarchive``
 
-   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
+   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``options`` for option ``format_options`` and warning message that ``format_options`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``type`` for option ``name`` and warning message that ``name`` will be deprecated in version 2.0.0.
 
 New Modules
 -----------

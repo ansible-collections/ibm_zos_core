@@ -35,11 +35,11 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.13.x     | Released       | `1.13.x changelogs`_  | March 2025       | March 2027        | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.12.x     | Released       | `1.12.x changelogs`_  | December 2024    | December 2026     | `Full support`_         |
+| 1.12.x     | Released       | `1.12.x changelogs`_  | December 2024    | December 2026     | `Maintenance support`_  |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.11.x     | Released       | `1.11.x changelogs`_  | October 2024     | October 2026      | `Full support`_         |
+| 1.11.x     | Released       | `1.11.x changelogs`_  | October 2024     | October 2026      | `Maintenance support`_  |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.10.x     | Released       | `1.10.x changelogs`_  | June 2024        | June 2026         | `Full support`_         |
+| 1.10.x     | Released       | `1.10.x changelogs`_  | June 2024        | June 2026         | `Maintenance support`_  |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 
 .. .............................................................................
@@ -62,4 +62,6 @@ its critical dates, and which type of support it's currently eligible for.
 .. _Full support:
     ../../../collections_content/collection-life-cycles.html#life-cycle-phase
 .. _Maintenance support:
+    ../../../collections_content/collection-life-cycles.html#life-cycle-phase
+.. _End of Life:
     ../../../collections_content/collection-life-cycles.html#life-cycle-phase

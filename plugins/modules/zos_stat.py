@@ -161,7 +161,6 @@ notes:
     the query operation.
 
 seealso:
-  - module: ansible.builtin.stat
   - module: zos_find
   - module: zos_gather_facts
 """

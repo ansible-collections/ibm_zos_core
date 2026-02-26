@@ -35,7 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
-        - This option doesn't accept the use of wilcards (? and *).
+        - This option doesn't accept the use of wildcards (\? and \*).
     type: str
     required: true
     aliases:

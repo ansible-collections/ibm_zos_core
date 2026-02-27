@@ -1048,7 +1048,7 @@ EXAMPLES = r"""
     name: newgrp
     operation: purge
     scope: group
-    database: racf_db     
+    database: racf_db
 """
 
 RETURN = r"""

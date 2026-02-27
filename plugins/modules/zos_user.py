@@ -1035,6 +1035,20 @@ EXAMPLES = r"""
     name: usergrp
     operation: delete
     scope: group
+
+- name: Purge user from RACF database
+  zos_user:
+    name: user
+    operation: purge
+    scope: user
+    database: racf_db
+
+- name: Purge group from RACF database
+  zos_user:
+    name: newgrp
+    operation: purge
+    scope: group
+    database: racf_db     
 """
 
 RETURN = r"""

@@ -39,7 +39,7 @@ Minor Changes
 - ``zos_job_output``
 
    - Adds a new alias ``dd_name`` for option ``ddname`` and warning message that ``ddname`` will be alias on 2.0.0.
-   - Adds support to query **SYSIN DDs** from a job with module option ``input``.
+   - Adds support to query **SYSIN DDs** from a job with module option ``sysin_dd``.
 
 - ``zos_job_submit``
 

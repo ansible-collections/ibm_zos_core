@@ -1062,7 +1062,7 @@ releases:
       - zos_job_output - Adds new alias ``dd_name`` for ``ddname`` and warning message
         that will be alias on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
       - zos_job_output - Adds support to query SYSIN DDs from a job with new option
-        input. (https://github.com/ansible-collections/ibm_zos_core/pull/2207)
+        ``sysin_dd``. (https://github.com/ansible-collections/ibm_zos_core/pull/2207)
       - zos_job_submit - Adds new alias ``wait_time`` for ``wait_time_s`` and warning
         message that will be deprecated on 2.0.0. (https://github.com/ansible-collections/ibm_zos_core/pull/2353).
       - zos_job_submit - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.

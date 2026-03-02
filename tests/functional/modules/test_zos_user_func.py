@@ -2813,7 +2813,8 @@ def test_user_update_login_restrictions(ansible_zos_module):
 
 def test_user_update_operator_authority_and_settings(ansible_zos_module):
     """
-    Test: Update operator authority and basic settings -authority, cmd_system, search_key, migration_id, display.
+    Test: Update operator authority and basic settings -authority, 
+    cmd_system, search_key, migration_id, display.
     """
     hosts = ansible_zos_module
     user_name = generate_random_name("TSTU")
@@ -3083,7 +3084,8 @@ def test_user_update_operator_message_flags(ansible_zos_module):
 
 def test_user_update_operator_routing_and_delete(ansible_zos_module):
     """
-    Test: Update operator routing messages and delete segment - routing_msgs (single/multiple), delete.
+    Test: Update operator routing messages and delete segment - 
+    routing_msgs (single/multiple), delete.
     """
     hosts = ansible_zos_module
     user_name = generate_random_name("TSTU")
@@ -3161,4 +3163,786 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
 
 # ============================================================================
 # END OF USER UPDATE TESTS
+# ============================================================================
+# ============================================================================
+# USER CONNECT TESTS
+# ============================================================================
+
+def test_user_connect_basic_authorities(ansible_zos_module):
+    """
+    Test: Connect user to group with different authority levels.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect with defaults (no authority specified)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert f"CONNECT ({user_name})" in cmd
+            assert f"GROUP({group_name})" in cmd
+        
+        # Test different authority levels
+        authorities = ["use", "create", "connect", "join"]
+        for auth in authorities:
+            test_user = generate_random_name("TSTU")
+            hosts.all.zos_user(name=test_user, operation="create", scope="user")
+            
+            results = hosts.all.zos_user(
+                name=test_user,
+                operation="connect",
+                scope="user",
+                connect={"group_name": group_name, "authority": auth}
+            )
+            
+            for result in results.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("rc") == 0
+                assert result.get("num_entities_modified") == 1
+                assert test_user in result.get("entities_modified", [])
+                assert f"AUTHORITY({auth})" in result.get("cmd", "")
+            
+            cleanup_user(hosts, test_user)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_universal_access(ansible_zos_module):
+    """
+    Test: Connect user with different universal access (UACC) levels.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        
+        # Test all UACC levels
+        uacc_levels = ["none", "read", "update", "control", "alter"]
+        
+        for uacc in uacc_levels:
+            user_name = generate_random_name("TSTU")
+            hosts.all.zos_user(name=user_name, operation="create", scope="user")
+            
+            results = hosts.all.zos_user(
+                name=user_name,
+                operation="connect",
+                scope="user",
+                connect={"group_name": group_name, "universal_access": uacc}
+            )
+            
+            for result in results.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("rc") == 0
+                assert result.get("num_entities_modified") == 1
+                assert user_name in result.get("entities_modified", [])
+                assert f"UACC({uacc})" in result.get("cmd", "")
+            
+            cleanup_user(hosts, user_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_group_attributes(ansible_zos_module):
+    """
+    Test: Connect user with group account and operations attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        
+        # Test group_account enabled
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "group_account": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "GRPACC" in cmd and not "NOGRPACC" in cmd
+        
+        # Test group_account disabled
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "group_account": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NOGRPACC" in result.get("cmd", "")
+        
+        # Test group_operations enabled
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "group_operations": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "OPERATIONS" in cmd and not "NOOPERATIONS" in cmd
+        
+        # Test group_operations disabled
+        user4 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user4, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user4,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "group_operations": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user4 in result.get("entities_modified", [])
+            assert "NOOPERATIONS" in result.get("cmd", "")
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        cleanup_user(hosts, user4)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_special_attributes(ansible_zos_module):
+    """
+    Test: Connect user with auditor, ADSP, and special attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        
+        # Test auditor enabled
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "auditor": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUDITOR" in cmd
+            assert "NOAUDITOR" not in cmd
+        
+        # Test ADSP enabled
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "adsp_attribute": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "ADSP" in cmd
+            assert "NOADSP" not in cmd
+        
+        # Test special enabled
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name, "special": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_with_owner(ansible_zos_module):
+    """
+    Test: Connect user with specific owner.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    owner_group = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=owner_group, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect with specific owner
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            general={"owner": owner_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"OWNER({owner_group})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+        cleanup_group(hosts, owner_group)
+
+
+def test_user_connect_with_restrictions(ansible_zos_module):
+    """
+    Test: Connect user with revoke/resume dates and deletion.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    # Generate dynamic dates for testing
+    today = datetime.now()
+    revoke_date1 = (today + timedelta(days=10)).strftime("%-m/%-d/%y")
+    resume_date1 = (today + timedelta(days=15)).strftime("%-m/%-d/%y")
+    revoke_date2 = (today + timedelta(days=30)).strftime("%-m/%-d/%y")
+    resume_date2 = (today + timedelta(days=35)).strftime("%-m/%-d/%y")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect with revoke date
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            restrictions={"revoke": revoke_date1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"REVOKE({revoke_date1})" in result.get("cmd", "")
+        
+        # Connect with resume date
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            restrictions={"resume": resume_date1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"RESUME({resume_date1})" in result.get("cmd", "")
+        
+        # Connect with both revoke and resume
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            restrictions={"revoke": revoke_date2, "resume": resume_date2}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert f"REVOKE({revoke_date2})" in cmd
+            assert f"RESUME({resume_date2})" in cmd
+        
+        # Delete resume date
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            restrictions={"delete_resume": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NORESUME" in result.get("cmd", "")
+        
+        # Delete revoke date
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name},
+            restrictions={"delete_revoke": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NOREVOKE" in result.get("cmd", "")
+        
+        cleanup_user(hosts, user2)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_combined_attributes(ansible_zos_module):
+    """
+    Test: Connect user with multiple combined attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    owner_group = generate_random_name("TSTG")
+    
+    try:
+        # Create groups
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=owner_group, operation="create", scope="group")
+        
+        # Test authority and UACC
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group_name,
+                "authority": "create",
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUTHORITY(create)" in cmd
+            assert "UACC(read)" in cmd
+        
+        # Test all group attributes
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group_name,
+                "group_account": True,
+                "group_operations": True
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+        
+        # Test comprehensive attributes
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, operation="create", scope="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group_name,
+                "authority": "create",
+                "universal_access": "update",
+                "group_account": True,
+                "group_operations": True,
+                "auditor": False,
+                "adsp_attribute": False,
+                "special": False
+            },
+            general={"owner": owner_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUTHORITY(create)" in cmd
+            assert "UACC(update)" in cmd
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+            assert f"OWNER({owner_group})" in cmd
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+        cleanup_group(hosts, owner_group)
+
+
+def test_user_connect_multiple_groups(ansible_zos_module):
+    """
+    Test: Connect user to multiple groups.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group1, operation="create", scope="group")
+        hosts.all.zos_user(name=group2, operation="create", scope="group")
+        hosts.all.zos_user(name=group3, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect to first group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group1,
+                "authority": "create",
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group1})" in result.get("cmd", "")
+        
+        # Connect to second group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group2,
+                "authority": "use",
+                "universal_access": "none"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group2})" in result.get("cmd", "")
+        
+        # Connect to third group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={
+                "group_name": group3,
+                "authority": "join"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group3})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+
+# ============================================================================
+# USER REMOVE Tests
+# ============================================================================
+
+def test_user_remove_from_group(ansible_zos_module):
+    """
+    Test: Remove user from existing group.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect user to group
+        hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        # Remove user from group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"REMOVE ({user_name})" in cmd
+            assert f"GROUP({group_name})" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_remove_error_scenarios(ansible_zos_module):
+    """
+    Test: Remove user from non-existing group and already removed group.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    nonexist_group = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+        
+        # Connect user to group
+        hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        # Try to remove from non-existing group (should fail)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": nonexist_group}
+        )
+        
+        for result in results.contacted.values():
+            # Expect failure - user not connected to non-existing group
+            assert result.get("changed") is False
+            assert result.get("rc") == 4
+            assert f"{user_name} WAS NOT CONNECTED TO GROUP" in result.get("stdout", "")
+        
+        # Remove user from group (first time - should succeed)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Try to remove again (should fail - already removed)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            # Expect failure - user already removed
+            assert result.get("rc") == 4
+            assert result.get("changed") is False
+            assert f"{user_name} WAS NOT CONNECTED TO GROUP" in result.get("stdout", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_remove_from_multiple_groups(ansible_zos_module):
+    """
+    Test: Remove user from multiple groups.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group1, operation="create", scope="group")
+        hosts.all.zos_user(name=group2, operation="create", scope="group")
+        hosts.all.zos_user(name=group3, operation="create", scope="group")
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+
+        print(user_name) 
+        
+        # Connect user to all groups
+        for group in [group1, group2, group3]:
+            hosts.all.zos_user(
+                name=user_name,
+                operation="connect",
+                scope="user",
+                connect={"group_name": group}
+            )
+
+        
+        # Remove from first group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group1})" in result.get("cmd", "")
+        
+        # Remove from second group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group2}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group2})" in result.get("cmd", "")
+        
+        # Remove from third group
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="remove",
+            scope="user",
+            connect={"group_name": group3}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group3})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+# ============================================================================
+# END OF USER CONNECT/REMOVE TESTS
 # ============================================================================

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2025, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,6 +21,7 @@ module: zos_user
 version_added: '2.0.0'
 author:
   - "Alex Moreno (@rexemin)"
+  - "Yogesh Rana (@yrana17)"
 short_description: Manage user and group profiles in RACF
 description:
   - The L(zos_user,./zos_user.html) module executes RACF TSO commands that can manage

@@ -97,6 +97,7 @@ build_ignore:
   - tests/sanity/ignore-2.12.txt
   - tests/sanity/ignore-2.13.txt
   - tests/sanity/ignore-2.14.txt
+  - tests/sanity/ignore-2.15.txt
   - venv*
   - ansible_collections
   - '*.log'

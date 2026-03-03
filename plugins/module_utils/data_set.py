@@ -2562,7 +2562,7 @@ class DataSetUtils(object):
             bool:  If the data_set is in dsp=shr
         """
         data_set_disp = f"{data_set},{disposition}"
-        dd = {"dd" : data_set_disp}
+        dd = {"dd": data_set_disp}
         rc, stdput, stderr = mvs_cmd.iefbr14(dds=dd)
 
         if rc != 0:
@@ -3007,9 +3007,9 @@ class GenerationDataGroup():
                 # Now, check if it's the specific exception we want to handle.
                 if isinstance(e, GenerationDataGroupCreateException):
                     stderr = getattr(e.response, 'stderr_response', '')
-                    if "BGYSC5906E" in stderr :
+                    if "BGYSC5906E" in stderr:
                         raise GenerationDataGroupCreateError(msg="FIFO creation failed: the system may not support FIFO datasets or is not configured for it.")
-                    elif "BGYSC6104E" in stderr :
+                    elif "BGYSC6104E" in stderr:
                         raise GenerationDataGroupCreateError(msg="GDG creation failed: 'purge=true' requires 'scratch=true'.")
                     else:
                         raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}")

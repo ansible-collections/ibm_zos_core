@@ -3946,3 +3946,388 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
 # ============================================================================
 # END OF USER CONNECT/REMOVE TESTS
 # ============================================================================
+
+
+# ============================================================================
+# USER DELETE AND PURGE TESTS
+# ============================================================================
+
+def test_user_delete_with_multiple_group_connections(ansible_zos_module):
+    """
+    Test: Delete a user that is connected to multiple groups.
+    Verifies DELUSER removes the user profile and all group connections atomically.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+
+    try:
+        # Create groups
+        hosts.all.zos_user(name=group1, operation="create", scope="group")
+        hosts.all.zos_user(name=group2, operation="create", scope="group")
+        hosts.all.zos_user(name=group3, operation="create", scope="group")
+
+        # Create user
+        hosts.all.zos_user(name=user_name, operation="create", scope="user")
+
+        # Connect user to all three groups with different authorities
+        hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group1, "authority": "create", "universal_access": "read"}
+        )
+        hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group2, "authority": "use", "universal_access": "none"}
+        )
+        hosts.all.zos_user(
+            name=user_name,
+            operation="connect",
+            scope="user",
+            connect={"group_name": group3, "authority": "join", "universal_access": "none"}
+        )
+
+        # Verify user exists before deletion
+        assert verify_user_exists(hosts, user_name)
+
+        # Delete user
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="delete",
+            scope="user"
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"DELUSER ({user_name})" in result.get("cmd", "")
+            # Purge-specific fields should be at defaults for a plain delete
+            assert result.get("database_dumped") is False
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+
+def test_user_delete_nonexistent_error(ansible_zos_module):
+    """
+    Test: Attempt to delete a user that does not exist.
+    """
+    hosts = ansible_zos_module
+    nonexistent_user = "TSTU963"
+
+    # Ensure the user does not exist before the test
+    cleanup_user(hosts, nonexistent_user)
+
+    results = hosts.all.zos_user(
+        name=nonexistent_user,
+        operation="delete",
+        scope="user"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 8
+        assert result.get("num_entities_modified") == 0
+        assert result.get("entities_modified") == []
+        assert f"DELUSER ({nonexistent_user})" in result.get("cmd", "")
+        assert "INVALID USERID" in result.get("stdout", "")
+
+
+def test_user_purge_default_options_and_missing_database_validation(ansible_zos_module):
+    """
+    Test: Two sub-scenarios covering the default purge path and parameter validation.
+    - Missing mandatory 'database' parameter
+    - Purge with default params. Verifies the standard purge path: database is dumped, dump is discarded after use,
+      user is fully removed from RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    user_no_db = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create users
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+        hosts.all.zos_user(
+            name=user_no_db,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Purge without 'database' should fail with arg validation error
+        results_no_db = hosts.all.zos_user(
+            name=user_no_db,
+            operation="purge",
+            scope="user"
+        )
+
+        for result in results_no_db.contacted.values():
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            msg = result.get("msg", "")
+            assert "database" in msg.lower(), (
+                f"Expected 'database' in error message, got: {msg}"
+            )
+
+        # Purge with default options (keep_dump=false, optimize_dump=true)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is True
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_user(hosts, user_no_db)
+
+
+def test_user_purge_keep_dump(ansible_zos_module):
+    """
+    Test: Purge user with keep_dump=true and optimize_dump=true.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with keep_dump=true, optimize_dump=true
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            # dump_name must be a non-empty string when keep_dump=true
+            dump_name = result.get("dump_name")
+            assert dump_name is not None, "dump_name should be returned when keep_dump=true"
+            assert isinstance(dump_name, str) and len(dump_name) > 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("keep_dump") is True
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is True
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_lockinput_mode(ansible_zos_module):
+    """
+    Test: PURGE-U - Purge user with optimize_dump=false (LOCKINPUT mode).
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Purge with optimize_dump=false (LOCKINPUT mode)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=False
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            # Confirm LOCKINPUT mode was used (optimize_dump=false)
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is False
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_no_exec_explicit_false(ansible_zos_module):
+    """
+    Test: Purge with no_exec explicitly set to False.
+    Verifies that IRRRID00 executes the generated CLIST immediately,
+    resulting in the user being fully removed from RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with no_exec=false
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            no_exec=False
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("no_exec") is False
+            stdout = result.get("stdout", "")
+            assert "DELUSER" in stdout, "stdout should contain the executed DELUSER command"
+            assert not re.search(r"^\s*EXIT\s*$", stdout, re.MULTILINE), (
+                "EXIT statement should not be present when no_exec=false"
+            )
+
+        # user must not be present
+        assert not verify_user_exists(hosts, user_name), (
+            "User should be removed from RACF after no_exec=false purge"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_no_exec_true(ansible_zos_module):
+    """
+    Test: Dry-run purge(no_exec=true): IRRRID00 generates the CLIST
+    with removal commands but does NOT execute them (EXIT statement is injected).
+    The user profile must still exist in RACF after the call.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Verify user exists before dry-run
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with no_exec=true (dry-run)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            no_exec=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            # no_exec=true
+            assert result.get("num_entities_modified") == 0
+            assert result.get("entities_modified") == []
+            stdout = result.get("stdout", "")
+            assert re.search(r"^\s*EXIT\s*$", stdout, re.MULTILINE), (
+                "CLIST should contain standalone EXIT statement"
+            )
+            assert "DELUSER" in stdout, "CLIST should contain DELUSER command"
+            assert result.get("invocation", {}).get("module_args", {}).get("no_exec") is True
+
+        # user must still exist because no_exec=true
+        assert verify_user_exists(hosts, user_name), (
+            "User should still exist in RACF after no_exec=true purge"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+# ============================================================================
+# END OF USER DELETE AND PURGE TESTS
+# ============================================================================

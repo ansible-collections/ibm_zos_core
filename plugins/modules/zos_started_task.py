@@ -483,7 +483,7 @@ import re
 import math
 import time
 from datetime import datetime, timedelta, timezone
-import re
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -1220,7 +1220,7 @@ def fetch_logs(command, before_time):
 def get_task_logs(task_id):
     try:
         task_logs = jobs.read_output(task_id)
-    except Exception as err:
+    except Exception:
         return ""
 
     return task_logs

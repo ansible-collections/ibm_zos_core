@@ -1215,7 +1215,7 @@ class CopyHandler(object):
                     success = False
             except zoau_exceptions.ZOAUException as e:
                 stderr = getattr(e.response, 'stderr_response', str(e))
-                if "BGYSC0514E" in stderr :
+                if "BGYSC0514E" in stderr:
                     raise GenerationDataGroupCreateError(
                         msg=(
                             "BGYSC0514E An error occurred while attempting to define the file."

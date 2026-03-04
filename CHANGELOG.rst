@@ -10,7 +10,7 @@ v1.16.0
 Release Summary
 ---------------
 
-Release Date: '2026-02-02'
+Release Date: '2026-03-04'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review

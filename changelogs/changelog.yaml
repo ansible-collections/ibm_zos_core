@@ -1014,7 +1014,7 @@ releases:
     release_date: '2025-11-18'
   1.16.0:
     changes:
-      release_summary: 'Release Date: ''2026-02-02''
+      release_summary: 'Release Date: ''2026-03-04''
 
         This changelog describes all changes made to the modules and plugins included
 

@@ -2103,8 +2103,8 @@ class UserHandler(RACFHandler):
         (('operator', 'search_key'), 'length', ((0, 8),)),
         (('operator', 'msg_storage'), 'range', (1, 2000, 0)),
         (('restrictions', 'time'), 'format', ('^([01]?[0-9]|2[0-3])[0-5][0-9]:([01]?[0-9]|2[0-3])[0-5][0-9]$', 'anytime')),
-        (('restrictions', 'resume'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{2})$',)),
-        (('restrictions', 'revoke'), 'format', ('^([0]?[1-9]|1[0-2])/([0-2]?[1-9]|3[0-1])/([0-9]{2})$',)),
+        (('restrictions', 'resume'), 'format', ('^(0?[1-9]|1[0-2])/(0?[1-9]|[12][0-9]|3[01])/([0-9]{2})$',)),
+        (('restrictions', 'revoke'), 'format', ('^(0?[1-9]|1[0-2])/(0?[1-9]|[12][0-9]|3[01])/([0-9]{2})$',)),
     ]
 
     def __init__(self, module, module_params):

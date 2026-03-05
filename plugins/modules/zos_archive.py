@@ -813,7 +813,7 @@ class Archive():
             'xmit_log_data_set': self.xmit_log_data_set,
             'encoded': getattr(self, 'encoded'),
             'failed_on_encoding': getattr(self, 'failed_on_encoding'),
-            'skipped_encoding_targets' : getattr(self, 'skipped_encoding_targets'),
+            'skipped_encoding_targets': getattr(self, 'skipped_encoding_targets'),
         }
 
 
@@ -2042,9 +2042,9 @@ def run_module():
         encoding=dict(
             type='dict',
             options={
-                'from' : dict(type='str'),
-                'to' : dict(type='str'),
-                'skip_encoding' : dict(type='list', elements='str', required=False),
+                'from': dict(type='str'),
+                'to': dict(type='str'),
+                'skip_encoding': dict(type='list', elements='str', required=False),
             }
         )
     )

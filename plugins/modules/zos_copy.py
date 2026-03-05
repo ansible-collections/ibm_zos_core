@@ -584,7 +584,7 @@ seealso:
 - module: zos_fetch
 - module: zos_data_set
 - module: zos_mvs_raw
-- module: zos_tso_cmd
+- module: zos_tso_command
 """
 
 EXAMPLES = r"""
@@ -1215,7 +1215,7 @@ class CopyHandler(object):
                     success = False
             except zoau_exceptions.ZOAUException as e:
                 stderr = getattr(e.response, 'stderr_response', str(e))
-                if "BGYSC0514E" in stderr :
+                if "BGYSC0514E" in stderr:
                     raise GenerationDataGroupCreateError(
                         msg=(
                             "BGYSC0514E An error occurred while attempting to define the file."

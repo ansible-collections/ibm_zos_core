@@ -1,0 +1,66 @@
+---
+- name: Check if ruamel.yaml is already installed
+  ansible.builtin.command: python3 -m pip show ruamel.yaml
+  register: ruamel_check
+  failed_when: false
+  changed_when: false
+  delegate_to: localhost
+
+- name: Ensure ruamel.yaml is installed (for YAML parsing and playbook validation)
+  ansible.builtin.pip:
+    name: ruamel.yaml
+    state: present
+  when: ruamel_check.rc != 0
+  register: ruamel_install
+  delegate_to: localhost
+
+- name: Check Python path
+  ansible.builtin.command: which python3
+  delegate_to: localhost
+  register: python_path_result
+
+- name: Load migration changes from JSON file
+  ansible.builtin.set_fact:
+    data: "{{ lookup('file', 'dependency_config.json') | from_json }}"
+  delegate_to: localhost
+
+- name: Create logs directory when output_path is not defined
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/logs"
+    state: directory
+  when: output_path is not defined
+
+- name: Set output_path variable if it was not defined
+  ansible.builtin.set_fact:
+    output_path: "{{ playbook_dir }}/logs/migration_report.json"
+  when: output_path is not defined
+
+- name: Set ignore_response_params variable if it was not defined
+  ansible.builtin.set_fact:
+    ignore_response_params: False
+  when: ignore_response_params is not defined
+
+- name: Run playbook upgrade validator to list migration changes
+  ansible.builtin.command:
+    cmd: >
+      "{{ python_path_result.stdout }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
+      --playbook_path "{{ playbook_path }}"
+      --output_path "{{ output_path }}"
+      {% if ignore_response_params %}
+      --ignore_response_params
+      {% endif %}
+      --migration_map '{{ data | to_json }}'
+  register: result
+  delegate_to: localhost
+
+- name: Print path where validation results are stored
+  debug:
+    msg: "Results saved to file: {{ output_path }}"
+  delegate_to: localhost
+
+- name: Remove ruamel.yaml if installed by this role
+  ansible.builtin.pip:
+    name: ruamel.yaml
+    state: absent
+  when: ruamel_install is defined and ruamel_install.changed
+  delegate_to: localhost

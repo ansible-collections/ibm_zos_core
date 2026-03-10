@@ -3480,7 +3480,7 @@ def run_module(module, arg_def):
                 else:
                     src = os.path.realpath(src)
 
-                if not os.path.exists(src):
+                if os.path.exists(src):
                     is_src_dir = os.path.isdir(src)
                     is_src_file = os.path.isfile(src)
                 else:

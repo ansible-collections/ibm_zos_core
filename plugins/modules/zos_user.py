@@ -2712,12 +2712,12 @@ class UserHandler(RACFHandler):
                 cmd = f'{cmd}{restricted} '
             if access.get('security_label') is not None:
                 if access.get('security_label') != "":
-                    cmd = f"{cmd}SECLABEL('{access['security_label']}') "
+                    cmd = f"{cmd}SECLABEL({access['security_label']}) "
                 else:
                     cmd = f"{cmd}NOSECLABEL "
             if access.get('security_level') is not None:
                 if access.get('security_level') != "":
-                    cmd = f"{cmd}SECLEVEL('{access['security_level']}') "
+                    cmd = f"{cmd}SECLEVEL({access['security_level']}) "
                 else:
                     cmd = f"{cmd}NOSECLEVEL "
 

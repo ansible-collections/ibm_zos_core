@@ -368,8 +368,8 @@ notes:
 
 
 seealso:
-  - module: zos_fetch
-  - module: zos_unarchive
+  - module: ibm.ibm_zos_core.zos_fetch
+  - module: ibm.ibm_zos_core.zos_unarchive
 '''
 
 EXAMPLES = r'''

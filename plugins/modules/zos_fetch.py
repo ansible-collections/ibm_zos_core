@@ -170,8 +170,8 @@ notes:
       back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for
       transfers, if not available, the module will fail.
 seealso:
-- module: zos_data_set
-- module: zos_copy
+- module: ibm.ibm_zos_core.zos_data_set
+- module: ibm.ibm_zos_core.zos_copy
 """
 
 EXAMPLES = r"""

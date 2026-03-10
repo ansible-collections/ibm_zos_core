@@ -3447,7 +3447,7 @@ def run_module(module, arg_def):
     # characters. We'll only update these variables when they are
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
-    conv_path = src_ds_type = dest_ds_type = dest_exists = None
+    conv_path = src_ds_type = dest_ds_type = dest_exists = src_member = is_src_gds = member_name = None
     res_args = dict()
 
     # Initialize logging module
@@ -3463,6 +3463,7 @@ def run_module(module, arg_def):
         is_src_dir = False
         is_src_file = False
         is_uss = "/" in dest
+        is_src_alias = False
         # ********************************************************************
         # 1. When the source is a USS file or directory , verify that the file
         #    or directory exists and has proper read permissions.
@@ -3525,7 +3526,6 @@ def run_module(module, arg_def):
             is_mvs_src = is_data_set(src_name)
             is_src_gds = data_set.DataSet.is_gds_relative_name(src)
             src_member = is_member(src)
-            is_src_alias = False
             # Replace src with real name if src is alias
             if is_mvs_src and not src_member and not is_src_gds:
                 is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
@@ -3582,17 +3582,6 @@ def run_module(module, arg_def):
         is_dest_gds_active = False
         is_pds = is_src_dir and is_mvs_dest
         is_dest_alias = False
-        if is_mvs_dest and not copy_member and not is_dest_gds:
-            is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
-            if is_dest_alias:
-                dest = dest_base_name
-        if is_mvs_dest:
-            dest_data_set_object = data_set.MVSDataSet(dest)
-            dest = dest_data_set_object.name
-            raw_dest = dest_data_set_object.raw_name
-            is_dest_gds_active = dest_data_set_object.is_gds_active
-        
-        dest_member = data_set.extract_member_name(dest) if copy_member else None
         
         if is_uss:
             dest_ds_type = "USS"
@@ -3610,6 +3599,17 @@ def run_module(module, arg_def):
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
+            if is_mvs_dest and not copy_member and not is_dest_gds:
+                is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+                if is_dest_alias:
+                    dest = dest_base_name
+            if is_mvs_dest:
+                dest_data_set_object = data_set.MVSDataSet(dest)
+                dest = dest_data_set_object.name
+                raw_dest = dest_data_set_object.raw_name
+                is_dest_gds_active = dest_data_set_object.is_gds_active
+            
+            dest_member = data_set.extract_member_name(dest) if copy_member else None
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
 
@@ -3642,7 +3642,7 @@ def run_module(module, arg_def):
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
                 # Checking if we need to copy a member when the user requests it implicitly.
                 # src is a file and dest was just the PDS/E dataset name.
-                if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
+                if not copy_member and src_ds_type == "USS" and is_src_file:
                     copy_member = True
                     dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
                     dest = f"{dest_name}({dest_member})"
@@ -3901,7 +3901,7 @@ def run_module(module, arg_def):
             # Removing the carriage return characters
             if src_ds_type == "USS" and not binary and not executable:
                 new_src = conv_path or src
-                if os.path.isfile(new_src):
+                if is_src_file:
                     conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,

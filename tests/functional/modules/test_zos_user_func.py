@@ -4331,3 +4331,126 @@ def test_user_purge_no_exec_true(ansible_zos_module):
 # ============================================================================
 # END OF USER DELETE AND PURGE TESTS
 # ============================================================================
+
+# ============================================================================
+# USER NAME TESTS
+# ============================================================================
+
+def test_user_create_with_user_name(ansible_zos_module):
+    """
+    Test: Create user with a display name (user_name).
+    Validates that the NAME parameter is correctly set in RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    display_name = "John Doe"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={
+                "user_name": display_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            
+            # Verify the command contains NAME parameter with the display name
+            cmd = result.get("cmd", "")
+            assert f"NAME('{display_name}')" in cmd, f"Command should contain NAME('{display_name}')"
+        
+        # Verify user exists and has the correct name
+        assert verify_user_exists(hosts, user_name)
+        
+        # List user to verify NAME field
+        list_result = hosts.all.shell(cmd=f"tsocmd 'LISTUSER {user_name}'")
+        for res in list_result.contacted.values():
+            stdout = res.get("stdout", "")
+            assert "NAME=" in stdout or "NAME =" in stdout, "LISTUSER output should contain NAME field"
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_remove_user_name(ansible_zos_module):
+    """
+    Test: Update user's display name
+    Tests the flow: Joe Doe -> Joe Smith -> UNKNOWN
+    Validates that setting user_name to empty string generates NAME() command
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    initial_name = "Joe Doe"
+    updated_name = "Joe Smith"
+    
+    try:
+        # Step 1: Create user with initial display name "Joe Doe"
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={
+                "user_name": initial_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"NAME('{initial_name}')" in result.get("cmd", "")
+        
+        # Verify user exists with initial name
+        assert verify_user_exists(hosts, user_name)
+        
+        # Step 2: Update user name from "Joe Doe" to "Joe Smith"
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            scope="user",
+            general={
+                "user_name": updated_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Verify the command contains the updated name
+            cmd = result.get("cmd", "")
+            assert f"NAME('{updated_name}')" in cmd, f"Command should contain NAME('{updated_name}')"
+        
+        # Step 3: Update to remove the user name (reset to UNKNOWN)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            scope="user",
+            general={
+                "user_name": ""
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Verify the command contains NAME() without quotes (resets to UNKNOWN)
+            cmd = result.get("cmd", "")
+            assert "NAME()" in cmd, "Command should contain NAME() to reset name to UNKNOWN"
+        
+        # Verify user still exists
+        assert verify_user_exists(hosts, user_name)
+       
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
+# ============================================================================
+# END OF USER NAME TESTS
+# ============================================================================

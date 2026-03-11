@@ -109,6 +109,17 @@ options:
     required: false
     type: dict
     suboptions:
+      user_name:
+        description:
+          - Display name for the user profile(not the userid).
+          - This corresponds to the RACF NAME parameter.
+          - Maximum length of 20 characters.
+          - This option is only valid for user profiles (I(scope=user)).
+          - This option is only applicable when I(operation=create) or I(operation=update).
+          - If omitted, RACF will display UNKNOWN when listing the user.
+          - To remove/reset the user name to default (UNKNOWN), set this to an empty string C("").
+        type: str
+        required: false
       model:
         description:
           - RACF profile that will be used as a model for the profile being changed.
@@ -899,6 +910,31 @@ EXAMPLES = r"""
     name: newgrp
     operation: create
     scope: group
+
+- name: Create a user with full name and owner.
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    general:
+      user_name: John Doe
+      owner: admin
+
+- name: Update a user's full name.
+  zos_user:
+    name: existinguser
+    operation: update
+    scope: user
+    general:
+      user_name: Jane Smith
+
+- name: Remove a user's full name (sets to UNKNOWN).
+  zos_user:
+    name: existinguser
+    operation: update
+    scope: user
+    general:
+      user_name: ""    
 
 - name: Create a new group profile using another group as a model and setting its owner.
   zos_user:
@@ -2068,6 +2104,7 @@ class UserHandler(RACFHandler):
     }
 
     validations = [
+        (('general', 'user_name'), 'length', ((0, 20),)),
         (('general', 'installation_data'), 'length', ((0, 255),)),
         (('dfp', 'data_app_id'), 'length', ((0, 8),)),
         (('dfp', 'data_class'), 'length', ((0, 8),)),
@@ -2183,6 +2220,11 @@ class UserHandler(RACFHandler):
             tuple: RC, stdout and stderr from the RACF command, and the ADDUSER command.
         """
         cmd = f'ADDUSER ({self.name})'
+        
+        # Add NAME parameter if user_name is provided in general block
+        general = self.params.get('general', {})
+        if general and general.get('user_name') is not None and general.get('user_name') != "":
+            cmd = f"{cmd} NAME('{general['user_name']}')"
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
@@ -2209,6 +2251,16 @@ class UserHandler(RACFHandler):
             tuple: RC, stdout and stderr from the RACF command, and the ALTUSER command.
         """
         cmd = f'ALTUSER ({self.name})'
+        
+        # Add NAME parameter if user_name is provided in general block
+        general = self.params.get('general', {})
+        if general and general.get('user_name') is not None:
+            if general['user_name'] == "":
+                # Empty string resets NAME to default (displays as UNKNOWN)
+                cmd = f"{cmd} NAME()"
+            else:
+                # Non-empty string sets the actual name
+                cmd = f"{cmd} NAME('{general['user_name']}')"
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
@@ -2820,6 +2872,10 @@ def run_module():
                 'type': 'dict',
                 'required': False,
                 'options': {
+                    'user_name': {
+                        'type': 'str',
+                        'required': False
+                    },
                     'model': {
                         'type': 'str',
                         'required': False
@@ -3401,6 +3457,7 @@ def run_module():
             'arg_type': 'dict',
             'required': False,
             'options': {
+                'user_name': {'arg_type': 'str', 'required': False},
                 'model': {'arg_type': 'str', 'required': False},
                 'owner': {'arg_type': 'str', 'required': False},
                 'installation_data': {'arg_type': 'str', 'required': False},

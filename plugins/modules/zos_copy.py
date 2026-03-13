@@ -3456,7 +3456,6 @@ def run_module(module, arg_def):
     try:
         # Source validation
         raw_src = src
-        is_src_dir = os.path.isdir(src)
         is_src_uss = "/" in src
         is_src_dir = False
         is_src_file = False
@@ -3470,6 +3469,7 @@ def run_module(module, arg_def):
         # ********************************************************************
         if is_src_uss:
             src_ds_type = "USS"
+            is_src_dir = os.path.isdir(src)
             if remote_src:
                 # Keeping the trailing slash because the CopyHandler will do
                 # different things depending on its existence.

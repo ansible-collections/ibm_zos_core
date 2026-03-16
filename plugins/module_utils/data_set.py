@@ -365,7 +365,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None, tmphlq=None):
+    def allocate_model_data_set(ds_name, model, model_type=None, model_attributes=None, executable=False, asa_text=False, vol=None, tmphlq=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -404,7 +404,8 @@ class DataSet(object):
             raise DatasetNotFoundError(model)
 
         ds_name = extract_dsname(ds_name)
-        model_type = DataSet.data_set_type(model, tmphlq=tmphlq)
+        if model_type is None:
+            model_type = DataSet.data_set_type(model, tmphlq=tmphlq)
 
         # The break lines are absolutely necessary, a JCL code line can't
         # be longer than 72 characters. The following JCL is compatible with
@@ -416,10 +417,11 @@ class DataSet(object):
         # data sets.
         if model_type not in DataSet.MVS_VSAM:
             try:
-                data_set = datasets.list_datasets(model)[0]
+                if model_attributes is None:
+                    model_attributes = datasets.list_datasets(model)[0]
             except IndexError:
                 raise AttributeError("Could not retrieve model data set block size.")
-            block_size = data_set.block_size
+            block_size = model_attributes.block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
 
@@ -441,7 +443,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, out, err)
 
     @staticmethod
-    def allocate_gds_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None, tmphlq=None):
+    def allocate_gds_model_data_set(ds_name, model, model_attributes=None, executable=False, asa_text=False, vol=None, tmphlq=None):
         """
         Allocates a new current generation of a generation data group using a model
         data set to set its attributes.
@@ -474,7 +476,8 @@ class DataSet(object):
         DatasetCreateError
             When the allocation fails.
         """
-        model_attributes = datasets.list_datasets(model)[0]
+        if model_attributes is None:
+            model_attributes = datasets.list_datasets(model)[0]
         dataset_type = model_attributes.organization
         record_format = model_attributes.record_format
 

@@ -2873,7 +2873,8 @@ def get_attributes_of_any_dataset_created(
     src_name,
     binary,
     asa_text,
-    volume=None
+    volume=None,
+    src_attributes=None
 ):
     """Get the attributes of dataset created by the function allocate_destination_data_set
     except for VSAM.
@@ -2922,7 +2923,8 @@ def get_attributes_of_any_dataset_created(
                 volume=volume
             )
     else:
-        src_attributes = datasets.list_datasets(src_name)[0]
+        if src_attributes is None:
+            src_attributes = datasets.list_datasets(src_name)[0]
         size = int(src_attributes.total_space)
         params = get_data_set_attributes(
             dest,
@@ -2948,7 +2950,8 @@ def allocate_destination_data_set(
     is_active_gds,
     dest_data_set=None,
     volume=None,
-    tmphlq=None
+    tmphlq=None,
+    src_attributes=None
 ):
     """
     Allocates a new destination data set to copy into, erasing a preexistent one if
@@ -3045,22 +3048,22 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
-
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, replace, binary, asa_text, volume=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, model_attributes=src_attributes, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, model_attributes=src_attributes, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         else:
             temp_dump = None
             try:
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
-                src_attributes = datasets.list_datasets(src_name)[0]
+                if src_attributes is None:
+                    src_attributes = datasets.list_datasets(src_name)[0]
                 record_length = int(src_attributes.record_length)
                 temp_dump = dump_data_set_member_to_file(src, binary)
                 create_seq_dataset_from_file(
@@ -3081,11 +3084,12 @@ def allocate_destination_data_set(
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, model_attributes=src_attributes, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, model_attributes=src_attributes, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            src_attributes = datasets.list_datasets(src_name)[0]
+            if src_attributes is None:
+                src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
             record_format = src_attributes.record_format
@@ -3195,7 +3199,8 @@ def allocate_destination_data_set(
             src_name,
             binary,
             asa_text,
-            volume
+            volume,
+            src_attributes
         )
         dest_attributes = datasets.list_datasets(dest)[0]
         record_format = dest_attributes.record_format
@@ -3446,7 +3451,7 @@ def run_module(module, arg_def):
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
     conv_path = src_ds_type = dest_ds_type = dest_exists = None
-    src_member = is_src_gds = member_name = dest_name = None
+    src_member = is_src_gds = member_name = dest_name = src_attributes = None
     res_args = dict()
 
     # Initialize logging module
@@ -3862,7 +3867,8 @@ def run_module(module, arg_def):
                 is_dest_gds_active,
                 dest_data_set=dest_data_set,
                 volume=volume,
-                tmphlq=tmphlq
+                tmphlq=tmphlq,
+                src_attributes=src_attributes
             )
             if res_args["changed"]:
                 res_args["dest_created"] = True

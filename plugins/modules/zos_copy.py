@@ -3548,16 +3548,15 @@ def run_module(module, arg_def):
                 raw_src = src_data_set_object.raw_name
             
             src_name = data_set.extract_dsname(src) if src else None
-            src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
+            src_ds_type, src_attributes = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq, return_attributes=True)
             if src_ds_type is None:
                 raise NonExistentSourceError(src)
             elif src_ds_type == "UNKNOWN":
                 module.fail_json(msg=f"Source {src} exists but type cannot be determined (uncataloged dataset)")
             else:
-                if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
-                    src_attributes = datasets.list_datasets(src_name)[0]
-                    if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
-                        src_has_asa_chars = True
+                if (src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG" and 
+                    src_attributes.record_format in ('FBA', 'VBA')):
+                    src_has_asa_chars = True
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
@@ -3571,8 +3570,9 @@ def run_module(module, arg_def):
                 module.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
-            logger.debug(f"[SOURCE_PROCESSED] src={src}, src_name={src_name}, src_ds_type={src_ds_type}, is_src_dir={is_src_dir}, "
-                        f"is_src_file={is_src_file}, src_member={src_member}, is_src_alias={is_src_alias}, is_src_gds={is_src_gds}")
+
+        logger.debug(f"[SOURCE_PROCESSED] src={src}, src_ds_type={src_ds_type}, is_src_dir={is_src_dir}, "
+                    f"is_src_file={is_src_file}, src_member={src_member}, is_src_alias={is_src_alias}, is_src_gds={is_src_gds}")
 
         # Destination validation
         raw_dest = dest
@@ -3613,7 +3613,12 @@ def run_module(module, arg_def):
             
             dest_name = data_set.extract_dsname(dest)
             dest_member = data_set.extract_member_name(dest) if copy_member else None
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+            
+            # Get both type and attributes in a single call to avoid duplicate list_datasets
+            dest_ds_type, dest_attributes = data_set.DataSet.data_set_type(
+                dest_name, volume, tmphlq=tmphlq, return_attributes=True
+            )
+            
             if dest_ds_type is not None:
                 dest_exists = True
             else:
@@ -3640,10 +3645,9 @@ def run_module(module, arg_def):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
-                dest_attributes = datasets.list_datasets(dest_name)[0]
-                if dest_attributes.record_format in ('FBA', 'VBA'):
-                    dest_has_asa_chars = True
+            elif (dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and 
+                dest_ds_type != "GDG" and dest_attributes and dest_attributes.record_format in ('FBA', 'VBA')):
+                dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
                 # Checking if we need to copy a member when the user requests it implicitly.

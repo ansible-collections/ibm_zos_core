@@ -3445,7 +3445,8 @@ def run_module(module, arg_def):
     # characters. We'll only update these variables when they are
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
-    conv_path = src_ds_type = dest_ds_type = dest_exists = src_member = is_src_gds = member_name = None
+    conv_path = src_ds_type = dest_ds_type = dest_exists = None
+    src_member = is_src_gds = member_name = dest_name = None
     res_args = dict()
 
     # Initialize logging module
@@ -3469,7 +3470,6 @@ def run_module(module, arg_def):
         # ********************************************************************
         if is_src_uss:
             src_ds_type = "USS"
-            is_src_dir = os.path.isdir(src)
             if remote_src:
                 # Keeping the trailing slash because the CopyHandler will do
                 # different things depending on its existence.
@@ -3487,7 +3487,10 @@ def run_module(module, arg_def):
                     module.fail_json(msg="Source {0} is not readable".format(raw_src))
                 if mode == "preserve":
                     mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
-
+            else:
+                # For non-remote USS sources, check here
+                is_src_dir = os.path.isdir(src)
+                is_src_file = os.path.isfile(src)
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
@@ -3520,8 +3523,7 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, binary=binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            src_name = data_set.extract_dsname(src) if src else None
-            is_mvs_src = is_data_set(src_name)
+            is_mvs_src = is_data_set(data_set.extract_dsname(src))
             is_src_gds = data_set.DataSet.is_gds_relative_name(src)
             src_member = is_member(src)
             # Replace src with real name if src is alias
@@ -3545,18 +3547,17 @@ def run_module(module, arg_def):
                 src = src_data_set_object.name
                 raw_src = src_data_set_object.raw_name
             
-            src_ds_name = src
-            if not is_src_gds:
-                src_ds_name = src_name
-            if data_set.DataSet.data_set_exists(src_ds_name, tmphlq=tmphlq):
-                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
-
+            src_name = data_set.extract_dsname(src) if src else None
+            src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
+            if src_ds_type is None:
+                raise NonExistentSourceError(src)
+            elif src_ds_type == "UNKNOWN":
+                module.fail_json(msg=f"Source {src} exists but type cannot be determined (uncataloged dataset)")
+            else:
                 if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
                     if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
                         src_has_asa_chars = True
-            else:
-                raise NonExistentSourceError(src)
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
@@ -3570,12 +3571,13 @@ def run_module(module, arg_def):
                 module.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
+            logger.debug(f"[SOURCE_PROCESSED] src={src}, src_name={src_name}, src_ds_type={src_ds_type}, is_src_dir={is_src_dir}, "
+                        f"is_src_file={is_src_file}, src_member={src_member}, is_src_alias={is_src_alias}, is_src_gds={is_src_gds}")
 
         # Destination validation
         raw_dest = dest
         copy_member = is_member(dest)
-        dest_name = data_set.extract_dsname(dest)
-        is_mvs_dest = is_data_set(dest_name)
+        is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
         is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
         is_dest_gds_active = False
         is_pds = is_src_dir and is_mvs_dest
@@ -3583,6 +3585,7 @@ def run_module(module, arg_def):
         
         if is_uss:
             dest_ds_type = "USS"
+            dest_name = dest
             if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
                 src_basename = os.path.basename(src) if not content else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
@@ -3601,15 +3604,20 @@ def run_module(module, arg_def):
                 is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
                 if is_dest_alias:
                     dest = dest_base_name
+                    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
             if is_mvs_dest:
                 dest_data_set_object = data_set.MVSDataSet(dest)
                 dest = dest_data_set_object.name
                 raw_dest = dest_data_set_object.raw_name
                 is_dest_gds_active = dest_data_set_object.is_gds_active
             
+            dest_name = data_set.extract_dsname(dest)
             dest_member = data_set.extract_member_name(dest) if copy_member else None
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+            if dest_ds_type is not None:
+                dest_exists = True
+            else:
+                dest_exists = False
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3654,6 +3662,8 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+            logger.debug(f"[DEST_PROCESSED] dest={dest}, dest_name={dest_name}, dest_ds_type={dest_ds_type}, dest_exists={dest_exists}, "
+                        f"dest_member={dest_member}, is_dest_alias={is_dest_alias}, is_dest_gds={is_dest_gds}, is_dest_gds_active={is_dest_gds_active}")
 
 
     except Exception as err:
@@ -3892,6 +3902,8 @@ def run_module(module, arg_def):
 
             conv_path = copy_handler.convert_encoding(src, encoding, remote_src)
 
+        logger.debug(f"[COPY_OPERATION] src={src} -> dest={dest}, src_ds_type={src_ds_type}, dest_ds_type={dest_ds_type}, "
+                     f"dest_exists={dest_exists}, replace={replace}, force={force}")
         # ------------------------------- o -----------------------------------
         # Copy to USS file or directory
         # ---------------------------------------------------------------------

@@ -842,8 +842,10 @@ class DataSet(object):
             return "LDS"
         elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
             return "RRDS"
-        else:
-            return None
+        # Check if uncataloged dataset exists
+        if volume is not None and DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq):
+            return "UNKNOWN"
+        return None
 
     @staticmethod
     def _get_listcat_data(name, tmphlq=None):

@@ -815,7 +815,7 @@ class DataSet(object):
             The volume the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
-        return_attributes : bool, optional
+        return_attributes : bool
             If True, returns a tuple of (type, attributes) where attributes
             is the dataset object from list_datasets (or None for VSAM/GDG).
             If False (default), returns only the type for backward compatibility.
@@ -864,14 +864,14 @@ class DataSet(object):
             vsam_type = "LDS"
         elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
             vsam_type = "RRDS"
-        
+
         if vsam_type:
             return (vsam_type, None) if return_attributes else vsam_type
-            
+
         # Check if uncataloged dataset exists
         if volume is not None and DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq):
             return ("UNKNOWN", None) if return_attributes else "UNKNOWN"
-        
+
         return (None, None) if return_attributes else None
 
     @staticmethod

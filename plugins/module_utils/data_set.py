@@ -381,6 +381,14 @@ class DataSet(object):
         model : str
             The name of the data set whose allocation parameters
             should be used to allocate the new data set 'ds_name'.
+        model_type : str
+            The type of the model data set (e.g., 'PS', 'PO', 'VSAM').
+            If not provided, it will be automatically determined from the model data set.
+        model_attributes : list
+            The attributes list from datasets.list_datasets() containing
+            model data set properties. The first element will be used to retrieve
+            properties such as block_size, record_format, etc.
+            If not provided, it will be automatically retrieved from the model data set.
         executable : bool
             Whether the new data set should support executables.
         asa_text : bool
@@ -456,6 +464,12 @@ class DataSet(object):
         model : str
             The name of the data set whose allocation parameters
             should be used to allocate the new data set.
+        model_attributes : list
+            The attributes list from datasets.list_datasets() containing
+            model data set properties. The first element will be used to retrieve
+            properties such as organization, record_format, block_size, record_length,
+            and total_space. If not provided, it will be automatically retrieved
+            from the model data set.
         executable : bool, optional
             Whether the new data set should support executables.
         asa_text : bool, optional

@@ -1458,15 +1458,19 @@ class RACFHandler():
             if self.params[block] is None:
                 continue
 
-            # Added isinstance condition check to prevent iteration over bool values
-            if not isinstance(self.params[block], bool):
-                for option in self.params[block]:
-                    if self.params[block][option] == "":
-                        del self.params[block][option]
-                    elif isinstance(self.params[block][option], dict):
-                        for suboption in self.params[block][option]:
-                            if self.params[block][option][suboption] == "":
-                                del self.params[block][option][suboption]
+            # Only process dictionary blocks
+            if isinstance(self.params[block], dict):
+                # Collect keys to delete to avoid modifying dict during iteration
+                keys_to_delete = [k for k, v in self.params[block].items() if v == ""]
+                for k in keys_to_delete:
+                    del self.params[block][k]
+                
+                # Handle nested dictionaries - iterate over remaining keys after deletion
+                for option in list(self.params[block].keys()):
+                    if isinstance(self.params[block][option], dict):
+                        subkeys_to_delete = [sk for sk, sv in self.params[block][option].items() if sv == ""]
+                        for sk in subkeys_to_delete:
+                            del self.params[block][option][sk]
 
     def filter_block(self, block, allowed_options):
         """Returns a new dictionary with values from only the allowed

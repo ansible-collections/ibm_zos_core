@@ -162,8 +162,8 @@ notes:
 
 seealso:
   - module: ansible.builtin.stat
-  - module: zos_find
-  - module: zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_find
+  - module: ibm.ibm_zos_core.zos_gather_facts
 """
 
 EXAMPLES = r"""

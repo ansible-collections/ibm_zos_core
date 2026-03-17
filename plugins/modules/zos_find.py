@@ -203,7 +203,7 @@ notes:
   - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
 seealso:
-- module: zos_data_set
+- module: ibm.ibm_zos_core.zos_data_set
 """
 
 

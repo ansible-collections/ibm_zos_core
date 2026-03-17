@@ -159,7 +159,7 @@ def walk_tasks(tasks, play_name):
 
         if module_name:
             # Get params from module key or args key
-            params = task.get(module_name, {})      
+            params = task.get(module_name, {})
             yield {
                 "play_name": play_name,
                 "task_name": task_name,
@@ -196,7 +196,7 @@ def get_tasks_from_playbook(playbook_path):
     for play in playbook:
         if not isinstance(play, dict):
             continue
-        
+
         # Check if this is a play (has 'hosts' or 'tasks' key) or a direct task
         if "hosts" in play or "tasks" in play:
             # This is a proper play structure
@@ -281,7 +281,7 @@ def main():
     output_path = args.output_path
     ignore_response_params = args.ignore_response_params
     all_results = []
-    
+
     # Check if playbook_path is a file or directory
     if os.path.isfile(playbook_path):
         # Single file - validate it directly

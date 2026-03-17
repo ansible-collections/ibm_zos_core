@@ -888,6 +888,61 @@ options:
           - This option is mutually exclusive with I(revoke).
         type: bool
         required: false
+  password_mgmt:
+    description:
+      - Options that manage password and passphrase settings for a user profile.
+      - These options are only valid for user profiles (I(scope=user)).
+      - These options are only applicable when I(operation=create) or I(operation=update).
+    required: false
+    type: dict
+    suboptions:
+      password:
+        description:
+          - Password for the user.
+          - Maximum length of 8 characters.
+          - When creating a user, if neither I(password) nor I(passphrase) is specified,
+            RACF will not assign a password and the user will need to be assigned one
+            before they can log in.
+          - When a password is set for the first time during user creation, RACF marks it
+            as EXPIRED by default. To change this, update the user with I(expired=false)
+            after creation.
+          - An empty string will remove the password and set it to NOPASSWORD.
+          - It is recommended to use Ansible Vault to encrypt this value.
+          - This option is mutually exclusive with I(passphrase).
+        type: str
+        required: false
+        no_log: true
+      passphrase:
+        description:
+          - Passphrase for the user.
+          - Minimum length of 9 characters, maximum length of 100 characters.
+          - When creating a user, if neither I(password) nor I(passphrase) is specified,
+            RACF will not assign a password and the user will need to be assigned one
+            before they can log in.
+          - When a passphrase is set for the first time during user creation, RACF marks it
+            as EXPIRED by default. To change this, update the user with I(expired=false)
+            after creation.
+          - An empty string will remove the passphrase and set it to NOPHRASE.
+          - It is recommended to use Ansible Vault to encrypt this value.
+          - This option is mutually exclusive with I(password).
+        type: str
+        required: false
+        no_log: true
+      expired:
+        description:
+          - Whether the password or passphrase should be marked as expired.
+          - When C(true), the user will be required to change their password/passphrase
+            on next login.
+          - When C(false), the password/passphrase will be marked as NOEXPIRED.
+          - This option is only applicable when I(operation=update).
+          - This option B(must) be used together with I(password) or I(passphrase) in the
+            same task. RACF requires a password/passphrase to be specified when using
+            EXPIRED/NOEXPIRED.
+          - When a password/passphrase is set for the first time during user creation,
+            RACF automatically marks it as EXPIRED. To change it to NOEXPIRED, you must
+            update the user and specify the same password/passphrase again with C(expired=false).
+        type: bool
+        required: false
 
 attributes:
   action:
@@ -1086,6 +1141,34 @@ EXAMPLES = r"""
     operation: purge
     scope: group
     database: racf_db
+
+- name: Create a user with password (will be marked as EXPIRED by default)
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    password_mgmt:
+      password: "{{ user_password }}"
+
+- name: Create a user with passphrase (will be marked as EXPIRED by default)
+  zos_user:
+    name: newuser
+    operation: create
+    scope: user
+    password_mgmt:
+      passphrase: "{{ user_passphrase }}"
+
+- name: Update user password to NOEXPIRED
+  zos_user:
+    name: newuser
+    operation: update
+    scope: user
+    password_mgmt:
+      password: "{{ user_password }}"
+      expired: false
+    omvs:
+      uid: auto  
+
 """
 
 RETURN = r"""
@@ -2070,7 +2153,8 @@ class UserHandler(RACFHandler):
                               'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs',
                               'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs',
                               'responses')),
-                ('restrictions', ('days', 'time', 'resume', 'revoke'))
+                ('restrictions', ('days', 'time', 'resume', 'revoke')),
+                ('password_mgmt', ('password', 'passphrase', 'expired'))
             ]
         },
         'update': {},
@@ -2095,7 +2179,7 @@ class UserHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions'],
+        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions', 'password_mgmt'],
         'delete': [],
         'purge': [],
         'list': [],
@@ -2142,6 +2226,9 @@ class UserHandler(RACFHandler):
         (('restrictions', 'time'), 'format', ('^([01]?[0-9]|2[0-3])[0-5][0-9]:([01]?[0-9]|2[0-3])[0-5][0-9]$', 'anytime')),
         (('restrictions', 'resume'), 'format', ('^(0?[1-9]|1[0-2])/(0?[1-9]|[12][0-9]|3[01])/([0-9]{2})$',)),
         (('restrictions', 'revoke'), 'format', ('^(0?[1-9]|1[0-2])/(0?[1-9]|[12][0-9]|3[01])/([0-9]{2})$',)),
+        (('password_mgmt', 'password'), 'length', ((0, 8),)),
+        # passphrase validation is handled in validate_params() method
+        # to allow empty string (0) OR 9-100 chars, but not 1-8 chars
     ]
 
     def __init__(self, module, module_params):
@@ -2183,6 +2270,27 @@ class UserHandler(RACFHandler):
                 shared_size = int(shared_size[:len(shared_size) - 1])
                 if shared_size < 1 or shared_size > 16_777_215:
                     raise ValueError('Value of omvs.shared_size is outside of its range.')
+
+        # Validate password_mgmt parameters
+        if self.params.get('password_mgmt') is not None:
+            password_mgmt = self.params['password_mgmt']
+            expired = password_mgmt.get('expired')
+            password = password_mgmt.get('password')
+            passphrase = password_mgmt.get('passphrase')
+            
+            # Validate expired can only be used with password or passphrase
+            if expired is not None and password is None and passphrase is None:
+                raise ValueError(
+                    "The 'expired' parameter can only be used when 'password' or 'passphrase' is also specified. "
+                    "RACF does not allow EXPIRED/NOEXPIRED to be set independently."
+                )
+            
+            # Validate passphrase: must be empty string (for NOPHRASE) OR 9-100 chars
+            if passphrase is not None and len(passphrase) > 0:
+                if len(passphrase) < 9 or len(passphrase) > 100:
+                    raise ValueError(
+                        "Passphrase must be either empty string (to remove passphrase) or 9-100 characters long."
+                    )
 
     def execute_operation(self):
         """Given the operation and scope, it executes a RACF command.
@@ -2234,6 +2342,7 @@ class UserHandler(RACFHandler):
         cmd = f'{cmd} {self._make_access_substring_creation()}'.strip()
         cmd = f'{cmd} {self._make_restrictions_substring()}'.strip()
         cmd = f'{cmd} {self._make_operator_substring()}'.strip()
+        cmd = f'{cmd} {self._make_password_mgmt_substring()}'.strip()
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -2270,6 +2379,7 @@ class UserHandler(RACFHandler):
         cmd = f'{cmd} {self._make_access_substring_creation()}'.strip()
         cmd = f'{cmd} {self._make_restrictions_substring()}'.strip()
         cmd = f'{cmd} {self._make_operator_substring()}'.strip()
+        cmd = f'{cmd} {self._make_password_mgmt_substring()}'.strip()
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -2807,6 +2917,43 @@ class UserHandler(RACFHandler):
                 cmd = f"{cmd}REVOKE({restrictions['revoke']})"
             elif restrictions.get('delete_revoke', False):
                 cmd = f"{cmd}NOREVOKE "
+
+        return cmd
+
+    def _make_password_mgmt_substring(self):
+        """Creates a string that defines password management parameters for a user.
+
+        Returns
+        -------
+            str: Password management parameters of a RACF command.
+        """
+        cmd = ""
+        password_mgmt = self.params.get('password_mgmt')
+
+        if password_mgmt is not None:
+            # Handle password or passphrase (mutually exclusive at module level)
+            # Note: RACF does not automatically clear the opposite authentication method
+            # Users must explicitly clear passphrase when setting password (and vice versa)
+            if password_mgmt.get('password') is not None:
+                if password_mgmt['password'] == "":
+                    # Empty string removes password
+                    cmd = f"{cmd}NOPASSWORD "
+                else:
+                    cmd = f"{cmd}PASSWORD({password_mgmt['password']}) "
+            elif password_mgmt.get('passphrase') is not None:
+                if password_mgmt['passphrase'] == "":
+                    # Empty string removes passphrase
+                    cmd = f"{cmd}NOPHRASE "
+                else:
+                    cmd = f"{cmd}PHRASE('{password_mgmt['passphrase']}') "
+
+            # Handle expired flag (only for update operations)
+            if password_mgmt.get('expired') is not None:
+                if password_mgmt['expired']:
+                    cmd = f"{cmd}EXPIRED "
+                else:
+                    cmd = f"{cmd}NOEXPIRED "
+
 
         return cmd
 
@@ -3438,6 +3585,30 @@ def run_module():
                         'required': False
                     },
                 }
+            },
+            'password_mgmt': {
+                'type': 'dict',
+                'required': False,
+                'no_log': False,
+                'mutually_exclusive': [
+                    ('password', 'passphrase')
+                ],
+                'options': {
+                    'password': {
+                        'type': 'str',
+                        'required': False,
+                        'no_log': True
+                    },
+                    'passphrase': {
+                        'type': 'str',
+                        'required': False,
+                        'no_log': True
+                    },
+                    'expired': {
+                        'type': 'bool',
+                        'required': False
+                    },
+                }
             }
         },
         # Require database when operation=purge.
@@ -3626,6 +3797,15 @@ def run_module():
                 'delete_resume': {'arg_type': 'bool', 'required': False},
                 'revoke': {'arg_type': 'str', 'required': False},
                 'delete_revoke': {'arg_type': 'bool', 'required': False}
+            }
+        },
+        'password_mgmt': {
+            'arg_type': 'dict',
+            'required': False,
+            'options': {
+                'password': {'arg_type': 'str', 'required': False},
+                'passphrase': {'arg_type': 'str', 'required': False},
+                'expired': {'arg_type': 'bool', 'required': False},
             }
         }
     }

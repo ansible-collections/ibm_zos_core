@@ -1,7 +1,7 @@
 {
     "zos_apf": {
         "renamed_params": {
-            "data_set_name": "target"
+            "persistent.data_set_name": "persistent.target"
         },
         "deprecated_params": [],
         "renamed_response_params": {}
@@ -102,21 +102,15 @@
             "lines": "line_count"
         }
     },
-    "zos_copy": {
-        "renamed_params": {
-            "force_lock": "force",
-            "is_binary": "binary",
-            "force": "replace"
-        }
-    },
     "zos_job_submit": {
         "renamed_params": {
             "location": "remote_src",
             "wait_time_s": "wait_time"
         },
-        "deprecated_params": [
-            "location"
-        ],
+        "type_changed_params": {
+            "location": "string_boolean"
+        },
+        "deprecated_params": [],
         "renamed_response_params": {
             "ddnames": "dds",
             "ddnames.ddname": "dds.dd_name",

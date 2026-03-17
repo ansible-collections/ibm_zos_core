@@ -1623,39 +1623,39 @@ class RACFHandler():
         -------
             str: A portion of the parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         general = self.params.get('general')
 
         if general is not None:
             if general.get('custom_fields') is not None:
                 if general['custom_fields'].get('add') is not None:
                     custom_fields = general['custom_fields']['add']
-                    cmd = f'{cmd}CSDATA( '
+                    parts.append('CSDATA( ')
                     for field in custom_fields:
-                        cmd = f'{cmd}{field}({custom_fields[field]}) '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{field}({custom_fields[field]}) ')
+                    parts.append(') ')
                 elif general['custom_fields'].get('delete') is not None:
                     custom_fields = general['custom_fields']['delete']
-                    cmd = f'{cmd}CSDATA( '
+                    parts.append('CSDATA( ')
                     for field in custom_fields:
-                        cmd = f'{cmd}NO{field.upper()} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'NO{field.upper()} ')
+                    parts.append(') ')
                 elif general['custom_fields'].get('delete_block') is not None:
-                    cmd = f'{cmd}NOCSDATA '
+                    parts.append('NOCSDATA ')
             if general.get('installation_data') is not None:
                 if general.get('installation_data') != "":
-                    cmd = f"{cmd}DATA('{general['installation_data']}') "
+                    parts.append(f"DATA('{general['installation_data']}') ")
                 else:
-                    cmd = f"{cmd}NODATA "
+                    parts.append("NODATA ")
             if general.get('model') is not None:
                 if general.get('model') != "":
-                    cmd = f"{cmd}MODEL({general['model']}) "
+                    parts.append(f"MODEL({general['model']}) ")
                 else:
-                    cmd = f"{cmd}NOMODEL "
+                    parts.append("NOMODEL ")
             if general.get('owner') is not None and general.get('owner') != "":
-                cmd = f"{cmd}OWNER({general['owner']}) "
-
-        return cmd
+                parts.append(f"OWNER({general['owner']}) ")
+        
+        return ''.join(parts)
 
     def _make_dfp_substring(self):
         """Creates a string that defines the DFP segment of a profile.
@@ -1664,39 +1664,39 @@ class RACFHandler():
         -------
             str: DFP segment of a RACF command.
         """
-        cmd = ""
+        parts = []
         dfp = self.params.get('dfp')
 
         if dfp is not None:
             if dfp.get('delete', False):
                 return "NODFP"
 
-            cmd = f"{cmd}DFP("
+            parts.append("DFP(")
 
             if dfp.get('data_app_id') is not None:
                 if dfp.get('data_app_id') != "":
-                    cmd = f"{cmd} DATAAPPL({dfp['data_app_id']})"
+                    parts.append(f" DATAAPPL({dfp['data_app_id']})")
                 else:
-                    cmd = f"{cmd} NODATAAPPL"
+                    parts.append(" NODATAAPPL")
             if dfp.get('data_class') is not None:
                 if dfp.get('data_class') != "":
-                    cmd = f"{cmd} DATACLAS({dfp['data_class']})"
+                    parts.append(f" DATACLAS({dfp['data_class']})")
                 else:
-                    cmd = f"{cmd} NODATACLAS"
+                    parts.append(" NODATACLAS")
             if dfp.get('management_class') is not None:
                 if dfp.get('management_class') != "":
-                    cmd = f"{cmd} MGMTCLAS({dfp['management_class']})"
+                    parts.append(f" MGMTCLAS({dfp['management_class']})")
                 else:
-                    cmd = f"{cmd} NOMGMTCLAS"
+                    parts.append(" NOMGMTCLAS")
             if dfp.get('storage_class') is not None:
                 if dfp.get('storage_class') != "":
-                    cmd = f"{cmd} STORCLAS({dfp['storage_class']})"
+                    parts.append(f" STORCLAS({dfp['storage_class']})")
                 else:
-                    cmd = f"{cmd} NOSTORCLAS"
-
-            cmd = f"{cmd} )"
-
-        return cmd
+                    parts.append(" NOSTORCLAS")
+            
+            parts.append(" )")
+        
+        return ''.join(parts)
 
     def purge_profile(self):
         # First step: run the IRRUT200 utility.
@@ -2511,29 +2511,29 @@ class UserHandler(RACFHandler):
         -------
             str: LANGUAGE parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         language = self.params.get('language')
 
         if language is not None:
             if language.get('delete', False):
                 return "NOLANGUAGE"
 
-            cmd = f"{cmd}LANGUAGE("
+            parts.append("LANGUAGE(")
 
             if language.get('primary') is not None:
                 if language.get('primary') != "":
-                    cmd = f"{cmd} PRIMARY({language['primary']})"
+                    parts.append(f" PRIMARY({language['primary']})")
                 else:
-                    cmd = f"{cmd} NOPRIMARY"
+                    parts.append(" NOPRIMARY")
             if language.get('secondary') is not None:
                 if language.get('secondary') != "":
-                    cmd = f"{cmd} SECONDARY({language['secondary']})"
+                    parts.append(f" SECONDARY({language['secondary']})")
                 else:
-                    cmd = f"{cmd} NOSECONDARY"
-
-            cmd = f"{cmd} )"
-
-        return cmd
+                    parts.append(" NOSECONDARY")
+            
+            parts.append(" )")
+        
+        return ''.join(parts)
 
     def _make_omvs_substring(self):
         """Creates a string that defines the OMVS (Unix System Services) block of
@@ -2543,78 +2543,78 @@ class UserHandler(RACFHandler):
         -------
             str: OMVS parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         omvs = self.params.get('omvs')
 
         if omvs is not None:
             if omvs.get('delete', False):
                 return "NOOMVS"
 
-            cmd = f"{cmd}OMVS("
+            parts.append("OMVS(")
 
             if omvs.get('uid') == 'auto':
-                cmd = f'{cmd} AUTOUID'
+                parts.append(' AUTOUID')
             elif omvs.get('uid') != 'none' and omvs.get('uid') in ('custom', 'shared'):
-                cmd = f"{cmd} UID({omvs['custom_uid']})"
+                parts.append(f" UID({omvs['custom_uid']})")
                 if omvs['uid'] == 'shared':
-                    cmd = f'{cmd}SHARED'
+                    parts.append('SHARED')
             elif omvs.get('uid') == 'none':
-                cmd = f'{cmd} NOUID'
+                parts.append(' NOUID')
 
             if omvs.get('home') is not None:
                 if omvs.get('home') != "":
-                    cmd = f"{cmd} HOME({omvs['home']})"
+                    parts.append(f" HOME({omvs['home']})")
                 else:
-                    cmd = f"{cmd} NOHOME"
+                    parts.append(" NOHOME")
             if omvs.get('program') is not None:
                 if omvs.get('program') != "":
-                    cmd = f"{cmd} PROGRAM({omvs['program']})"
+                    parts.append(f" PROGRAM({omvs['program']})")
                 else:
-                    cmd = f"{cmd} NOPROGRAM"
+                    parts.append(" NOPROGRAM")
             if omvs.get('nonshared_size') is not None:
                 if omvs.get('nonshared_size') != "":
-                    cmd = f"{cmd} MEMLIMIT({omvs['nonshared_size']})"
+                    parts.append(f" MEMLIMIT({omvs['nonshared_size']})")
                 else:
-                    cmd = f"{cmd} NOMEMLIMIT"
+                    parts.append(" NOMEMLIMIT")
             if omvs.get('shared_size') is not None:
                 if omvs.get('shared_size') != "":
-                    cmd = f"{cmd} SHMEMMAX({omvs['shared_size']})"
+                    parts.append(f" SHMEMMAX({omvs['shared_size']})")
                 else:
-                    cmd = f"{cmd} NOSHMEMMAX"
+                    parts.append(" NOSHMEMMAX")
             if omvs.get('addr_space_size') is not None:
                 if omvs.get('addr_space_size') != 0:
-                    cmd = f"{cmd} ASSIZEMAX({omvs['addr_space_size']})"
+                    parts.append(f" ASSIZEMAX({omvs['addr_space_size']})")
                 else:
-                    cmd = f"{cmd} NOASSIZEMAX"
+                    parts.append(" NOASSIZEMAX")
             if omvs.get('map_size') is not None:
                 if omvs.get('map_size') != 0:
-                    cmd = f"{cmd} MMAPAREAMAX({omvs['map_size']})"
+                    parts.append(f" MMAPAREAMAX({omvs['map_size']})")
                 else:
-                    cmd = f"{cmd} NOMMAPAREAMAX"
+                    parts.append(" NOMMAPAREAMAX")
             if omvs.get('max_procs') is not None:
                 if omvs.get('max_procs') != 0:
-                    cmd = f"{cmd} PROCUSERMAX({omvs['max_procs']})"
+                    parts.append(f" PROCUSERMAX({omvs['max_procs']})")
                 else:
-                    cmd = f"{cmd} NOPROCUSERMAX"
+                    parts.append(" NOPROCUSERMAX")
             if omvs.get('max_threads') is not None:
                 if omvs.get('max_threads') != -1:
-                    cmd = f"{cmd} THREADSMAX({omvs['max_threads']})"
+                    parts.append(f" THREADSMAX({omvs['max_threads']})")
                 else:
-                    cmd = f"{cmd} NOTHREADSMAX"
+                    parts.append(" NOTHREADSMAX")
             if omvs.get('max_cpu_time') is not None:
                 if omvs.get('max_cpu_time') != 0:
-                    cmd = f"{cmd} CPUTIMEMAX({omvs['max_cpu_time']})"
+                    parts.append(f" CPUTIMEMAX({omvs['max_cpu_time']})")
                 else:
-                    cmd = f"{cmd} NOCPUTIMEMAX"
+                    parts.append(" NOCPUTIMEMAX")
             if omvs.get('max_files') is not None:
                 if omvs.get('max_files') != 0:
-                    cmd = f"{cmd} FILEPROCMAX({omvs['max_files']})"
+                    parts.append(f" FILEPROCMAX({omvs['max_files']})")
                 else:
-                    cmd = f"{cmd} NOFILEPROCMAX"
+                    parts.append(" NOFILEPROCMAX")
 
-            cmd = f"{cmd} )"
+            parts.append(" )")
 
-        return cmd
+        return ''.join(parts)
 
     def _make_tso_substring(self):
         """Creates a string that defines the TSO block of a user profile.
@@ -2623,84 +2623,84 @@ class UserHandler(RACFHandler):
         -------
             str: TSO parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         tso = self.params.get('tso')
 
         if tso is not None:
             if tso.get('delete', False):
                 return "NOTSO"
 
-            cmd = f"{cmd}TSO("
+            parts.append("TSO(")
 
             if tso.get('account_num') is not None:
                 if tso.get('account_num') != "":
-                    cmd = f"{cmd} ACCTNUM({tso['account_num']})"
+                    parts.append(f" ACCTNUM({tso['account_num']})")
                 else:
-                    cmd = f"{cmd} NOACCTNUM"
+                    parts.append(" NOACCTNUM")
             if tso.get('logon_cmd') is not None:
                 if tso.get('logon_cmd') != "":
-                    cmd = f"{cmd} COMMAND({tso['logon_cmd']})"
+                    parts.append(f" COMMAND({tso['logon_cmd']})")
                 else:
-                    cmd = f"{cmd} NOCOMMAND"
+                    parts.append(" NOCOMMAND")
             if tso.get('dest_id') is not None:
                 if tso.get('dest_id') != "":
-                    cmd = f"{cmd} DEST({tso['dest_id']})"
+                    parts.append(f" DEST({tso['dest_id']})")
                 else:
-                    cmd = f"{cmd} NODEST"
+                    parts.append(" NODEST")
             if tso.get('hold_class') is not None:
                 if tso.get('hold_class') != "":
-                    cmd = f"{cmd} HOLDCLASS({tso['hold_class']})"
+                    parts.append(f" HOLDCLASS({tso['hold_class']})")
                 else:
-                    cmd = f"{cmd} NOHOLDCLASS"
+                    parts.append(" NOHOLDCLASS")
             if tso.get('job_class') is not None:
                 if tso.get('job_class') != "":
-                    cmd = f"{cmd} JOBCLASS({tso['job_class']})"
+                    parts.append(f" JOBCLASS({tso['job_class']})")
                 else:
-                    cmd = f"{cmd} NOJOBCLASS"
+                    parts.append(" NOJOBCLASS")
             if tso.get('msg_class') is not None:
                 if tso.get('msg_class') != "":
-                    cmd = f"{cmd} MSGCLASS({tso['msg_class']})"
+                    parts.append(f" MSGCLASS({tso['msg_class']})")
                 else:
-                    cmd = f"{cmd} NOMSGCLASS"
+                    parts.append(" NOMSGCLASS")
             if tso.get('sysout_class') is not None:
                 if tso.get('sysout_class') != "":
-                    cmd = f"{cmd} SYS({tso['sysout_class']})"
+                    parts.append(f" SYS({tso['sysout_class']})")
                 else:
-                    cmd = f"{cmd} NOSYS"
+                    parts.append(" NOSYS")
             if tso.get('region_size') is not None:
                 if tso.get('region_size') != -1:
-                    cmd = f"{cmd} SIZE({tso['region_size']})"
+                    parts.append(f" SIZE({tso['region_size']})")
                 else:
-                    cmd = f"{cmd} NOSIZE"
+                    parts.append(" NOSIZE")
             if tso.get('max_region_size') is not None:
                 if tso.get('max_region_size') != -1:
-                    cmd = f"{cmd} MAXSIZE({tso['max_region_size']})"
+                    parts.append(f" MAXSIZE({tso['max_region_size']})")
                 else:
-                    cmd = f"{cmd} NOMAXSIZE"
+                    parts.append(" NOMAXSIZE")
             if tso.get('logon_proc') is not None:
                 if tso.get('logon_proc') != "":
-                    cmd = f"{cmd} PROC({tso['logon_proc']})"
+                    parts.append(f" PROC({tso['logon_proc']})")
                 else:
-                    cmd = f"{cmd} NOPROC"
+                    parts.append(" NOPROC")
             if tso.get('security_label') is not None:
                 if tso.get('security_label') != "":
-                    cmd = f"{cmd} SECLABEL({tso['security_label']})"
+                    parts.append(f" SECLABEL({tso['security_label']})")
                 else:
-                    cmd = f"{cmd} NOSECLABEL"
+                    parts.append(" NOSECLABEL")
             if tso.get('unit_name') is not None:
                 if tso.get('unit_name') != "":
-                    cmd = f"{cmd} UNIT({tso['unit_name']})"
+                    parts.append(f" UNIT({tso['unit_name']})")
                 else:
-                    cmd = f"{cmd} NOUNIT"
+                    parts.append(" NOUNIT")
             if tso.get('user_data') is not None:
                 if tso.get('user_data') != "":
-                    cmd = f"{cmd} USERDATA({tso['user_data']})"
+                    parts.append(f" USERDATA({tso['user_data']})")
                 else:
-                    cmd = f"{cmd} NOUSERDATA"
+                    parts.append(" NOUSERDATA")
 
-            cmd = f"{cmd} )"
+            parts.append(" )")
 
-        return cmd
+        return ''.join(parts)
 
     def _make_operator_substring(self):
         """Creates a string that defines the OPERATOR block of a user profile.
@@ -2709,121 +2709,121 @@ class UserHandler(RACFHandler):
         -------
             str: OPERATOR parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         operator = self.params.get('operator')
 
         if operator is not None:
             if operator.get('delete', False):
                 return "NOOPERPARM"
 
-            cmd = f"{cmd}OPERPARM("
+            parts.append("OPERPARM(")
 
             if operator.get('alt_group') is not None:
                 if operator.get('alt_group') != "":
-                    cmd = f"{cmd} ALTGRP({operator['alt_group']})"
+                    parts.append(f" ALTGRP({operator['alt_group']})")
                 else:
-                    cmd = f"{cmd} NOALTGRP"
+                    parts.append(" NOALTGRP")
             if operator.get('authority') is not None:
                 if operator.get('authority') != "delete":
-                    cmd = f"{cmd} AUTH({operator['authority']})"
+                    parts.append(f" AUTH({operator['authority']})")
                 else:
-                    cmd = f"{cmd} NOAUTH"
+                    parts.append(" NOAUTH")
             if operator.get('cmd_system') is not None:
                 if operator.get('cmd_system') != "":
-                    cmd = f"{cmd} CMDSYS({operator['cmd_system']})"
+                    parts.append(f" CMDSYS({operator['cmd_system']})")
                 else:
-                    cmd = f"{cmd} NOCMDSYS"
+                    parts.append(" NOCMDSYS")
             if operator.get('search_key') is not None:
                 if operator.get('search_key') != "":
-                    cmd = f"{cmd} KEY({operator['search_key']})"
+                    parts.append(f" KEY({operator['search_key']})")
                 else:
-                    cmd = f"{cmd} NOKEY"
+                    parts.append(" NOKEY")
             if operator.get('migration_id', False):
-                cmd = f"{cmd} MIGID(YES)"
+                parts.append(" MIGID(YES)")
             else:
-                cmd = f"{cmd} MIGID(NO)"
+                parts.append(" MIGID(NO)")
             if operator.get('display') is not None:
                 if "delete" not in operator['display']:
                     options = operator['display']
-                    cmd = f'{cmd} MONITOR( '
+                    parts.append(' MONITOR( ')
                     for option in options:
-                        cmd = f'{cmd}{option} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{option} ')
+                    parts.append(') ')
                 else:
-                    cmd = f"{cmd} NOMONITOR"
+                    parts.append(" NOMONITOR")
             if operator.get('msg_level') is not None:
                 if operator.get('msg_level') != "delete":
-                    cmd = f"{cmd} LEVEL({operator['msg_level']})"
+                    parts.append(f" LEVEL({operator['msg_level']})")
                 else:
-                    cmd = f"{cmd} NOLEVEL"
+                    parts.append(" NOLEVEL")
             if operator.get('msg_format') is not None:
                 if operator.get('msg_format') != 'delete':
-                    cmd = f"{cmd} MFORM({operator['msg_format']})"
+                    parts.append(f" MFORM({operator['msg_format']})")
                 else:
-                    cmd = f"{cmd} NOMFORM"
+                    parts.append(" NOMFORM")
             if operator.get('msg_storage') is not None:
                 if operator.get('msg_storage') != 0:
-                    cmd = f"{cmd} STORAGE({operator['msg_storage']})"
+                    parts.append(f" STORAGE({operator['msg_storage']})")
                 else:
-                    cmd = f"{cmd} NOSTORAGE"
+                    parts.append(" NOSTORAGE")
             if operator.get('msg_scope') is not None:
                 if operator['msg_scope'].get('add') is not None:
                     scopes = operator['msg_scope']['add']
                     # added MSCOPE command option for create option
                     if self.operation == 'create':
-                        cmd = f'{cmd}MSCOPE( '
+                        parts.append('MSCOPE( ')
                     elif self.operation == 'update':
-                        cmd = f'{cmd}ADDMSCOPE( '
+                        parts.append('ADDMSCOPE( ')
                     for scope in scopes:
-                        cmd = f'{cmd}{scope} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{scope} ')
+                    parts.append(') ')
                 elif operator['msg_scope'].get('delete') is not None:
                     scopes = operator['msg_scope']['delete']
-                    cmd = f'{cmd}DELMSCOPE( '
+                    parts.append('DELMSCOPE( ')
                     for scope in scopes:
-                        cmd = f'{cmd}{scope} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{scope} ')
+                    parts.append(') ')
                 else:
-                    cmd = f'{cmd}NOMSCOPE'
+                    parts.append('NOMSCOPE')
             if operator.get('automated_msgs', False):
-                cmd = f"{cmd} AUTO(YES)"
+                parts.append(" AUTO(YES)")
             else:
-                cmd = f"{cmd} AUTO(NO)"
+                parts.append(" AUTO(NO)")
             if operator.get('del_msgs') is not None:
                 if operator.get('del_msgs') != 'delete':
-                    cmd = f"{cmd} DOM({operator['del_msgs']})"
+                    parts.append(f" DOM({operator['del_msgs']})")
                 else:
-                    cmd = f"{cmd} NODOM"
+                    parts.append(" NODOM")
             if operator.get('hardcopy_msgs', False):
-                cmd = f"{cmd} HC(YES)"
+                parts.append(" HC(YES)")
             else:
-                cmd = f"{cmd} HC(NO)"
+                parts.append(" HC(NO)")
             if operator.get('internal_msgs', False):
-                cmd = f"{cmd} INTIDS(YES)"
+                parts.append(" INTIDS(YES)")
             else:
-                cmd = f"{cmd} INTIDS(NO)"
+                parts.append(" INTIDS(NO)")
             if operator.get('routing_msgs') is not None:
                 routes = operator['routing_msgs']
-                cmd = f'{cmd} ROUTCODE( '
+                parts.append(' ROUTCODE( ')
                 for route in routes:
-                    cmd = f'{cmd}{route} '
-                cmd = f'{cmd}) '
+                    parts.append(f'{route} ')
+                parts.append(') ')
             if operator.get('undelivered_msgs', False):
-                cmd = f"{cmd} UD(YES)"
+                parts.append(" UD(YES)")
             else:
-                cmd = f"{cmd} UD(NO)"
+                parts.append(" UD(NO)")
             if operator.get('unknown_msgs', False):
-                cmd = f"{cmd} UNKNIDS(YES)"
+                parts.append(" UNKNIDS(YES)")
             else:
-                cmd = f"{cmd} UNKNIDS(NO)"
+                parts.append(" UNKNIDS(NO)")
             if operator.get('responses', False):
-                cmd = f"{cmd} LOGCMDRESP(SYSTEM)"
+                parts.append(" LOGCMDRESP(SYSTEM)")
             else:
-                cmd = f"{cmd} LOGCMDRESP(NO)"
+                parts.append(" LOGCMDRESP(NO)")
 
-            cmd = f"{cmd} )"
+            parts.append(" )")
 
-        return cmd
+        return ''.join(parts)
 
     def _make_access_substring_creation(self):
         """Creates a string that defines various parameters for a user profile.
@@ -2832,62 +2832,62 @@ class UserHandler(RACFHandler):
         -------
             str: User create/alter parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         access = self.params.get('access')
 
         if access is not None:
             if access.get('default_group') is not None:
-                cmd = f"{cmd}DFLTGRP({access['default_group']}) "
+                parts.append(f"DFLTGRP({access['default_group']}) ")
             if access.get('clauth') is not None:
                 if access['clauth'].get('add') is not None:
                     clauth = access['clauth']['add']
-                    cmd = f'{cmd}CLAUTH( '
+                    parts.append('CLAUTH( ')
                     for auth_class in clauth:
-                        cmd = f'{cmd}{auth_class} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{auth_class} ')
+                    parts.append(') ')
                 elif access['clauth'].get('delete') is not None:
                     clauth = access['clauth']['delete']
-                    cmd = f'{cmd}NOCLAUTH( '
+                    parts.append('NOCLAUTH( ')
                     for auth_class in clauth:
-                        cmd = f'{cmd}{auth_class} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{auth_class} ')
+                    parts.append(') ')
             if access.get('roaudit') is not None:
                 roaudit = "ROAUDIT" if access['roaudit'] else "NOROAUDIT"
-                cmd = f'{cmd}{roaudit} '
+                parts.append(f'{roaudit} ')
             if access.get('category') is not None:
                 if access['category'].get('add') is not None:
                     categories = access['category']['add']
-                    cmd = f'{cmd}ADDCATEGORY( '
+                    parts.append('ADDCATEGORY( ')
                     for category in categories:
-                        cmd = f'{cmd}{category} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{category} ')
+                    parts.append(') ')
                 elif access['category'].get('delete') is not None:
                     categories = access['category']['delete']
-                    cmd = f'{cmd}DELCATEGORY( '
+                    parts.append('DELCATEGORY( ')
                     for category in categories:
-                        cmd = f'{cmd}{category} '
-                    cmd = f'{cmd}) '
+                        parts.append(f'{category} ')
+                    parts.append(') ')
             if access.get('operator_card') is not None:
                 op_card = "OIDCARD" if access['operator_card'] else "NOOIDCARD"
-                cmd = f'{cmd}{op_card} '
+                parts.append(f'{op_card} ')
             if access.get('maintenance_access') is not None:
                 operations = "OPERATIONS" if access['maintenance_access'] else "NOOPERATIONS"
-                cmd = f'{cmd}{operations} '
+                parts.append(f'{operations} ')
             if access.get('restricted') is not None:
                 restricted = "RESTRICTED" if access['restricted'] else "NORESTRICTED"
-                cmd = f'{cmd}{restricted} '
+                parts.append(f'{restricted} ')
             if access.get('security_label') is not None:
                 if access.get('security_label') != "":
-                    cmd = f"{cmd}SECLABEL({access['security_label']}) "
+                    parts.append(f"SECLABEL({access['security_label']}) ")
                 else:
-                    cmd = f"{cmd}NOSECLABEL "
+                    parts.append("NOSECLABEL ")
             if access.get('security_level') is not None:
                 if access.get('security_level') != "":
-                    cmd = f"{cmd}SECLEVEL({access['security_level']}) "
+                    parts.append(f"SECLEVEL({access['security_level']}) ")
                 else:
-                    cmd = f"{cmd}NOSECLEVEL "
+                    parts.append("NOSECLEVEL ")
 
-        return cmd
+        return ''.join(parts)
 
     def _make_restrictions_substring(self):
         """Creates a string that defines various parameters for how a user can
@@ -2897,32 +2897,32 @@ class UserHandler(RACFHandler):
         -------
             str: User parameters of a RACF command.
         """
-        cmd = ""
+        parts = []
         restrictions = self.params.get('restrictions')
 
         if restrictions is not None:
             if restrictions.get('days') is not None or restrictions.get('time') is not None:
-                cmd = f"{cmd}WHEN( "
+                parts.append("WHEN( ")
                 if restrictions.get('days') is not None:
-                    cmd = f"{cmd}DAYS( "
+                    parts.append("DAYS( ")
                     for day in restrictions['days']:
-                        cmd = f"{cmd}{day} "
-                    cmd = f"{cmd}) "
+                        parts.append(f"{day} ")
+                    parts.append(") ")
                 if restrictions.get('time') is not None:
-                    cmd = f"{cmd}TIME({restrictions['time']}) "
-                cmd = f"{cmd}) "
+                    parts.append(f"TIME({restrictions['time']}) ")
+                parts.append(") ")
 
             if restrictions.get('resume') is not None:
-                cmd = f"{cmd}RESUME({restrictions['resume']})"
+                parts.append(f"RESUME({restrictions['resume']})")
             elif restrictions.get('delete_resume', False):
-                cmd = f"{cmd}NORESUME "
+                parts.append("NORESUME ")
 
             if restrictions.get('revoke') is not None:
-                cmd = f"{cmd}REVOKE({restrictions['revoke']})"
+                parts.append(f"REVOKE({restrictions['revoke']})")
             elif restrictions.get('delete_revoke', False):
-                cmd = f"{cmd}NOREVOKE "
+                parts.append("NOREVOKE ")
 
-        return cmd
+        return ''.join(parts)
 
     def _make_password_mgmt_substring(self):
         """Creates a string that defines password management parameters for a user.

@@ -1,21 +1,6 @@
 ---
-- name: Check if ruamel.yaml is already installed
-  ansible.builtin.command: python3 -m pip show ruamel.yaml
-  register: ruamel_check
-  failed_when: false
-  changed_when: false
-  delegate_to: localhost
-
-- name: Ensure ruamel.yaml is installed (for YAML parsing and playbook validation)
-  ansible.builtin.pip:
-    name: ruamel.yaml
-    state: present
-  when: ruamel_check.rc != 0
-  register: ruamel_install
-  delegate_to: localhost
-
 - name: Check Python path
-  ansible.builtin.command: /usr/bin/which python3
+  ansible.builtin.raw: /usr/bin/which python3
   delegate_to: localhost
   register: python_path_result
   ignore_errors: true
@@ -26,6 +11,23 @@
     python_path_result:
       stdout: "{{ ansible_playbook_python | default('/usr/bin/python3') }}"
   when: python_path_result.rc != 0
+
+- name: Check if ruamel.yaml is already installed
+  ansible.builtin.raw: python3 -m pip show ruamel.yaml
+  register: ruamel_check
+  failed_when: false
+  changed_when: false
+  delegate_to: localhost
+
+- name: Ensure ruamel.yaml is installed (for YAML parsing and playbook validation)
+  ansible.builtin.pip:
+    name: ruamel.yaml
+    state: present
+  vars:
+    ansible_python_interpreter: "{{ python_path_result.stdout }}"
+  when: ruamel_check.rc != 0
+  register: ruamel_install
+  delegate_to: localhost
 
 - name: Load migration changes from JSON file
   ansible.builtin.set_fact:
@@ -51,7 +53,7 @@
 - name: Run playbook upgrade validator to list migration changes
   ansible.builtin.command:
     cmd: >
-      "{{ python_path_result.stdout }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
+      "{{ python_path_result.stdout | trim }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
       --playbook_path "{{ playbook_path }}"
       --output_path "{{ output_path }}"
       {% if ignore_response_params %}

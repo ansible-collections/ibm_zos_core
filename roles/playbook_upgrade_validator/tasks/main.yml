@@ -15,9 +15,17 @@
   delegate_to: localhost
 
 - name: Check Python path
-  ansible.builtin.command: which python3
+  ansible.builtin.command: /usr/bin/which python3
   delegate_to: localhost
   register: python_path_result
+  ignore_errors: true
+  changed_when: false
+
+- name: Fallback to ansible_python_interpreter if which fails
+  ansible.builtin.set_fact:
+    python_path_result:
+      stdout: "{{ ansible_playbook_python | default('/usr/bin/python3') }}"
+  when: python_path_result.rc != 0
 
 - name: Load migration changes from JSON file
   ansible.builtin.set_fact:

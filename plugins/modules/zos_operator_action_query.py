@@ -94,7 +94,7 @@ options:
         type: bool
         default: True
 seealso:
-- module: zos_operator
+- module: ibm.ibm_zos_core.zos_operator
 
 attributes:
   action:

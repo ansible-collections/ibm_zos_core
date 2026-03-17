@@ -369,7 +369,7 @@ notes:
     SCP, it will temporarily use SFTP for transfers, if not available, the module
     will fail.
 seealso:
-  - module: zos_archive
+  - module: ibm.ibm_zos_core.zos_archive
 '''
 
 EXAMPLES = r'''

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -292,12 +292,6 @@ options:
     required: false
     aliases:
       - unit
-  hlq:
-    description:
-      - Specifies the new HLQ to use for the data sets being restored.
-      - If no value is provided, the data sets will be restored with their original HLQs.
-    type: str
-    required: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary
@@ -322,6 +316,19 @@ options:
     type: bool
     required: false
     default: false
+  output:
+    description:
+      - Specifies how a backup will be restored to the filesystem when I(operation=restore).
+      - Option C(output) does not perform any operations when I(operation=backup), it will be ignored.
+    type: dict
+    required: false
+    suboptions:
+      hlq:
+        description:
+          - Specifies the new HLQ to use for the data sets being restored.
+          - If I(hlq) is not provided, the original HLQ remains unchanged.
+        type: str
+        required: false
 
 attributes:
   action:
@@ -619,13 +626,20 @@ def main():
                 disable_automatic_management_class=dict(type="bool", required=False, default=False),
             )
         ),
-        hlq=dict(type="str", required=False),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                hlq=dict(type="str", required=False),
+            )
+        ),
         tmp_hlq=dict(type="str", required=False),
         # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
     validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
@@ -642,7 +656,7 @@ def main():
         compress = params.get("compress")
         terse = params.get("terse")
         sms = params.get("sms")
-        hlq = params.get("hlq")
+        output = params.get("output")
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
         access = params.get('access')
@@ -685,7 +699,7 @@ def main():
                 temp_volume=temp_volume,
                 overwrite=overwrite,
                 recover=recover,
-                hlq=hlq,
+                output=output,
                 space=space,
                 space_type=space_type,
                 sms=sms,
@@ -783,9 +797,14 @@ def parse_and_validate_args(params):
                 disable_automatic_management_class=dict(type="bool", required=False),
             )
         ),
-        hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
+        output=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                hlq=dict(type=hlq_type, required=False),
+            )
+        ),
         tmp_hlq=dict(type=hlq_type, required=False),
-        # 2.0 redesign extra values for ADRDSSU keywords
         index=dict(type="bool", required=False, default=False),
     )
 
@@ -865,7 +884,7 @@ def restore(
     temp_volume,
     overwrite,
     recover,
-    hlq,
+    output,
     space,
     space_type,
     sms,
@@ -919,13 +938,13 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    output = ""
+    dunzip_output = ""
     try:
         rc = datasets.dunzip(**zoau_args)
     except zoau_exceptions.ZOAUException as dunzip_exception:
-        output = dunzip_exception.response.stdout_response
-        output = output + dunzip_exception.response.stderr_response
-        rc = get_real_rc(output)
+        dunzip_output = dunzip_exception.response.stdout_response
+        dunzip_output = dunzip_output + dunzip_exception.response.stderr_response
+        rc = get_real_rc(dunzip_output)
     failed = False
     if rc > 0 and rc <= 4:
         if recover is not True:
@@ -934,7 +953,7 @@ def restore(
         failed = True
     if failed:
         raise zoau_exceptions.ZOAUException(
-            "{0}, RC={1}".format(output, rc)
+            "{0}, RC={1}".format(dunzip_output, rc)
         )
 
 
@@ -1002,7 +1021,7 @@ def set_bypassacs_str(ds):
     return datasets
 
 
-def get_real_rc(output):
+def get_real_rc(dunzip_output):
     """Parse out the final RC from MVS program output.
 
     Parameters
@@ -1018,7 +1037,7 @@ def get_real_rc(output):
     true_rc = None
     match = search(
         r"HIGHEST\sRETURN\sCODE\sIS\s([0-9]+)",
-        output,
+        dunzip_output,
     )
     if match:
         true_rc = int(match.group(1))
@@ -1354,10 +1373,11 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
-    if kwargs.get("hlq") is None:
-        zoau_args["keep_original_hlq"] = True
+    output = kwargs.get("output")
+    if output and output.get("hlq"):
+        zoau_args["high_level_qualifier"] = output.get("hlq")
     else:
-        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+        zoau_args["keep_original_hlq"] = True
 
     if kwargs.get("tmp_hlq"):
         zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))

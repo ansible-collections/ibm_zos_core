@@ -4454,3 +4454,456 @@ def test_user_update_remove_user_name(ansible_zos_module):
 # ============================================================================
 # END OF USER NAME TESTS
 # ============================================================================
+
+# ============================================================================
+# USER PASSWORD MGMT TESTS
+# ============================================================================
+
+def test_create_user_with_password(ansible_zos_module):
+    """Create user with plain text password."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'password': 'Tst@12B'},
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PASSWORD(" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_create_user_with_passphrase(ansible_zos_module):
+    """Create user with plain text passphrase."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE(" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_update_password_to_noexpired(ansible_zos_module):
+    """Update password to NOEXPIRED."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    password = 'Tst@12B'
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'password': password},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Update password to NOEXPIRED
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'password': password,
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PASSWORD" in result.get("cmd", "")
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_update_passphrase_to_noexpired(ansible_zos_module):
+    """Update passphrase to NOEXPIRED."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    passphrase = 'MySecurePassphrase123'
+    
+    try:
+        # Create user with passphrase
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'passphrase': passphrase},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Update passphrase to NOEXPIRED
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'passphrase': passphrase,
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_remove_password(ansible_zos_module):
+    """Remove password (set to NOPASSWORD)."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Remove password
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={'password': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOPASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_remove_passphrase(ansible_zos_module):
+    """Remove passphrase (set to NOPHRASE)."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with passphrase
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Remove passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={'passphrase': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOPHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_switch_password_to_passphrase(ansible_zos_module):
+    """Switch from password to passphrase explicitly set NOPASSWORD"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 1: Remove password
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={'password': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert "NOPASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 2: Set passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'passphrase': 'MySecurePassphrase123',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE" in result.get("cmd", "")
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_switch_passphrase_to_password(ansible_zos_module):
+    """Switch from passphrase to password explicitly set to NOPHRASE"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 1: Remove passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={'passphrase': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert "NOPHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 2: Set password
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'password': 'Test@12B',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+def test_password_change_rejection(ansible_zos_module):
+    """Test PASSWORD CHANGE REJECTED BY INSTALLATION SYNTAX RULES"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+      
+        # Update Password to  violation of Syntax Rules but still within max length
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'password': 'Test@123',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert result.get('rc') == 4
+            assert "PASSWORD CHANGE REJECTED BY INSTALLATION SYNTAX RULES" in result.get("stdout_lines")
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 0
+            assert username not in result.get("entities_modified", [])
+
+        # Update Password to  violation of Syntax Rules exceeding max length
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={
+                'password': 'Test@12B1234567',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert "Option password_mgmt.password has an invalid value" in result.get("msg")
+            assert result.get("num_entities_modified") == 0
+            assert username not in result.get("entities_modified", [])    
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_expired_without_password_fails(ansible_zos_module):
+    """Validation - expired without password attribute should fail."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user without password
+        hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to set expired without password (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            operation='update',
+            scope='user',
+            password_mgmt={'expired': False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert "The 'expired' parameter can only be used when 'password' or 'passphrase' is also specified. RACF does not allow EXPIRED/NOEXPIRED to be set independently.".lower() in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_short_passphrase_fails(ansible_zos_module):
+    """Validation - passphrase shorter than 9 characters should fail."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Try to create user with short passphrase (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={'passphrase': 'Short12'},  # Only 7 chars
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'Passphrase must be either empty string (to remove passphrase) or 9-100 characters long'.lower() in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_password_and_passphrase_mutually_exclusive(ansible_zos_module):
+    """Test 11: Validation - password and passphrase cannot be used together."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Try to create user with both password and passphrase (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            operation='create',
+            scope='user',
+            password_mgmt={
+                'password': 'Test@123',
+                'passphrase': 'MySecurePassphrase123'
+            },
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'parameters are mutually exclusive: password|passphrase found in password_mgmt' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+# ============================================================================
+# END OF USER PASSWORD MGMT TESTS
+# ============================================================================        
+

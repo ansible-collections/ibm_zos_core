@@ -446,7 +446,8 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
         start_results = hosts.all.zos_started_task(
             state = "started",
             member_name = member_name,
-            verbose=True
+            verbose=True,
+            system_logs=True
         )
 
         for result in start_results.contacted.values():
@@ -454,6 +455,7 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
+            assert result.get("system_logs") != ""
             assert result.get("verbose_output") != ""
 
         force_results = hosts.all.zos_started_task(
@@ -646,13 +648,15 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
     modify_results = hosts.all.zos_started_task(
         state = "modified",
         task = "VLF",
-        parameters = ["REPLACE" ,"NN=00"]
+        parameters = ["REPLACE" ,"NN=00"],
+        system_logs=True
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is True
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
         assert result.get("stderr") == ""
+        assert result.get("system_logs") != ""
         assert result.get("cmd") == "F VLF.VLF,REPLACE,NN=00"
 
     display_result = hosts.all.zos_started_task(
@@ -750,13 +754,15 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
             state = "started",
             member = "SAMPLE2",
             job_name = "SPROC",
-            verbose=True
+            verbose=True,
+            system_logs=True
         )
 
         for result in start_results.contacted.values():
             assert result.get("changed") is True
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
+            assert result.get("system_logs") != ""
             assert len(result.get("tasks")) > 0
             assert result.get("verbose_output") != ""
 

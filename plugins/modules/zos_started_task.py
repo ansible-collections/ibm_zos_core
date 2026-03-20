@@ -1487,7 +1487,7 @@ def run_module():
     asidx = module.params.get('asidx')
     duplicate_tasks = False
     started_task_name_from_id = ""
-    system_logs = module.params.get('system_logs')
+    get_system_logs = module.params.get('system_logs')
     task_params_before = []
     task_params_after = []
     if task_id and state != "displayed":
@@ -1572,7 +1572,7 @@ def run_module():
         err_msg = modify_errmsg
         started_task_name, cmd = prepare_modify_command(module, started_task_name_from_id)
     # Note the timestamp before operation execution to fetch system logs within that time frame.
-    if system_logs:
+    if get_system_logs:
         before_time = fetch_current_time()
     changed = False
     stdout = ""
@@ -1621,9 +1621,9 @@ def run_module():
                 is_failed = True
             elif verbose:
                 task_output_logs = get_task_logs(task_params_after[0].get('task_id'))
-        # Fetch system logs as per the recorded timestamp before operation execution
-        if system_logs:
-            system_logs = fetch_logs(cmd.upper(), before_time)
+    # Fetch system logs as per the recorded timestamp after operation execution
+    if get_system_logs:
+        system_logs = fetch_logs(cmd.upper(), before_time)
     # Create response to return
     current_state = ""
     if is_failed:

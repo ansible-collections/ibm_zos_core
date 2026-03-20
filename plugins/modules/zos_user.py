@@ -3844,7 +3844,7 @@ def run_module():
     result['stderr_lines'] = result['stderr'].split('\n')
 
     if result['rc'] == 0:
-        result['changed'] = True
+        result['changed'] = result['num_entities_modified'] > 0
     else:
         result['msg'] = 'An error occurred while executing the RACF command.'
         module.fail_json(**result)

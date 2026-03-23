@@ -103,6 +103,15 @@ options:
     type: bool
     required: false
     default: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary data sets.
+      - This option is only applicable when I(operation=purge).
+      - Temporary data sets are created during the purge operation for database dumps,
+        CLIST generation, and intermediate processing.
+      - If not specified, the system default HLQ will be used.
+    type: str
+    required: false
   general:
     description:
       - Options that change common attributes in a RACF profile.
@@ -1410,6 +1419,7 @@ class RACFHandler():
         self.keep_dump = module_params['keep_dump']
         self.optimize_dump = module_params['optimize_dump']
         self.no_exec = module_params['no_exec']
+        self.tmp_hlq = module_params.get('tmp_hlq')
         # Nested params.
         params_copy = copy.deepcopy(module_params)
         del params_copy['name']
@@ -1702,8 +1712,9 @@ class RACFHandler():
         # First step: run the IRRUT200 utility.
         # Getting the total allocation for the database.
         try:
-            # TODO: use a temp HLQ.
-            backup_name = datasets.tmp_name()
+            # Use custom HLQ if provided, otherwise use default
+            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+            backup_name = datasets.tmp_name(high_level_qualifier=hlq)
             sysin_file = None
 
             if not datasets.exists(self.database):
@@ -1758,8 +1769,9 @@ class RACFHandler():
 
         # Second step: run the IRRDBU00 utility.
         try:
-            # TODO: use a temp HLQ.
-            dump_data_set = datasets.tmp_name()
+            # Use custom HLQ if provided, otherwise use default
+            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+            dump_data_set = datasets.tmp_name(high_level_qualifier=hlq)
             irrdbu00_dds = [
                 ztypes.DDStatement('SYSPRINT', '*'),
                 ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
@@ -1790,8 +1802,9 @@ class RACFHandler():
         # Third step: run IRRRID00.
         # Putting the profile we want to search for in a text file.
         try:
-            # TODO: use a temp HLQ.
-            sysin_name = datasets.tmp_name()
+            # Use custom HLQ if provided, otherwise use default
+            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+            sysin_name = datasets.tmp_name(high_level_qualifier=hlq)
             sysin_data_set = datasets.create(
                 name=sysin_name,
                 dataset_type='SEQ',
@@ -1805,12 +1818,13 @@ class RACFHandler():
             )
             datasets.write(sysin_name, self.name, append=False)
 
-            clist = datasets.tmp_name()
+            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+            clist = datasets.tmp_name(high_level_qualifier=hlq)
             irrrid00_dds = [
                 ztypes.DDStatement('SYSPRINT', '*'),
                 ztypes.DDStatement('SYSOUT', '*'),
                 ztypes.DDStatement('SORTOUT', ztypes.DatasetDefinition(
-                    datasets.tmp_name(),
+                    datasets.tmp_name(high_level_qualifier=hlq),
                     type='SEQ',
                     disposition='NEW',
                     normal_disposition='DELETE',
@@ -1825,7 +1839,7 @@ class RACFHandler():
                     block_size=20480
                 )),
                 ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
-                    datasets.tmp_name(),
+                    datasets.tmp_name(high_level_qualifier=hlq),
                     type='SEQ',
                     disposition='NEW',
                     normal_disposition='DELETE',
@@ -3019,6 +3033,10 @@ def run_module():
                 'required': False,
                 'default': False
             },
+            'tmp_hlq': {
+                'type': 'str',
+                'required': False
+            },
             'general': {
                 'type': 'dict',
                 'required': False,
@@ -3628,6 +3646,7 @@ def run_module():
         'keep_dump': {'arg_type': 'bool', 'required': True},
         'optimize_dump': {'arg_type': 'bool', 'required': True},
         'no_exec': {'arg_type': 'bool', 'required': False},
+        'tmp_hlq': {'arg_type': 'str', 'required': False},
         'general': {
             'arg_type': 'dict',
             'required': False,

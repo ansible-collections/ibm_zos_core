@@ -4328,6 +4328,65 @@ def test_user_purge_no_exec_true(ansible_zos_module):
     finally:
         cleanup_user(hosts, user_name)
 
+
+def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
+    """
+    Test: Purge user with custom tmp_hlq parameter.
+    Validates that temporary datasets are created with the specified HLQ.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+    custom_hlq = "TESTHLQ"
+    
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+        
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+        
+        # Purge with custom tmp_hlq and keep_dump=true to verify dataset names
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True,
+            tmp_hlq=custom_hlq,
+            no_exec=True  # Use no_exec to avoid actual deletion for verification
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            assert result.get("num_entities_modified") == 0
+            
+            # Verify dump_name starts with custom HLQ
+            dump_name = result.get("dump_name")
+            assert dump_name is not None
+            assert dump_name.startswith(custom_hlq), (
+                f"dump_name should start with custom HLQ '{custom_hlq}', got: {dump_name}"
+            )
+            
+            # Verify CLIST name in cmd also uses custom HLQ
+            cmd = result.get("cmd", "")
+            assert cmd.startswith("EXEC"), "Command should be EXEC for CLIST execution"
+            assert custom_hlq in cmd, (
+                f"EXEC command should reference dataset with custom HLQ '{custom_hlq}', got: {cmd}"
+            )
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
 # ============================================================================
 # END OF USER DELETE AND PURGE TESTS
 # ============================================================================

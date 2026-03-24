@@ -157,11 +157,9 @@ options:
       - When I(operation=backup) and I(backup_name) is a data set, specifies the
         volume the backup should be placed in.
       - When backing up a data set from one volume to another, the operation
-        will fail if I(temp_volume) is set to the same volume as the source volume. Additionally,
-        if I(temp_volume) is not specified, the underlying ZOAU mechanism may allocate temporary
-        data sets on the same volume as the source volume, which can also cause the operation to
-        fail. As a workaround, always use the I(temp_volume) option to specify a different volume
-        than the source volume for temporary data sets.
+        will fail if temporary data sets are created on the same volume as the volume containing
+        the source data set(s). To avoid this, set I(temp_volume) to a different volume
+        than the source volume.
     type: str
     required: False
     aliases:
@@ -360,12 +358,11 @@ notes:
       the module option without access to the class.
     - If your system uses a different security product, consult that product's
       documentation to configure the required security classes.
-    - B(Known Issue:) When backing up a data set from one volume to another, the operation
-      will fail if I(temp_volume) is set to the same volume as the source volume. Additionally,
-      if I(temp_volume) is not specified, the underlying ZOAU mechanism may allocate temporary
-      data sets on the same volume as the source volume, which can also cause the operation to
-      fail. As a workaround, always use the I(temp_volume) option to specify a different volume
-      than the source volume for temporary data sets.
+    - When backing up a data set from one volume to another, the operation will
+      fail if temporary data sets are created on the same volume as the volume
+      containing the source data set(s). To avoid this, use the I(temp_volume)
+      option to specify a different volume than the source volume for temporary
+      data sets.
 """
 
 EXAMPLES = r"""

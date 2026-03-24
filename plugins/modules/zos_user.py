@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from typing import Any
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -2037,6 +2038,17 @@ class GroupHandler(RACFHandler):
         result['stderr'] = stderr
         return result
 
+    def _group_exists(self) -> Any:
+        """Check if a group profile exists in RACF using LISTGRP command.
+        
+        Returns
+        -------
+            bool: True if group exists (RC=0), False otherwise
+        """
+        cmd = f'LISTGRP ({self.name})'
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+        return rc == 0
+
     def _create_group(self):
         """Builds and execute an ADDGROUP command.
 
@@ -2044,6 +2056,11 @@ class GroupHandler(RACFHandler):
         -------
             tuple: RC, stdout and stderr from the RACF command, and the ADDGROUP command.
         """
+        # Check if group already exists
+        if self._group_exists():
+            cmd = f'ADDGROUP ({self.name})'
+            return 0, f"Group {self.name} already exists", "", cmd
+        
         cmd = f'ADDGROUP ({self.name})'
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
@@ -2114,6 +2131,11 @@ class GroupHandler(RACFHandler):
         -------
             tuple: RC, stdout and stderr from the RACF command, and the DELGROUP command.
         """
+        # Check if group exists
+        if not self._group_exists():
+            cmd = f'DELGROUP ({self.name})'
+            return 0, f"Group {self.name} does not exist", "", cmd
+        
         cmd = f'DELGROUP ({self.name})'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -2331,12 +2353,24 @@ class UserHandler(RACFHandler):
             rc, stdout, stderr, cmd = self._remove_user()
 
         self.cmd = cmd
+
         # Getting the base dictionary.
         result = super().execute_operation()
         result['rc'] = rc
         result['stdout'] = stdout
         result['stderr'] = stderr
         return result
+        
+    def _user_exists(self):
+        """Check if a user profile exists in RACF using LISTUSER command.
+        
+        Returns
+        -------
+            bool: True if user exists (RC=0), False otherwise
+        """
+        cmd = f'LISTUSER ({self.name})'
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+        return rc == 0
 
     def _create_user(self):
         """Builds and execute an ADDUSER command.
@@ -2345,6 +2379,11 @@ class UserHandler(RACFHandler):
         -------
             tuple: RC, stdout and stderr from the RACF command, and the ADDUSER command.
         """
+        # Check if user already exists
+        if self._user_exists():
+            cmd = f'ADDUSER ({self.name})'
+            return 0, f"User {self.name} already exists", "", cmd
+        
         cmd = f'ADDUSER ({self.name})'
         
         # Add NAME parameter if user_name is provided in general block
@@ -2414,6 +2453,11 @@ class UserHandler(RACFHandler):
         -------
             tuple: RC, stdout and stderr from the RACF command, and the DELUSER command.
         """
+        # Check if user exists
+        if not self._user_exists():
+            cmd = f'DELUSER ({self.name})'
+            return 0, f"User {self.name} does not exist", "", cmd
+        
         cmd = f'DELUSER ({self.name})'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 

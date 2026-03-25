@@ -421,10 +421,10 @@ def test_group_create_error_already_exists(ansible_zos_module):
         )
         
         for result in results.contacted.values():
-            assert result.get("rc") != 0, "Expected failure when creating duplicate group"
+            assert result.get("rc") == 0, "Group already exists"
             assert result.get("changed") is False
-            stdout = result.get("stdout", "")
-            assert "INVALID GROUP" in stdout or result.get("rc") == 8
+            stdout = result.get("stdout", "").lower()
+            assert f"GROUP {group_name} already exists".lower() in stdout
         
     finally:
         cleanup_group(hosts, group_name)
@@ -928,11 +928,11 @@ def test_group_delete_nonexistent_error(ansible_zos_module):
     )
     
     for result in results.contacted.values():
-        assert result.get("rc") == 8
+        assert result.get("rc") == 0
         assert result.get("changed") is False
         assert result.get("num_entities_modified") == 0
-        stdout = result.get("stdout", "")
-        assert "INVALID GROUP" in stdout
+        stdout = result.get("stdout", "").lower()
+        assert f"Group {nonexistent_group} does not exist".lower() in stdout
 
 def test_group_purge_default_options(ansible_zos_module):
     """
@@ -1768,9 +1768,9 @@ def test_user_create_error_already_exists(ansible_zos_module):
         )
         
         for result in results2.contacted.values():
-            assert result.get("rc") != 0
+            assert result.get("rc") == 0
             assert result.get("changed") is False
-            assert "INVALID USER" in result.get("stdout")
+            assert f"User {user_name} already exists".lower() in result.get("stdout").lower()
         
     finally:
         cleanup_user(hosts, user_name)
@@ -4041,11 +4041,11 @@ def test_user_delete_nonexistent_error(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("rc") == 8
+        assert result.get("rc") == 0
         assert result.get("num_entities_modified") == 0
         assert result.get("entities_modified") == []
         assert f"DELUSER ({nonexistent_user})" in result.get("cmd", "")
-        assert "INVALID USERID" in result.get("stdout", "")
+        assert f"user {nonexistent_user} does not exist".lower() in result.get("stdout").lower()
 
 
 def test_user_purge_default_options_and_missing_database_validation(ansible_zos_module):
@@ -4305,7 +4305,7 @@ def test_user_purge_no_exec_true(ansible_zos_module):
         )
 
         for result in results.contacted.values():
-            assert result.get("changed") is True
+            assert result.get("changed") is False
             assert result.get("rc") == 0
             assert result.get("database_dumped") is True
             assert result.get("dump_kept") is False

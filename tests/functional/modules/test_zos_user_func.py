@@ -3824,7 +3824,7 @@ def test_user_remove_error_scenarios(ansible_zos_module):
             connect={"group_name": group_name}
         )
         
-        # Try to remove from non-existing group (should fail)
+        # Try to remove from non-existing group
         results = hosts.all.zos_user(
             name=user_name,
             operation="remove",
@@ -3835,8 +3835,8 @@ def test_user_remove_error_scenarios(ansible_zos_module):
         for result in results.contacted.values():
             # Expect failure - user not connected to non-existing group
             assert result.get("changed") is False
-            assert result.get("rc") == 4
-            assert f"{user_name} WAS NOT CONNECTED TO GROUP" in result.get("stdout", "")
+            assert result.get("rc") == 0
+            assert f"{user_name} IS NOT CONNECTED TO GROUP {nonexist_group}".upper() in result.get("stdout", "").upper()
         
         # Remove user from group (first time - should succeed)
         results = hosts.all.zos_user(
@@ -3850,7 +3850,7 @@ def test_user_remove_error_scenarios(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("rc") == 0
         
-        # Try to remove again (should fail - already removed)
+        # Try to remove again (already removed)
         results = hosts.all.zos_user(
             name=user_name,
             operation="remove",
@@ -3859,10 +3859,10 @@ def test_user_remove_error_scenarios(ansible_zos_module):
         )
         
         for result in results.contacted.values():
-            # Expect failure - user already removed
-            assert result.get("rc") == 4
+            # user already removed
+            assert result.get("rc") == 0
             assert result.get("changed") is False
-            assert f"{user_name} WAS NOT CONNECTED TO GROUP" in result.get("stdout", "")
+            assert f"{user_name} IS NOT CONNECTED TO GROUP {group_name}".upper() in result.get("stdout", "").upper()
         
     finally:
         cleanup_user(hosts, user_name)

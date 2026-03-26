@@ -1882,7 +1882,6 @@ class RACFHandler():
             # We need to remove it to allow the DELUSER/DELGROUP commands to execute
             clist_content = datasets.read(clist)
 
-            # TODO: add noexec option to not execute the CLIST
             # Handle EXIT statement based on no_exec parameter
 
             entities_to_modify = []
@@ -2467,6 +2466,29 @@ class UserHandler(RACFHandler):
 
         return rc, stdout, stderr, cmd
 
+    def _user_connected_to_group(self, group_name):
+        """Check if a user is already connected to a group.
+
+        Parameters
+        ----------
+            group_name: str
+                The group name to check connection for.
+
+        Returns
+        -------
+            bool: True if user is connected to the group, False otherwise.
+        """
+        import re
+        check_cmd = f'LISTUSER {self.name}'
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{check_cmd}" """)
+        if rc == 0:
+            # Check if the group appears in the user's group list
+            # LISTUSER output includes "GROUP=" or "CONNECTS=" sections showing group memberships
+            # Use word boundary regex to match exact group name, not substrings
+            pattern = r'\b' + re.escape(group_name.upper()) + r'\b'
+            return re.search(pattern, stdout.upper()) is not None
+        return False
+    
     def _connect_user(self):
         """Builds and execute a CONNECT command.
 
@@ -2526,7 +2548,6 @@ class UserHandler(RACFHandler):
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
-        # TODO: change this to include group.
         if rc == 0:
             self.num_entities_modified = 1
             self.entities_modified = [self.name]
@@ -2545,7 +2566,15 @@ class UserHandler(RACFHandler):
         connect = self.params.get('connect')
 
         if connect.get('group_name') is not None:
-            cmd = f"{cmd}GROUP({connect['group_name']})"
+            group_name = connect['group_name']
+            cmd = f"{cmd}GROUP({group_name})"
+            
+            # Check if user is connected to this group before attempting remove for idempotency
+            if not self._user_connected_to_group(group_name):
+                # User not connected - idempotent behavior, return success with no changes
+                self.num_entities_modified = 0
+                self.entities_modified = []
+                return 0, f"User {self.name} is not connected to group {group_name}", "", cmd
         else:
             return 1, "", "No group was provided for a remove operation.", cmd
 
@@ -2555,7 +2584,6 @@ class UserHandler(RACFHandler):
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
-        # TODO: change this to include group.
         if rc == 0:
             self.num_entities_modified = 1
             self.entities_modified = [self.name]

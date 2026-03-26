@@ -230,7 +230,7 @@ attributes:
     support: full
     description: Supports being used with the ``async`` keyword.
   check_mode:
-    support: full
+    support: None
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 EXAMPLES = r"""
@@ -1356,7 +1356,7 @@ def run_module():
             ['identifier_name', 'task_id']
         ],
         # required_by={'retry_force': ['tcb_address']},
-        supports_check_mode=True
+        supports_check_mode=False
     )
 
     args_def = {
@@ -1649,8 +1649,6 @@ def run_module():
     result = dict()
     if state == "displayed":
         changed = False
-    if module.check_mode:
-        module.exit_json(**result)
 
     result = dict(
         changed=changed,

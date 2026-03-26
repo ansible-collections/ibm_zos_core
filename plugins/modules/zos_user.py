@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from typing import Any
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -921,7 +920,6 @@ options:
           - This option is mutually exclusive with I(passphrase).
         type: str
         required: false
-        no_log: true
       passphrase:
         description:
           - Passphrase for the user.
@@ -937,7 +935,6 @@ options:
           - This option is mutually exclusive with I(password).
         type: str
         required: false
-        no_log: true
       expired:
         description:
           - Whether the password or passphrase should be marked as expired.
@@ -999,7 +996,7 @@ EXAMPLES = r"""
     operation: update
     scope: user
     general:
-      user_name: ""    
+      user_name: ""
 
 - name: Create a new group profile using another group as a model and setting its owner.
   zos_user:
@@ -1177,7 +1174,7 @@ EXAMPLES = r"""
       password: "{{ user_password }}"
       expired: false
     omvs:
-      uid: auto  
+      uid: auto
 
 """
 
@@ -1219,6 +1216,8 @@ dump_name:
     type: str
     sample: USER.BACKUP.RACF.DATABASE
 """
+
+from typing import Any
 
 import copy
 import math
@@ -1475,7 +1474,7 @@ class RACFHandler():
                 keys_to_delete = [k for k, v in self.params[block].items() if v == ""]
                 for k in keys_to_delete:
                     del self.params[block][k]
-                
+
                 # Handle nested dictionaries - iterate over remaining keys after deletion
                 for option in list(self.params[block].keys()):
                     if isinstance(self.params[block][option], dict):
@@ -1665,7 +1664,7 @@ class RACFHandler():
                     parts.append("NOMODEL ")
             if general.get('owner') is not None and general.get('owner') != "":
                 parts.append(f"OWNER({general['owner']}) ")
-        
+
         return ''.join(parts)
 
     def _make_dfp_substring(self):
@@ -1704,9 +1703,9 @@ class RACFHandler():
                     parts.append(f" STORCLAS({dfp['storage_class']})")
                 else:
                     parts.append(" NOSTORCLAS")
-            
+
             parts.append(" )")
-        
+
         return ''.join(parts)
 
     def purge_profile(self):
@@ -2039,7 +2038,7 @@ class GroupHandler(RACFHandler):
 
     def _group_exists(self) -> Any:
         """Check if a group profile exists in RACF using LISTGRP command.
-        
+
         Returns
         -------
             bool: True if group exists (RC=0), False otherwise
@@ -2059,7 +2058,7 @@ class GroupHandler(RACFHandler):
         if self._group_exists():
             cmd = f'ADDGROUP ({self.name})'
             return 0, f"Group {self.name} already exists", "", cmd
-        
+
         cmd = f'ADDGROUP ({self.name})'
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
@@ -2134,7 +2133,7 @@ class GroupHandler(RACFHandler):
         if not self._group_exists():
             cmd = f'DELGROUP ({self.name})'
             return 0, f"Group {self.name} does not exist", "", cmd
-        
+
         cmd = f'DELGROUP ({self.name})'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -2316,14 +2315,14 @@ class UserHandler(RACFHandler):
             expired = password_mgmt.get('expired')
             password = password_mgmt.get('password')
             passphrase = password_mgmt.get('passphrase')
-            
+
             # Validate expired can only be used with password or passphrase
             if expired is not None and password is None and passphrase is None:
                 raise ValueError(
                     "The 'expired' parameter can only be used when 'password' or 'passphrase' is also specified. "
                     "RACF does not allow EXPIRED/NOEXPIRED to be set independently."
                 )
-            
+
             # Validate passphrase: must be empty string (for NOPHRASE) OR 9-100 chars
             if passphrase is not None and len(passphrase) > 0:
                 if len(passphrase) < 9 or len(passphrase) > 100:
@@ -2359,10 +2358,10 @@ class UserHandler(RACFHandler):
         result['stdout'] = stdout
         result['stderr'] = stderr
         return result
-        
+
     def _user_exists(self):
         """Check if a user profile exists in RACF using LISTUSER command.
-        
+
         Returns
         -------
             bool: True if user exists (RC=0), False otherwise
@@ -2382,9 +2381,9 @@ class UserHandler(RACFHandler):
         if self._user_exists():
             cmd = f'ADDUSER ({self.name})'
             return 0, f"User {self.name} already exists", "", cmd
-        
+
         cmd = f'ADDUSER ({self.name})'
-        
+
         # Add NAME parameter if user_name is provided in general block
         general = self.params.get('general', {})
         if general and general.get('user_name') is not None and general.get('user_name') != "":
@@ -2416,7 +2415,7 @@ class UserHandler(RACFHandler):
             tuple: RC, stdout and stderr from the RACF command, and the ALTUSER command.
         """
         cmd = f'ALTUSER ({self.name})'
-        
+
         # Add NAME parameter if user_name is provided in general block
         general = self.params.get('general', {})
         if general and general.get('user_name') is not None:
@@ -2456,7 +2455,7 @@ class UserHandler(RACFHandler):
         if not self._user_exists():
             cmd = f'DELUSER ({self.name})'
             return 0, f"User {self.name} does not exist", "", cmd
-        
+
         cmd = f'DELUSER ({self.name})'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -2488,7 +2487,7 @@ class UserHandler(RACFHandler):
             pattern = r'\b' + re.escape(group_name.upper()) + r'\b'
             return re.search(pattern, stdout.upper()) is not None
         return False
-    
+
     def _connect_user(self):
         """Builds and execute a CONNECT command.
 
@@ -2568,7 +2567,7 @@ class UserHandler(RACFHandler):
         if connect.get('group_name') is not None:
             group_name = connect['group_name']
             cmd = f"{cmd}GROUP({group_name})"
-            
+
             # Check if user is connected to this group before attempting remove for idempotency
             if not self._user_connected_to_group(group_name):
                 # User not connected - idempotent behavior, return success with no changes
@@ -2616,9 +2615,9 @@ class UserHandler(RACFHandler):
                     parts.append(f" SECONDARY({language['secondary']})")
                 else:
                     parts.append(" NOSECONDARY")
-            
+
             parts.append(" )")
-        
+
         return ''.join(parts)
 
     def _make_omvs_substring(self):
@@ -3043,7 +3042,6 @@ class UserHandler(RACFHandler):
                     cmd = f"{cmd}EXPIRED "
                 else:
                     cmd = f"{cmd}NOEXPIRED "
-
 
         return cmd
 

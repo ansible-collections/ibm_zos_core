@@ -1708,17 +1708,23 @@ class RACFHandler():
 
         return ''.join(parts)
 
-    def purge_profile(self):
-        # First step: run the IRRUT200 utility.
-        # Getting the total allocation for the database.
-        try:
-            # Use custom HLQ if provided, otherwise use default
-            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
-            backup_name = datasets.tmp_name(high_level_qualifier=hlq)
-            sysin_file = None
+    def _run_irrut200_utility(self):
+        """
+        Run the IRRUT200 utility to get database space information.
 
+        Returns:
+            tuple: (database_total_space, database_used_space) on success
+        Raises:
+            Exception: If utility execution fails
+        """
+        hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+        backup_name = datasets.tmp_name(high_level_qualifier=hlq)
+        sysin_file = None
+
+        try:
             if not datasets.exists(self.database):
-                return 1, "", f"The RACF database {self.database} does not exist. No purge was performed.", None
+                raise Exception(f"The RACF database {self.database} does not exist. No purge was performed.")
+
             database_listing = datasets.list_datasets(self.database)[0]
             database_total_space = math.ceil(database_listing.total_space / 1000)
 
@@ -1758,8 +1764,8 @@ class RACFHandler():
             )
             percent_used = int(percent_used_search[2])
             database_used_space = math.ceil((database_total_space * percent_used) / 100)
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRUT200 utility: {traceback.format_exc()}", None
+
+            return database_total_space, database_used_space
         finally:
             # Cleaning up.
             if sysin_file and os.path.exists(sysin_file[1]):
@@ -1767,44 +1773,67 @@ class RACFHandler():
             if datasets.exists(backup_name):
                 datasets.delete(backup_name)
 
-        # Second step: run the IRRDBU00 utility.
-        try:
-            # Use custom HLQ if provided, otherwise use default
-            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
-            dump_data_set = datasets.tmp_name(high_level_qualifier=hlq)
-            irrdbu00_dds = [
-                ztypes.DDStatement('SYSPRINT', '*'),
-                ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
-                    self.database,
-                    disposition='SHR'
-                )),
-                ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
-                    dump_data_set,
-                    type='SEQ',
-                    disposition='NEW',
-                    normal_disposition='CATALOG',
-                    abnormal_disposition='DELETE',
-                    device_unit='SYSDA',
-                    primary=database_total_space,
-                    primary_unit='KB',
-                    secondary=math.ceil(database_total_space / 2),
-                    secondary_unit='KB',
-                    record_format='VB',
-                    record_length=4096,
-                    block_size=20480
-                ))
-            ]
-            lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
-            irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
+    def _run_irrdbu00_utility(self, database_total_space):
+        """
+        Run the IRRDBU00 utility to dump the RACF database.
 
-        # Third step: run IRRRID00.
-        # Putting the profile we want to search for in a text file.
+        Args:
+            database_total_space: Total space allocated for the database
+
+        Returns:
+            str: Name of the dump dataset created
+        Raises:
+            Exception: If utility execution fails
+        """
+        hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+        dump_data_set = datasets.tmp_name(high_level_qualifier=hlq)
+
+        irrdbu00_dds = [
+            ztypes.DDStatement('SYSPRINT', '*'),
+            ztypes.DDStatement('INDD1', ztypes.DatasetDefinition(
+                self.database,
+                disposition='SHR'
+            )),
+            ztypes.DDStatement('OUTDD', ztypes.DatasetDefinition(
+                dump_data_set,
+                type='SEQ',
+                disposition='NEW',
+                normal_disposition='CATALOG',
+                abnormal_disposition='DELETE',
+                device_unit='SYSDA',
+                primary=database_total_space,
+                primary_unit='KB',
+                secondary=math.ceil(database_total_space / 2),
+                secondary_unit='KB',
+                record_format='VB',
+                record_length=4096,
+                block_size=20480
+            ))
+        ]
+        lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
+        irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
+
+        return dump_data_set
+
+    def _run_irrrid00_utility(self, dump_data_set, database_total_space):
+        """
+        Run the IRRRID00 utility to generate and execute CLIST for profile purge.
+
+        Args:
+            dump_data_set: Name of the dump dataset from IRRDBU00
+            database_total_space: Total space allocated for the database
+
+        Returns:
+            tuple: (rc, stdout, stderr, cmd, clist, out)
+        Raises:
+            Exception: If utility execution fails
+        """
+        hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
+        sysin_name = datasets.tmp_name(high_level_qualifier=hlq)
+        clist = datasets.tmp_name(high_level_qualifier=hlq)
+
         try:
-            # Use custom HLQ if provided, otherwise use default
-            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
-            sysin_name = datasets.tmp_name(high_level_qualifier=hlq)
+            # Create SYSIN dataset with profile name
             sysin_data_set = datasets.create(
                 name=sysin_name,
                 dataset_type='SEQ',
@@ -1818,8 +1847,6 @@ class RACFHandler():
             )
             datasets.write(sysin_name, self.name, append=False)
 
-            hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
-            clist = datasets.tmp_name(high_level_qualifier=hlq)
             irrrid00_dds = [
                 ztypes.DDStatement('SYSPRINT', '*'),
                 ztypes.DDStatement('SYSOUT', '*'),
@@ -1882,7 +1909,6 @@ class RACFHandler():
             clist_content = datasets.read(clist)
 
             # Handle EXIT statement based on no_exec parameter
-
             entities_to_modify = []
             if not self.no_exec:
                 # Remove the EXIT statement (with surrounding whitespace)
@@ -1922,25 +1948,55 @@ class RACFHandler():
             # Read CLIST content BEFORE cleanup (must be inside try block)
             rc_dcat, out, err = self.module.run_command(f"dcat {clist}")
 
-            self.database_dumped = True
-            self.dump_kept = self.keep_dump
-            self.dump_name = dump_data_set if self.keep_dump else None
-
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRRID00 utility: {traceback.format_exc()}", None
+            return rc, stdout, stderr, cmd, clist, out
         finally:
             # Cleaning up.
             if datasets.exists(sysin_name):
                 datasets.delete(sysin_name)
+
+    def purge_profile(self):
+        """
+        Purge a RACF profile by running three utilities in sequence:
+        1. IRRUT200 - Get database space information
+        2. IRRDBU00 - Dump the RACF database
+        3. IRRRID00 - Generate and execute CLIST for profile deletion
+
+        Returns:
+            tuple: (rc, stdout, stderr, cmd)
+        """
+        dump_data_set = None
+        clist = None
+
+        try:
+            # Step 1: Run IRRUT200 utility to get database space information
+            database_total_space, database_used_space = self._run_irrut200_utility()
+        except Exception as err:
+            return 1, "", f"An error occurred while running the IRRUT200 utility: {traceback.format_exc()}", None
+
+        try:
+            # Step 2: Run IRRDBU00 utility to dump the RACF database
+            dump_data_set = self._run_irrdbu00_utility(database_total_space)
+        except Exception as err:
+            return 1, "", f"An error occurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
+
+        try:
+            # Step 3: Run IRRRID00 utility to generate and execute CLIST
+            rc, stdout, stderr, cmd, clist, out = self._run_irrrid00_utility(dump_data_set, database_total_space)
+
+            self.database_dumped = True
+            self.dump_kept = self.keep_dump
+            self.dump_name = dump_data_set if self.keep_dump else None
+
+            return 0, f"dump_data_set: {dump_data_set}, clist: {clist}: out: {out}", "", cmd
+        except Exception as err:
+            return 1, "", f"An error occurred while running the IRRRID00 utility: {traceback.format_exc()}", None
+        finally:
             # Clean up dump datasets if keep_dump is False
             if not self.keep_dump:
-                if datasets.exists(clist):
+                if clist and datasets.exists(clist):
                     datasets.delete(clist)
-                if datasets.exists(dump_data_set):
+                if dump_data_set and datasets.exists(dump_data_set):
                     datasets.delete(dump_data_set)
-
-        # return rc, stdout, stderr, cmd
-        return 0, f"dump_data_set: {dump_data_set}, clist: {clist}: out: {out}", "", cmd
 
 
 class GroupHandler(RACFHandler):

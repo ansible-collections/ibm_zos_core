@@ -4086,7 +4086,7 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
             assert result.get("failed") is True
             assert result.get("changed") is False
             msg = result.get("msg", "")
-            assert "database" in msg.lower(), (
+            assert "operation is purge but all of the following are missing: database" in msg.lower(), (
                 f"Expected 'database' in error message, got: {msg}"
             )
 
@@ -4271,6 +4271,65 @@ def test_user_purge_no_exec_explicit_false(ansible_zos_module):
 
     finally:
         cleanup_user(hosts, user_name)
+
+def test_user_purge_invalid_database_with_no_exec_false(ansible_zos_module):
+    """
+    Test: Purge User with no_exec=false but database is invalid.
+    Verifies that when an invalid database is provided, the purge operation
+    fails gracefully with an appropriate error message indicating the database
+    does not exist.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    invalid_database = "SYS11.RACF22.NONEXISTENT"  # Non-existent database
+
+    try:
+        # Create user with valid database
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            general={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Attempt to purge with invalid database and no_exec=false
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="purge",
+            scope="user",
+            database=invalid_database,
+            no_exec=False
+        )
+
+        for result in results.contacted.values():
+            # Should fail with appropriate error
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert result.get("rc") == 1
+            assert result.get("database_dumped") is False
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 0
+            assert result.get("entities_modified") == []
+
+            # Verify error message contains information about invalid database
+            stderr = result.get("stderr", "")
+            msg = result.get("msg", "")
+            assert "An error occurred while running the IRRUT200 utility".lower() in stderr.lower()
+            assert f"Exception: The RACF database {invalid_database} does not exist. No purge was performed".lower() in stderr.lower()
+            assert "An error occurred while executing the RACF command" in msg
+
+        # Verify user still exists (purge should have failed)
+        assert verify_user_exists(hosts, user_name), (
+            "User should still exist in RACF after failed purge with invalid database"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
 
 
 def test_user_purge_no_exec_true(ansible_zos_module):

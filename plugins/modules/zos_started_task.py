@@ -230,7 +230,7 @@ attributes:
     support: full
     description: Supports being used with the ``async`` keyword.
   check_mode:
-    support: None
+    support: none
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 EXAMPLES = r"""

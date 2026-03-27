@@ -3587,7 +3587,7 @@ def run_module(module, arg_def):
                     msg="Encoding conversion is only valid for USS source"
                 )
 
-        logger.debug("[SOURCE_PROCESSED] src=%s, src_ds_type=%s, is_src_dir=%s, "
+        logger.debug("Source validation is completed: src=%s, src_ds_type=%s, is_src_dir=%s, "
                      "is_src_file=%s, src_member=%s, is_src_alias=%s, is_src_gds=%s",
                      src, src_ds_type, is_src_dir, is_src_file, src_member, is_src_alias, is_src_gds)
 
@@ -3683,7 +3683,7 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
-            logger.debug("[DEST_PROCESSED] dest=%s, dest_name=%s, dest_ds_type=%s, dest_exists=%s, "
+            logger.debug("Destination validation is completed: dest=%s, dest_name=%s, dest_ds_type=%s, dest_exists=%s, "
                          "dest_member=%s, is_dest_alias=%s, is_dest_gds=%s, is_dest_gds_active=%s",
                          dest, dest_name, dest_ds_type, dest_exists, dest_member, is_dest_alias, is_dest_gds, is_dest_gds_active)
 
@@ -3923,7 +3923,7 @@ def run_module(module, arg_def):
 
             conv_path = copy_handler.convert_encoding(src, encoding, remote_src)
 
-        logger.debug("[COPY_OPERATION] src=%s -> dest=%s, src_ds_type=%s, dest_ds_type=%s, "
+        logger.debug("Copy operation is started: src=%s -> dest=%s, src_ds_type=%s, dest_ds_type=%s, "
                      "dest_exists=%s, replace=%s, force=%s",
                      src, dest, src_ds_type, dest_ds_type, dest_exists, replace, force)
         # ------------------------------- o -----------------------------------

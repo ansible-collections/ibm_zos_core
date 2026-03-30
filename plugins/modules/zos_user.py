@@ -3985,6 +3985,12 @@ def run_module():
         module.fail_json(**result)
 
     result = operation_handler.execute_operation()
+    
+    # Clear stderr if it only contains the command echo (TSO behavior)
+    if result.get('cmd') and result.get('stderr'):
+        if result['stderr'].strip() == result['cmd'].strip():
+            result['stderr'] = ""
+    
     result['stdout_lines'] = result['stdout'].split('\n')
     result['stderr_lines'] = result['stderr'].split('\n')
 

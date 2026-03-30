@@ -913,13 +913,18 @@ class DataSet(object):
         return stdout
 
     @staticmethod
-    def is_empty(name, volume=None, tmphlq=None):
+    def is_empty(name, ds_type=None, dataset_exists=None, volume=None, tmphlq=None):
         """Determines whether a data set is empty.
 
         Parameters
         ----------
         name : str
             The name of the data set.
+        ds_type : str
+            The type of the data set. If not provided, it will be determined.
+        dataset_exists : bool
+            Whether the dataset exists. If None, existence will be checked.
+            Use this to avoid redundant existence checks when already known.
         volume : str
             The volume where the data set resides.
         tmphlq : str
@@ -930,10 +935,16 @@ class DataSet(object):
         bool
             Whether the data set is empty or not.
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+
+        # Check existence only if not already known
+        if dataset_exists is None:
+            dataset_exists = DataSet.data_set_exists(name, volume, tmphlq=tmphlq)
+        if not dataset_exists:
             raise DatasetNotFoundError(name)
 
-        ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
+        # Get ds_type only if not provided
+        if ds_type is None:
+            ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
 
         if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)

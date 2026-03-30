@@ -2759,7 +2759,7 @@ def does_destination_allow_copy(
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
     if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
-        is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
+        is_dest_empty = data_set.DataSet.is_empty(dest, ds_type=dest_type, dataset_exists=dest_exists, volume=volume, tmphlq=tmphlq)
         if not (is_dest_empty or replace):
             return False
 
@@ -3784,7 +3784,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists:
         if backup or backup_name:
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
+            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name, ds_type=dest_ds_type, dataset_exists=True):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:

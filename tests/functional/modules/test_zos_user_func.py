@@ -4318,8 +4318,8 @@ def test_user_purge_invalid_database_with_no_exec_false(ansible_zos_module):
             # Verify error message contains information about invalid database
             stderr = result.get("stderr", "")
             msg = result.get("msg", "")
-            assert "An error occurred while running the IRRUT200 utility".lower() in stderr.lower()
-            assert f"Exception: The RACF database {invalid_database} does not exist. No purge was performed".lower() in stderr.lower()
+            expected_msg = f"the racf database {invalid_database} does not exist. no purge was performed"
+            assert expected_msg.lower() in stderr.lower()
             assert "An error occurred while executing the RACF command" in msg
 
         # Verify user still exists (purge should have failed)

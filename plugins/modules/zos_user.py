@@ -1615,6 +1615,27 @@ class RACFHandler():
             # When having valid option values, we should never reach this line.
             raise ValueError(f'Option {option_name} has an invalid value, please check your task.')
 
+    def _execute_racf_command(self, cmd):
+        """Helper method to execute a RACF command and update entity tracking.
+
+        Parameters
+        ----------
+            cmd: str
+                The RACF command to execute.
+
+        Returns
+        -------
+            tuple: RC, stdout, stderr, and the command string.
+        """
+
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
+
     def execute_operation(self):
         """This method should handle all calls to RACF operations inside a subclass.
 
@@ -1758,6 +1779,11 @@ class RACFHandler():
                 ztypes.DDStatement('SYSIN', ztypes.FileDefinition(sysin_file[1]))
             ]
             irrut200_response = mvscmd.execute_authorized('IRRUT200', dds=irrut200_dds)
+
+            # Check return code from IRRUT200 execution
+            if irrut200_response.rc != 0:
+                raise Exception(f"IRRUT200 failed with RC={irrut200_response.rc}: {irrut200_response.stderr_response}")
+
             percent_used_search = re.search(
                 r'(RACF DATA SET IS\s*)(\d+)(\s*PERCENT FULL)',
                 irrut200_response.stdout_response
@@ -1812,6 +1838,10 @@ class RACFHandler():
         ]
         lock_input = 'NOLOCKINPUT' if self.optimize_dump else 'LOCKINPUT'
         irrdbu00_response = mvscmd.execute_authorized('IRRDBU00', lock_input, dds=irrdbu00_dds)
+
+        # Check return code from IRRDBU00 execution
+        if irrdbu00_response.rc != 0:
+            raise Exception(f"IRRDBU00 failed with RC={irrdbu00_response.rc}: {irrdbu00_response.stderr_response}")
 
         return dump_data_set
 
@@ -1903,6 +1933,10 @@ class RACFHandler():
             ]
             irrrid00_response = mvscmd.execute('IRRRID00', dds=irrrid00_dds)
 
+            # Check return code from IRRRID00 execution
+            if irrrid00_response.rc != 0:
+                raise Exception(f"IRRRID00 failed with RC={irrrid00_response.rc}: {irrrid00_response.stderr_response}")
+
             # Read the generated CLIST and remove the EXIT statement
             # IRRRID00 includes EXIT as a safety feature to prevent accidental deletion
             # We need to remove it to allow the DELUSER/DELGROUP commands to execute
@@ -1947,12 +1981,32 @@ class RACFHandler():
 
             # Read CLIST content BEFORE cleanup (must be inside try block)
             rc_dcat, out, err = self.module.run_command(f"dcat {clist}")
+            if rc_dcat != 0:
+                # Log warning if dcat fails but don't fail the operation
+                self.module.warn(f"Failed to read CLIST content: RC={rc_dcat}, Error: {err}")
+                out = ""  # Provide empty output if dcat fails
 
             return rc, stdout, stderr, cmd, clist, out
         finally:
             # Cleaning up.
             if datasets.exists(sysin_name):
                 datasets.delete(sysin_name)
+
+    def _extract_rc_from_error(self, error_msg):
+        """
+        Extract return code from error message.
+
+        Args:
+            error_msg: Error message string that may contain "RC=<number>"
+
+        Returns:
+            int: Extracted RC if found, otherwise 1
+        """
+        import re
+        rc_match = re.search(r'RC=(\d+)', error_msg)
+        if rc_match:
+            return int(rc_match.group(1))
+        return 1
 
     def purge_profile(self):
         """
@@ -1963,6 +2017,10 @@ class RACFHandler():
 
         Returns:
             tuple: (rc, stdout, stderr, cmd)
+                rc: 0 for success, non-zero for failure
+                stdout: Standard output from commands
+                stderr: Standard error from commands
+                cmd: Command that was executed
         """
         dump_data_set = None
         clist = None
@@ -1970,26 +2028,39 @@ class RACFHandler():
         try:
             # Step 1: Run IRRUT200 utility to get database space information
             database_total_space, database_used_space = self._run_irrut200_utility()
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRUT200 utility: {traceback.format_exc()}", None
+        except Exception as e:
+            # Extract RC from exception message if available, otherwise use 1
+            error_msg = str(e)
+            rc = self._extract_rc_from_error(error_msg)
+            return rc, "", f"Failed to run IRRUT200 utility: {error_msg}", None
 
         try:
             # Step 2: Run IRRDBU00 utility to dump the RACF database
             dump_data_set = self._run_irrdbu00_utility(database_total_space)
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRDBU00 utility: {traceback.format_exc()}", None
+        except Exception as e:
+            # Extract RC from exception message if available, otherwise use 1
+            error_msg = str(e)
+            rc = self._extract_rc_from_error(error_msg)
+            return rc, "", f"Failed to run IRRDBU00 utility: {error_msg}", None
 
         try:
             # Step 3: Run IRRRID00 utility to generate and execute CLIST
             rc, stdout, stderr, cmd, clist, out = self._run_irrrid00_utility(dump_data_set, database_total_space)
 
+            # Check return code from tsocmd execution
+            if rc != 0:
+                return rc, stdout, stderr or f"CLIST execution failed with RC={rc}", cmd
+
             self.database_dumped = True
             self.dump_kept = self.keep_dump
             self.dump_name = dump_data_set if self.keep_dump else None
 
-            return 0, f"dump_data_set: {dump_data_set}, clist: {clist}: out: {out}", "", cmd
-        except Exception as err:
-            return 1, "", f"An error occurred while running the IRRRID00 utility: {traceback.format_exc()}", None
+            return 0, f"dump_data_set: {dump_data_set}, clist: {clist}, output: {out}", "", cmd
+        except Exception as e:
+            # Extract RC from exception message if available, otherwise use 1
+            error_msg = str(e)
+            rc = self._extract_rc_from_error(error_msg)
+            return rc, "", f"Failed to run IRRRID00 utility: {error_msg}", None
         finally:
             # Clean up dump datasets if keep_dump is False
             if not self.keep_dump:
@@ -2133,13 +2204,7 @@ class GroupHandler(RACFHandler):
                     cmd = f'{cmd}SHARED'
                 cmd = f'{cmd})'
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _update_group(self):
         """Builds and execute an ALTGROUP command.
@@ -2170,13 +2235,7 @@ class GroupHandler(RACFHandler):
             elif omvs.get('uid') == 'none':
                 cmd = f'{cmd} OMVS(NOGID)'
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _delete_group(self):
         """Builds and execute a DELGROUP command.
@@ -2191,13 +2250,8 @@ class GroupHandler(RACFHandler):
             return 0, f"Group {self.name} does not exist", "", cmd
 
         cmd = f'DELGROUP ({self.name})'
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _make_group_string(self):
         """Creates a string that defines the GROUP parameters of a profile.
@@ -2455,13 +2509,7 @@ class UserHandler(RACFHandler):
         cmd = f'{cmd} {self._make_operator_substring()}'.strip()
         cmd = f'{cmd} {self._make_password_mgmt_substring()}'.strip()
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _update_user(self):
         """Builds and execute an ALTUSER command.
@@ -2492,13 +2540,7 @@ class UserHandler(RACFHandler):
         cmd = f'{cmd} {self._make_operator_substring()}'.strip()
         cmd = f'{cmd} {self._make_password_mgmt_substring()}'.strip()
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _delete_user(self):
         """Builds and execute a DELUSER command.
@@ -2513,13 +2555,8 @@ class UserHandler(RACFHandler):
             return 0, f"User {self.name} does not exist", "", cmd
 
         cmd = f'DELUSER ({self.name})'
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _user_connected_to_group(self, group_name):
         """Check if a user is already connected to a group.
@@ -2601,13 +2638,7 @@ class UserHandler(RACFHandler):
             elif restrictions.get('delete_revoke', False):
                 cmd = f"{cmd}NOREVOKE"
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _remove_user(self):
         """Builds and execute a REMOVE command.
@@ -2637,13 +2668,7 @@ class UserHandler(RACFHandler):
             if self.params['general'].get('owner') is not None:
                 cmd = f"{cmd} OWNER({self.params['general']['owner']})"
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
-
-        if rc == 0:
-            self.num_entities_modified = 1
-            self.entities_modified = [self.name]
-
-        return rc, stdout, stderr, cmd
+        return self._execute_racf_command(cmd)
 
     def _make_language_substring(self):
         """Creates a string that defines the LANGUAGE block of a user profile.
@@ -3985,12 +4010,12 @@ def run_module():
         module.fail_json(**result)
 
     result = operation_handler.execute_operation()
-    
+
     # Clear stderr if it only contains the command echo (TSO behavior)
     if result.get('cmd') and result.get('stderr'):
         if result['stderr'].strip() == result['cmd'].strip():
             result['stderr'] = ""
-    
+
     result['stdout_lines'] = result['stdout'].split('\n')
     result['stderr_lines'] = result['stderr'].split('\n')
 

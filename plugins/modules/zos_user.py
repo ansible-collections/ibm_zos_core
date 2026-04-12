@@ -1617,6 +1617,7 @@ class RACFHandler():
 
     def _execute_racf_command(self, cmd):
         """Helper method to execute a RACF command and update entity tracking.
+        In check_mode, returns the command without executing it.
 
         Parameters
         ----------
@@ -1627,6 +1628,9 @@ class RACFHandler():
         -------
             tuple: RC, stdout, stderr, and the command string.
         """
+        # In check_mode, return the command without executing it
+        if self.module.check_mode:
+            return 0, "No Actual Execution in check mode", "", cmd
 
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
 
@@ -3994,7 +3998,6 @@ def run_module():
             stderr=str(err)
         )
 
-    # TODO: add support for check_mode.
     operation_handler = get_racf_handler(module, module.params)
     operation_handler.clean_input()
     if not operation_handler.are_blocks_defined():
@@ -4009,7 +4012,33 @@ def run_module():
         result['msg'] = str(err)
         module.fail_json(**result)
 
+    # In check_mode for purge operation, set no_exec to True to prevent execution
+    if module.check_mode:
+        module.params['no_exec'] = True
+
     result = operation_handler.execute_operation()
+
+    if module.check_mode:
+        # In check_mode, determine if changes would be made
+        # changed=true if operation would execute, changed=false if already in desired state
+        stdout = result.get('stdout', '')
+        cmd = result.get('cmd', '')
+
+        # Check if entity already in desired state (no changes needed)
+        pattern = r'already exists|does not exist|not connected to group'
+        if re.search(pattern, stdout, re.IGNORECASE):
+            result['changed'] = False
+            result['stdout'] = ""
+            result['num_entities_modified'] = 0
+            result['msg'] = stdout
+        else:
+            result['changed'] = True
+            result['msg'] = ""
+            result['stdout'] = stdout if module.params.get('operation', '').lower() == 'purge' else ""
+            result['num_entities_modified'] = 1
+            result['entities_modified'] = module.params['name']
+
+        module.exit_json(**result)
 
     # Clear stderr if it only contains the command echo (TSO behavior)
     if result.get('cmd') and result.get('stderr'):

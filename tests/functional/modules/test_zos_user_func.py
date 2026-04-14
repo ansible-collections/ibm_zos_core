@@ -5024,4 +5024,214 @@ def test_validation_password_and_passphrase_mutually_exclusive(ansible_zos_modul
 # ============================================================================
 # END OF USER PASSWORD MGMT TESTS
 # ============================================================================        
+# ============================================================================
+# TESTING - Invalid Operation/Scope Combinations
+# ============================================================================
+
+def test_connect_with_group_scope(ansible_zos_module):
+    """Test: Attempt CONNECT operation with scope=group (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create test group first
+        hosts.all.zos_user(
+            name=test_group,
+            operation='create',
+            scope='group'
+        )
+        
+        # Try to connect with group scope (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='connect',
+            scope='group',
+            connect={'group_name': test_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'not supported for group profiles' in result.get('msg', '').lower()
+            assert 'connect' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_group(hosts, test_group)
+
+
+def test_remove_with_group_scope(ansible_zos_module):
+    """Test: Attempt REMOVE operation with scope=group (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create test group first
+        hosts.all.zos_user(
+            name=test_group,
+            operation='create',
+            scope='group'
+        )
+        
+        # Try to remove with group scope (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='remove',
+            scope='group',
+            connect={'group_name': test_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'not supported for group profiles' in result.get('msg', '').lower()
+            assert 'remove' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_group(hosts, test_group)
+
+
+def test_update_without_blocks(ansible_zos_module):
+    """Test: Attempt UPDATE without any parameter blocks (should exit gracefully)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Create user first
+        hosts.all.zos_user(
+            name=test_user,
+            operation='create',
+            scope='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to update without any blocks (should exit gracefully)
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='update',
+            scope='user'
+            # No parameter blocks provided
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert 'no profile blocks were provided' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_connect_without_connect_block(ansible_zos_module):
+    """Test: Attempt CONNECT without connect block (should exit gracefully)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create user and group first
+        hosts.all.zos_user(
+            name=test_user,
+            operation='create',
+            scope='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        hosts.all.zos_user(
+            name=test_group,
+            operation='create',
+            scope='group'
+        )
+        
+        # Try to connect without connect block (should exit gracefully)
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='connect',
+            scope='user',
+            general={'owner': 'ADMIN'}  # Wrong block
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert 'no profile blocks were provided' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+        cleanup_group(hosts, test_group)
+
+
+def test_connect_without_group_name(ansible_zos_module):
+    """Test: Attempt CONNECT without group_name (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Create user first
+        hosts.all.zos_user(
+            name=test_user,
+            operation='create',
+            scope='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to connect without group_name (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='connect',
+            scope='user',
+            connect={'authority': 'use'}  # Missing group_name
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            # Check stderr or msg for the error
+            error_msg = result.get('stderr', '') + result.get('msg', '')
+            assert 'no group was provided' in error_msg.lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_invalid_scope_value(ansible_zos_module):
+    """Test: Invalid scope value (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Try to create with invalid scope
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='create',
+            scope='invalid_scope'  # Invalid value
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'value of scope must be one of: user, group, got: invalid_scope' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_invalid_operation_value(ansible_zos_module):
+    """Test: Invalid operation value (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Try to use invalid operation
+        results = hosts.all.zos_user(
+            name=test_user,
+            operation='invalid_op',  # Invalid value
+            scope='user'
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'value of operation must be one of: create, update, delete, purge, connect, remove, got: invalid_op' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+# ============================================================================
+# End Of Invalid Operation/Scope Combinations Testing
+# ============================================================================
 

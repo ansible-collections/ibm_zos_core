@@ -1511,14 +1511,16 @@ class RACFHandler():
         """Deletes unnecessary fields and blocks when an operation doesn't
         need them by using the information in self.filters.
         """
-        for block in self.filters[self.operation].get('nested', {}):
+        # Get filter configuration for this operation, default to empty dict if not found
+        operation_filters = self.filters.get(self.operation, {})
+        for block in operation_filters.get('nested', {}):
             first_level = self.params.get(block[0], {})
             # Added check to ensure it's a dictionary and is not None
             if isinstance(first_level, dict) and first_level.get(block[1]) is not None:
                 filtered_params = self.filter_block(self.params[block[0]][block[1]], block[2])
                 self.params[block[0]][block[1]] = filtered_params if filtered_params else None
 
-        for block in self.filters[self.operation].get('flat', {}):
+        for block in operation_filters.get('flat', {}):
             if self.params.get(block[0]) is not None:
                 filtered_params = self.filter_block(self.params[block[0]], block[1])
                 self.params[block[0]] = filtered_params if filtered_params else None
@@ -1549,10 +1551,15 @@ class RACFHandler():
         -------
             bool: Whether the module actually has something to do or if it should exit with no changes.
         """
-        if len(self.valid_blocks[self.operation]) == 0:
+
+        # Get valid blocks for this operation, default to empty list if not found
+        operation_blocks = self.valid_blocks.get(self.operation, [])
+        # if len(self.valid_blocks[self.operation]) == 0:
+        if len(operation_blocks) == 0:
             return True
 
-        for block in self.valid_blocks[self.operation]:
+        # for block in self.valid_blocks[self.operation]:
+        for block in operation_blocks:
             if self.params.get(block) is not None:
                 return True
 
@@ -2012,7 +2019,7 @@ class RACFHandler():
             return int(rc_match.group(1))
         return 1
 
-    def purge_profile(self):
+    def _purge_profile(self):
         """
         Purge a RACF profile by running three utilities in sequence:
         1. IRRUT200 - Get database space information
@@ -2113,7 +2120,12 @@ class GroupHandler(RACFHandler):
         'update': ['general', 'group', 'dfp', 'omvs'],
         'delete': [],
         'purge': [],
-        'list': []
+        'list': [],
+        # Note: 'connect' and 'remove' operations are not supported for groups
+        # and are intentionally included here. If attempted, execute_operation()
+        # will provide a clear error message.
+        'connect': [],
+        'remove': []
     }
 
     validations = [
@@ -2152,12 +2164,17 @@ class GroupHandler(RACFHandler):
         """
         if self.operation == 'create':
             rc, stdout, stderr, cmd = self._create_group()
-        if self.operation == 'update':
+        elif self.operation == 'update':
             rc, stdout, stderr, cmd = self._update_group()
-        if self.operation == 'delete':
+        elif self.operation == 'delete':
             rc, stdout, stderr, cmd = self._delete_group()
-        if self.operation == 'purge':
-            rc, stdout, stderr, cmd = self.purge_profile()
+        elif self.operation == 'purge':
+            rc, stdout, stderr, cmd = self._purge_profile()
+        else:
+            self.module.fail_json(
+                f"Operation {self.operation} is not supported for group profiles. "
+                f"Supported operations for groups: create, update, delete, purge"
+            )
 
         self.cmd = cmd
         # Getting the base dictionary.
@@ -2453,15 +2470,15 @@ class UserHandler(RACFHandler):
         """
         if self.operation == 'create':
             rc, stdout, stderr, cmd = self._create_user()
-        if self.operation == 'update':
+        elif self.operation == 'update':
             rc, stdout, stderr, cmd = self._update_user()
-        if self.operation == 'delete':
+        elif self.operation == 'delete':
             rc, stdout, stderr, cmd = self._delete_user()
-        if self.operation == 'purge':
-            rc, stdout, stderr, cmd = self.purge_profile()
-        if self.operation == 'connect':
+        elif self.operation == 'purge':
+            rc, stdout, stderr, cmd = self._purge_profile()
+        elif self.operation == 'connect':
             rc, stdout, stderr, cmd = self._connect_user()
-        if self.operation == 'remove':
+        elif self.operation == 'remove':
             rc, stdout, stderr, cmd = self._remove_user()
 
         self.cmd = cmd

@@ -62,3 +62,35 @@ options:
       - lang
       - csdata
 """
+
+EXAMPLES = r"""
+- name: Get basic user profile info
+  ibm.ibm_zos_core.zos_user_info:
+    name: TESTU01
+    scope: user
+
+- name: Get user profile info with segments
+  ibm.ibm_zos_core.zos_user_info:
+    name: TESTU01
+    scope: user
+    segments:
+      - dfp
+      - tso
+      - omvs
+      - operparm
+      - lang
+      - csdata
+
+- name: Get basic group profile info
+  ibm.ibm_zos_core.zos_user_info:
+    name: TSTGRP01
+    scope: group
+
+- name: Get group profile info with DFP and OMVS segments
+  ibm.ibm_zos_core.zos_user_info:
+    name: TSTGRP01
+    scope: group
+    segments:
+      - dfp
+      - omvs
+"""

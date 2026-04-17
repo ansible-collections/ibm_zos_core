@@ -1,4 +1,4 @@
-trivial:
+bugfixes:
   - zos_started_task - Added a get_system_logs variable to distinguish the boolean control flag from the system_logs output variable,
     resolving naming conflicts that were preventing successful log retrieval.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2440)

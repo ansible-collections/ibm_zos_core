@@ -11,14 +11,13 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+import re
+import subprocess
 import sys
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
 logger = SingletonLogger().get_logger(verbosity=3)
-try:
-    from zoautil_py import zsystem
-except ImportError:
-    zsystem = None
 
 __metaclass__ = type
 
@@ -27,22 +26,19 @@ __metaclass__ = type
 # Compatibility Matrix by Collection Version
 # ------------------------------------------------------------------------------
 COMPATIBILITY_MATRIX = {
-    "2.0.0": [
-        {"min_zoau_version": "1.4.0", "min_python_version": "3.12", "min_zos_version": 2.5},
-    ],
-    "2.1.0": [
-        {"min_zoau_version": "1.4.1", "min_python_version": "3.12", "min_zos_version": 2.5},
-    ],
-    "2.2.0": [
-        {"min_zoau_version": "1.4.2", "min_python_version": "3.12", "min_zos_version": 2.5},
-    ],
+    "2.0.0":
+        {"min_zoau_version": "1.4.0", "min_python_version": "3.12", "min_zos_version": "2.5" },
+    "2.1.0":
+        {"min_zoau_version": "1.4.1", "min_python_version": "3.12", "min_zos_version": "2.5" },
+    "2.2.0":
+        {"min_zoau_version": "1.4.2", "min_python_version": "3.12", "min_zos_version": "2.5" },
 }
 
 
 # ------------------------------------------------------------------------------
 # Version conversion helper
 # ------------------------------------------------------------------------------
-def version_tuple(ver_str):
+def get_version_tuple(ver_str):
     """Convert version string like '1.4.2' to tuple (1,4,2) for comparison."""
     return tuple(int(x) for x in ver_str.split("."))
 
@@ -50,7 +46,7 @@ def version_tuple(ver_str):
 # ------------------------------------------------------------------------------
 # Version Fetchers
 # ------------------------------------------------------------------------------
-def get_zoau_version(module=None):
+def get_zoau_version_str(module=None):
     try:
         from zoautil_py import ZOAU_API_VERSION
         return ZOAU_API_VERSION
@@ -62,20 +58,13 @@ def get_zoau_version(module=None):
         return None
 
 
-def get_python_version_info():
-    return sys.version_info.major, sys.version_info.minor
+def get_python_version_str():
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    logger.debug("Found python version: %s", python_version)
+    return python_version
 
 
-def get_python_version():
-    return f"{sys.version_info.major}.{sys.version_info.minor}.0"
-
-
-import json
-import subprocess
-import re
-
-
-def get_zos_version(module=None):
+def get_zos_version_str():
     """
     Get z/OS version by calling 'uname -Irsv' and parsing the output.
 
@@ -84,7 +73,7 @@ def get_zos_version(module=None):
     resulting in z/OS version 2.5.
 
     Returns:
-        str: z/OS version in format "X.Y" (e.g., "2.5"), or None if unable to determine.
+        str: z/OS version (e.g., "2.5"), or None if unable to determine.
     """
     try:
         # Execute uname -Irsv command
@@ -135,75 +124,54 @@ def get_zos_version(module=None):
 # ------------------------------------------------------------------------------
 def validate_dependencies(module):
     logger.debug("Starting dependency validation process.")
-    zoau_version = get_zoau_version(module)
-    python_major, python_minor = get_python_version_info()
-    python_version_str = get_python_version()
-    zos_version_str = get_zos_version(module)
-    if zos_version_str is None:
-        logger.warning("get_zos_version() returned None. Possible ZOAU or module issue.")
-    else:
-        logger.debug("z/OS version retrieved successfully: %s", zos_version_str)
-    collection_version = version.__version__
-    logger.debug(
-        "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
-        zoau_version,
-        python_version_str,
-        zos_version_str,
-        collection_version,
-    )
-    if not all([zoau_version, python_version_str, collection_version]):
-        logger.error("Failed to fetch one or more required dependencies.")
-        module.fail_json(
-            msg="Unable to fetch one or more required dependencies. Dependencies checked are ZOAU, Python, z/OS."
-        )
 
-    # Convert versions to proper types
-    current_python = (python_major, python_minor)
-    try:
-        zos_version = float(zos_version_str) if zos_version_str else None
-    except ValueError:
-        zos_version = None
+    collection_version = version.__version__
+
+    warnings = []
 
     # Find compatibility entry
-    compat_list = COMPATIBILITY_MATRIX.get(collection_version, [])
-    if not compat_list:
-        logger.error("No compatibility info found for collection version: %s", collection_version)
+    compat_dict = COMPATIBILITY_MATRIX.get(collection_version, {})
+
+    if not compat_dict:
         module.fail_json(msg=f"No compatibility information for collection version: {collection_version}")
 
-    matched_compat = None
-    for compat in compat_list:
-        if version_tuple(zoau_version) >= version_tuple(compat["min_zoau_version"]):
-            matched_compat = compat
-            break
+    # --- z/OS version check ---
+    current_zos_ver = get_zos_version_str()
+    min_zos_ver = compat_dict["min_zos_version"]
+    if current_zos_ver is None:
+        warnings.append("Unable to retrieve z/OS version.")
+    elif get_version_tuple(current_zos_ver) < get_version_tuple(min_zos_ver):
+            warnings.append(f"z/OS {current_zos_ver} is below the minimum tested version {min_zos_ver}.")
 
-    if not matched_compat:
+    # --- Python version checks ---
+    current_python_ver = get_python_version_str()
+    min_python_ver = compat_dict["min_python_version"]
+
+    if get_version_tuple(current_python_ver) < get_version_tuple(min_python_ver):
+        warnings.append(f"Python {current_python_ver} is below the minimum tested version {min_python_ver}.")
+
+    # --- ZOAU version checks ---
+    current_zoau_ver = get_zoau_version_str(module)
+    min_zoau_ver = compat_dict["min_zoau_version"]
+    if current_zoau_ver is None:
+        warnings.append("Unable to retrieve ZOAU version.")
+    elif get_version_tuple(current_zoau_ver) < get_version_tuple(min_zoau_ver):
         msg = (
-            f"Incompatible ZOAU version: {zoau_version}. "
+            f"Incompatible ZOAU version: {current_zoau_ver}. "
             f"For collection version {collection_version}, "
-            f"the minimum required ZOAU version is {compat_list[0]['min_zoau_version']}."
+            f"the minimum required ZOAU version is {min_zoau_ver}."
         )
         logger.error(msg)
         module.fail_json(msg=msg)
 
-    # --- Validation logic ---
-    warnings = []
-    max_python = (3, 13)
-    max_zos = 3.1
 
-    # --- Python warnings ---
-    min_python = version_tuple(matched_compat["min_python_version"])
-    if current_python < min_python:
-        warnings.append(f"Python {python_version_str} is below the minimum tested version {min_python[0]}.{min_python[1]}.")
-    elif current_python > max_python:
-        warnings.append(f"Python {python_version_str} exceeds the maximum tested version {max_python[0]}.{max_python[1]}.")
-
-    # --- z/OS warnings ---
-    min_zos = matched_compat["min_zos_version"]
-    if zos_version is not None:
-        if zos_version < min_zos:
-            warnings.append(f"z/OS {zos_version_str} is below the minimum tested version {min_zos}.")
-        elif zos_version > max_zos:
-            warnings.append(f"z/OS {zos_version_str} exceeds the maximum tested version {max_zos}.")
+    logger.debug(
+        "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
+        current_zoau_ver,
+        current_python_ver,
+        current_zos_ver,
+        collection_version,
+    )
 
     # --- Warn and continue ---
     for w in warnings:

@@ -71,30 +71,62 @@ def get_python_version():
 
 
 import json
+import subprocess
+import re
 
 
 def get_zos_version(module=None):
-    if zsystem is None:
-        if module:
-            module.warn("Unable to import ZOAU zsystem module.")
-        logger.warning("Unable to import ZOAU zsystem module.")
-        return None
+    """
+    Get z/OS version by calling 'uname -Irsv' and parsing the output.
+
+    Expected output format: "z/OS 05.00 02"
+    Where the last number (02) is the version and the middle number (05) is the release,
+    resulting in z/OS version 2.5.
+
+    Returns:
+        str: z/OS version in format "X.Y" (e.g., "2.5"), or None if unable to determine.
+    """
     try:
-        sys_info = zsystem.zinfo("sys", json_format=True)
-        if isinstance(sys_info, str):
-            sys_info = json.loads(sys_info)
-        sys_data = (
-            sys_info.get("data", {}).get("sys_info")
-            or sys_info.get("sys_info", {})
+        # Execute uname -Irsv command
+        result = subprocess.run(
+            ['uname', '-Irsv'],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5
         )
-        version_ = sys_data.get("product_version")
-        release = sys_data.get("product_release")
-        if version_ and release:
-            return f"{int(version_)}.{int(release)}"
+        output = result.stdout.strip()
+        logger.debug("uname -Irsv output: %s", output)
+
+        # Parse output format: "z/OS RR.MM VV"
+        # Example: "z/OS 05.00 02" -> version 2.5
+        # Where: VV (02) = version 2, RR (05) = release 5
+        match = re.search(r'z/OS\s+(\d+)\.(\d+)\s+(\d+)', output)
+
+        if match:
+            rr = int(match.group(1))  # e.g., 05 (release)
+            mm = int(match.group(2))  # e.g., 00 (modification level, not used)
+            vv = int(match.group(3))  # e.g., 02 (version)
+
+            # The version is VV (02 = version 2)
+            # The release is RR (05 = release 5)
+            version_major = vv
+            version_minor = rr
+
+            zos_version = f"{version_major}.{version_minor}"
+            logger.debug("Parsed z/OS version: %s", zos_version)
+            return zos_version
+        else:
+            logger.warning("Unable to parse z/OS version from uname output: %s", output)
+            return None
+
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Command 'uname -Irsv' failed with return code {e.returncode}: {e.stderr}"
+        logger.warning(error_msg)
+        return None
     except Exception as e:
-        if module:
-            module.warn(f"Failed to fetch z/OS version: {e}")
-        logger.warning("Failed to fetch z/OS version: %s", e)
+        error_msg = f"Failed to fetch z/OS version: {e}"
+        logger.warning(error_msg)
         return None
 
 

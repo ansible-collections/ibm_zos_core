@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -138,7 +138,7 @@ options:
 #     type: bool
   reusable_asid:
     description:
-        - When I(reusable_asid) is C(True) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
+        - When I(reusable_asid) is C(true) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
           to the address space created by the START command. If I(reusable_asid) is not specified or REUSASID(NO) is specified in
           DIAGxx, an ordinary ASID is assigned.
         - Only applicable when I(state) is C(started), otherwise ignored.
@@ -256,15 +256,15 @@ EXAMPLES = r"""
     state: "started"
     member: "PROCAPP"
     job_name: "SAMPLE"
-    verbose: True
+    verbose: true
 
 - name: Start a started task and wait for 30 seconds before fetching task details.
   zos_started_task:
     state: "started"
     member: "PROCAPP"
-    verbose: True
+    verbose: true
     wait_time: 30
-    wait_full_time: True
+    wait_full_time: true
 
 - name: Start a started task specifying the subsystem and enabling a reusable ASID.
   zos_started_task:
@@ -307,7 +307,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "cancelled"
     task_name: "SAMPLE"
-    asidx: 0014
+    asidx: "0014"
 
 - name: Modify a started task's parameters.
   zos_started_task:
@@ -336,7 +336,7 @@ EXAMPLES = r"""
     state: "stopped"
     task_name: "SAMPLE"
     identifier: "SAMPLE"
-    asidx: 00A5
+    asidx: "00A5"
 
 - name: Force a started task using it's task name.
   zos_started_task:
@@ -483,7 +483,6 @@ import re
 import math
 import time
 from datetime import datetime, timedelta, timezone
-import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -1220,7 +1219,7 @@ def fetch_logs(command, before_time):
 def get_task_logs(task_id):
     try:
         task_logs = jobs.read_output(task_id)
-    except Exception as err:
+    except Exception:
         return ""
 
     return task_logs

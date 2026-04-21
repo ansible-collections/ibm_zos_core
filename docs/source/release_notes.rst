@@ -1,23 +1,23 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2025                                    .
+.. © Copyright IBM Corporation 2020, 2026                                    .
 .. ...........................................................................
 
 ========
 Releases
 ========
 
-Version 1.16.0-beta.1
-=====================
+Version 1.16.0
+==============
 
 Minor Changes
 -------------
 
-- ``zos_apf`` - Adds new alias ``target`` for ``data_set_name`` and a warning message that it will be deprecated on 2.0.0.
+- ``zos_apf`` - Adds a new alias ``target`` for option ``data_set_name`` and a warning message that ``data_set_name`` will be deprecated in version 2.0.0.
 - ``zos_archive``
 
-   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and a warning message that it will be deprecated on 2.0.0.
-   - Adds new alias ``options`` for ``format_options`` and a warning message that it will be deprecated on 2.0.0.
-   - Adds new alias ``type`` for ``name`` and a warning message that it will be deprecated on 2.0.0.
+   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and a warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``options`` for option ``format_options`` and a warning message that ``format_options`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``type`` for option ``name`` and a warning message that ``name`` will be deprecated in version 2.0.0.
 
 - ``zos_backup_restore``
 
@@ -26,53 +26,69 @@ Minor Changes
 
 - ``zos_copy``
 
-   - Adds a better error message that gives user a hint that copy issue can be due to a GDS part of ``src`` GDG is being used by another process.
-   - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``replace`` for ``force`` and a warning message that it will be deprecated on 2.0.0.
+   - Improved error message that identifies if a copy operation fails when a GDS in the ``src`` GDG is being used by another process.
+   - Adds a new alias ``binary`` for option ``is_binary`` and a warning message that ``is_binary`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``replace`` for option ``force`` and a warning message that ``force`` will be deprecated in version 2.0.0.
 
 - ``zos_data_set``
 
-   - Enhances error messages when creating a Generation Data Group fails.
-   - Enhances error messages when deleting a Generation Data Group fails.
-   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows uncataloging a data set without deleting it from the volume's VTOC.
+   - Improved error messages when creating or deleting a Generation Data Group fails.
+   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows a data set to be uncataloged without deleting it from the volume's VTOC.
 
-- ``zos_fetch`` - Adds new alias ``binary`` for ``is_binary`` and warning message that will be deprecated on 2.0.0.
+- ``zos_fetch`` - Adds new alias ``binary`` for option ``is_binary`` and a warning message that ``is_binary`` will be deprecated in version 2.0.0.
 - ``zos_job_output``
 
-   - Adds new alias ``dd_name`` for ``ddname`` and warning message that will be alias on 2.0.0.
-   - Adds support to query SYSIN DDs from a job with new option input.
+   - Adds a new alias ``dd_name`` for option ``ddname`` and a warning message that ``ddname`` will be deprecated on 2.0.0.
+   - Adds support to query **SYSIN DDs** from a job with module option ``sysin_dd``.
 
 - ``zos_job_submit``
 
-   - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
-   - Adds support for jobs with TYPRUN=JCLHOLD and TYPRUN=HOLD.
+   - Adds a new alias ``wait_time`` for option ``wait_time_s`` and a warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
+   - Adds support for jobs with ``TYPRUN=JCLHOLD`` and ``TYPRUN=HOLD``.
 
 - ``zos_mount``
 
-   - Adds new alias ``marker`` for ``comment`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``name`` for ``data_store`` and warning message that will be deprecated on 2.0.0.
+   - Adds a new alias ``marker`` for option ``comment`` and a warning message that ``comment`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``name`` for option ``data_store`` and a warning message that ``data_store`` will be deprecated in version 2.0.0.
 
-- ``zos_mvs_raw`` - Adds new ``raw`` option under ``dd_data_set`` that lets the MVS program create datasets with its own DCB attributes without the user having to specify them.
-- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and warning message that will be deprecated on 2.0.0.
+- ``zos_mvs_raw`` - Adds a new ``raw`` module option under ``dd_data_set`` that allows the MVS program to create datasets with its own DCB attributes without the user having to specify them.
+- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and a warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
 - ``zos_unarchive``
 
-   - Adds new alias ``adrdssu`` for ``use_adrdssu`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``options`` for ``format_options`` and warning message that will be deprecated on 2.0.0.
-   - Adds new alias ``type`` for ``name`` and warning message that will be deprecated on 2.0.0.
-
-
-Bugfixes
---------
-
-- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type, which is ``m`` for megabytes.
+   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and a warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``options`` for option ``format_options`` and a warning message that ``format_options`` will be deprecated in version 2.0.0.
+   - Adds a new alias ``type`` for option ``name`` and a warning message that ``name`` will be deprecated in version 2.0.0.
 
 New Modules
 -----------
 
-- ibm.ibm_zos_core.zos_started_task - Perform operations on started tasks.
+- ``zos_started_task`` - Perform operations on started tasks such as start, display, modify, cancel, force and stop.
 
 Availability
 ------------
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying program objects or load modules with module option ``executable=True`` may not retain an exact byte-for-byte match with source; functionality remains unaffected.
+
+
+Version 1.15.1
+==============
+
+Bugfixes
+--------
+
+- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
+- zos_copy - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
+- zos_replace - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided ``encoding`` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
+
+Availability
+------------
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 

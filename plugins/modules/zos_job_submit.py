@@ -697,6 +697,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
@@ -994,6 +995,11 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # Extract values from set module options
     remote_src = parsed_args.get("remote_src")

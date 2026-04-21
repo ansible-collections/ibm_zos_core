@@ -578,6 +578,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -669,6 +670,11 @@ def main():
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
         access = params.get('access')
+
+        # Initialize logging module
+        module_verbosity_level = module._verbosity
+        logger = SingletonLogger().get_logger(module_verbosity_level)
+        logger.info("Logger initialized successfully")
 
         if sms and bool(sms.get("storage_class")) and sms.get("disable_automatic_storage_class"):
             module.fail_json(msg="storage_class and disable_automatic_storage_class are mutually exclusive, only one can be use by operation.")

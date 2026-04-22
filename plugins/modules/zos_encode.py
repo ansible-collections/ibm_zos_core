@@ -633,10 +633,19 @@ def run_module():
                     )
 
                 if not dest_exists:
-                    raise EncodeError(
-                        "Data set {0} is not cataloged, please check data set provided in "
-                        "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
-                    )
+                    gds_relative_name = data_set.DataSet.is_gds_relative_name(dest)
+                    # TODO: Fails because gds does not exist - create method for checking if gds absolute name?
+                    # gds_absolute_name = data_set.DataSet.resolve_gds_absolute_name(dest) 
+                    if gds_relative_name:
+                       raise EncodeError(
+                            "ERR1: Generation Data Set {0} does not exist in the "
+                            "Generation Data Group or is not cataloged.".format(data_set.extract_dsname(dest_data_set.raw_name))
+                        )
+                    else:
+                        raise EncodeError(
+                            "Data set {0} is not cataloged, please check data set provided in "
+                            "the dest option. Hello from the error message".format(data_set.extract_dsname(dest_data_set.raw_name)) # TODO: Remove added comment
+                        )
 
                 if is_name_member:
                     ds_type_dest = "PS"

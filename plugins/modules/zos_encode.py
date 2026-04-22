@@ -585,10 +585,19 @@ def run_module():
                 )
 
             if not dest_exists:
-                raise EncodeError(
-                    "Data set {0} is not cataloged, please check data set provided in "
-                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
-                )
+                # Check if src is a GDS
+                gds_relative_name = data_set.DataSet.is_gds_relative_name(src)
+                gds_absolute_name = data_set.DataSet.is_gds_absolute_name(src)
+                if gds_relative_name or gds_absolute_name:
+                    raise EncodeError(
+                        "Generation Data Set {0} does not exist in the "
+                        "Generation Data Group or is not cataloged.".format(data_set.extract_dsname(src_data_set.raw_name))
+                    )
+                else:
+                    raise EncodeError(
+                        "Data set {0} is not cataloged, please check data set provided in "
+                        "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                    )
 
             if is_name_member:
                 if not data_set.DataSet.data_set_member_exists(src_data_set.name):
@@ -633,18 +642,18 @@ def run_module():
                     )
 
                 if not dest_exists:
+                    # Check if dest is a GDS
                     gds_relative_name = data_set.DataSet.is_gds_relative_name(dest)
-                    # TODO: Fails because gds does not exist - create method for checking if gds absolute name?
-                    # gds_absolute_name = data_set.DataSet.resolve_gds_absolute_name(dest) 
-                    if gds_relative_name:
+                    gds_absolute_name = data_set.DataSet.is_gds_absolute_name(dest) 
+                    if gds_relative_name or gds_absolute_name:
                        raise EncodeError(
-                            "ERR1: Generation Data Set {0} does not exist in the "
+                            "Generation Data Set {0} does not exist in the "
                             "Generation Data Group or is not cataloged.".format(data_set.extract_dsname(dest_data_set.raw_name))
                         )
                     else:
                         raise EncodeError(
                             "Data set {0} is not cataloged, please check data set provided in "
-                            "the dest option. Hello from the error message".format(data_set.extract_dsname(dest_data_set.raw_name)) # TODO: Remove added comment
+                            "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
                         )
 
                 if is_name_member:

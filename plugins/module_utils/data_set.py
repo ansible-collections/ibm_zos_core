@@ -1830,6 +1830,25 @@ class DataSet(object):
         return bool(match)
 
     @staticmethod
+    def is_gds_absolute_name(name):
+        """Determine if name is a gdg absolute name based
+        on the GDS absolute name syntax .GxxxxVyy, eg. 'USER.GDG.G0002V01'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS absolute name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS absolute name.
+        """
+        pattern = r'(.+)\.G(\d{4})V(\d{2})'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
     def resolve_gds_absolute_name(relative_name):
         """Given a GDS relative name, returns its absolute name.
 

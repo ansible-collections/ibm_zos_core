@@ -342,6 +342,7 @@ except Exception:
 class FetchHandler:
     def __init__(self, module):
         self.module = module
+        self.verbosity = module._verbosity
 
     def _fail_json(self, **kwargs):
         """Wrapper for AnsibleModule.fail_json.
@@ -398,7 +399,10 @@ class FetchHandler:
         rec_total = 80
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
-        cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
+        cmd = "mvscmdauth"
+        if self.verbosity >= 3:
+            cmd = "{0} -d".format(cmd)
+        cmd = "{0} --pgm=idcams --sysprint=stdout --sysin=stdin".format(cmd)
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
 
         if not rc:

@@ -224,7 +224,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
     return backup_name
 
 
-def _copy_ds(ds, bk_ds, tmphlq=None):
+def _copy_ds(ds, bk_ds, tmphlq=None, verbosity=0):
     """Copy the contents of a data set to another.
 
     Parameters
@@ -235,6 +235,8 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
         The destination data set to copy to.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Verbosity level for debugging.
 
     Returns
     -------
@@ -247,14 +249,17 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
         When copying data fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    _allocate_model(bk_ds, ds, tmphlq=tmphlq)
+    _allocate_model(bk_ds, ds, tmphlq=tmphlq, verbosity=verbosity)
     repro_cmd = """  REPRO -
     INDATASET('{0}') -
     OUTDATASET('{1}')""".format(
         ds, bk_ds
     )
 
-    cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+    cmd = "mvscmdauth"
+    if verbosity >= 3:
+        cmd = "{0} -d".format(cmd)
+    cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -273,7 +278,7 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
     return rc
 
 
-def _allocate_model(ds, model, tmphlq=None):
+def _allocate_model(ds, model, tmphlq=None, verbosity=0):
     """Allocate a data set using allocation information of a model data set.
 
     Parameters
@@ -302,7 +307,10 @@ def _allocate_model(ds, model, tmphlq=None):
         ds, model
     )
 
-    cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
+    cmd = "mvscmdauth"
+    if verbosity >= 3:
+        cmd = "{0} -d".format(cmd)
+    cmd = "{0} --pgm=ikjeft01 --systsprt=* --systsin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

@@ -162,7 +162,7 @@ class EncodeUtils(object):
         parsed_args = parser.parse_args({"encoding": encoding})
         return parsed_args.get("encoding")
 
-    def listdsi_data_set(self, ds, tmphlq=None):
+    def listdsi_data_set(self, ds, tmphlq=None, verbosity=0):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set.
 
@@ -172,6 +172,8 @@ class EncodeUtils(object):
             The VSAM data set to be checked.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            Verbosity level for debugging.
 
         Returns
         -------
@@ -190,7 +192,10 @@ class EncodeUtils(object):
         space_u = 1024
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
 
-        cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd = "{0} -d".format(cmd)
+        cmd = "{0} --pgm=ikjeft01 --systsprt=stdout --systsin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

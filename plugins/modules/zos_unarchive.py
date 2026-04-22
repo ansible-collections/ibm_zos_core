@@ -554,6 +554,7 @@ class Unarchive():
             List of paths to exclude in encoding.
         """
         self.module = module
+        self.verbosity = module._verbosity
         self.src = module.params.get("src")
         self.dest = module.params.get("dest")
         self.format = module.params.get("format").get("type")
@@ -1209,7 +1210,10 @@ class MVSUnarchive(Unarchive):
             The source of the archive.
         """
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
-        cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
+        cmd = " mvscmdauth"
+        if self.verbosity >= 3:
+            cmd = "{0} -d".format(cmd)
+        cmd = "{0} --pgm=ADRDSSU --archive={1},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(cmd, source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd, errors='replace')
         self._get_restored_datasets(out)
 

@@ -168,7 +168,7 @@ def copy_gdg2uss(src, dest, binary=False, asa_text=False):
     return True
 
 
-def copy_vsam_ps(src, dest, tmphlq=None):
+def copy_vsam_ps(src, dest, tmphlq=None, verbosity=0):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa.
 
     Parameters
@@ -179,6 +179,8 @@ def copy_vsam_ps(src, dest, tmphlq=None):
         The PS or VSAM(KSDS) data set.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Verbosity level for debugging.
 
     Returns
     -------
@@ -199,7 +201,10 @@ def copy_vsam_ps(src, dest, tmphlq=None):
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)
 
-    cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
+    cmd = "mvscmdauth"
+    if verbosity >= 3:
+        cmd = "{0} -d".format(cmd)
+    cmd = "{0} --pgm=idcams --sysprint=stdout --sysin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

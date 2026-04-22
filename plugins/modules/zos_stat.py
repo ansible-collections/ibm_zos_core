@@ -2022,13 +2022,17 @@ class VSAMDataSetHandler(DataSetHandler):
             ds_type=ds_type,
             alias=alias
         )
+        self.verbosity = module._verbosity
 
     def query(self):
         """Uses LISTCAT to query facts about a VSAM."""
         data = super().query()
 
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
-        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+        mvs_cmd = 'mvscmdauth'
+        if self.verbosity >= 3:
+            mvs_cmd = f'{mvs_cmd} -d'
+        mvs_cmd = f'{mvs_cmd} --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
 
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
 
@@ -2241,7 +2245,10 @@ class GenerationDataGroupHandler(DataSetHandler):
 
         # Now we call LISTCAT to get the creation time.
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
-        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+        mvs_cmd = 'mvscmdauth'
+        if self.verbosity >= 3:
+            mvs_cmd = f'{mvs_cmd} -d'
+        mvs_cmd = f'{mvs_cmd} --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
         if rc > 0:
             raise QueryException(

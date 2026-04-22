@@ -1535,7 +1535,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch, verbosity=0):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1552,6 +1552,8 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     force : str
         Whether or not the data set can be shared with others during the
         operation.
+    verbosity : int
+        Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
 
     Returns
     -------
@@ -1560,21 +1562,21 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     """
     changed = False
     if state == "present" and data_set.data_set_type == "member":
-        changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq)
+        changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq, verbosity=verbosity)
     elif state == "present" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_present(replace=replace)
+        changed = data_set.ensure_present(replace=replace, verbosity=verbosity)
     elif state == "present":
-        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
+        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force, verbosity=verbosity)
     elif state == "absent" and data_set.data_set_type == "member":
-        changed = data_set.ensure_absent(force=force)
+        changed = data_set.ensure_absent(force=force, verbosity=verbosity)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_absent(force=force, noscratch=noscratch)
+        changed = data_set.ensure_absent(force=force, noscratch=noscratch, verbosity=verbosity)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch, verbosity=verbosity)
     elif state == "cataloged":
-        changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
+        changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq, verbosity=verbosity)
     elif state == "uncataloged":
-        changed = data_set.ensure_uncataloged(tmp_hlq=tmp_hlq)
+        changed = data_set.ensure_uncataloged(tmp_hlq=tmp_hlq, verbosity=verbosity)
     return changed
 
 
@@ -2118,6 +2120,7 @@ def run_module():
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
                     noscratch=data_set_params.get("noscratch"),
+                    verbosity=module_verbosity_level,
                 )
                 data_set_list.append(data_set)
                 result["changed"] = result["changed"] or current_changed

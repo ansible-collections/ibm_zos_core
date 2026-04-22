@@ -162,7 +162,7 @@ class EncodeUtils(object):
         parsed_args = parser.parse_args({"encoding": encoding})
         return parsed_args.get("encoding")
 
-    def listdsi_data_set(self, ds, tmphlq=None):
+    def listdsi_data_set(self, ds, tmphlq=None, verbosity=0):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set.
 
@@ -172,6 +172,9 @@ class EncodeUtils(object):
             The VSAM data set to be checked.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -190,7 +193,10 @@ class EncodeUtils(object):
         space_u = 1024
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
 
-        cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -468,7 +474,7 @@ class EncodeUtils(object):
         return convert_rc
 
     def mvs_convert_encoding(
-        self, src, dest, from_code, to_code, src_type=None, dest_type=None, tmphlq=None
+        self, src, dest, from_code, to_code, src_type=None, dest_type=None, tmphlq=None, verbosity=0
     ):
         """Convert the encoding of the data from
            1) USS to MVS(PS, PDS/E VSAM)
@@ -494,6 +500,9 @@ class EncodeUtils(object):
             The output MVS data set type.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -517,7 +526,7 @@ class EncodeUtils(object):
                 temp_src = mkdtemp()
                 rc, out, err = copy.copy_uss_mvs(src, temp_src)
             if src_type == "KSDS":
-                reclen, space_u = self.listdsi_data_set(src.upper(), tmphlq=tmphlq)
+                reclen, space_u = self.listdsi_data_set(src.upper(), tmphlq=tmphlq, verbosity=verbosity)
                 # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
@@ -536,7 +545,7 @@ class EncodeUtils(object):
                     convert_rc = True
                 else:
                     if dest_type == "KSDS":
-                        reclen, space_u = self.listdsi_data_set(dest.upper(), tmphlq=tmphlq)
+                        reclen, space_u = self.listdsi_data_set(dest.upper(), tmphlq=tmphlq, verbosity=verbosity)
                         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
                         reclen += 4
                         temp_ps = self.temp_data_set(reclen, space_u)

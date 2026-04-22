@@ -342,6 +342,7 @@ from os import makedirs
 from os import listdir
 import re
 import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -538,6 +539,12 @@ def run_module():
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
     parsed_args = parser.parse_args(module.params)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
+
     src = parsed_args.get("src")
     dest = parsed_args.get("dest")
     backup = parsed_args.get("backup")
@@ -546,6 +553,7 @@ def run_module():
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
     tmphlq = module.params.get('tmp_hlq')
+    verbosity = module._verbosity
 
     # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
     # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not
@@ -714,7 +722,8 @@ def run_module():
                 to_encoding,
                 src_type=ds_type_src,
                 dest_type=ds_type_dest,
-                tmphlq=tmphlq
+                tmphlq=tmphlq,
+                verbosity=verbosity
             )
 
         if convert_rc:

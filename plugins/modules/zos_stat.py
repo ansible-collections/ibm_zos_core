@@ -1020,6 +1020,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, gdgs
@@ -2021,13 +2022,17 @@ class VSAMDataSetHandler(DataSetHandler):
             ds_type=ds_type,
             alias=alias
         )
+        self.verbosity = module._verbosity
 
     def query(self):
         """Uses LISTCAT to query facts about a VSAM."""
         data = super().query()
 
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
-        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+        mvs_cmd = 'mvscmdauth'
+        if self.verbosity >= 3:
+            mvs_cmd += ' -d'
+        mvs_cmd += f' --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
 
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
 
@@ -2204,6 +2209,7 @@ class GenerationDataGroupHandler(DataSetHandler):
         """
         self.name = name
         self.module = module
+        self.verbosity = module._verbosity
         self.extra_data = ''
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
 
@@ -2240,7 +2246,10 @@ class GenerationDataGroupHandler(DataSetHandler):
 
         # Now we call LISTCAT to get the creation time.
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
-        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+        mvs_cmd = 'mvscmdauth'
+        if self.verbosity >= 3:
+            mvs_cmd += ' -d'
+        mvs_cmd += f' --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
         if rc > 0:
             raise QueryException(
@@ -2626,6 +2635,11 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     name = module.params.get('name')
     volumes = module.params.get('volumes')

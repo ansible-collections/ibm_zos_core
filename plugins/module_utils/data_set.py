@@ -510,7 +510,7 @@ class DataSet(object):
             )
 
     @staticmethod
-    def data_set_cataloged(name, volumes=None, tmphlq=None):
+    def data_set_cataloged(name, volumes=None, tmphlq=None, verbosity=0):
         """Determine if a data set is in catalog.
 
         Parameters
@@ -521,6 +521,8 @@ class DataSet(object):
             The volume the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
 
         Returns
         -------
@@ -544,9 +546,16 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        
+        # Add debug flag if verbosity >= 3 (ansible-playbook -vvv)
+        if verbosity >= 3:
+            cmd += " -d"
+        
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
+        
         if tmphlq:
-            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+            cmd += " -Q={0}".format(tmphlq)
 
         rc, stdout, stderr = module.run_command(
             cmd,
@@ -562,7 +571,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, stdout, stderr)
 
         if volumes:
-            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq) or []
+            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq, verbosity=verbosity) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
@@ -572,7 +581,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def data_set_cataloged_volume_list(name, tmphlq=None):
+    def data_set_cataloged_volume_list(name, tmphlq=None, verbosity=0):
         """Get the volume list for a cataloged dataset name.
 
         Parameters
@@ -581,6 +590,8 @@ class DataSet(object):
             The data set name to check if cataloged.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
 
         Returns
         -------
@@ -592,9 +603,16 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}') ALL".format(name)
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        
+        # Add debug flag if verbosity >= 3 (ansible-playbook -vvv)
+        if verbosity >= 3:
+            cmd += " -d"
+        
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
+        
         if tmphlq:
-            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+            cmd += " -Q={0}".format(tmphlq)
 
         rc, stdout, stderr = module.run_command(
             cmd,
@@ -620,7 +638,7 @@ class DataSet(object):
         return volume_list
 
     @staticmethod
-    def data_set_exists(name, volume=None, tmphlq=None):
+    def data_set_exists(name, volume=None, tmphlq=None, verbosity=0):
         """Determine if a data set exists.
         This will check the catalog in addition to
         the volume table of contents.
@@ -633,13 +651,16 @@ class DataSet(object):
             The volume the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
         bool
             If data is found.
         """
-        if DataSet.data_set_cataloged(name, tmphlq=tmphlq):
+        if DataSet.data_set_cataloged(name, tmphlq=tmphlq, verbosity=verbosity):
             return True
         elif volume is not None:
             return DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq)
@@ -787,7 +808,7 @@ class DataSet(object):
             raise DatasetVolumeError(name)
 
     @staticmethod
-    def data_set_type(name, volume=None, tmphlq=None):
+    def data_set_type(name, volume=None, tmphlq=None, verbosity=0):
         """Checks the type of a data set, data sets must be cataloged.
 
         Parameters
@@ -798,6 +819,9 @@ class DataSet(object):
             The volume the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -809,7 +833,7 @@ class DataSet(object):
             the type.
 
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq, verbosity=verbosity):
             return None
 
         data_sets_found = datasets.list_datasets(name)
@@ -826,7 +850,7 @@ class DataSet(object):
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
-        output = DataSet._get_listcat_data(name, tmphlq=tmphlq)
+        output = DataSet._get_listcat_data(name, tmphlq=tmphlq, verbosity=verbosity)
 
         # Filtering all the DATA information to only get the ATTRIBUTES block.
         data_set_attributes = re.findall(
@@ -846,7 +870,7 @@ class DataSet(object):
             return None
 
     @staticmethod
-    def _get_listcat_data(name, tmphlq=None):
+    def _get_listcat_data(name, tmphlq=None, verbosity=0):
         """Runs IDCAMS to get the DATA information associated with a data set.
 
         Parameters
@@ -855,6 +879,8 @@ class DataSet(object):
             Name of the data set.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
 
         Returns
         -------
@@ -870,9 +896,16 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        
+        # Add debug flag if verbosity >= 3 (ansible-playbook -vvv)
+        if verbosity >= 3:
+            cmd += " -d"
+        
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
+        
         if tmphlq:
-            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+            cmd += " -Q={0}".format(tmphlq)
 
         rc, stdout, stderr = module.run_command(
             cmd, data=stdin, errors='replace'
@@ -884,7 +917,7 @@ class DataSet(object):
         return stdout
 
     @staticmethod
-    def is_empty(name, volume=None, tmphlq=None):
+    def is_empty(name, volume=None, tmphlq=None, verbosity=0):
         """Determines whether a data set is empty.
 
         Parameters
@@ -895,16 +928,19 @@ class DataSet(object):
             The volume where the data set resides.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
         bool
             Whether the data set is empty or not.
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq, verbosity=verbosity):
             raise DatasetNotFoundError(name)
 
-        ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
+        ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq, verbosity=verbosity)
 
         if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)
@@ -913,7 +949,7 @@ class DataSet(object):
             rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name), errors='replace')
             return rc == 0 and len(stdout.strip()) == 0
         elif ds_type in DataSet.MVS_VSAM:
-            return DataSet._vsam_empty(name, tmphlq=tmphlq)
+            return DataSet._vsam_empty(name, tmphlq=tmphlq, verbosity=verbosity)
 
     @staticmethod
     def _pds_empty(name):
@@ -937,7 +973,7 @@ class DataSet(object):
         return rc == 2
 
     @staticmethod
-    def _vsam_empty(name, tmphlq=None):
+    def _vsam_empty(name, tmphlq=None, verbosity=0):
         """Determines if a VSAM data set is empty.
 
         Parameters
@@ -946,6 +982,9 @@ class DataSet(object):
             The name of the VSAM data set.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -959,7 +998,10 @@ class DataSet(object):
         INFILE(MYDSET) -
         COUNT(1)"""
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(
             name
         )
         if tmphlq:
@@ -1491,7 +1533,7 @@ class DataSet(object):
             raise DatasetMemberDeleteError(name, rc)
 
     @staticmethod
-    def catalog(name, volumes, tmphlq=None):
+    def catalog(name, volumes, tmphlq=None, verbosity=0):
         """Catalog an uncataloged data set
 
         Parameters
@@ -1502,15 +1544,18 @@ class DataSet(object):
             The volume(s) the data set resides on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
         """
-        if DataSet.is_vsam(name, volumes, tmphlq=tmphlq):
-            DataSet._catalog_vsam(name, volumes, tmphlq=tmphlq)
+        if DataSet.is_vsam(name, volumes, tmphlq=tmphlq, verbosity=verbosity):
+            DataSet._catalog_vsam(name, volumes, tmphlq=tmphlq, verbosity=verbosity)
         else:
-            DataSet._catalog_non_vsam(name, volumes, tmphlq=tmphlq)
+            DataSet._catalog_non_vsam(name, volumes, tmphlq=tmphlq, verbosity=verbosity)
 
     @staticmethod
     # TODO: extend for multi volume data sets
-    def _catalog_non_vsam(name, volumes, tmphlq=None):
+    def _catalog_non_vsam(name, volumes, tmphlq=None, verbosity=0):
         """Catalog a non-VSAM data set.
 
         Parameters
@@ -1521,6 +1566,9 @@ class DataSet(object):
             The volume(s) the data set resides on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Raises
         ------
@@ -1531,7 +1579,10 @@ class DataSet(object):
         iehprogm_input = DataSet._build_non_vsam_catalog_command(
             name.upper(), volumes)
 
-        cmd = "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=iehprogm --sysprint=* --sysin=stdin"
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -1545,7 +1596,7 @@ class DataSet(object):
 
     @staticmethod
     # TODO: extend for multi volume data sets
-    def _catalog_vsam(name, volumes, tmphlq=None):
+    def _catalog_vsam(name, volumes, tmphlq=None, verbosity=0):
         """Catalog a VSAM data set.
 
         Parameters
@@ -1556,6 +1607,9 @@ class DataSet(object):
             The volume(s) the data set resides on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Raises
         ------
@@ -1592,7 +1646,10 @@ class DataSet(object):
                 data_set_type_vsam,
             )
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
         command_rc, stdout, stderr = module.run_command(cmd, data=command, errors='replace')
@@ -1609,7 +1666,10 @@ class DataSet(object):
                 "LINEAR",
             )
 
-            cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+            cmd = "mvscmdauth"
+            if verbosity >= 3:
+                cmd += " -d"
+            cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
             if tmphlq:
                 cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -1628,7 +1688,7 @@ class DataSet(object):
         return
 
     @staticmethod
-    def uncatalog(name, tmphlq=None):
+    def uncatalog(name, tmphlq=None, verbosity=0):
         """Uncatalog a data set.
 
         Parameters
@@ -1637,15 +1697,18 @@ class DataSet(object):
             The name of the data set to uncatalog.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         """
-        if DataSet.is_vsam(name, tmphlq=tmphlq):
-            DataSet._uncatalog_vsam(name, tmphlq=tmphlq)
+        if DataSet.is_vsam(name, tmphlq=tmphlq, verbosity=verbosity):
+            DataSet._uncatalog_vsam(name, tmphlq=tmphlq, verbosity=verbosity)
         else:
-            DataSet._uncatalog_non_vsam(name, tmphlq=tmphlq)
+            DataSet._uncatalog_non_vsam(name, tmphlq=tmphlq, verbosity=verbosity)
 
     @staticmethod
-    def _uncatalog_non_vsam(name, tmphlq=None):
+    def _uncatalog_non_vsam(name, tmphlq=None, verbosity=0):
         """Uncatalog a non-VSAM data set.
 
         Parameters
@@ -1654,6 +1717,9 @@ class DataSet(object):
             The name of the data set to uncatalog.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Raises
         ------
@@ -1667,7 +1733,10 @@ class DataSet(object):
             temp_name = DataSet.create_temp(name.split(".")[0])
             DataSet.write(temp_name, iehprogm_input)
 
-            cmd = "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(temp_name)
+            cmd = "mvscmdauth"
+            if verbosity >= 3:
+                cmd += " -d"
+            cmd += " --pgm=iehprogm --sysprint=* --sysin={0}".format(temp_name)
             if tmphlq:
                 cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -1681,7 +1750,7 @@ class DataSet(object):
         return
 
     @staticmethod
-    def _uncatalog_vsam(name, tmphlq=None):
+    def _uncatalog_vsam(name, tmphlq=None, verbosity=0):
         """Uncatalog a VSAM data set.
 
         Parameters
@@ -1690,7 +1759,9 @@ class DataSet(object):
             The name of the data set to uncatalog.
         tmphlq : str
             High Level Qualifier for temporary datasets.
-
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Raises
         ------
@@ -1700,7 +1771,10 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         idcams_input = DataSet._VSAM_UNCATALOG_COMMAND.format(name)
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
 
@@ -1710,7 +1784,7 @@ class DataSet(object):
             raise DatasetUncatalogError(name, rc)
 
     @staticmethod
-    def is_vsam(name, volumes=None, tmphlq=None):
+    def is_vsam(name, volumes=None, tmphlq=None, verbosity=0):
         """Determine a given data set is VSAM. If volume is not provided,
         then LISTCAT will be used to check data set info. If volume is provided,
         then VTOC will be used to check data set info. If not in VTOC
@@ -1727,6 +1801,9 @@ class DataSet(object):
             The name(s) of the volume(s). (default: (None))
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -1734,7 +1811,7 @@ class DataSet(object):
             If the data set is VSAM.
         """
         if not volumes:
-            return DataSet._is_vsam_from_listcat(name, tmphlq=tmphlq)
+            return DataSet._is_vsam_from_listcat(name, tmphlq=tmphlq, verbosity=verbosity)
         # ? will multivolume data set have vtoc info for each volume?
         return DataSet._is_vsam_from_vtoc(name, volumes[0], tmphlq=tmphlq)
 
@@ -1766,7 +1843,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def _is_vsam_from_listcat(name, tmphlq=None):
+    def _is_vsam_from_listcat(name, tmphlq=None, verbosity=0):
         """Use LISTCAT command to determine if a given data set is VSAM.
 
         Parameters
@@ -1775,6 +1852,9 @@ class DataSet(object):
             The name of the data set.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        verbosity : int
+            The verbosity level for command execution (0-4).
+            When >= 3, enables debug mode with -d flag.
 
         Returns
         -------
@@ -1784,7 +1864,10 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
 
-        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        cmd = "mvscmdauth"
+        if verbosity >= 3:
+            cmd += " -d"
+        cmd += " --pgm=idcams --sysprint=* --sysin=stdin"
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

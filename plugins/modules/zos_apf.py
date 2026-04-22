@@ -330,6 +330,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import zsystem
@@ -368,7 +369,7 @@ def backupOper(module, src, backup, tmphlq=None):
     """
     file_type = None
     if data_set.is_data_set(src):
-        file_type = data_set.DataSet.data_set_type(src, tmphlq=tmphlq)
+        file_type = data_set.DataSet.data_set_type(src, tmphlq=tmphlq, verbosity=module._verbosity)
     else:
         if os.path.exists(src):
             file_type = 'USS'
@@ -559,6 +560,11 @@ def main():
 
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     library = parsed_args.get("library")
 

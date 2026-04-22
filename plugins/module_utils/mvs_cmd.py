@@ -267,22 +267,33 @@ def iefbr14(dds=None):
     return _run_mvs_command("IEFBR14", "", dds, False)
 
 
-def adrdssu(cmd, dds=None, authorized=False):
+def adrdssu(cmd, dds=None, authorized=False, verbosity=0):
     """The ADRDSSU program enables you to copy SMS-compressed data without
     having to decompress the data and also provides support for copying
     wildcard-named files.
     Is a DFSMSdss utility that provides backup and recovery functions
     at both the data set and volume levels.
 
+    Parameters
+    ----------
+    cmd : str
+        The command to pass to ADRDSSU.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized mode.
+    verbosity : int
+        Ansible verbosity level (0-4). Debug mode enabled when >= 3.
+
     Returns
     -------
     tuple(int, str, str)
         A tuple of return code, stdout and stderr.
     """
-    return _run_mvs_command("ADRDSSU", cmd, dds, authorized)
+    return _run_mvs_command("ADRDSSU", cmd, dds, authorized, verbosity=verbosity)
 
 
-def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
+def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None, verbosity=0):
     """Run a particular MVS command.
 
     Parameters
@@ -301,6 +312,9 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
         as authorized. (Default {False})
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
+        (Default {0})
 
     Returns
     -------
@@ -318,6 +332,11 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
     mvscmd = "mvscmd"
     if authorized:
         mvscmd += "auth"
+    
+    # Add debug flag if verbosity >= 3 (ansible-playbook -vvv)
+    if verbosity >= 3:
+        mvscmd += " -d"
+    
     if tmphlq:
         mvscmd += " -Q={0}".format(tmphlq)
     if pgm == "IEFBR14":

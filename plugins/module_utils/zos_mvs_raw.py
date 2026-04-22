@@ -35,7 +35,7 @@ class MVSCmd(object):
     """
 
     @staticmethod
-    def execute(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
+    def execute(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None, verbosity=0):
         """Execute an unauthorized MVS command.
 
         Parameters
@@ -46,6 +46,14 @@ class MVSCmd(object):
                 A list of DDStatement objects.
             parm : str, optional)
                  Argument string if required by the program. Defaults to "".
+            debug : bool, optional
+                 Enable debug mode. If not explicitly set and verbosity >= 3, debug will be enabled automatically.
+            verbose : bool, optional
+                 Enable verbose mode.
+            tmp_hlq : str, optional
+                 Temporary high level qualifier.
+            verbosity : int, optional
+                 Ansible verbosity level (0-4). When >= 3, automatically enables debug mode. Defaults to 0.
 
         Returns
         -------
@@ -53,6 +61,11 @@ class MVSCmd(object):
                            The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
+        
+        # Auto-enable debug if verbosity >= 3 and debug not explicitly set
+        if verbosity >= 3 and not debug:
+            debug = True
+        
         command = "mvscmd {0} {1} {2} {3}".format(
             "-d" if debug else "",
             "-v" if verbose else "",
@@ -63,7 +76,7 @@ class MVSCmd(object):
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
-    def execute_authorized(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
+    def execute_authorized(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None, verbosity=0):
         """Execute an authorized MVS command.
 
         Parameters
@@ -74,8 +87,14 @@ class MVSCmd(object):
                 A list of DDStatement objects.
             parm : str, optional
                  Argument string if required by the program. Defaults to "".
-            tmp_hlq : str
-                    The name of the temporary high level qualifier to use for temp data sets.
+            debug : bool, optional
+                 Enable debug mode. If not explicitly set and verbosity >= 3, debug will be enabled automatically.
+            verbose : bool, optional
+                 Enable verbose mode.
+            tmp_hlq : str, optional
+                 The name of the temporary high level qualifier to use for temp data sets.
+            verbosity : int, optional
+                 Ansible verbosity level (0-4). When >= 3, automatically enables debug mode. Defaults to 0.
 
         Returns
         -------
@@ -83,6 +102,11 @@ class MVSCmd(object):
                            The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
+        
+        # Auto-enable debug if verbosity >= 3 and debug not explicitly set
+        if verbosity >= 3 and not debug:
+            debug = True
+        
         command = "mvscmdauth {0} {1} {2} {3} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",

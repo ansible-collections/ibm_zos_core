@@ -244,6 +244,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfs
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -297,7 +298,10 @@ def get_full_output(file, module):
     if "/" in file:
         cmd = f"cat {file}"
     else:
-        cmd = f"dcat '{file}'"
+        cmd = "dcat"
+        if module._verbosity >= 3:
+            cmd += " -d"
+        cmd += f" '{file}'"
 
     rc, output, stderr = module.run_command(cmd)
 
@@ -513,6 +517,11 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     result = dict()
     target = module.params.get("target")

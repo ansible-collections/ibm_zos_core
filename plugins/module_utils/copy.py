@@ -168,7 +168,7 @@ def copy_gdg2uss(src, dest, binary=False, asa_text=False):
     return True
 
 
-def copy_vsam_ps(src, dest, tmphlq=None):
+def copy_vsam_ps(src, dest, tmphlq=None, verbosity=0):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa.
 
     Parameters
@@ -179,6 +179,8 @@ def copy_vsam_ps(src, dest, tmphlq=None):
         The PS or VSAM(KSDS) data set.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Ansible verbosity level (0-4). When >= 3, enables debug mode (-d flag).
 
     Returns
     -------
@@ -199,9 +201,16 @@ def copy_vsam_ps(src, dest, tmphlq=None):
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)
 
-    cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
+    cmd = "mvscmdauth"
+    
+    # Add debug flag if verbosity >= 3 (ansible-playbook -vvv)
+    if verbosity >= 3:
+        cmd += " -d"
+    
+    cmd += " --pgm=idcams --sysprint=stdout --sysin=stdin"
+    
     if tmphlq:
-        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+        cmd += " -Q={0}".format(tmphlq)
 
     rc, out, err = module.run_command(cmd, data=repro_cmd, errors='replace')
     if rc:

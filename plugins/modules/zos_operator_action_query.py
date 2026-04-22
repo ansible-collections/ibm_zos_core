@@ -247,6 +247,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import opercmd
@@ -282,6 +283,12 @@ def run_module():
     result = dict(changed=False, count=0, actions=[])
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     validate_dependencies(module)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
+
     requests = []
     try:
         new_params = parse_params(module.params)

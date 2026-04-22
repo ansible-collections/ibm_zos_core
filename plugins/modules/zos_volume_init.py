@@ -241,7 +241,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 def run_module():
     """Initialize the module.
@@ -272,6 +272,11 @@ def run_module():
         supports_check_mode=False
     )
     validate_dependencies(module)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # sms managed and index are defined by ickdsf init as mutually exclusive.
     if module.params['sms_managed'] and not module.params['index']:

@@ -1043,7 +1043,7 @@ def run_module():
                 volumes = [volume]
                 # Get the data set name to catalog it.
                 src_ds_name = data_set.extract_dsname(src_data.name)
-                present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
+                present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes, verbosity=module_verbosity_level)
 
                 if not present:
                     module.fail_json(
@@ -1051,10 +1051,10 @@ def run_module():
                              f"not be cataloged on the volume {volume}."), **result
                     )
             elif data_set.is_member(src_data.name):
-                if not DataSet.data_set_member_exists(src_data.name):
+                if not DataSet.data_set_member_exists(src_data.name, verbosity=module_verbosity_level):
                     module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.", **result)
             else:
-                if not DataSet.data_set_exists(src_data.name):
+                if not DataSet.data_set_exists(src_data.name, verbosity=module_verbosity_level):
                     module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.", **result)
 
             job_submitted_id, duration = submit_src_jcl(

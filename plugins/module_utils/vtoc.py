@@ -20,7 +20,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 
 
-def get_volume_entry(volume, tmphlq=None):
+def get_volume_entry(volume, tmphlq=None, verbosity=0):
     """Retrieve VTOC information for all data sets with entries
     on the volume.
 
@@ -30,6 +30,8 @@ def get_volume_entry(volume, tmphlq=None):
         The name of the volume.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Ansible verbosity level (0-4). Debug mode enabled when >= 3.
 
     Returns
     -------
@@ -45,7 +47,7 @@ def get_volume_entry(volume, tmphlq=None):
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
         # dd = "SYS1.VVDS.V{0}".format(volume.upper())
         dd = "{0},vol".format(volume.upper())
-        stdout = _iehlist(dd, stdin, tmphlq=tmphlq)
+        stdout = _iehlist(dd, stdin, tmphlq=tmphlq, verbosity=verbosity)
         if stdout is None:
             return None
         data_sets = _process_output(stdout)
@@ -54,7 +56,7 @@ def get_volume_entry(volume, tmphlq=None):
     return data_sets
 
 
-def get_data_set_entry(data_set_name, volume, tmphlq=None):
+def get_data_set_entry(data_set_name, volume, tmphlq=None, verbosity=0):
     """Retrieve VTOC information for a single data set
     on a volume.
 
@@ -66,6 +68,8 @@ def get_data_set_entry(data_set_name, volume, tmphlq=None):
         The name of the volume.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Ansible verbosity level (0-4). Debug mode enabled when >= 3.
 
     Returns
     -------
@@ -73,7 +77,7 @@ def get_data_set_entry(data_set_name, volume, tmphlq=None):
         The information for the data set found in VTOC.
     """
     data_set = None
-    data_sets = get_volume_entry(volume, tmphlq=tmphlq)
+    data_sets = get_volume_entry(volume, tmphlq=tmphlq, verbosity=verbosity)
     for ds in data_sets:
         if ds.get("data_set_name") == data_set_name.upper():
             data_set = ds
@@ -106,7 +110,7 @@ def find_data_set_in_volume_output(data_set_name, data_sets):
     return None
 
 
-def _iehlist(dd, stdin, tmphlq=None):
+def _iehlist(dd, stdin, tmphlq=None, verbosity=0):
     """Calls IEHLIST program.
 
     Parameters
@@ -117,6 +121,8 @@ def _iehlist(dd, stdin, tmphlq=None):
         Input to stdin.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    verbosity : int
+        Ansible verbosity level (0-4). Debug mode enabled when >= 3.
 
     Returns
     -------
@@ -126,7 +132,10 @@ def _iehlist(dd, stdin, tmphlq=None):
     module = AnsibleModuleHelper(argument_spec={})
     response = None
 
-    cmd = "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd)
+    cmd = "mvscmd"
+    if verbosity >= 3:
+        cmd += " -d"
+    cmd += " --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

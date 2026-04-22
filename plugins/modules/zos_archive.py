@@ -740,6 +740,7 @@ class Archive():
         self.skip_encoding = encoding_param.get("skip_encoding")
         self.skipped_encoding_targets = ""
         self.encode_targets = []
+        self.verbosity = module._verbosity
 
     def targets_exist(self):
         """Returns if there are targets or not.
@@ -1228,7 +1229,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
+            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq, verbosity=self.verbosity):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1332,6 +1333,7 @@ class MVSArchive(Archive):
         if space_type is None:
             arguments.update(space_type="m")
         arguments.pop("self")
+        arguments['verbosity'] = self.verbosity
         changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
@@ -1349,7 +1351,7 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq, verbosity=self.verbosity)
         return name
 
     def dump_into_temp_ds(self, temp_ds):
@@ -1382,7 +1384,7 @@ class MVSArchive(Archive):
 
         dump_cmd += ' )'
         dds = dict(target="{0},old".format(temp_ds))
-        rc, out, err = mvs_cmd.adrdssu(cmd=dump_cmd, dds=dds, authorized=True)
+        rc, out, err = mvs_cmd.adrdssu(cmd=dump_cmd, dds=dds, authorized=True, verbosity=self.verbosity)
 
         if rc != 0:
             self.module.fail_json(
@@ -1455,7 +1457,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
+        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq, verbosity=self.verbosity)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.
@@ -1463,7 +1465,7 @@ class MVSArchive(Archive):
         self.state = STATE_ABSENT
         for target in self.archived:
             try:
-                changed = data_set.DataSet.ensure_absent(target)
+                changed = data_set.DataSet.ensure_absent(target, verbosity=self.verbosity)
             except Exception:
                 self.state = STATE_INCOMPLETE
             if not changed:
@@ -1524,7 +1526,7 @@ class MVSArchive(Archive):
         """
         if data_set is not None:
             for ds in data_sets:
-                data_set.DataSet.ensure_absent(ds)
+                data_set.DataSet.ensure_absent(ds, verbosity=self.verbosity)
         if uss_files is not None:
             for file in uss_files:
                 try:

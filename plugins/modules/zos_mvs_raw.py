@@ -2085,6 +2085,7 @@ def run_module():
                 authorized=authorized,
                 verbose=verbose,
                 tmphlq=tmphlq,
+                verbosity=module_verbosity_level,
             )
             response = build_response(program_response.rc, dd_statements, program_response.stdout, program_response.stderr)
             result = combine_dicts(result, response)
@@ -2975,7 +2976,7 @@ def get_backups(backup, data_set_name):
 
 
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False, tmphlq=None
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmphlq=None, verbosity=0
 ):
     """Run a program on z/OS.
 
@@ -3002,11 +3003,11 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq, verbosity=verbosity
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq, verbosity=verbosity
         )
     return response
 

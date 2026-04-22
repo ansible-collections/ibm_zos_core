@@ -576,6 +576,7 @@ class Unarchive():
         self.failed_on_encoding = list()
         self.skip_encoding = encoding_param.get("skip_encoding")
         self.skipped_encoding_targets = list()
+        self.verbosity = module._verbosity
 
     @abc.abstractmethod
     def extract_src(self):
@@ -1037,7 +1038,7 @@ class MVSUnarchive(Unarchive):
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
-        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
+        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments, verbosity=self.verbosity)
         return arguments["name"], changed
 
     def _get_include_data_sets_cmd(self):
@@ -1109,7 +1110,7 @@ class MVSUnarchive(Unarchive):
                         CATALOG -
                         {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
-        rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
+        rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True, verbosity=self.verbosity)
         self._get_restored_datasets(out)
 
         if rc != 0:
@@ -1134,7 +1135,7 @@ class MVSUnarchive(Unarchive):
         bool
             If the source exists.
         """
-        return data_set.DataSet.data_set_exists(self.src, tmphlq=self.tmphlq)
+        return data_set.DataSet.data_set_exists(self.src, tmphlq=self.tmphlq, verbosity=self.verbosity)
 
     def _get_restored_datasets(self, output):
         """Gets the datasets that were successfully restored.
@@ -1236,13 +1237,13 @@ class MVSUnarchive(Unarchive):
         """
         if data_set is not None:
             for ds in data_sets:
-                data_set.DataSet.ensure_absent(ds)
+                data_set.DataSet.ensure_absent(ds, verbosity=self.verbosity)
         if uss_files is not None:
             for file in uss_files:
                 os.remove(file)
         if remove_targets:
             for target in self.targets:
-                data_set.DataSet.ensure_absent(target)
+                data_set.DataSet.ensure_absent(target, verbosity=self.verbosity)
 
     def encoding_targets(self):
         """Finds encoding target datasets in host.
@@ -1319,7 +1320,7 @@ class AMATerseUnarchive(MVSUnarchive):
             Failed executing AMATERSE to restore source into destination.
         """
         dds = {'args': 'UNPACK', 'sysut1': src, 'sysut2': dest}
-        rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
+        rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds, verbosity=self.verbosity)
         if rc != 0:
             ds_remove_list = [dest, src] if not self.remote_src else [dest]
             self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)
@@ -1368,7 +1369,7 @@ class XMITUnarchive(MVSUnarchive):
         RECEIVE INDSN('{0}')
         DA('{1}')
         """.format(src, dest)
-        rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
+        rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True, verbosity=self.verbosity)
         if rc != 0:
             ds_remove_list = [dest, src] if not self.remote_src else [dest]
             self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)

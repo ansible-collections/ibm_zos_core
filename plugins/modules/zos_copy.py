@@ -2444,7 +2444,8 @@ def create_seq_dataset_from_file(
     asa_text,
     record_length=None,
     volume=None,
-    tmphlq=None
+    tmphlq=None,
+    verbosity=0
 ):
     """Creates a new sequential dataset with attributes suitable to copy the
     contents of a file into it.
@@ -2499,7 +2500,7 @@ def create_seq_dataset_from_file(
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
+    data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, verbosity=verbosity, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -2948,7 +2949,8 @@ def allocate_destination_data_set(
     is_active_gds,
     dest_data_set=None,
     volume=None,
-    tmphlq=None
+    tmphlq=None,
+    verbosity=0
 ):
     """
     Allocates a new destination data set to copy into, erasing a preexistent one if
@@ -3041,14 +3043,14 @@ def allocate_destination_data_set(
             del dest_params["purge"]
             del dest_params["extended"]
             del dest_params["fifo"]
-            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, verbosity=verbosity, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(dest, volumes=volumes)
+        data_set.DataSet.ensure_absent(dest, volumes=volumes, verbosity=verbosity)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, replace, binary, asa_text, volume=volume, tmphlq=tmphlq)
+            create_seq_dataset_from_file(src, dest, replace, binary, asa_text, volume=volume, tmphlq=tmphlq, verbosity=verbosity)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
@@ -3071,7 +3073,8 @@ def allocate_destination_data_set(
                     asa_text,
                     record_length=record_length,
                     volume=volume,
-                    tmphlq=tmphlq
+                    tmphlq=tmphlq,
+                    verbosity=verbosity
                 )
             finally:
                 if temp_dump:
@@ -3100,7 +3103,7 @@ def allocate_destination_data_set(
                 type="PDSE",
                 volume=volume
             )
-            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, verbosity=verbosity, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -3158,13 +3161,13 @@ def allocate_destination_data_set(
                         volume=volume
                     )
 
-            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, verbosity=verbosity, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(dest, volumes=volumes)
-        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, tmphlq=tmphlq)
+        data_set.DataSet.ensure_absent(dest, volumes=volumes, verbosity=verbosity)
+        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, tmphlq=tmphlq, verbosity=verbosity)
     elif dest_ds_type == "GDG":
         src_view = gdgs.GenerationDataGroupView(src)
 
@@ -3271,7 +3274,7 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def remote_cleanup(module):
+def remote_cleanup(module, verbosity=0):
     """Remove all files or data sets pointed to by 'dest' on the remote
     z/OS system. The idea behind this cleanup step is that if, for some
     reason, the module fails after copying the data, we want to return the
@@ -3286,7 +3289,7 @@ def remote_cleanup(module):
             shutil.rmtree(dest)
     else:
         dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+        data_set.DataSet.ensure_absent(name=dest, verbosity=verbosity)
 
 
 def update_result(res_args, original_args):
@@ -3572,11 +3575,11 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, binary=binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
-                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq)):
+            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq, verbosity=module_verbosity_level)) or (
+                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq, verbosity=module_verbosity_level)):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
-                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
+                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq, verbosity=module_verbosity_level)
 
                 if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
@@ -3615,8 +3618,8 @@ def run_module(module, arg_def):
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq, verbosity=module_verbosity_level)
+            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq, verbosity=module_verbosity_level)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3850,7 +3853,8 @@ def run_module(module, arg_def):
                 is_dest_gds_active,
                 dest_data_set=dest_data_set,
                 volume=volume,
-                tmphlq=tmphlq
+                tmphlq=tmphlq,
+                verbosity=module_verbosity_level
             )
             if res_args["changed"]:
                 res_args["dest_created"] = True
@@ -4256,7 +4260,7 @@ def main():
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
-        remote_cleanup(module=module)
+        remote_cleanup(module=module, verbosity=module._verbosity)
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])

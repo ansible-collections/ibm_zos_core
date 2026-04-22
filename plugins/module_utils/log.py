@@ -38,7 +38,7 @@ class SingletonLogger:
         StreamHandler that outputs logs to stdout. Sets a standard log
         format and INFO as the default logging level.
         """
-        self.logger = logging.getLogger("AnsibleCoreLogger")
+        self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
         if not self.logger.handlers:

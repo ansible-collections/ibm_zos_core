@@ -342,6 +342,7 @@ from os import makedirs
 from os import listdir
 import re
 import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -538,6 +539,12 @@ def run_module():
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
     parsed_args = parser.parse_args(module.params)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
+
     src = parsed_args.get("src")
     dest = parsed_args.get("dest")
     backup = parsed_args.get("backup")

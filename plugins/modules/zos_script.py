@@ -251,7 +251,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 def run_module():
     """Initialize module.
@@ -350,6 +350,11 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     cmd_str = module.params.get('cmd')
     cmd_parts = shlex.split(cmd_str)

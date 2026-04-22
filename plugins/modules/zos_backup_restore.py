@@ -578,6 +578,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -652,6 +653,12 @@ def main():
     validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
+
+        # Initialize logging module
+        module_verbosity_level = module._verbosity
+        logger = SingletonLogger().get_logger(module_verbosity_level)
+        logger.info("Logger initialized successfully")
+
         operation = params.get("operation")
         data_sets = params.get("data_sets", {})
         space = params.get("space")

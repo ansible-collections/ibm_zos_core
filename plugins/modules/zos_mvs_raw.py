@@ -1821,6 +1821,7 @@ import re
 import traceback
 
 from shlex import quote
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, zoau_io
@@ -2065,6 +2066,12 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
+
+            # Initialize logging module
+            module_verbosity_level = module._verbosity
+            logger = SingletonLogger().get_logger(module_verbosity_level)
+            logger.info("Logger initialized successfully")
+
             tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")

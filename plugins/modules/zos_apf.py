@@ -330,6 +330,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import zsystem
@@ -559,6 +560,11 @@ def main():
 
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     library = parsed_args.get("library")
 

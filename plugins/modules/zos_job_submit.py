@@ -705,6 +705,7 @@ import shutil
 import traceback
 from time import sleep
 import re
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import exceptions as zoau_exceptions
@@ -994,6 +995,11 @@ def run_module():
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     # Extract values from set module options
     remote_src = parsed_args.get("remote_src")

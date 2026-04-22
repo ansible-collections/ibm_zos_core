@@ -362,6 +362,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 from shlex import quote
 
 
@@ -1234,6 +1235,12 @@ def run_module(module):
         Failed to process size.
     """
     validate_dependencies(module)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
+
     # Parameter initialization
     pds_paths = None
     age = module.params.get('age')

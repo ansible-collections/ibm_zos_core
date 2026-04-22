@@ -153,6 +153,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
 def run_tso_command(commands, module, max_rc):
@@ -333,6 +334,11 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as e:
         module.fail_json(msg=repr(e), **result)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     commands = parsed_args.get("commands")
     commands = list(map(preprocess_data_set_names, commands))

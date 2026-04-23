@@ -1395,7 +1395,7 @@ def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {dest_name}")
 
 
-def test_gds_encoding_conversion_when_gds_does_not_exist(ansible_zos_module):
+def test_gds_encoding_conversion_when_relative_dest_gds_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
     try:
         src = get_tmp_ds_name()
@@ -1420,9 +1420,71 @@ def test_gds_encoding_conversion_when_gds_does_not_exist(ansible_zos_module):
             assert result.get("backup_name") is None
             assert result.get("changed") is False
             assert result.get("failed") is True
-            assert "not cataloged" in result.get("msg", "")
+            assert "Generation Data Set" in result.get("msg", "")
     finally:
         hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=gdg_name, state="absent")
+
+
+def test_gds_encoding_conversion_when_absolute_dest_gds_does_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        src = get_tmp_ds_name()
+        gdg_name = get_tmp_ds_name()
+        dest = f"{gdg_name}.G0001V01"
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {gdg_name}")
+
+        results = hosts.all.zos_encode(
+            src=src,
+            dest=dest,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src
+            assert result.get("dest") == dest
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "Generation Data Set" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=gdg_name, state="absent")
+
+
+def test_gds_encoding_conversion_when_src_gds_does_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        gdg_name = get_tmp_ds_name()
+        src = f"{gdg_name}(+1)"
+        dest = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {gdg_name}")
+        hosts.all.shell(cmd=f"dtouch -tSEQ {dest}")
+
+        results = hosts.all.zos_encode(
+            src=src,
+            dest=dest,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src
+            assert result.get("dest") == dest
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "Generation Data Set" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
         hosts.all.zos_data_set(name=gdg_name, state="absent")
 
 

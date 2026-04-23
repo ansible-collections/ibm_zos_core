@@ -644,9 +644,9 @@ def run_module():
                 if not dest_exists:
                     # Check if dest is a GDS
                     gds_relative_name = data_set.DataSet.is_gds_relative_name(dest)
-                    gds_absolute_name = data_set.DataSet.is_gds_absolute_name(dest) 
+                    gds_absolute_name = data_set.DataSet.is_gds_absolute_name(dest)
                     if gds_relative_name or gds_absolute_name:
-                       raise EncodeError(
+                        raise EncodeError(
                             "Generation Data Set {0} does not exist in the "
                             "Generation Data Group or is not cataloged.".format(data_set.extract_dsname(dest_data_set.raw_name))
                         )

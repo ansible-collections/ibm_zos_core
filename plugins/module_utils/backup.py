@@ -235,8 +235,6 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
         The destination data set to copy to.
     tmphlq : str
         High Level Qualifier for temporary datasets.
-    verbosity : int
-        Verbosity level for debugging.
 
     Returns
     -------

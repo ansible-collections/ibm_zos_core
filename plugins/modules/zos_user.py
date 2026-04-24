@@ -1230,9 +1230,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, mvscmd, ztypes
@@ -1434,6 +1438,7 @@ class RACFHandler():
         self.dump_kept = False
         self.dump_name = None
         self.module = module
+        self.verbosity = module._verbosity
 
     def get_state(self):
         """Returns the current values of most fields.
@@ -1991,7 +1996,13 @@ class RACFHandler():
                 self.entities_modified = []
 
             # Read CLIST content BEFORE cleanup (must be inside try block)
-            rc_dcat, out, err = self.module.run_command(f"dcat {clist}")
+            dcat_cmd = f"dcat {clist}"
+
+            if self.verbosity >= 3:
+                dcat_cmd = f"dcat -d {clist}"
+
+            rc_dcat, out, err = self.module.run_command(dcat_cmd)
+
             if rc_dcat != 0:
                 # Log warning if dcat fails but don't fail the operation
                 self.module.warn(f"Failed to read CLIST content: RC={rc_dcat}, Error: {err}")
@@ -3810,6 +3821,8 @@ def run_module():
         supports_check_mode=True
     )
 
+    validate_dependencies(module)
+
     args_def = {
         'name': {'arg_type': 'str', 'required': True, 'aliases': ['src']},
         'operation': {'arg_type': 'str', 'required': True},
@@ -4014,6 +4027,11 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
 
     operation_handler = get_racf_handler(module, module.params)
     operation_handler.clean_input()

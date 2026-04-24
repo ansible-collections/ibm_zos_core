@@ -162,7 +162,7 @@ class EncodeUtils(object):
         parsed_args = parser.parse_args({"encoding": encoding})
         return parsed_args.get("encoding")
 
-    def listdsi_data_set(self, ds, tmphlq=None, verbosity=0):
+    def listdsi_data_set(self, ds, tmphlq=None):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set.
 
@@ -172,8 +172,6 @@ class EncodeUtils(object):
             The VSAM data set to be checked.
         tmphlq : str
             High Level Qualifier for temporary datasets.
-        verbosity : int
-            Verbosity level for debugging.
 
         Returns
         -------
@@ -187,6 +185,8 @@ class EncodeUtils(object):
         EncodeError
             When any exception is raised during the conversion.
         """
+        module = AnsibleModuleHelper(argument_spec={})
+        verbosity = module._verbosity
         ds = self._validate_data_set_name(ds)
         reclen = 80
         space_u = 1024

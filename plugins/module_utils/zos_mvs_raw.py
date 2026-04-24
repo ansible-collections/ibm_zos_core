@@ -53,6 +53,10 @@ class MVSCmd(object):
                            The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
+        verbosity = module._verbosity
+
+        if verbosity >= 3:
+            debug = True
         command = "mvscmd {0} {1} {2} {3}".format(
             "-d" if debug else "",
             "-v" if verbose else "",
@@ -83,6 +87,9 @@ class MVSCmd(object):
                            The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
+        verbosity = module._verbosity
+        if verbosity >= 3:
+            debug = True
         command = "mvscmdauth {0} {1} {2} {3} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",

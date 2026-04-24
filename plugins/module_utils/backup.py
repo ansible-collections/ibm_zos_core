@@ -224,7 +224,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
     return backup_name
 
 
-def _copy_ds(ds, bk_ds, tmphlq=None, verbosity=0):
+def _copy_ds(ds, bk_ds, tmphlq=None):
     """Copy the contents of a data set to another.
 
     Parameters
@@ -249,7 +249,8 @@ def _copy_ds(ds, bk_ds, tmphlq=None, verbosity=0):
         When copying data fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    _allocate_model(bk_ds, ds, tmphlq=tmphlq, verbosity=verbosity)
+    verbosity = module._verbosity
+    _allocate_model(bk_ds, ds, tmphlq=tmphlq)
     repro_cmd = """  REPRO -
     INDATASET('{0}') -
     OUTDATASET('{1}')""".format(
@@ -278,7 +279,7 @@ def _copy_ds(ds, bk_ds, tmphlq=None, verbosity=0):
     return rc
 
 
-def _allocate_model(ds, model, tmphlq=None, verbosity=0):
+def _allocate_model(ds, model, tmphlq=None):
     """Allocate a data set using allocation information of a model data set.
 
     Parameters
@@ -301,6 +302,7 @@ def _allocate_model(ds, model, tmphlq=None, verbosity=0):
         When allocation fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
+    verbosity = module._verbosity
     alloc_cmd = """  ALLOC -
     DS('{0}') -
     LIKE('{1}')""".format(

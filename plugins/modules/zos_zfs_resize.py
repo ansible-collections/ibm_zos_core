@@ -246,6 +246,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
+    AnsibleModuleHelper
+
 try:
     from zoautil_py import datasets
 except Exception:
@@ -293,12 +296,17 @@ def get_full_output(file, module):
         output : str
             Verbose output
     """
+    module = AnsibleModuleHelper(argument_spec={})
+    verbosity = module._verbosity
     output = ""
 
     if "/" in file:
         cmd = f"cat {file}"
     else:
-        cmd = f"dcat '{file}'"
+        if verbosity >= 3:
+            cmd = f"dcat -d '{file}'"
+        else:
+            cmd = f"dcat {file}"
 
     rc, output, stderr = module.run_command(cmd)
 

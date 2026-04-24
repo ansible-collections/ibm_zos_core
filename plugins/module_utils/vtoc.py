@@ -124,9 +124,14 @@ def _iehlist(dd, stdin, tmphlq=None):
         The sysprint response of IEHLIST.
     """
     module = AnsibleModuleHelper(argument_spec={})
+    verbosity = module._verbosity
     response = None
 
-    cmd = "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd)
+    cmd = "mvscmd"
+    if verbosity >= 3:
+        cmd = "{0} -d".format(cmd)
+    cmd = "{0} --pgm=iehlist --sysprint=* --dd={1} --sysin=stdin ".format(cmd, dd)
+
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
 

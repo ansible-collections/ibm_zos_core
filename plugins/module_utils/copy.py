@@ -168,7 +168,7 @@ def copy_gdg2uss(src, dest, binary=False, asa_text=False):
     return True
 
 
-def copy_vsam_ps(src, dest, tmphlq=None, verbosity=0):
+def copy_vsam_ps(src, dest, tmphlq=None):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa.
 
     Parameters
@@ -179,8 +179,6 @@ def copy_vsam_ps(src, dest, tmphlq=None, verbosity=0):
         The PS or VSAM(KSDS) data set.
     tmphlq : str
         High Level Qualifier for temporary datasets.
-    verbosity : int
-        Verbosity level for debugging.
 
     Returns
     -------
@@ -197,6 +195,7 @@ def copy_vsam_ps(src, dest, tmphlq=None, verbosity=0):
         When any exception is raised during the conversion.
     """
     module = AnsibleModuleHelper(argument_spec={})
+    verbosity = module._verbosity
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)

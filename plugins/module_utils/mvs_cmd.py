@@ -308,6 +308,7 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
         A tuple of return code, stdout and stderr.
     """
     module = AnsibleModuleHelper(argument_spec={})
+    verbosity = module._verbosity
     sysprint = "sysprint"
     sysin = "sysin"
     pgm = pgm.upper()
@@ -318,6 +319,8 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
     mvscmd = "mvscmd"
     if authorized:
         mvscmd += "auth"
+    if verbosity >= 3:
+        mvscmd += " -d"
     if tmphlq:
         mvscmd += " -Q={0}".format(tmphlq)
     if pgm == "IEFBR14":

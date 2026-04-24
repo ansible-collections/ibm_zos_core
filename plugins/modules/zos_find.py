@@ -394,7 +394,7 @@ def content_filter(module, patterns, content):
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
         rc, out, err = _dgrep_wrapper(
-            pattern, content=content, verbose=True, ignore_case=True
+            module, pattern, content=content, verbose=True, ignore_case=True
         )
         if rc > 4 and rc != 28:
             module.fail_json(
@@ -442,9 +442,10 @@ def data_set_filter(module, patterns):
     fail_json
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
+    verbosity = module._verbosity
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
-        rc, out, err = _dls_wrapper(pattern, list_details=True)
+        rc, out, err = _dls_wrapper(module, pattern, list_details=True)
         if rc != 0:
             if "BGYSC1103E" in err:
                 # return filtered_data_sets
@@ -462,8 +463,11 @@ def data_set_filter(module, patterns):
             result = line.split()
             if result:
                 if result[1] == "PO":
+                    mls_cmd = f"mls '{result[0]}(*)'"
+                    if verbosity >= 3:
+                        mls_cmd = f"mls -d '{result[0]}(*)'"
                     mls_rc, mls_out, mls_err = module.run_command(
-                        f"mls '{result[0]}(*)'", errors='replace'
+                        mls_cmd, errors='replace'
                     )
                     if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
@@ -525,7 +529,7 @@ def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
     examined = 0
     for pattern in patterns:
         request_details = age is not None
-        rc, out, err = _vls_wrapper(pattern, details=request_details)
+        rc, out, err = _vls_wrapper(module, pattern, details=request_details)
         if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
@@ -582,7 +586,7 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
     for pattern in patterns:
         # Fetch non-migrtated datasets
         nonmigrated_data_sets = set()
-        nmrc, nmout, nmerr = _vls_wrapper(pattern)
+        nmrc, nmout, nmerr = _vls_wrapper(module, pattern)
         if nmrc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
@@ -597,7 +601,7 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                     if _match_resource_type(type, vsam_type):
                         nonmigrated_data_sets.add(vsam_name)
         # Fetch migrated datasets
-        rc, out, err = _vls_wrapper(pattern, migrated=True)
+        rc, out, err = _vls_wrapper(module, pattern, migrated=True)
         if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
@@ -655,7 +659,7 @@ def data_set_attribute_filter(
     now = time.time()
     for ds in data_sets:
         rc, out, err = _dls_wrapper(
-            ds, u_time=age is not None, size=size is not None
+            module, ds, u_time=age is not None, size=size is not None
         )
         if rc != 0:
             # Continue when no matching datasets are found
@@ -719,7 +723,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, 
     """
     filtered_data_sets = list()
     for ds in data_sets:
-        rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
+        rc, out, err = _dls_wrapper(module, ds, data_set_type='gdg', list_details=True, json=True)
 
         if rc != 0:
             # Continue when no matching datasets are found
@@ -778,7 +782,7 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
     filtered_data_sets = list()
     for ds in data_sets:
         # Fetch active and migrated datasets
-        rc, out, err = _dls_wrapper(ds, migrated=True)
+        rc, out, err = _dls_wrapper(module, ds, migrated=True)
         if rc != 0:
             # Continue when no matching datasets are found
             if "BGYSC1103E" in err:
@@ -1039,6 +1043,7 @@ def _match_regex(module, pattern, string):
 
 
 def _dgrep_wrapper(
+    module,
     data_set_pattern,
     content,
     ignore_case=False,
@@ -1068,7 +1073,10 @@ def _dgrep_wrapper(
     tuple(int,str,str)
         Return code, standard output and standard error.
     """
+    verbosity = module._verbosity
     dgrep_cmd = "dgrep"
+    if verbosity >= 3:
+        dgrep_cmd += " -d"
     if ignore_case:
         dgrep_cmd += " -i"
     if line_num:
@@ -1083,6 +1091,7 @@ def _dgrep_wrapper(
 
 
 def _dls_wrapper(
+    module,
     data_set_pattern,
     list_details=False,
     u_time=False,
@@ -1118,7 +1127,10 @@ def _dls_wrapper(
     tuple(int,str,str)
         Return code, standard output and standard error.
     """
+    verbosity = module._verbosity
     dls_cmd = "dls"
+    if verbosity >= 3:
+        dls_cmd += " -d"
     if migrated:
         dls_cmd += " -m"
     else:
@@ -1139,7 +1151,7 @@ def _dls_wrapper(
     return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd, errors='replace')
 
 
-def _vls_wrapper(pattern, details=False, migrated=False, verbose=False):
+def _vls_wrapper(module, pattern, details=False, migrated=False, verbose=False):
     """A wrapper for ZOAU 'vls' shell command.
 
     Parameters
@@ -1156,7 +1168,10 @@ def _vls_wrapper(pattern, details=False, migrated=False, verbose=False):
     tuple(int,str,str)
         Return code, standard output and standard error.
     """
+    verbosity = module._verbosity
     vls_cmd = "vls"
+    if verbosity >= 3:
+        vls_cmd += " -d"
     if migrated:
         vls_cmd += " -m"
     else:

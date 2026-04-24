@@ -1221,9 +1221,7 @@ from typing import Any
 
 import copy
 import math
-import os
 import re
-import tempfile
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
@@ -1745,75 +1743,23 @@ class RACFHandler():
 
         return ''.join(parts)
 
-    def _run_irrut200_utility(self):
+    def _get_database_info(self):
         """
-        Run the IRRUT200 utility to get database space information.
+        Get database space information by checking if the database exists
+        and retrieving its total space allocation.
 
         Returns:
-            tuple: (database_total_space, database_used_space) on success
+            int: database_total_space in KB
         Raises:
-            Exception: If utility execution fails
+            Exception: If database does not exist
         """
-        hlq = self.tmp_hlq if self.tmp_hlq else datasets.get_hlq()
-        backup_name = datasets.tmp_name(high_level_qualifier=hlq)
-        sysin_file = None
+        if not datasets.exists(self.database):
+            raise Exception(f"The RACF database {self.database} does not exist. No purge was performed.")
 
-        try:
-            if not datasets.exists(self.database):
-                raise Exception(f"The RACF database {self.database} does not exist. No purge was performed.")
+        database_listing = datasets.list_datasets(self.database)[0]
+        database_total_space = math.ceil(database_listing.total_space / 1000)
 
-            database_listing = datasets.list_datasets(self.database)[0]
-            database_total_space = math.ceil(database_listing.total_space / 1000)
-
-            # Putting the input commands for IRRUT200 inside a text file.
-            sysin_file = tempfile.mkstemp()
-            with open(sysin_file[0], mode='w', encoding='cp1047') as filepath:
-                filepath.write("MAP\nEND")
-
-            irrut200_dds = [
-                ztypes.DDStatement('SYSRACF', ztypes.DatasetDefinition(
-                    self.database,
-                    disposition='SHR'
-                )),
-                ztypes.DDStatement('SYSUT1', ztypes.DatasetDefinition(
-                    backup_name,
-                    type='SEQ',
-                    disposition='NEW',
-                    normal_disposition='DELETE',
-                    abnormal_disposition='DELETE',
-                    device_unit='SYSDA',
-                    primary=database_total_space,
-                    primary_unit='KB',
-                    secondary=0,
-                    secondary_unit='KB',
-                    record_format='F',
-                    record_length=4096,
-                    block_size=20480
-                )),
-                ztypes.DDStatement('SYSUT2', '*'),
-                ztypes.DDStatement('SYSPRINT', '*'),
-                ztypes.DDStatement('SYSIN', ztypes.FileDefinition(sysin_file[1]))
-            ]
-            irrut200_response = mvscmd.execute_authorized('IRRUT200', dds=irrut200_dds)
-
-            # Check return code from IRRUT200 execution
-            if irrut200_response.rc != 0:
-                raise Exception(f"IRRUT200 failed with RC={irrut200_response.rc}: {irrut200_response.stderr_response}")
-
-            percent_used_search = re.search(
-                r'(RACF DATA SET IS\s*)(\d+)(\s*PERCENT FULL)',
-                irrut200_response.stdout_response
-            )
-            percent_used = int(percent_used_search[2])
-            database_used_space = math.ceil((database_total_space * percent_used) / 100)
-
-            return database_total_space, database_used_space
-        finally:
-            # Cleaning up.
-            if sysin_file and os.path.exists(sysin_file[1]):
-                os.remove(sysin_file[1])
-            if datasets.exists(backup_name):
-                datasets.delete(backup_name)
+        return database_total_space
 
     def _run_irrdbu00_utility(self, database_total_space):
         """
@@ -2032,10 +1978,9 @@ class RACFHandler():
 
     def _purge_profile(self):
         """
-        Purge a RACF profile by running three utilities in sequence:
-        1. IRRUT200 - Get database space information
-        2. IRRDBU00 - Dump the RACF database
-        3. IRRRID00 - Generate and execute CLIST for profile deletion
+        Purge a RACF profile by running two utilities in sequence:
+        1. IRRDBU00 - Dump the RACF database
+        2. IRRRID00 - Generate and execute CLIST for profile deletion
 
         Returns:
             tuple: (rc, stdout, stderr, cmd)
@@ -2048,13 +1993,13 @@ class RACFHandler():
         clist = None
 
         try:
-            # Step 1: Run IRRUT200 utility to get database space information
-            database_total_space, database_used_space = self._run_irrut200_utility()
+            # Step 1: Get database space information
+            database_total_space = self._get_database_info()
         except Exception as e:
             # Extract RC from exception message if available, otherwise use 1
             error_msg = str(e)
             rc = self._extract_rc_from_error(error_msg)
-            return rc, "", f"Failed to run IRRUT200 utility: {error_msg}", None
+            return rc, "", f"Failed to get database information: {error_msg}", None
 
         try:
             # Step 2: Run IRRDBU00 utility to dump the RACF database

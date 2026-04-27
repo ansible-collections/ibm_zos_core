@@ -1488,7 +1488,7 @@ def test_user_create_with_omvs_custom_uid(ansible_zos_module):
     """
     hosts = ansible_zos_module
     user_name = generate_random_name("TSTU")
-    custom_uid = 5041
+    custom_uid = 50417
     home_dir = f"/u/{user_name.lower()}"
     
     try:

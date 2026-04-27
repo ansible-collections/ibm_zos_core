@@ -3634,11 +3634,11 @@ def run_module(module, arg_def):
 
             dest_name = data_set.extract_dsname(dest)
             dest_member = data_set.extract_member_name(dest) if copy_member else None
-
+            dest_attributes = dest_ds_type = None
             if data_set.DataSet.data_set_exists(dest_name, volume=volume, tmphlq=tmphlq):
                 dest_exists = True
-            dest_attributes = data_set.DataSet.get_attributes(dest_name)
-            dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
+                dest_attributes = data_set.DataSet.get_attributes(dest_name)
+                dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)

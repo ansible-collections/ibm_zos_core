@@ -1516,15 +1516,19 @@ class RACFHandler():
         """
         # Get filter configuration for this operation, default to empty dict if not found
         operation_filters = self.filters.get(self.operation, {})
-        for block in operation_filters.get('nested', {}):
+        for block in operation_filters.get('nested', []):
+            if not isinstance(block, (list, tuple)) or len(block) < 3:
+                continue
             first_level = self.params.get(block[0], {})
             # Added check to ensure it's a dictionary and is not None
             if isinstance(first_level, dict) and first_level.get(block[1]) is not None:
                 filtered_params = self.filter_block(self.params[block[0]][block[1]], block[2])
                 self.params[block[0]][block[1]] = filtered_params if filtered_params else None
 
-        for block in operation_filters.get('flat', {}):
-            if self.params.get(block[0]) is not None:
+        for block in operation_filters.get('flat', []):
+            if not isinstance(block, (list, tuple)) or len(block) < 2:
+                continue
+            if self.params.get(block[0]) is not None and isinstance(self.params[block[0]], dict):
                 filtered_params = self.filter_block(self.params[block[0]], block[1])
                 self.params[block[0]] = filtered_params if filtered_params else None
 
@@ -1535,8 +1539,8 @@ class RACFHandler():
                 del clean_params[block]
                 continue
 
-            # Added isinstance condition check to prevent iteration over bool values
-            if not isinstance(self.params[block], bool):
+            # Added isinstance condition check to prevent iteration over non-dict values
+            if isinstance(self.params[block], dict):
                 for option in self.params[block]:
                     if self.params[block][option] is None:
                         del clean_params[block][option]

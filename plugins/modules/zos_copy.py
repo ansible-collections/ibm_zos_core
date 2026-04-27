@@ -3635,7 +3635,7 @@ def run_module(module, arg_def):
             dest_name = data_set.extract_dsname(dest)
             dest_member = data_set.extract_member_name(dest) if copy_member else None
 
-            if data_set.DataSet.data_set_exists(src_name, volume=volume, tmphlq=tmphlq):
+            if data_set.DataSet.data_set_exists(dest_name, volume=volume, tmphlq=tmphlq):
                 dest_exists = True
             dest_attributes = data_set.DataSet.get_attributes(dest_name)
             dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)

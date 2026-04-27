@@ -3564,7 +3564,10 @@ def run_module(module, arg_def):
                 raw_src = src_data_set_object.raw_name
 
             src_name = data_set.extract_dsname(src)
-            src_ds_type, src_attributes = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq, return_attributes=True)
+            if not data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq):
+                raise NonExistentSourceError(src)
+            src_attributes = data_set.DataSet.get_attributes(src_name)
+            src_ds_type = data_set.DataSet.get_data_set_type(src_name, attributes=src_attributes, tmphlq=tmphlq)
             if src_ds_type is None:
                 raise NonExistentSourceError(src)
             elif src_ds_type == "UNKNOWN":
@@ -3599,6 +3602,7 @@ def run_module(module, arg_def):
         is_dest_gds_active = False
         is_pds = is_src_dir and is_mvs_dest
         is_dest_alias = False
+        dest_exists = False
 
         if is_uss:
             dest_ds_type = "USS"
@@ -3631,15 +3635,10 @@ def run_module(module, arg_def):
             dest_name = data_set.extract_dsname(dest)
             dest_member = data_set.extract_member_name(dest) if copy_member else None
 
-            # Get both type and attributes in a single call to avoid duplicate list_datasets
-            dest_ds_type, dest_attributes = data_set.DataSet.data_set_type(
-                dest_name, volume, tmphlq=tmphlq, return_attributes=True
-            )
-
-            if dest_ds_type is not None:
+            if data_set.DataSet.data_set_exists(src_name, volume=volume, tmphlq=tmphlq):
                 dest_exists = True
-            else:
-                dest_exists = False
+            dest_attributes = data_set.DataSet.get_attributes(dest_name)
+            dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)

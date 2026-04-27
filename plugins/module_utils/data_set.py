@@ -804,6 +804,92 @@ class DataSet(object):
             raise DatasetVolumeError(name)
 
     @staticmethod
+    def get_attributes(name):
+        """Fetch data set attributes.
+
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+
+        Returns
+        -------
+        str or tuple
+            A tuple of (type, attributes) where attributes is the dataset
+            object from list_datasets, or None for VSAM/GDG/non-existent datasets.
+
+        """
+        data_sets_found = datasets.list_datasets(name)
+
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
+        if len(data_sets_found) > 0:
+            return data_sets_found[0]
+        return None
+
+    @staticmethod
+    def get_data_set_type(name, volume=None, tmphlq=None, attributes=None):
+        """Checks the type of a data set, data sets must be cataloged.
+
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volume : str
+            The volume the data set may reside on.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
+        attributes : tuple
+            The tuple of data set attributes.
+
+        Returns
+        -------
+        str
+            The type of the data set (one of "PS", "PO", "DA", "KSDS", "ESDS",
+            "LDS" or "RRDS"), or None if the data set does not exist.
+
+        """
+
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
+        if attributes is not None:
+            return attributes.organization
+
+        # Now trying to list GDGs through gdgs.
+        data_sets_found = gdgs.list_gdg_names(name)
+        if len(data_sets_found) > 0:
+            return "GDG"
+
+        # Next, trying to get the DATA information of a VSAM through
+        # LISTCAT.
+        output = DataSet._get_listcat_data(name, tmphlq=tmphlq)
+
+        # Filtering all the DATA information to only get the ATTRIBUTES block.
+        data_set_attributes = re.findall(
+            r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
+        if len(data_set_attributes) == 0:
+            return None
+
+        vsam_type = None
+        if re.search(r"\bINDEXED\b", data_set_attributes[0]):
+            vsam_type = "KSDS"
+        elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
+            vsam_type = "ESDS"
+        elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
+            vsam_type = "LDS"
+        elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
+            vsam_type = "RRDS"
+
+        if vsam_type:
+            return vsam_type
+
+        # Check if uncataloged dataset exists
+        if volume is not None and DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq):
+            return "UNKNOWN"
+
+        return None
+
+    @staticmethod
     def data_set_type(name, volume=None, tmphlq=None, return_attributes=False):
         """Checks the type of a data set, data sets must be cataloged.
 

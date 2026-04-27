@@ -595,7 +595,7 @@ def run_module():
                     raise EncodeError(
                         "Generation Data Set {0} does not exist in the "
                         "Generation Data Group {1} or is not cataloged.".format(src, gdg_name)
-                    )    
+                    )
                 else:
                     raise EncodeError(
                         "Data set {0} is not cataloged, please check data set provided in "
@@ -655,7 +655,7 @@ def run_module():
                         raise EncodeError(
                             "Generation Data Set {0} does not exist in the "
                             "Generation Data Group {1} or is not cataloged.".format(dest, gdg_name)
-                        )                        
+                        )
                     else:
                         raise EncodeError(
                             "Data set {0} is not cataloged, please check data set provided in "

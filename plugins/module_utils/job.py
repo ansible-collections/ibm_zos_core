@@ -167,6 +167,10 @@ def _job_not_found(job_id, owner, job_name, dd_name):
         job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
     elif job_id != '*':
         job_not_found_msg = "with the job_id {0}".format(job_id.upper())
+    elif job_id == None and job_name == None:
+        job_not_found_msg = "{0} with the job_id {1}".format(job_name, job_id)
+    elif job_id == None:
+        job_not_found_msg = "with the name {0}".format(job_id)
     else:
         job_not_found_msg = "with the name {0}".format(job_name.upper())
     job = {}
@@ -251,9 +255,10 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         {"job_id": job_id, "owner": owner, "job_name": job_name}
     )
 
-    job_id = parsed_args.get("job_id") or "*"
+    job_id = parsed_args.get("job_id") or None
+    # Defaults to wildcard
     job_name = parsed_args.get("job_name") or "*"
-    owner = parsed_args.get("owner") or "*"
+    owner = parsed_args.get("owner") or None
 
     job_status_result = _get_job_status(
         job_id=job_id,
@@ -357,10 +362,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
 
     if entries:
         for entry in entries:
-            if owner != "*":
+            if owner != "*" and owner is not None:
                 if owner != entry.owner:
                     continue
-            if job_name != "*":
+            if job_name != "*" and job_name is not None:
                 if not fnmatch.fnmatch(entry.name, job_name):
                     continue
             if job_id_temp is not None:

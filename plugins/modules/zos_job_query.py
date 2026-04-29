@@ -442,14 +442,7 @@ def query_jobs(job_name, job_id, owner):
         No job with was found.
     """
     jobs = []
-    if job_id:
-        jobs = job_status(job_id=job_id)
-    elif owner:
-        jobs = job_status(owner=owner, job_name=job_name)
-    else:
-        jobs = job_status(job_name=job_name)
-    if not jobs:
-        raise RuntimeError("List FAILED! no such job was found.")
+    jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
     return jobs
 
 

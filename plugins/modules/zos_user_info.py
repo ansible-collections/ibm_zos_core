@@ -63,6 +63,143 @@ options:
       - csdata
 """
 
+RETURN = r"""
+name:
+  description: Name of the RACF profile queried.
+  returned: success
+  type: str
+  sample: TESTU01
+scope:
+  description: Type of profile queried (user or group).
+  returned: success
+  type: str
+  sample: user
+cmd:
+  description: The TSO command that was executed.
+  returned: success
+  type: str
+  sample: LU TESTU01 TSO OMVS
+profile:
+  description:
+    - Dictionary containing the RACF profile information organized by segments.
+    - Each segment is a dictionary with key-value pairs extracted from RACF output.
+    - The keys and values within each segment are dynamic and depend on what RACF returns.
+    - Empty segments (where RACF returns "NO [SEGMENT] INFORMATION") will be empty dictionaries.
+  returned: success
+  type: dict
+  contains:
+    TSO:
+      description:
+        - TSO segment information (user profiles only).
+        - Contains dynamic key-value pairs such as ACCTNUM, PROC, SIZE, MAXSIZE, etc.
+        - The exact keys present depend on the user's TSO configuration.
+      returned: when scope is user
+      type: dict
+      sample:
+        ACCTNUM: "33000"
+        HOLDCLASS: "H"
+        JOBCLASS: "A"
+        MSGCLASS: "X"
+        PROC: "IKJACCNT"
+        SIZE: "00016384"
+        MAXSIZE: "00032768"
+        SYSOUTCLASS: "A"
+        USERDATA: "E4F1"
+        COMMAND: "ISPF PANEL(ISR@390)"
+    OMVS:
+      description:
+        - OMVS segment information (user and group profiles).
+        - Contains dynamic key-value pairs such as UID, HOME, PROGRAM, etc.
+        - The exact keys present depend on the OMVS configuration.
+      returned: always
+      type: dict
+      sample:
+        UID: "0000000201"
+        HOME: "/u/testu01"
+        PROGRAM: "/bin/sh"
+        CPUTIMEMAX: "NONE"
+        ASSIZEMAX: "NONE"
+    DFP:
+      description:
+        - DFP (Data Facility Product) segment information.
+        - Contains dynamic key-value pairs related to data management.
+        - The exact keys present depend on the DFP configuration.
+      returned: always
+      type: dict
+      sample:
+        MGMTCLAS: "STANDARD"
+        STORCLAS: "SCPERM"
+        DATACLAS: "DCEXTL"
+    OPERPARM:
+      description:
+        - OPERPARM segment information (user profiles only).
+        - Contains operator parameters such as STORAGE, AUTH, ALTGRP, etc.
+        - Some fields like MONITOR, MSCOPE, ROUTCODE are returned as lists.
+        - The exact keys present depend on the operator configuration.
+      returned: when scope is user
+      type: dict
+      sample:
+        STORAGE: "YES"
+        ALTGRP: "YES"
+        AUTO: "NO"
+        HC: "NO"
+        INTIDS: "NO"
+        LEVEL: "00"
+        LOGCMDRESP: "NO"
+        MIGID: "NO"
+        MONITOR:
+          - "JOBNAMES"
+          - "SESS"
+          - "STATUS"
+        MSCOPE:
+          - "ALL"
+        ROUTCODE:
+          - "1:2"
+          - "11"
+    LANGUAGE:
+      description:
+        - LANGUAGE segment information (user profiles only).
+        - Contains language-related settings.
+        - The exact keys present depend on the language configuration.
+      returned: when scope is user
+      type: dict
+      sample:
+        PRIMARY: "ENU"
+        SECONDARY: "JPN"
+    CSDATA:
+      description:
+        - CSDATA (Custom Data) segment information.
+        - Contains custom application-specific data.
+        - The exact keys present depend on what custom data has been defined.
+      returned: always
+      type: dict
+      sample: {}
+changed:
+  description: Indicates if any changes were made (always false for info modules).
+  returned: always
+  type: bool
+  sample: false
+msg:
+  description: Error message when profile is not found.
+  returned: failure
+  type: str
+  sample: "Profile 'TESTU01' not found in RACF database"
+rc:
+  description: Return code from the TSO command.
+  returned: failure
+  type: int
+  sample: 8
+stdout:
+  description: Standard output from the TSO command.
+  returned: failure
+  type: str
+  sample: "NAME NOT FOUND IN RACF DATA SET"
+stderr:
+  description: Standard error from the TSO command.
+  returned: failure
+  type: str
+"""
+
 EXAMPLES = r"""
 - name: Get basic user profile info
   ibm.ibm_zos_core.zos_user_info:
@@ -95,39 +232,67 @@ EXAMPLES = r"""
       - omvs
 """
 
+
 import re
+from typing import Dict, Any
 from ansible.module_utils.basic import AnsibleModule
 
-# Define the fields you know are space-separated lists
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+        better_arg_parser
+    )
+except ImportError:
+    better_arg_parser = None
+
+
+# Fields that contain space-separated or comma-separated lists in RACF output
+# These fields will be split into Python lists instead of keeping as strings
 FIELDS_TO_SPLIT = {
-    "MONITOR",
-    "MSCOPE",
-    "ROUTCODE",  # (ROUTCODE is comma-separated)
-    "ATTRIBUTES",
-    "CLASS AUTHORIZATIONS"
+    "MONITOR",      # Space-separated list of monitor attributes
+    "MSCOPE",       # Space-separated list of message scopes
+    "ROUTCODE",     # Comma-separated list of routing codes (e.g., "1:2,11")
+    "ATTRIBUTES",   # Space-separated list of user/group attributes
+    "CLASS AUTHORIZATIONS",  # Space-separated list of authorized classes
+    "MFORM"      # Space-separated list of message forms
 }
 
+# Regex patterns for parsing RACF output
+RACF_HEADER_PATTERN = r'^(NO )?([A-Z]+) INFORMATION'
+RACF_KV_PATTERN = r'^\s*([A-Z0-9\s]+?)\s*[=:]\s*(.*)'
 
-def extract_generic_segment(output_text, target_segment_name):
+# Prefixes to skip when parsing RACF output
+SKIP_PREFIXES = ('---', 'LU ', 'LG ')
+
+
+def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[str, Any]:
     """
-    A reusable engine that parses a specific segment from RACF LISTUSER output.
-    Handles both 'KEY= VALUE' and 'KEY: VALUE' formats.
+    Parse a specific segment from RACF LISTUSER/LISTGRP command output.
+
+    This function extracts and parses a named segment (e.g., TSO, OMVS, DFP)
+    from RACF command output. It handles both 'KEY=VALUE' and 'KEY: VALUE'
+    formats and automatically splits certain fields into lists.
+
+    Args:
+        output_text (str): Raw output from RACF LISTUSER or LISTGRP command
+        target_segment_name (str): Name of segment to extract (e.g., 'TSO', 'OMVS', 'DFP')
+
+    Returns:
+        Dict[str, Any]: Dictionary containing parsed segment data as key-value pairs.
+                       Returns empty dict if segment not found or has no data.
     """
     segment_data = {}
     in_target_segment = False
 
-    # Matches ANY segment header, capturing if it starts with "NO " and the name
-    header_pattern = re.compile(r'^(NO )?([A-Z]+) INFORMATION')
-
-    # Matches keys and values separated by EITHER '=' or ':'
-    kv_pattern = re.compile(r'^\s*([A-Z0-9\s]+?)\s*[=:]\s*(.*)')
+    # Compile regex patterns using module constants
+    header_pattern = re.compile(RACF_HEADER_PATTERN)
+    kv_pattern = re.compile(RACF_KV_PATTERN)
 
     lines = output_text.strip().split('\n')
 
     for line in lines:
         line = line.strip()
 
-        if not line or line.startswith('---') or line.startswith('LU ') or line.startswith('LG '):
+        if not line or line.startswith(SKIP_PREFIXES):
             continue
 
         # Check if the line is a segment header
@@ -165,27 +330,298 @@ def extract_generic_segment(output_text, target_segment_name):
     return segment_data
 
 
-def parse_tso(output_text):
+def parse_base_user_info(output_text: str) -> Dict[str, Any]:
+    """
+    Parse base user information from RACF LISTUSER output.
+
+    Extracts general user attributes and group connection details from the base
+    section of LISTUSER output (before any segment headers like "TSO INFORMATION").
+
+    Args:
+        output_text: Raw RACF LISTUSER command output text
+
+    Returns:
+        Dictionary with structure:
+        {
+            "general": {key: value, ...},  # User-level attributes
+            "group": {
+                "GROUP_NAME": {key: value, ...},  # Per-group connection attributes
+                ...
+            }
+        }
+    """
+    # Initialize the clean, split structure immediately
+    base_data = {
+        "general": {},
+        "group": {}
+    }
+
+    racf_keys = r'(?:REVOKE DATE|RESUME DATE|CLASS AUTHORIZATIONS|CONNECT ATTRIBUTES|[A-Z0-9-]+)'
+    kv_pattern = re.compile(rf'\b({racf_keys})=(.*?)(?=\s+{racf_keys}=|$)')
+    KEYS_TO_SPLIT = {"ATTRIBUTES", "CLASS AUTHORIZATIONS"}
+
+    lines = output_text.strip().split('\n')
+
+    parsing_logon = False
+    ignoring_category = False
+    last_key = None
+    current_group = None
+
+    for line in lines:
+        original_line = line
+        line = line.strip()
+
+        if not line or line.startswith('---') or line.startswith('LU '):
+            continue
+
+        # ==========================================
+        # If we hit an optional segment header, the base section is over. Stop looping.
+        # ==========================================
+        if re.match(r'^(NO )?([A-Z]+) INFORMATION', line):
+            break
+
+        if line.startswith('SECURITY-LEVEL=') or line.startswith('SECURITY-LABEL='):
+            last_key = None
+            current_group = None
+            continue
+
+        if line.startswith('CATEGORY-AUTHORIZATION'):
+            ignoring_category = True
+            last_key = None
+            current_group = None
+            continue
+
+        if ignoring_category:
+            ignoring_category = False
+            continue
+
+        # Target routing for non-standard lines
+        target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+
+        if line.startswith('LOGON ALLOWED'):
+            parsing_logon = True
+            target_dict['LOGON_SCHEDULE'] = []
+            last_key = None
+            continue
+
+        if parsing_logon:
+            if '=' in line:
+                parsing_logon = False
+            else:
+                target_dict['LOGON_SCHEDULE'].append(line)
+                continue
+
+        if line.startswith('NO-') and '=' not in line:
+            actual_key = line[3:]
+            target_dict[actual_key] = "NONE"
+            last_key = actual_key
+            continue
+
+        matches = kv_pattern.findall(line)
+
+        if matches:
+            for key, value in matches:
+                key = key.strip()
+                value = value.strip()
+
+                if key == "GROUP":
+                    current_group = value
+                    base_data["group"][current_group] = {}
+                    last_key = key
+                    continue
+
+                # --- NEW: Route to specific group, OR the general dictionary ---
+                target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+
+                if key in KEYS_TO_SPLIT:
+                    new_items = value.split()
+                else:
+                    new_items = [value]
+
+                if key in target_dict:
+                    if not isinstance(target_dict[key], list):
+                        target_dict[key] = [target_dict[key]]
+                    target_dict[key].extend(new_items)
+                else:
+                    if key in KEYS_TO_SPLIT or len(new_items) > 1:
+                        target_dict[key] = new_items
+                    else:
+                        target_dict[key] = new_items[0]
+
+                last_key = key
+
+        elif last_key:
+            target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+            if isinstance(target_dict[last_key], list):
+                target_dict[last_key][-1] += original_line.strip()
+            else:
+                target_dict[last_key] += original_line.strip()
+
+    return base_data
+
+
+def parse_base_group_info(output_text: str) -> Dict[str, Any]:
+    """
+    Parse base group information from RACF LISTGROUP output.
+
+    Extracts general group attributes and connected user details from the base
+    section of LISTGROUP output (before any segment headers).
+
+    Args:
+        output_text: Raw RACF LISTGROUP command output text
+
+    Returns:
+        Dictionary with structure:
+        {
+            "general": {key: value, ...},  # Group-level attributes
+            "users": {
+                "USERNAME": {key: value, ...},  # Per-user connection attributes
+                ...
+            }
+        }
+    """
+    base_data = {
+        "general": {},
+        "users": {}  # Houses all the nested users
+    }
+
+    # Whitelist of RACF group keys
+    group_keys = r'(?:SUPERIOR GROUP|INSTALLATION DATA|MODEL DATA SET|SUBGROUP\(S\)|CONNECT ATTRIBUTES|REVOKE DATE|RESUME DATE|[A-Z0-9-]+)'
+    kv_pattern = re.compile(rf'\b({group_keys})=(.*?)(?=\s+{group_keys}=|$)')
+
+    lines = output_text.strip().split('\n')
+
+    parsing_users = False
+    current_user = None
+    last_key = None
+
+    for line in lines:
+        original_line = line
+        line = line.strip()
+
+        # Skip headers and empty lines
+        if not line or line.startswith('---') or line.startswith('LG ') or line.startswith('INFORMATION FOR GROUP'):
+            continue
+
+        # ==========================================
+        # 1. THE STOP CONDITION
+        # ==========================================
+        if re.match(r'^(NO )?([A-Z]+) INFORMATION', line):
+            break
+
+        # ==========================================
+        # 2. BOOLEANS & "NO " FLAGS
+        # ==========================================
+        if line in ['TERMUACC', 'NOTERMUACC', 'UNIVERSAL']:
+            base_data['general'][line] = True
+            last_key = None
+            continue
+
+        if line == 'NO INSTALLATION DATA':
+            base_data['general']['INSTALLATION DATA'] = "NONE"
+            last_key = None
+            continue
+
+        if line == 'NO MODEL DATA SET':
+            base_data['general']['MODEL DATA SET'] = "NONE"
+            last_key = None
+            continue
+
+        if line == 'NO SUBGROUPS':
+            base_data['general']['SUBGROUP(S)'] = []
+            last_key = None
+            continue
+
+        # ==========================================
+        # 3. USER TABLE NESTING
+        # ==========================================
+        if line.startswith('USER(S)='):
+            parsing_users = True
+            last_key = None
+            continue
+
+        if parsing_users:
+            if '=' not in line:
+                # It's a new user row (e.g. "TSTUSER  JOIN  000047  READ")
+                parts = line.split()
+                if len(parts) >= 4:
+                    current_user = parts[0]
+                    base_data['users'][current_user] = {
+                        "ACCESS": parts[1],
+                        "ACCESS COUNT": parts[2],
+                        "UNIVERSAL ACCESS": parts[3]
+                    }
+                last_key = None
+            else:
+                # It's a nested attribute for the current user (e.g. "REVOKE DATE=NONE")
+                matches = kv_pattern.findall(line)
+                for key, value in matches:
+                    key = key.strip()
+                    value = value.strip()
+                    if current_user:
+                        base_data['users'][current_user][key] = value
+            continue  # We handled the user row, skip the general processing below
+
+        # ==========================================
+        # 4. GENERAL KEY EXTRACTION & CONTINUATION
+        # ==========================================
+        matches = kv_pattern.findall(line)
+
+        if matches:
+            for key, value in matches:
+                key = key.strip()
+                value = value.strip()
+
+                # Auto-split SUBGROUP(S) into an array right away
+                if key == "SUBGROUP(S)":
+                    base_data['general'][key] = value.split()
+                else:
+                    base_data['general'][key] = value
+
+                last_key = key
+
+        elif last_key:
+            # Special Continuation for SUBGROUP(S)
+            # Since subgroups are just space-separated words wrapping lines, we use .extend()
+            if last_key == "SUBGROUP(S)":
+                base_data['general'][last_key].extend(line.split())
+            else:
+                # Standard continuation gluing
+                if isinstance(base_data['general'][last_key], list):
+                    base_data['general'][last_key][-1] += original_line.strip()
+                else:
+                    base_data['general'][last_key] += original_line.strip()
+
+    return base_data
+
+
+def parse_tso(output_text: str) -> Dict[str, Any]:
+    """Parse TSO segment from RACF output."""
     return extract_generic_segment(output_text, "TSO")
 
 
-def parse_omvs(output_text):
+def parse_omvs(output_text: str) -> Dict[str, Any]:
+    """Parse OMVS segment from RACF output."""
     return extract_generic_segment(output_text, "OMVS")
 
 
-def parse_dfp(output_text):
+def parse_dfp(output_text: str) -> Dict[str, Any]:
+    """Parse DFP segment from RACF output."""
     return extract_generic_segment(output_text, "DFP")
 
 
-def parse_operparm(output_text):
+def parse_operparm(output_text: str) -> Dict[str, Any]:
+    """Parse OPERPARM segment from RACF output."""
     return extract_generic_segment(output_text, "OPERPARM")
 
 
-def parse_language(output_text):
+def parse_language(output_text: str) -> Dict[str, Any]:
+    """Parse LANGUAGE segment from RACF output."""
     return extract_generic_segment(output_text, "LANGUAGE")
 
 
-def parse_csdata(output_text):
+def parse_csdata(output_text: str) -> Dict[str, Any]:
+    """Parse CSDATA segment from RACF output."""
     return extract_generic_segment(output_text, "CSDATA")
 
 
@@ -223,6 +659,33 @@ def run_module():
         argument_spec=module_args,
         supports_check_mode=True
     )
+
+    if better_arg_parser:
+        args_def = {
+            'name': {
+                'arg_type': 'str',
+                'required': True
+            },
+            'scope': {
+                'arg_type': 'str',
+                'required': True
+            },
+            'segments': {
+                'arg_type': 'list',
+                'elements': 'str',
+                'required': False
+            }
+        }
+
+        try:
+            parser = better_arg_parser.BetterArgParser(args_def)
+            parsed_args = parser.parse_args(module.params)
+            module.params = parsed_args
+        except ValueError as err:
+            module.fail_json(
+                msg='Parameter verification failed.',
+                stderr=str(err)
+            )
 
     name = module.params['name']
     scope = module.params['scope'].lower()
@@ -287,28 +750,47 @@ def run_module():
         module.fail_json(**result)
 
     # Parse segments based on scope
-    if scope == 'user':
-        final_user_profile = {
-            "TSO": parse_tso(stdout),
-            "OMVS": parse_omvs(stdout),
-            "DFP": parse_dfp(stdout),
-            "OPERPARM": parse_operparm(stdout),
-            "LANGUAGE": parse_language(stdout),
-            "CSDATA": parse_csdata(stdout)
-        }
-    else:  # scope == 'group'
-        final_user_profile = {
-            "OMVS": parse_omvs(stdout),
-            "DFP": parse_dfp(stdout),
-            "CSDATA": parse_csdata(stdout)
-        }
+    try:
+        if scope == 'user':
 
-    result['rc'] = rc
-    result['stdout'] = stdout
-    result['stderr'] = stderr
-    result['profile'] = final_user_profile
+            base_data = parse_base_user_info(stdout)
 
-    module.exit_json(**result)
+            final_user_profile = {
+                **base_data,
+                "TSO": parse_tso(stdout),
+                "OMVS": parse_omvs(stdout),
+                "DFP": parse_dfp(stdout),
+                "OPERPARM": parse_operparm(stdout),
+                "LANGUAGE": parse_language(stdout),
+                "CSDATA": parse_csdata(stdout)
+            }
+        else:  # scope == 'group'
+
+            base_data = parse_base_group_info(stdout)
+            final_user_profile = {
+                **base_data,
+                "OMVS": parse_omvs(stdout),
+                "DFP": parse_dfp(stdout),
+                "CSDATA": parse_csdata(stdout)
+            }
+
+        result['rc'] = rc
+        result['profile'] = final_user_profile
+
+        module.exit_json(**result)
+
+    except (KeyError, IndexError, AttributeError) as parse_err:
+        result['rc'] = rc
+        result['stdout'] = stdout
+        result['stderr'] = stderr
+        result['msg'] = f"Failed to parse RACF output: {str(parse_err)}"
+        module.fail_json(**result)
+    except Exception as err:
+        result['rc'] = rc
+        result['stdout'] = stdout
+        result['stderr'] = stderr
+        result['msg'] = f"Unexpected error during parsing: {str(err)}"
+        module.fail_json(**result)
 
 
 if __name__ == '__main__':

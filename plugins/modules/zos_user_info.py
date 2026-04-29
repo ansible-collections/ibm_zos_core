@@ -773,7 +773,7 @@ def run_module():
                     'lang': ('LANGUAGE', parse_language),
                     'csdata': ('CSDATA', parse_csdata)
                 }
-                
+
                 for seg in filtered_segments:
                     if seg in segment_parser_map:
                         key, parser_func = segment_parser_map[seg]
@@ -790,7 +790,7 @@ def run_module():
                     'dfp': ('DFP', parse_dfp),
                     'csdata': ('CSDATA', parse_csdata)
                 }
-                
+
                 for seg in filtered_segments:
                     if seg in segment_parser_map:
                         key, parser_func = segment_parser_map[seg]

@@ -79,6 +79,39 @@ def test_zos_job_query_func(ansible_zos_module):
         assert rc.get("msg_code") is not None
         assert rc.get("msg_txt") is not None
 
+def test_zos_job_query_func_null_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_query(job_id=None)
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("jobs") is not None
+        assert result.get("msg", False) is False
+
+        job = result.get("jobs")[0]
+        assert job.get("job_name") is not None
+        assert job.get("owner") is not None
+        assert job.get("job_id") is not None
+        assert job.get("content_type") is not None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("execution_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("job_class") is not None
+        assert job.get("priority") is not None
+        assert job.get("asid") is not None
+        assert job.get("creation_date") is not None
+        assert job.get("creation_time") is not None
+        assert job.get("program_name") is not None
+        assert job.get("execution_time") is not None
+        assert job.get("svc_class") is None
+        assert job.get("steps") is not None
+
+        rc = job.get("ret_code")
+        assert rc.get("msg") is not None
+        assert rc.get("code") is not None
+        assert rc.get("msg_code") is not None
+        assert rc.get("msg_txt") is not None
 
 JCLQ_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM

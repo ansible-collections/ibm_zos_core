@@ -82,6 +82,8 @@ cmd:
 profile:
   description:
     - Dictionary containing the RACF profile information organized by segments.
+    - Always includes base profile information (general and group/users sections).
+    - Additional segments are only included if explicitly requested via the I(segments) parameter.
     - Each segment is a dictionary with key-value pairs extracted from RACF output.
     - The keys and values within each segment are dynamic and depend on what RACF returns.
     - Empty segments (where RACF returns "NO [SEGMENT] INFORMATION") will be empty dictionaries.
@@ -93,7 +95,8 @@ profile:
         - TSO segment information (user profiles only).
         - Contains dynamic key-value pairs such as ACCTNUM, PROC, SIZE, MAXSIZE, etc.
         - The exact keys present depend on the user's TSO configuration.
-      returned: when scope is user
+        - Only returned when C(tso) is included in the I(segments) parameter.
+      returned: when scope is user and tso segment is requested
       type: dict
       sample:
         ACCTNUM: "33000"
@@ -111,7 +114,8 @@ profile:
         - OMVS segment information (user and group profiles).
         - Contains dynamic key-value pairs such as UID, HOME, PROGRAM, etc.
         - The exact keys present depend on the OMVS configuration.
-      returned: always
+        - Only returned when C(omvs) is included in the I(segments) parameter.
+      returned: when omvs segment is requested
       type: dict
       sample:
         UID: "0000000201"
@@ -124,7 +128,8 @@ profile:
         - DFP (Data Facility Product) segment information.
         - Contains dynamic key-value pairs related to data management.
         - The exact keys present depend on the DFP configuration.
-      returned: always
+        - Only returned when C(dfp) is included in the I(segments) parameter.
+      returned: when dfp segment is requested
       type: dict
       sample:
         MGMTCLAS: "STANDARD"
@@ -136,7 +141,8 @@ profile:
         - Contains operator parameters such as STORAGE, AUTH, ALTGRP, etc.
         - Some fields like MONITOR, MSCOPE, ROUTCODE are returned as lists.
         - The exact keys present depend on the operator configuration.
-      returned: when scope is user
+        - Only returned when C(operparm) is included in the I(segments) parameter.
+      returned: when scope is user and operparm segment is requested
       type: dict
       sample:
         STORAGE: "YES"
@@ -161,7 +167,8 @@ profile:
         - LANGUAGE segment information (user profiles only).
         - Contains language-related settings.
         - The exact keys present depend on the language configuration.
-      returned: when scope is user
+        - Only returned when C(lang) is included in the I(segments) parameter.
+      returned: when scope is user and lang segment is requested
       type: dict
       sample:
         PRIMARY: "ENU"
@@ -171,7 +178,8 @@ profile:
         - CSDATA (Custom Data) segment information.
         - Contains custom application-specific data.
         - The exact keys present depend on what custom data has been defined.
-      returned: always
+        - Only returned when C(csdata) is included in the I(segments) parameter.
+      returned: when csdata segment is requested
       type: dict
       sample: {}
 changed:
@@ -752,27 +760,41 @@ def run_module():
     # Parse segments based on scope
     try:
         if scope == 'user':
-
             base_data = parse_base_user_info(stdout)
+            final_user_profile = {**base_data}
 
-            final_user_profile = {
-                **base_data,
-                "TSO": parse_tso(stdout),
-                "OMVS": parse_omvs(stdout),
-                "DFP": parse_dfp(stdout),
-                "OPERPARM": parse_operparm(stdout),
-                "LANGUAGE": parse_language(stdout),
-                "CSDATA": parse_csdata(stdout)
-            }
+            # Only include segments that were explicitly requested
+            if filtered_segments:
+                segment_parser_map = {
+                    'tso': ('TSO', parse_tso),
+                    'omvs': ('OMVS', parse_omvs),
+                    'dfp': ('DFP', parse_dfp),
+                    'operparm': ('OPERPARM', parse_operparm),
+                    'lang': ('LANGUAGE', parse_language),
+                    'csdata': ('CSDATA', parse_csdata)
+                }
+                
+                for seg in filtered_segments:
+                    if seg in segment_parser_map:
+                        key, parser_func = segment_parser_map[seg]
+                        final_user_profile[key] = parser_func(stdout)
+
         else:  # scope == 'group'
-
             base_data = parse_base_group_info(stdout)
-            final_user_profile = {
-                **base_data,
-                "OMVS": parse_omvs(stdout),
-                "DFP": parse_dfp(stdout),
-                "CSDATA": parse_csdata(stdout)
-            }
+            final_user_profile = {**base_data}
+
+            # Only include segments that were explicitly requested
+            if filtered_segments:
+                segment_parser_map = {
+                    'omvs': ('OMVS', parse_omvs),
+                    'dfp': ('DFP', parse_dfp),
+                    'csdata': ('CSDATA', parse_csdata)
+                }
+                
+                for seg in filtered_segments:
+                    if seg in segment_parser_map:
+                        key, parser_func = segment_parser_map[seg]
+                        final_user_profile[key] = parser_func(stdout)
 
         result['rc'] = rc
         result['profile'] = final_user_profile

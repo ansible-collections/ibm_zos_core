@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,8 +46,7 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the default set is 'none' and all jobs will be
-        queried.
+      - If no owner is set, the default set is 'None' and the parameter will not be used for job querying.
     type: str
     required: False
   job_id:
@@ -59,6 +58,7 @@ options:
         with `S`, `J`, `T` and are followed by 7 digits.
       - The I(job_id) can contain include multiple wildcards.
       - The asterisk (`*`) wildcard will match zero or more specified characters.
+      - If no job_id is set, the default set is 'None' and the parameter will not be used for job querying.
     type: str
     required: False
 

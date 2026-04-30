@@ -1179,40 +1179,96 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-operation:
-    description: Operation that was performed by the module.
+changed:
+    description: Indicates whether any changes were made to the system.
+    returned: always
+    type: bool
+    sample: true
+cmd:
+    description: The RACF command that was executed with tsocmd.
     returned: always
     type: str
-    sample: create
-racf_command:
-    description: Full command string that was executed with tsocmd.
-    returned: success
+    sample: "ADDUSER (DUSR1001)"
+msg:
+    description: |
+        Message returned by the module. Contains error messages on failure,
+        informational messages when no changes are needed (e.g., entity already exists),
+        or validation error messages.
+    returned: on failure or when no changes are needed
     type: str
-    sample: "DELUSER (user)"
+    sample: "An error occurred while executing the RACF command."
+rc:
+    description: Return code from the RACF command execution.
+    returned: always
+    type: int
+    sample: 0
+stdout:
+    description: |
+        Standard output from the RACF command execution.
+        For purge operations, may contain dump dataset and CLIST information.
+        In check mode, may contain informational messages about the entity state.
+    returned: always
+    type: str
+    sample: "User DUSR1001 is defined as PROTECTED.\n"
+stdout_lines:
+    description: List of strings containing individual lines from stdout.
+    returned: always
+    type: list
+    elements: str
+    sample: ["User DUSR1001 is defined as PROTECTED.", ""]
+stderr:
+    description: |
+        Standard error from the RACF command execution.
+        TSO command echoes are automatically filtered out.
+    returned: always
+    type: str
+    sample: ""
+stderr_lines:
+    description: List of strings containing individual lines from stderr.
+    returned: always
+    type: list
+    elements: str
+    sample: [""]
 num_entities_modified:
-    description: Number of profiles and references modified by the operation.
+    description: |
+        Number of profiles and references modified by the operation.
+        Set to 0 when entity already exists or is already in desired state.
+        Set to 1 for successful single entity operations.
+        For purge operations, reflects the count of entities deleted.
     returned: always
     type: int
     sample: 1
 entities_modified:
-    description: List of all profiles and references modified by the operation.
-    returned: success
+    description: |
+        List of all profiles and references modified by the operation.
+        For user scope operations (create, update, delete, connect, remove), contains the user profile name when successful.
+        For group scope operations (create, update, delete), contains the group profile name when successful.
+        For purge operations, contains all users/groups deleted by the CLIST.
+        Empty list when no changes are made (entity already exists or in desired state).
+    returned: always
     type: list
     elements: str
-    sample: ['user']
+    sample: ['DUSR1001']
 database_dumped:
-    description: Whether the module used IRRRID00 to dump the RACF database.
+    description: |
+        Whether the module used IRRDBU00 utility to dump the RACF database.
+        Only true for purge operations that successfully execute IRRDBU00.
     returned: always
     type: bool
     sample: false
 dump_kept:
-    description: Whether the RACF database dump was kept on the managed node.
+    description: |
+        Whether the RACF database dump was kept on the managed node.
+        Controlled by the keep_dump parameter. Only relevant when database_dumped is true.
     returned: always
     type: bool
     sample: false
 dump_name:
-    description: Name of the database containing the output from the IRRRID00 utility.
-    returned: success
+    description: |
+        Name of the dataset containing the output from the IRRDBU00 utility.
+        Only populated (non-null) when database_dumped is true and keep_dump is true.
+        Otherwise returns null.
+    returned: always
     type: str
     sample: USER.BACKUP.RACF.DATABASE
 """

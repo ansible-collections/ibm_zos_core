@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1831,7 +1831,7 @@ class DataSet(object):
 
     @staticmethod
     def is_gds_absolute_name(name):
-        """Determine if name is a gdg absolute name based
+        """Determine if name is a GDG absolute name based
         on the GDS absolute name syntax .GxxxxVyy, eg. 'USER.GDG.G0002V01'.
 
         Parameters

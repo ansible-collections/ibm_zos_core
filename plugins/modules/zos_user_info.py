@@ -64,25 +64,15 @@ options:
 """
 
 RETURN = r"""
-name:
-  description: Name of the RACF profile queried.
-  returned: success
-  type: str
-  sample: TESTU01
-scope:
-  description: Type of profile queried (user or group).
-  returned: success
-  type: str
-  sample: user
 cmd:
   description: The TSO command that was executed.
-  returned: success
+  returned: always
   type: str
   sample: LU TESTU01 TSO OMVS
 profile:
   description:
     - Dictionary containing the RACF profile information organized by segments.
-    - Always includes base profile information (general and group/users sections).
+    - Always includes base profile information (C(general) and C(group)/C(users) sections).
     - Additional segments are only included if explicitly requested via the I(segments) parameter.
     - Each segment is a dictionary with key-value pairs extracted from RACF output.
     - The keys and values within each segment are dynamic and depend on what RACF returns.
@@ -90,10 +80,67 @@ profile:
   returned: success
   type: dict
   contains:
+    general:
+      description:
+        - Base profile information that is always returned.
+        - For user profiles, contains attributes like USER-ID, NAME, DEFAULT-GROUP, OWNER, CREATED, PASSDATE, PASS-INTERVAL, ATTRIBUTES, etc.
+        - For group profiles, contains attributes like OWNER, CREATED, SUPERIOR GROUP, INSTALLATION DATA, SUBGROUP(S), TERMUACC, UNIVERSAL, etc.
+        - The exact keys present are dynamic and depend on the profile configuration.
+        - Some fields like ATTRIBUTES and CLASS AUTHORIZATIONS are returned as lists when they contain multiple values.
+      returned: always
+      type: dict
+      sample:
+        USER-ID: "TESTU01"
+        NAME: "TEST USER 01"
+        DEFAULT-GROUP: "TSTGRP01"
+        PASSDATE: "2026/04/15"
+        PASS-INTERVAL: "90"
+        ATTRIBUTES: ["SPECIAL", "OPERATIONS"]
+        OWNER: "ADMIN01"
+        CREATED: "2025/01/10"
+    group:
+      description:
+        - Group connection information for user profiles.
+        - Dictionary where each key is a group name and the value contains connection attributes.
+        - Contains attributes like AUTH, CONNECT-OWNER, CONNECT-DATE, LAST-CONNECT, REVOKE DATE, RESUME DATE, CONNECT ATTRIBUTES, etc.
+        - Only returned when scope is C(user).
+      returned: when scope is user
+      type: dict
+      sample:
+        TSTGRP01:
+          AUTH: "USE"
+          CONNECT-OWNER: "ADMIN01"
+          CONNECT-DATE: "2025/01/10"
+          LAST-CONNECT: "2026/04/29"
+          REVOKE DATE: "NONE"
+          RESUME DATE: "NONE"
+        SYSADM:
+          AUTH: "JOIN"
+          CONNECT-OWNER: "ADMIN01"
+          CONNECT-DATE: "2025/02/15"
+    users:
+      description:
+        - Connected user information for group profiles.
+        - Dictionary where each key is a username and the value contains connection attributes.
+        - Contains attributes like ACCESS, ACCESS COUNT, UNIVERSAL ACCESS, REVOKE DATE, RESUME DATE, CONNECT ATTRIBUTES, etc.
+        - Only returned when scope is C(group).
+      returned: when scope is group
+      type: dict
+      sample:
+        TESTU01:
+          ACCESS: "JOIN"
+          ACCESS COUNT: "000047"
+          UNIVERSAL ACCESS: "READ"
+          REVOKE DATE: "NONE"
+          RESUME DATE: "NONE"
+        TESTU02:
+          ACCESS: "USE"
+          ACCESS COUNT: "000012"
+          UNIVERSAL ACCESS: "NONE"
     TSO:
       description:
         - TSO segment information (user profiles only).
-        - Contains dynamic key-value pairs such as ACCTNUM, PROC, SIZE, MAXSIZE, etc.
+        - Contains dynamic key-value pairs such as ACCTNUM, PROC, SIZE, MAXSIZE, JOBCLASS, MSGCLASS, etc.
         - The exact keys present depend on the user's TSO configuration.
         - Only returned when C(tso) is included in the I(segments) parameter.
       returned: when scope is user and tso segment is requested
@@ -112,7 +159,7 @@ profile:
     OMVS:
       description:
         - OMVS segment information (user and group profiles).
-        - Contains dynamic key-value pairs such as UID, HOME, PROGRAM, etc.
+        - Contains dynamic key-value pairs such as UID, HOME, PROGRAM, CPUTIMEMAX, ASSIZEMAX, etc.
         - The exact keys present depend on the OMVS configuration.
         - Only returned when C(omvs) is included in the I(segments) parameter.
       returned: when omvs segment is requested
@@ -126,7 +173,7 @@ profile:
     DFP:
       description:
         - DFP (Data Facility Product) segment information.
-        - Contains dynamic key-value pairs related to data management.
+        - Contains dynamic key-value pairs related to data management such as MGMTCLAS, STORCLAS, DATACLAS, etc.
         - The exact keys present depend on the DFP configuration.
         - Only returned when C(dfp) is included in the I(segments) parameter.
       returned: when dfp segment is requested
@@ -138,8 +185,8 @@ profile:
     OPERPARM:
       description:
         - OPERPARM segment information (user profiles only).
-        - Contains operator parameters such as STORAGE, AUTH, ALTGRP, etc.
-        - Some fields like MONITOR, MSCOPE, ROUTCODE are returned as lists.
+        - Contains operator parameters such as STORAGE, AUTH, ALTGRP, AUTO, HC, INTIDS, LEVEL, etc.
+        - Some fields like MONITOR, MSCOPE, ROUTCODE are returned as lists when they contain multiple values.
         - The exact keys present depend on the operator configuration.
         - Only returned when C(operparm) is included in the I(segments) parameter.
       returned: when scope is user and operparm segment is requested
@@ -165,7 +212,7 @@ profile:
     LANGUAGE:
       description:
         - LANGUAGE segment information (user profiles only).
-        - Contains language-related settings.
+        - Contains language-related settings such as PRIMARY and SECONDARY language codes.
         - The exact keys present depend on the language configuration.
         - Only returned when C(lang) is included in the I(segments) parameter.
       returned: when scope is user and lang segment is requested
@@ -187,25 +234,35 @@ changed:
   returned: always
   type: bool
   sample: false
+rc:
+  description:
+    - Return code from the TSO command.
+    - Returns 0 on success.
+    - Returns non-zero on failure (e.g., 8 when profile not found).
+  returned: always
+  type: int
+  sample: 0
 msg:
-  description: Error message when profile is not found.
+  description:
+    - Error message describing the failure reason.
+    - Only present when the module fails.
   returned: failure
   type: str
   sample: "Profile 'TESTU01' not found in RACF database"
-rc:
-  description: Return code from the TSO command.
-  returned: failure
-  type: int
-  sample: 8
 stdout:
-  description: Standard output from the TSO command.
+  description:
+    - Standard output from the TSO command.
+    - Only present when the module fails.
   returned: failure
   type: str
   sample: "NAME NOT FOUND IN RACF DATA SET"
 stderr:
-  description: Standard error from the TSO command.
+  description:
+    - Standard error from the TSO command.
+    - Only present when the module fails.
   returned: failure
   type: str
+  sample: ""
 """
 
 EXAMPLES = r"""
@@ -657,10 +714,7 @@ def run_module():
     result = {
         'changed': False,
         'rc': 0,
-        'stdout': '',
-        'stderr': '',
-        'cmd': '',
-        'msg': ''
+        'cmd': ''
     }
 
     module = AnsibleModule(
@@ -753,7 +807,8 @@ def run_module():
     if rc != 0 or 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {scope.upper()} NAME' in stdout.upper():
         result['rc'] = rc
         result['stdout'] = stdout
-        result['stderr'] = stderr
+        # Only include stderr if it contains something other than the command echo
+        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Profile '{name}' not found in RACF database"
         module.fail_json(**result)
 
@@ -804,13 +859,15 @@ def run_module():
     except (KeyError, IndexError, AttributeError) as parse_err:
         result['rc'] = rc
         result['stdout'] = stdout
-        result['stderr'] = stderr
+        # Only include stderr if it contains something other than the command echo
+        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Failed to parse RACF output: {str(parse_err)}"
         module.fail_json(**result)
     except Exception as err:
         result['rc'] = rc
         result['stdout'] = stdout
-        result['stderr'] = stderr
+        # Only include stderr if it contains something other than the command echo
+        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Unexpected error during parsing: {str(err)}"
         module.fail_json(**result)
 

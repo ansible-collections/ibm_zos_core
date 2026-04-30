@@ -1,8 +1,13 @@
+
+:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_user.py
+
 .. _zos_user_module:
 
 
 zos_user -- Manage user and group profiles in RACF
 ==================================================
+
+
 
 .. contents::
    :local:
@@ -11,11 +16,8 @@ zos_user -- Manage user and group profiles in RACF
 
 Synopsis
 --------
-
-The \ `zos\_user <./zos_user.html>`__ module executes RACF TSO commands that can manage user and group RACF profiles.
-
-The module can create, update and delete RACF profiles, as well as list information about them.
-
+- The \ `zos\_user <./zos_user.html>`__ module executes RACF TSO commands that can manage user and group RACF profiles.
+- The module can create, update and delete RACF profiles about them.
 
 
 
@@ -24,676 +26,1422 @@ The module can create, update and delete RACF profiles, as well as list informat
 Parameters
 ----------
 
-  name (True, str, None)
-    Name of the RACF profile the module will operate on.
+
+name
+  Name of the RACF profile the module will operate on.
+
+  | **required**: True
+  | **type**: str
 
 
-  operation (True, str, None)
-    RACF command that will be executed.
+operation
+  RACF command that will be executed.
 
-    Group profiles can be created, updated, listed, deleted and purged.
+  Group profiles can be created, updated, deleted and purged.
 
-    User profiles can use any of the choices.
+  User profiles can use any of the choices.
 
-    :literal:`delete` will run a RACF :literal:`DELGROUP` or a :literal:`DELUSER` TSO command. This will remove the profile but not every reference in the RACF database.
+  :literal:`delete` will run a RACF :literal:`DELGROUP` or a :literal:`DELUSER` TSO command. This will remove the profile but not every reference in the RACF database.
 
-    :literal:`purge` will execute the RACF utility IRRDBU00, thereby removing all references of a profile from the RACF database.
+  :literal:`purge` will execute the RACF utility IRRDBU00, thereby removing all references of a profile from the RACF database.
 
-    :literal:`connect` will add a given user profile to a group. :literal:`remove` will remove the user from a group.
+  :literal:`connect` will add a given user profile to a group. :literal:`remove` will remove the user from a group.
 
-
-  scope (True, str, None)
-    Whether commands should affect a user or a group profile.
-
-
-  general (False, dict, None)
-    Options that change common attributes in a RACF profile.
+  | **required**: True
+  | **type**: str
+  | **choices**: create, update, delete, purge, connect, remove
 
 
-    model (False, str, None)
-      RACF profile that will be used as a model for the profile being changed.
+scope
+  Whether commands should affect a user or a group profile.
 
-      An empty string will delete this field from the profile.
-
-
-    owner (False, str, None)
-      Owner of the profile that is being changed.
-
-      It can be a user or a group profile.
+  | **required**: True
+  | **type**: str
+  | **choices**: user, group
 
 
-    installation_data (False, str, None)
-      Installation-defined data that will be stored in the profile.
+database
+  Name of the RACF database to use for the purge operation.
 
-      Maximum length of 255 characters.
+  This option is only applicable when :emphasis:`operation=purge`.
 
-      The module will automatically enclose the contents in single quotation marks.
-
-      An empty string will delete this field from the profile.
-
-
-    custom_fields (False, dict, None)
-      Custom fields that will be stored with the profile.
+  | **required**: False
+  | **type**: str
 
 
-      add (False, dict, None)
-        Adds custom fields to this profile.
+keep_dump
+  Whether to keep the database dump datasets after the purge operation completes.
 
-        Each custom field should be a :strong:`ERROR while parsing`\ : While parsing "C(key" at index 31 of paragraph 1: Cannot find closing ")" after last parameter
+  This option is only applicable when :emphasis:`operation=purge`.
 
+  When set to :literal:`true`\ , the IRRDBU00 dump dataset and IRRRID00 CLIST will be retained for debugging or auditing purposes.
 
-      delete (False, list, None)
-        Deletes each custom field listed.
+  When set to :literal:`false`\ , these temporary datasets will be deleted after the purge operation.
 
-
-      delete_block (required, bool, None)
-        Delete the whole custom fields block from the profile.
-
-        This option is only valid when updating profiles, it will be ignored when creating one.
-
-        This option is mutually exclusive with :literal:`add` and :literal:`delete`.
+  | **required**: False
+  | **type**: bool
+  | **default**: False
 
 
+optimize_dump
+  Whether to optimize the database dump operation by not locking the RACF database.
+
+  This option is only applicable when :emphasis:`operation=purge`.
+
+  When set to :literal:`true`\ , the IRRDBU00 utility will run with :literal:`NOLOCKINPUT` option, which allows other processes to access the database during the dump.
+
+  When set to :literal:`false`\ , the IRRDBU00 utility will run with :literal:`LOCKINPUT` option, which locks the database during the dump to ensure consistency.
+
+  Using :literal:`true` can improve performance but may result in inconsistent data if the database is being modified during the dump.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: True
 
 
-  group (False, dict, None)
-    Options that change group-specific attributes in a RACF profile.
+no_exec
+  Whether to skip execution of generated clist.
 
-    Only valid when changing a group profile, ignored for user profiles.
+  This option is only applicable when :emphasis:`operation=purge`.
 
+  When set to :literal:`true`\ , the module will generate the CLIST with DELUSER/DELGROUP commands but will not execute it.
 
-    superior_group (False, str, None)
-      Superior group that will be assigned to the profile.
+  When set to :literal:`false`\ , the CLIST will be generated and executed to purge the profiles.
 
+  This option is useful for reviewing the purge commands before execution.
 
-    terminal_access (False, bool, None)
-      Whether to allow the use of the universal access authority for a terminal during authorization checking.
-
-
-    universal_group (False, bool, None)
-      Whether the group should be allowed to have an unlimited number of users.
+  | **required**: False
+  | **type**: bool
+  | **default**: False
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary data sets.
 
-  dfp (False, dict, None)
-    Options that set DFP attributes from the Storage Management Subsytem.
+  This option is only applicable when :emphasis:`operation=purge`.
 
+  Temporary data sets are created during the purge operation for database dumps, CLIST generation, and intermediate processing.
 
-    data_app_id (False, str, None)
-      Name of a DFP data application.
+  If not specified, the system default HLQ will be used.
 
-
-    data_class (False, str, None)
-      Default data class for data set allocation.
-
-
-    management_class (False, str, None)
-      Default management class for data set migration and backup.
+  | **required**: False
+  | **type**: str
 
 
-    storage_class (False, str, None)
-      Default storage class for data set space, device and volume.
+general
+  Options that change common attributes in a RACF profile.
+
+  | **required**: False
+  | **type**: dict
 
 
-    delete (False, bool, None)
-      Delete the whole DFP block from the profile.
+  user_name
+    Display name for the user profile(not the userid).
+
+    This corresponds to the RACF NAME parameter.
+
+    Maximum length of 20 characters.
+
+    This option is only valid for user profiles (\ :emphasis:`scope=user`\ ).
+
+    This option is only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
+
+    If omitted, RACF will display UNKNOWN when listing the user.
+
+    To remove/reset the user name to default (UNKNOWN), set this to an empty string :literal:`""`.
+
+    | **required**: False
+    | **type**: str
+
+
+  model
+    RACF profile that will be used as a model for the profile being changed.
+
+    An empty string will delete this field from the profile.
+
+    | **required**: False
+    | **type**: str
+
+
+  owner
+    Owner of the profile that is being changed.
+
+    It can be a user or a group profile.
+
+    | **required**: False
+    | **type**: str
+
+
+  installation_data
+    Installation\-defined data that will be stored in the profile.
+
+    Maximum length of 255 characters.
+
+    The module will automatically enclose the contents in single quotation marks.
+
+    An empty string will delete this field from the profile.
+
+    | **required**: False
+    | **type**: str
+
+
+  custom_fields
+    Custom fields that will be stored with the profile.
+
+    | **required**: False
+    | **type**: dict
+
+
+    add
+      Adds custom fields to this profile.
+
+      Each custom field should be a :literal:`key: value` pair.
+
+      | **required**: False
+      | **type**: dict
+
+
+    delete
+      Deletes each custom field listed.
+
+      | **required**: False
+      | **type**: list
+      | **elements**: str
+
+
+    delete_block
+      Delete the whole custom fields block from the profile.
 
       This option is only valid when updating profiles, it will be ignored when creating one.
 
-      This option is mutually exclusive with every other option in this section.
+      This option is mutually exclusive with :literal:`add` and :literal:`delete`.
 
+      | **required**: False
+      | **type**: bool
 
 
-  language (False, dict, None)
-    Options that set the preferred national languages for a user profile.
 
-    These options will override the system-wide defaults.
 
+group
+  Options that change group\-specific attributes in a RACF profile.
 
-    primary (False, str, None)
-      User's primary language.
+  Only valid when changing a group profile, ignored for user profiles.
 
-      Value should be either a 3 character-long language code or an installation-defined name of up to 24 characters.
+  | **required**: False
+  | **type**: dict
 
-      An empty string will delete this field from the profile.
 
+  superior_group
+    Superior group that will be assigned to the profile.
 
-    secondary (False, str, None)
-      User's secondary language.
+    | **required**: False
+    | **type**: str
 
-      Value should be either a 3 character-long language code or an installation-defined name of up to 24 characters.
 
-      An empty string will delete this field from the profile.
+  terminal_access
+    Whether to allow the use of the universal access authority for a terminal during authorization checking.
 
+    | **required**: False
+    | **type**: bool
 
-    delete (False, bool, None)
-      Delete the whole LANGUAGE block from the profile.
 
-      This option is only valid when updating user profiles, it will be ignored when creating one.
+  universal_group
+    Whether the group should be allowed to have an unlimited number of users.
 
-      This option is mutually exclusive with every other option in this section.
+    | **required**: False
+    | **type**: bool
 
 
 
-  omvs (False, dict, None)
-    Attributes for how Unix System Services should work under a profile.
+dfp
+  Options that set DFP attributes from the Storage Management Subsystem.
 
+  | **required**: False
+  | **type**: dict
 
-    uid (False, str, None)
-      How RACF should assign a user its UID.
 
-      :literal:`none` will be ignored when creating a profile.
+  data_app_id
+    Name of a DFP data application.
 
-      :literal:`custom` and :literal:`shared` require :literal:`custom\_uid` too.
+    | **required**: False
+    | **type**: str
 
 
-    custom_uid (False, int, None)
-      Specifies the profile's UID.
+  data_class
+    Default data class for data set allocation.
 
-      A number between 0 and 2,147,483,647.
+    | **required**: False
+    | **type**: str
 
 
-    home (False, str, None)
-      Path name for the z/OS Unix System Services home directory.
+  management_class
+    Default management class for data set migration and backup.
 
-      Maximum length of 1023 characters.
+    | **required**: False
+    | **type**: str
 
-      An empty string will delete this field from the profile.
 
+  storage_class
+    Default storage class for data set space, device and volume.
 
-    program (False, str, None)
-      Path of the shell program to use when the user logs in.
+    | **required**: False
+    | **type**: str
 
-      Maximum length of 1023 characters.
 
-      An empty string will delete this field from the profile.
+  delete
+    Delete the whole DFP block from the profile.
 
+    This option is only valid when updating profiles, it will be ignored when creating one.
 
-    nonshared_size (False, str, None)
-      Maximum number of bytes of nonshared memory that can be allocated by the user.
+    This option is mutually exclusive with every other option in this section.
 
-      Must be a number between 0 and 16,777,215 subfixed by a unit.
+    | **required**: False
+    | **type**: bool
 
-      Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
 
-      An empty string will delete the current limit set.
 
+language
+  Options that set the preferred national languages for a user profile.
 
-    shared_size (False, str, None)
-      Maximum number of bytes of shared memory that can be allocated by the user.
+  These options will override the system\-wide defaults.
 
-      Must be a number between 1 and 16,777,215 subfixed by a unit.
+  | **required**: False
+  | **type**: dict
 
-      Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
 
-      An empty string will delete the current limit set.
+  primary
+    User's primary language.
 
+    Value should be either a 3 character\-long language code or an installation\-defined name of up to 24 characters.
 
-    addr_space_size (False, int, None)
-      Address space region size in bytes.
+    An empty string will delete this field from the profile.
 
-      Value between 10,485,760 and 2,147,483,647.
+    | **required**: False
+    | **type**: str
 
-      A value of 0 will delete this field from the profile.
 
+  secondary
+    User's secondary language.
 
-    map_size (False, int, None)
-      Maximum amount of data space storage that can be allocated by the user.
+    Value should be either a 3 character\-long language code or an installation\-defined name of up to 24 characters.
 
-      This option represents the number of memory pages, not bytes, available.
+    An empty string will delete this field from the profile.
 
-      Value between 1 and 16,777,216.
+    | **required**: False
+    | **type**: str
 
-      A value of 0 will delete this field from the profile.
 
+  delete
+    Delete the whole LANGUAGE block from the profile.
 
-    max_procs (False, int, None)
-      Maximum number of processes the user is allowed to have active at the same time.
+    This option is only valid when updating user profiles, it will be ignored when creating one.
 
-      Value between 3 and 32,767.
+    This option is mutually exclusive with every other option in this section.
 
-      A value of 0 will delete this field from the profile.
+    | **required**: False
+    | **type**: bool
 
 
-    max_threads (False, int, None)
-      Maximum number of threads the user can have concurrently active.
 
-      Value between 0 and 100,000.
+omvs
+  Attributes for how Unix System Services should work under a profile.
 
-      A value of -1 will delete this field from the profile.
+  | **required**: False
+  | **type**: dict
 
 
-    max_cpu_time (False, int, None)
-      Specifies the RLIMIT\_CPU hard limit. Indicates the cpu-time that a user process is allowed to use.
+  uid
+    How RACF should assign a user its UID.
 
-      Value between 7 and 2,147,483,647 seconds.
+    :literal:`none` will be ignored when creating a profile.
 
-      A value of 0 will delete this field from the profile.
+    :literal:`custom` and :literal:`shared` require :literal:`custom\_uid` too.
 
+    | **required**: False
+    | **type**: str
+    | **choices**: auto, custom, shared, none
 
-    max_files (False, int, None)
-      Maximum number of files the user is allowed to have concurrently active or open.
 
-      Value between 3 and 524,287.
+  custom_uid
+    Specifies the profile's UID.
 
-      A value of 0 will delete this field from the profile.
+    A number between 0 and 2,147,483,647.
 
+    | **required**: False
+    | **type**: int
 
-    delete (False, bool, None)
-      Delete the whole OMVS block from the profile.
 
-      This option is only valid when updating profiles, it will be ignored when creating one.
+  home
+    Path name for the z/OS Unix System Services home directory.
 
-      This option is mutually exclusive with every other option in this section.
+    Maximum length of 1023 characters.
 
+    An empty string will delete this field from the profile.
 
+    | **required**: False
+    | **type**: str
 
-  tso (False, dict, None)
-    Attributes for how TSO should handle a user profile.
 
+  program
+    Path of the shell program to use when the user logs in.
 
-    account_num (False, int, None)
-      User's default TSO account number when logging in.
+    Maximum length of 1023 characters.
 
-      Value between 3 and 524,287.
+    An empty string will delete this field from the profile.
 
-      A value of 0 will delete this field from the profile.
+    | **required**: False
+    | **type**: str
 
 
-    logon_cmd (False, str, None)
-      Command that needs to be run during TSO/E logon.
+  nonshared_size
+    Maximum number of bytes of nonshared memory that can be allocated by the user.
 
-      Maximum length of 80 characters.
+    Must be a number between 0 and 16,777,215 suffixed by a unit.
 
-      This option keeps case.
+    Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
 
-      An empty value deletes this field.
+    An empty string will delete the current limit set.
 
+    | **required**: False
+    | **type**: str
 
-    logon_proc (False, str, None)
-      User's default logon procedure.
 
-      The value for this field is 1 to 8 alphanumeric characters.
+  shared_size
+    Maximum number of bytes of shared memory that can be allocated by the user.
 
-      An empty value deletes this field.
+    Must be a number between 1 and 16,777,215 suffixed by a unit.
 
+    Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
 
-    dest_id (False, str, None)
-      Default destination to which the user can route dynamically allocated SYSOUT data sets.
+    An empty string will delete the current limit set.
 
-      The value for this field is 1 to 7 alphanumeric characters.
+    | **required**: False
+    | **type**: str
 
-      An empty value deletes this field.
 
+  addr_space_size
+    Address space region size in bytes.
 
-    hold_class (False, str, None)
-      User's default hold class.
+    Value between 10,485,760 and 2,147,483,647.
 
-      This option consists of 1 alphanumeric character.
+    A value of 0 will delete this field from the profile.
 
-      An empty value deletes this field.
+    | **required**: False
+    | **type**: int
 
 
-    job_class (False, str, None)
-      User's default job class.
+  map_size
+    Maximum amount of data space storage that can be allocated by the user.
 
-      This option consists of 1 alphanumeric character.
+    This option represents the number of memory pages, not bytes, available.
 
-      An empty value deletes this field.
+    Value between 1 and 16,777,216.
 
+    A value of 0 will delete this field from the profile.
 
-    msg_class (False, str, None)
-      User's default message class.
+    | **required**: False
+    | **type**: int
 
-      This option consists of 1 alphanumeric character.
 
-      An empty value deletes this field.
+  max_procs
+    Maximum number of processes the user is allowed to have active at the same time.
 
+    Value between 3 and 32,767.
 
-    sysout_class (False, str, None)
-      User's default SYSOUT class.
+    A value of 0 will delete this field from the profile.
 
-      This option consists of 1 alphanumeric character.
+    | **required**: False
+    | **type**: int
 
-      An empty value deletes this field.
 
+  max_threads
+    Maximum number of threads the user can have concurrently active.
 
-    region_size (False, int, None)
-      Minimum region size if the user does not request a region size at logon.
+    Value between 0 and 100,000.
 
-      A value between 0 and 2,096,128.
+    A value of \-1 will delete this field from the profile.
 
-      A value of -1 deletes this field.
+    | **required**: False
+    | **type**: int
 
 
-    max_region_size (False, int, None)
-      Maximum region size that the user can request at logon.
+  max_cpu_time
+    Specifies the RLIMIT\_CPU hard limit. Indicates the cpu\-time that a user process is allowed to use.
 
-      A value between 0 and 2,096,128.
+    Value between 7 and 2,147,483,647 seconds.
 
-      A value of -1 deletes this field.
+    A value of 0 will delete this field from the profile.
 
+    | **required**: False
+    | **type**: int
 
-    security_label (False, str, None)
-      User's security label if the user specifies one on the TSO logon panel.
 
-      An empty value deletes this field.
+  max_files
+    Maximum number of files the user is allowed to have concurrently active or open.
 
+    Value between 3 and 524,287.
 
-    unit_name (False, str, None)
-      Default name of a device or group of devices that a procedure uses for allocations.
+    A value of 0 will delete this field from the profile.
 
-      The value for this field is 1 to 8 alphanumeric characters.
+    | **required**: False
+    | **type**: int
 
-      An empty value deletes this field.
 
+  delete
+    Delete the whole OMVS block from the profile.
 
-    user_data (False, str, None)
-      Optional installation data defined for the user profile.
+    This option is only valid when updating profiles, it will be ignored when creating one.
 
-      Must be 4 EBCDIC characters.
+    This option is mutually exclusive with every other option in this section.
 
-      An empty value deletes this field.
+    | **required**: False
+    | **type**: bool
 
 
-    delete (False, bool, None)
-      Delete the whole TSO block from the profile.
 
-      This option is only valid when updating profiles, it will be ignored when creating one.
+tso
+  Attributes for how TSO should handle a user profile.
 
-      This option is mutually exclusive with every other option in this section.
+  | **required**: False
+  | **type**: dict
 
 
+  account_num
+    User's default TSO account number when logging in.
 
-  connect (False, dict, None)
-    Options that configure what a user can do inside a group that is connected to.
+    Maximum length of 40 characters.
 
-    These options are only used when :literal:`operation=connect` and they are ignored otherwise.
+    An empty value deletes this field.
 
+    | **required**: False
+    | **type**: str
 
-    authority (False, str, None)
-      Level of group authority given to a user profile.
 
+  logon_cmd
+    Command that needs to be run during TSO/E logon.
 
-    universal_access (False, str, None)
-      Level of universal access authority given to a user profile.
+    Maximum length of 80 characters.
 
+    This option keeps case.
 
-    group_name (False, str, None)
-      Group to which the user will be connected to.
+    An empty value deletes this field.
 
-      The rest of the options in this block will affect this group.
+    | **required**: False
+    | **type**: str
 
-      If not supplied, RACF will use a default group. It is recommended to specify this option when trying to connect a user to a group.
 
+  logon_proc
+    User's default logon procedure.
 
-    group_account (False, bool, None)
-      Whether the user's protected data sets are accessible to other users in the group.
+    The value for this field is 1 to 8 alphanumeric characters.
 
+    An empty value deletes this field.
 
-    group_operations (False, bool, None)
-      Whether a user should have the group-OPERATIONS attribute when connected to a group.
+    | **required**: False
+    | **type**: str
 
 
-    auditor (False, bool, None)
-      Whether a user should have auditor privileges for the group it is connected to.
+  dest_id
+    Default destination to which the user can route dynamically allocated SYSOUT data sets.
 
+    The value for this field is 1 to 7 alphanumeric characters.
 
-    adsp_attribute (False, bool, None)
-      Whether to give a user the ADSP attribute, which tells RACF to automatically protect data sets it creates with discrete profiles.
+    An empty value deletes this field.
 
+    | **required**: False
+    | **type**: str
 
-    special (False, bool, None)
-      Whether to give a user profile the SPECIAL attribute.
 
-      This attribute lets a user change attributes of other profiles. Use with caution.
+  hold_class
+    User's default hold class.
 
+    This option consists of 1 alphanumeric character.
 
+    An empty value deletes this field.
 
-  access (False, dict, None)
-    Options that set different security attributes in a user profile.
+    | **required**: False
+    | **type**: str
 
 
-    default_group (False, str, None)
-      RACF's default group for the user profile.
+  job_class
+    User's default job class.
 
+    This option consists of 1 alphanumeric character.
 
-    clauth (False, dict, None)
-      Classes in which a user is allowed to define profiles to RACF for protection.
+    An empty value deletes this field.
 
+    | **required**: False
+    | **type**: str
 
-      add (False, list, None)
-        Adds classes to the profile.
 
+  msg_class
+    User's default message class.
 
-      delete (False, list, None)
-        Removes classes from the profile.
+    This option consists of 1 alphanumeric character.
 
+    An empty value deletes this field.
 
+    | **required**: False
+    | **type**: str
 
-    roaudit (False, bool, None)
-      Whether a user should have full responsibility for auditing the use of system resources.
 
+  sysout_class
+    User's default SYSOUT class.
 
-    category (False, dict, None)
-      Security categories that the profile should have.
+    This option consists of 1 alphanumeric character.
 
+    An empty value deletes this field.
 
-      add (False, list, None)
-        Adds security categories to the profile.
+    | **required**: False
+    | **type**: str
 
 
-      delete (False, list, None)
-        Removes security categories from the profile.
+  region_size
+    Minimum region size if the user does not request a region size at logon.
 
+    A value between 0 and 2,096,128.
 
+    A value of \-1 deletes this field.
 
-    operator_card (False, bool, None)
-      Whether a user must supply an operator identification card when logging in.
+    | **required**: False
+    | **type**: int
 
 
-    maintenance_access (False, bool, None)
-      Whether the user has authorization to do maintenance operations on all RACF-protected DASD data sets, tape volumes, and DASD volumes.
+  max_region_size
+    Maximum region size that the user can request at logon.
 
+    A value between 0 and 2,096,128.
 
-    restricted (False, bool, None)
-      Whether to give the profile the RESTRICTED attribute.
+    A value of \-1 deletes this field.
 
+    | **required**: False
+    | **type**: int
 
-    security_label (False, str, None)
-      Security label applied to the profile.
 
-      Empty value deletes this field.
+  security_label
+    User's security label if the user specifies one on the TSO logon panel.
 
+    An empty value deletes this field.
 
-    security_level (False, str, None)
-      Security level applied to the profile.
+    | **required**: False
+    | **type**: str
 
-      Empty value deletes this field.
 
+  unit_name
+    Default name of a device or group of devices that a procedure uses for allocations.
 
+    The value for this field is 1 to 8 alphanumeric characters.
 
-  operator (False, dict, None)
-    Attributes used when a user establishes an extended MCS console session.
+    An empty value deletes this field.
 
+    | **required**: False
+    | **type**: str
 
-    alt_group (False, str, None)
-      Console group used in recovery.
 
-      Must be between 1 and 8 characters in length.
+  user_data
+    Optional installation data defined for the user profile.
 
-      Empty value deletes this field.
+    Must be 4 EBCDIC characters.
 
+    An empty value deletes this field.
 
-    authority (False, str, None)
-      Console's authority to issue operator commands.
+    | **required**: False
+    | **type**: str
 
-      :literal:`delete` will remove the field from the profile.
 
+  delete
+    Delete the whole TSO block from the profile.
 
-    cmd_system (False, str, None)
-      System to which commands from this console are to be sent.
+    This option is only valid when updating profiles, it will be ignored when creating one.
 
-      Must be between 1 and 8 characters in length.
+    This option is mutually exclusive with every other option in this section.
 
-      Empty value deletes this field.
+    | **required**: False
+    | **type**: bool
 
 
-    search_key (False, str, None)
-      Name used to display information for all consoles with the specified key by using the MVS command :literal:`DISPLAY CONSOLES,KEY`.
 
-      Must be between 1 and 8 characters in length.
+connect
+  Options that configure what a user can do inside a group that is connected to.
 
-      Empty value deletes this field.
+  These options are only used when :literal:`operation=connect` and they are ignored otherwise.
 
+  | **required**: False
+  | **type**: dict
 
-    migration_id (False, bool, None)
-      Whether a 1-byte migration ID should be assigned to this console.
 
+  authority
+    Level of group authority given to a user profile.
 
-    display (False, str, ['jobnames', 'sess'])
-      Which information should be displayed when monitoring jobs, TSO sessions, or data set status.
+    | **required**: False
+    | **type**: str
+    | **choices**: use, create, connect, join
 
-      Possible values are :literal:`jobnames`\ , :literal:`jobnamest`\ , :literal:`sess`\ , :literal:`sesst`\ , :literal:`status` and :literal:`delete`.
 
-      Multiple choices are allowed.
+  universal_access
+    Level of universal access authority given to a user profile.
 
-      :literal:`delete` will remove this field from the profile.
+    | **required**: False
+    | **type**: str
+    | **choices**: alter, control, update, read, none
 
 
-    msg_level (False, str, None)
-      Specifies the messages that this console is to receive.
+  group_name
+    Group to which the user will be connected to.
 
-      :literal:`delete` will remove this field from the profile.
+    The rest of the options in this block will affect this group.
 
+    If not supplied, RACF will use a default group. It is recommended to specify this option when trying to connect a user to a group.
 
-    msg_format (False, str, None)
-      Format in which messages are displayed at the console.
+    | **required**: False
+    | **type**: str
 
-      :literal:`delete` will remove this field from the profile.
 
+  group_account
+    Whether the user's protected data sets are accessible to other users in the group.
 
-    msg_storage (False, int, None)
-      Specifies the amount of storage in the TSO/E user's address space that can be used for message queuing to the console.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-      Its value can be a number between 1 and 2,000.
 
-      A value of 0 deletes this field.
+  group_operations
+    Whether a user should have the group\-OPERATIONS attribute when connected to a group.
 
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-    msg_scope (False, dict, None)
-      Systems from which this console can receive messages that are not directed to a specific console.
 
+  auditor
+    Whether a user should have auditor privileges for the group it is connected to.
 
-      add (False, list, None)
-        Add new systems to this field.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
 
-      remove (False, list, None)
-        Removes systems from this field.
+  adsp_attribute
+    Whether to give a user the ADSP attribute, which tells RACF to automatically protect data sets it creates with discrete profiles.
 
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-      delete (False, bool, None)
-        Deletes this field from the profile.
 
-        Mutually exclusive with the rest of the options in this section.
+  special
+    Whether to give a user profile the SPECIAL attribute.
 
+    This attribute lets a user change attributes of other profiles. Use with caution.
 
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-    automated_msgs (False, bool, None)
-      Whether the extended console can receive messages that have been automated by the MFP.
 
 
-    del_msgs (False, str, None)
-      Which delete operator message (DOM) requests the console can receive.
+access
+  Options that set different security attributes in a user profile.
 
-      :literal:`delete` will remove the field from the profile.
+  | **required**: False
+  | **type**: dict
 
 
-    hardcopy_msgs (False, bool, None)
-      Whether the console should receive all messages that are directed to hardcopy.
+  default_group
+    RACF's default group for the user profile.
 
+    | **required**: False
+    | **type**: str
 
-    internal_msgs (False, bool, None)
-      Whether the console should receive messages that are directed to console ID zero.
 
+  clauth
+    Classes in which a user is allowed to define profiles to RACF for protection.
 
-    routing_msgs (False, list, None)
-      Specifies the routing codes of messages this operator is to receive.
+    | **required**: False
+    | **type**: dict
 
-      :literal:`ALL` can be specified to receive all codes. Conversely, :literal:`NONE` can be used to receive none.
 
+    add
+      Adds classes to the profile.
 
-    undelivered_msgs (False, bool, None)
-      Whether the console should receive undelivered messages.
+      | **required**: False
+      | **type**: list
+      | **elements**: str
 
 
-    unknown_msgs (False, bool, None)
-      Whether the console should receive messages that are directed to unknown console IDs.
+    delete
+      Removes classes from the profile.
 
+      | **required**: False
+      | **type**: list
+      | **elements**: str
 
-    responses (False, bool, None)
-      Whether command responses should be logged.
 
 
-    delete (False, bool, None)
-      Delete the whole OPERPARM block from the profile.
+  roaudit
+    Whether a user should have full responsibility for auditing the use of system resources.
 
-      This option is only valid when updating profiles, it will be ignored when creating one.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-      This option is mutually exclusive with every other option in this section.
 
+  category
+    Security categories that the profile should have.
 
+    | **required**: False
+    | **type**: dict
 
-  restrictions (False, dict, None)
-    Attributes that determine the days and times a user is allowed to login.
 
+    add
+      Adds security categories to the profile.
 
-    days (False, list, None)
-      Days of the week that a user is allowed to login.
+      | **required**: False
+      | **type**: list
+      | **elements**: str
 
-      Multiple choices are allowed.
 
-      Valid values are :literal:`anyday`\ , :literal:`weekdays`\ , :literal:`monday`\ , :literal:`tuesday`\ , :literal:`wednesday`\ , :literal:`thursday`\ , :literal:`friday`\ , :literal:`saturday` and :literal:`sunday`.
+    delete
+      Removes security categories from the profile.
 
+      | **required**: False
+      | **type**: list
+      | **elements**: str
 
-    time (False, str, None)
-      Daily time period when the user is allowed to login.
 
-      The value for this option must be in the format HHMM:HHMM.
 
-      This field uses a 24-hour format.
+  operator_card
+    Whether a user must supply an operator identification card when logging in.
 
-      This field also accepts the value :literal:`anytime` to indicate a user is free to login at any time of the day.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
 
-    resume (False, str, None)
-      Date when the user is allowed access to a system again.
+  maintenance_access
+    Whether the user has authorization to do maintenance operations on all RACF\-protected DASD data sets, tape volumes, and DASD volumes.
 
-      The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
 
-    delete_resume (False, bool, None)
-      Delete the resume field from the profile.
+  restricted
+    Whether to give the profile the RESTRICTED attribute.
 
-      This option is only valid when connecting a user to a group.
+    | **required**: False
+    | **type**: bool
+    | **default**: False
 
-      This option is mutually exclusive with :emphasis:`resume`.
 
+  security_label
+    Security label applied to the profile.
 
-    revoke (False, str, None)
-      Date when the user is forbidden access to a system.
+    Empty value deletes this field.
 
-      The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+    | **required**: False
+    | **type**: str
 
 
-    delete_revoke (False, bool, None)
-      Delete the revoke field from the profile.
+  security_level
+    Security level applied to the profile.
 
-      This option is only valid when connecting a user to a group.
+    Empty value deletes this field.
 
-      This option is mutually exclusive with :emphasis:`revoke`.
+    | **required**: False
+    | **type**: str
 
+
+
+operator
+  Attributes used when a user establishes an extended MCS console session.
+
+  | **required**: False
+  | **type**: dict
+
+
+  alt_group
+    Console group used in recovery.
+
+    Must be between 1 and 8 characters in length.
+
+    Empty value deletes this field.
+
+    | **required**: False
+    | **type**: str
+
+
+  authority
+    Console's authority to issue operator commands.
+
+    :literal:`delete` will remove the field from the profile.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: master, all, info, cons, io, sys, delete
+
+
+  cmd_system
+    System to which commands from this console are to be sent.
+
+    Must be between 1 and 8 characters in length.
+
+    Empty value deletes this field.
+
+    | **required**: False
+    | **type**: str
+
+
+  search_key
+    Name used to display information for all consoles with the specified key by using the MVS command :literal:`DISPLAY CONSOLES,KEY`.
+
+    Must be between 1 and 8 characters in length.
+
+    Empty value deletes this field.
+
+    | **required**: False
+    | **type**: str
+
+
+  migration_id
+    Whether a 1\-byte migration ID should be assigned to this console.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  display
+    Which information should be displayed when monitoring jobs, TSO sessions, or data set status.
+
+    Possible values are :literal:`jobnames`\ , :literal:`jobnamest`\ , :literal:`sess`\ , :literal:`sesst`\ , :literal:`status` and :literal:`delete`.
+
+    Multiple choices are allowed.
+
+    :literal:`delete` will remove this field from the profile.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+    | **choices**: jobnames, jobnamest, sess, sesst, status, delete
+
+
+  msg_level
+    Specifies the messages that this console is to receive.
+
+    :literal:`delete` will remove this field from the profile.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: nb, all, r, i, ce, e, in, delete
+
+
+  msg_format
+    Format in which messages are displayed at the console.
+
+    :literal:`delete` will remove this field from the profile.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: j, m, s, t, x, delete
+
+
+  msg_storage
+    Specifies the amount of storage in the TSO/E user's address space that can be used for message queuing to the console.
+
+    Its value can be a number between 1 and 2,000.
+
+    A value of 0 deletes this field.
+
+    | **required**: False
+    | **type**: int
+
+
+  msg_scope
+    Systems from which this console can receive messages that are not directed to a specific console.
+
+    | **required**: False
+    | **type**: dict
+
+
+    add
+      Add new systems to this field.
+
+      | **required**: False
+      | **type**: list
+      | **elements**: str
+
+
+    remove
+      Removes systems from this field.
+
+      | **required**: False
+      | **type**: list
+      | **elements**: str
+
+
+    delete
+      Deletes the systems from this field.
+
+      | **required**: False
+      | **type**: list
+      | **elements**: str
+
+
+
+  automated_msgs
+    Whether the extended console can receive messages that have been automated by the MFP.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  del_msgs
+    Which delete operator message (DOM) requests the console can receive.
+
+    :literal:`delete` will remove the field from the profile.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: normal, all, none, delete
+
+
+  hardcopy_msgs
+    Whether the console should receive all messages that are directed to hardcopy.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  internal_msgs
+    Whether the console should receive messages that are directed to console ID zero.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  routing_msgs
+    Specifies the routing codes of messages this operator is to receive.
+
+    :literal:`ALL` can be specified to receive all codes. Conversely, :literal:`NONE` can be used to receive none.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+
+
+  undelivered_msgs
+    Whether the console should receive undelivered messages.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  unknown_msgs
+    Whether the console should receive messages that are directed to unknown console IDs.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  responses
+    Whether command responses should be logged.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: True
+
+
+  delete
+    Delete the whole OPERPARM block from the profile.
+
+    This option is only valid when updating profiles, it will be ignored when creating one.
+
+    This option is mutually exclusive with every other option in this section.
+
+    | **required**: False
+    | **type**: bool
+
+
+
+restrictions
+  Attributes that determine the days and times a user is allowed to login.
+
+  | **required**: False
+  | **type**: dict
+
+
+  days
+    Days of the week that a user is allowed to login.
+
+    Multiple choices are allowed.
+
+    Valid values are :literal:`anyday`\ , :literal:`weekdays`\ , :literal:`monday`\ , :literal:`tuesday`\ , :literal:`wednesday`\ , :literal:`thursday`\ , :literal:`friday`\ , :literal:`saturday` and :literal:`sunday`.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: str
+    | **default**: ['anyday']
+    | **choices**: anyday, weekdays, monday, tuesday, wednesday, thursday, friday, saturday, sunday
+
+
+  time
+    Daily time period when the user is allowed to login.
+
+    The value for this option must be in the format HHMM:HHMM.
+
+    This field uses a 24\-hour format.
+
+    This field also accepts the value :literal:`anytime` to indicate a user is free to login at any time of the day.
+
+    | **required**: False
+    | **type**: str
+    | **default**: anytime
+
+
+  resume
+    Date when the user is allowed access to a system again.
+
+    The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+
+    | **required**: False
+    | **type**: str
+
+
+  delete_resume
+    Delete the resume field from the profile.
+
+    This option is only valid when connecting a user to a group.
+
+    This option is mutually exclusive with :emphasis:`resume`.
+
+    | **required**: False
+    | **type**: bool
+
+
+  revoke
+    Date when the user is forbidden access to a system.
+
+    The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+
+    | **required**: False
+    | **type**: str
+
+
+  delete_revoke
+    Delete the revoke field from the profile.
+
+    This option is only valid when connecting a user to a group.
+
+    This option is mutually exclusive with :emphasis:`revoke`.
+
+    | **required**: False
+    | **type**: bool
+
+
+
+password_mgmt
+  Options that manage password and passphrase settings for a user profile.
+
+  These options are only valid for user profiles (\ :emphasis:`scope=user`\ ).
+
+  These options are only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
+
+  | **required**: False
+  | **type**: dict
+
+
+  password
+    Password for the user.
+
+    Maximum length of 8 characters.
+
+    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, RACF will not assign a password and the user will need to be assigned one before they can log in.
+
+    When a password is set for the first time during user creation, RACF marks it as EXPIRED by default. To change this, update the user with :emphasis:`expired=false` after creation.
+
+    An empty string will remove the password and set it to NOPASSWORD.
+
+    It is recommended to use Ansible Vault to encrypt this value.
+
+    This option is mutually exclusive with :emphasis:`passphrase`.
+
+    | **required**: False
+    | **type**: str
+
+
+  passphrase
+    Passphrase for the user.
+
+    Minimum length of 9 characters, maximum length of 100 characters.
+
+    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, RACF will not assign a password and the user will need to be assigned one before they can log in.
+
+    When a passphrase is set for the first time during user creation, RACF marks it as EXPIRED by default. To change this, update the user with :emphasis:`expired=false` after creation.
+
+    An empty string will remove the passphrase and set it to NOPHRASE.
+
+    It is recommended to use Ansible Vault to encrypt this value.
+
+    This option is mutually exclusive with :emphasis:`password`.
+
+    | **required**: False
+    | **type**: str
+
+
+  expired
+    Whether the password or passphrase should be marked as expired.
+
+    When :literal:`true`\ , the user will be required to change their password/passphrase on next login.
+
+    When :literal:`false`\ , the password/passphrase will be marked as NOEXPIRED.
+
+    This option is only applicable when :emphasis:`operation=update`.
+
+    This option :strong:`must` be used together with :emphasis:`password` or :emphasis:`passphrase` in the same task. RACF requires a password/passphrase to be specified when using EXPIRED/NOEXPIRED.
+
+    When a password/passphrase is set for the first time during user creation, RACF automatically marks it as EXPIRED. To change it to NOEXPIRED, you must update the user and specify the same password/passphrase again with :literal:`expired=false`.
+
+    | **required**: False
+    | **type**: bool
+
+
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+
+
+Examples
+--------
+
+.. code-block:: yaml+jinja
+
+   
+   - name: Create a new group profile using RACF defaults.
+     zos_user:
+       name: newgrp
+       operation: create
+       scope: group
+
+   - name: Create a user with full name and owner.
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       general:
+         user_name: John Doe
+         owner: admin
+
+   - name: Update a user's full name.
+     zos_user:
+       name: existinguser
+       operation: update
+       scope: user
+       general:
+         user_name: Jane Smith
+
+   - name: Remove a user's full name (sets to UNKNOWN).
+     zos_user:
+       name: existinguser
+       operation: update
+       scope: user
+       general:
+         user_name: ""
+
+   - name: Create a new group profile using another group as a model and setting its owner.
+     zos_user:
+       name: newgrp
+       operation: create
+       scope: group
+       general:
+         model: oldgrp
+         owner: admin
+
+   - name: Create a new group profile and set group attributes.
+     zos_user:
+       name: newgrp
+       operation: create
+       scope: group
+       group:
+         superior_group: sys1
+         terminal_access: true
+         universal_group: false
+
+   - name: Update a group profile to change its installation data and remove custom fields.
+     zos_user:
+       name: usergrp
+       operation: update
+       scope: group
+       general:
+         installation_data: New installation data
+         custom_fields:
+           delete_block: true
+
+   - name: Create a user using RACF defaults.
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+
+   - name: Create a user using another profile as a model.
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       general:
+         model: olduser
+
+   - name: Create a user and set how Unix System Services should behave when it logs in.
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       omvs:
+         uid: auto
+         home: /u/newuser
+         program: /bin/sh
+         nonshared_size: '10g'
+         shared_size: '10g'
+         addr_space_size: 10485760
+         map_size: 2056
+         max_procs: 16
+         max_threads: 150
+         max_cpu_time: 4096
+         max_files: 4096
+
+   - name: Create a user and set access permissions to it.
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       access:
+         default_group: usergrp
+         roaudit: true
+         operator_card: false
+         maintenance_access: true
+         restricted: false
+       restrictions:
+         days:
+           - monday
+           - tuesday
+           - wednesday
+         time: anytime
+
+   - name: Update a user profile to change its TSO attributes and owner.
+     zos_user:
+       name: user
+       operation: update
+       scope: user
+       general:
+         owner: admin
+       tso:
+         hold_class: K
+         job_class: K
+         msg_class: K
+         sysout_class: K
+         region_size: 2048
+         max_region_size: 4096
+
+   - name: Connect a user to a group using RACF defaults.
+     zos_user:
+       name: user
+       operation: connect
+       scope: user
+       connect:
+         group_name: usergrp
+
+   - name: Connect a user to a group and give it special permissions.
+     zos_user:
+       name: user
+       operation: connect
+       scope: user
+       connect:
+         group_name: usergrp
+         authority: connect
+         universal_access: alter
+         group_account: true
+         group_operations: true
+         auditor: true
+         adsp_attribute: true
+         special: true
+
+   - name: Remove a user from a group.
+     zos_user:
+       name: user
+       operation: remove
+       scope: user
+       connect:
+         group_name: usergrp
+
+   - name: Delete a user from the RACF database.
+     zos_user:
+       name: user
+       operation: delete
+       scope: user
+
+   - name: Delete group from the RACF database.
+     zos_user:
+       name: usergrp
+       operation: delete
+       scope: group
+
+   - name: Purge user from RACF database
+     zos_user:
+       name: user
+       operation: purge
+       scope: user
+       database: racf_db
+
+   - name: Purge group from RACF database
+     zos_user:
+       name: newgrp
+       operation: purge
+       scope: group
+       database: racf_db
+
+   - name: Create a user with password (will be marked as EXPIRED by default)
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       password_mgmt:
+         password: "{{ user_password }}"
+
+   - name: Create a user with passphrase (will be marked as EXPIRED by default)
+     zos_user:
+       name: newuser
+       operation: create
+       scope: user
+       password_mgmt:
+         passphrase: "{{ user_passphrase }}"
+
+   - name: Update user password to NOEXPIRED
+     zos_user:
+       name: newuser
+       operation: update
+       scope: user
+       password_mgmt:
+         password: "{{ user_password }}"
+         expired: false
+       omvs:
+         uid: auto
 
 
 
@@ -706,204 +1454,142 @@ See Also
 
 .. seealso::
 
-   :ref:`zos_tso_command_module`
-      The official documentation on the **zos_tso_command** module.
+   - :ref:`ibm.ibm_zos_core.zos_tso_command_module`
 
-
-Examples
---------
-
-.. code-block:: yaml+jinja
-
-    
-    - name: Create a new group profile using RACF defaults.
-      zos_user:
-        name: newgrp
-        operation: create
-        scope: group
-
-    - name: Create a new group profile using another group as a model and setting its owner.
-      zos_user:
-        name: newgrp
-        operation: create
-        scope: group
-        general:
-          model: oldgrp
-          owner: admin
-
-    - name: Create a new group profile and set group attributes.
-      zos_user:
-        name: newgrp
-        operation: create
-        scope: group
-        group:
-          superior_group: sys1
-          terminal_access: true
-          universal_group: false
-
-    - name: Update a group profile to change its installation data and remove custom fields.
-      zos_user:
-        name: usergrp
-        operation: update
-        scope: group
-        general:
-          installation_data: New installation data
-          custom_fields:
-            delete_block: true
-
-    - name: Create a user using RACF defaults.
-      zos_user:
-        name: newuser
-        operation: create
-        scope: user
-
-    - name: Create a user using another profile as a model.
-      zos_user:
-        name: newuser
-        operation: create
-        scope: user
-        general:
-          model: olduser
-
-    - name: Create a user and set how Unix System Services should behave when it logs in.
-      zos_user:
-        name: newuser
-        operation: create
-        scope: user
-        omvs:
-          uid: auto
-          home: /u/newuser
-          program: /bin/sh
-          nonshared_size: '10g'
-          shared_size: '10g'
-          addr_space_size: 10485760
-          map_size: 2056
-          max_procs: 16
-          max_threads: 150
-          max_cpu_time: 4096
-          max_files: 4096
-
-    - name: Create a user and set access permissions to it.
-      zos_user:
-        name: newuser
-        operation: create
-        scope: user
-        access:
-          default_group: usergrp
-          roaudit: true
-          operator_card: false
-          maintenance_access: true
-          restricted: false
-        restrictions:
-          days:
-            - monday
-            - tuesday
-            - wednesday
-          time: anytime
-
-    - name: Update a user profile to change its TSO attributes and owner.
-      zos_user:
-        name: user
-        operation: create
-        scope: user
-        general:
-          owner: admin
-        tso:
-          hold_class: K
-          job_class: K
-          msg_class: K
-          sysout_class: K
-          region_size: 2048
-          max_region_size: 4096
-
-    - name: Connect a user to a group using RACF defaults.
-      zos_user:
-        name: user
-        operation: connect
-        scope: user
-        connect:
-          group_name: usergrp
-
-    - name: Connect a user to a group and give it special permissions.
-      zos_user:
-        name: user
-        operation: connect
-        scope: user
-        connect:
-          group_name: usergrp
-          authority: connect
-          universal_access: alter
-          group_account: true
-          group_operations: true
-          auditor: true
-          adsp_attribute: true
-          special: true
-
-    - name: Remove a user from a group.
-      zos_user:
-        name: user
-        operation: remove
-        scope: user
-        connect:
-          group_name: usergrp
-
-    - name: Delete a user from the RACF database.
-      zos_user:
-        name: user
-        operation: delete
-        scope: user
-
-    - name: Delete group from the RACF database.
-      zos_user:
-        name: usergrp
-        operation: delete
-        scope: group
 
 
 
 Return Values
 -------------
 
-operation (always, str, create)
-  Operation that was performed by the module.
+
+changed
+  Indicates whether any changes were made to the system.
+
+  | **returned**: always
+  | **type**: bool
+  | **sample**:
+
+    .. code-block:: json
+
+        true
+
+cmd
+  The RACF command that was executed with tsocmd.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: ADDUSER (DUSR1001)
+
+msg
+  Message returned by the module. Contains error messages on failure,
+informational messages when no changes are needed (e.g., entity already exists),
+or validation error messages.
+
+  | **returned**: on failure or when no changes are needed
+  | **type**: str
+  | **sample**: An error occurred while executing the RACF command.
+
+rc
+  Return code from the RACF command execution.
+
+  | **returned**: always
+  | **type**: int
+
+stdout
+  Standard output from the RACF command execution.
+For purge operations, may contain dump dataset and CLIST information.
+In check mode, may contain informational messages about the entity state.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: User DUSR1001 is defined as PROTECTED.
 
 
-racf_command (success, str, DELUSER (user))
-  Full command string that was executed with tsocmd.
+stdout_lines
+  List of strings containing individual lines from stdout.
 
+  | **returned**: always
+  | **type**: list
+  | **elements**: str
+  | **sample**:
 
-num_entities_modified (always, int, 1)
+    .. code-block:: json
+
+        [
+            "User DUSR1001 is defined as PROTECTED.",
+            ""
+        ]
+
+stderr
+  Standard error from the RACF command execution.
+TSO command echoes are automatically filtered out.
+
+  | **returned**: always
+  | **type**: str
+
+stderr_lines
+  List of strings containing individual lines from stderr.
+
+  | **returned**: always
+  | **type**: list
+  | **elements**: str
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            ""
+        ]
+
+num_entities_modified
   Number of profiles and references modified by the operation.
+Set to 0 when entity already exists or is already in desired state.
+Set to 1 for successful single entity operations.
+For purge operations, reflects the count of entities deleted.
 
+  | **returned**: always
+  | **type**: int
+  | **sample**: 1
 
-entities_modified (success, list, ['user'])
+entities_modified
   List of all profiles and references modified by the operation.
+For user scope operations (create, update, delete, connect, remove), contains the user profile name when successful.
+For group scope operations (create, update, delete), contains the group profile name when successful.
+For purge operations, contains all users/groups deleted by the CLIST.
+Empty list when no changes are made (entity already exists or in desired state).
 
+  | **returned**: always
+  | **type**: list
+  | **elements**: str
+  | **sample**:
 
-database_dumped (always, bool, False)
-  Whether the module used IRRRID00 to dump the RACF database.
+    .. code-block:: json
 
+        [
+            "DUSR1001"
+        ]
 
-dump_kept (always, bool, False)
+database_dumped
+  Whether the module used IRRDBU00 utility to dump the RACF database.
+Only true for purge operations that successfully execute IRRDBU00.
+
+  | **returned**: always
+  | **type**: bool
+
+dump_kept
   Whether the RACF database dump was kept on the managed node.
+Controlled by the keep\_dump parameter. Only relevant when database\_dumped is true.
 
+  | **returned**: always
+  | **type**: bool
 
-dump_name (success, str, USER.BACKUP.RACF.DATABASE)
-  Name of the database containing the output from the IRRRID00 utility.
+dump_name
+  Name of the dataset containing the output from the IRRDBU00 utility.
+Only populated (non\-null) when database\_dumped is true and keep\_dump is true.
+Otherwise returns null.
 
-
-
-
-
-Status
-------
-
-
-
-
-
-Authors
-~~~~~~~
-
-- Alex Moreno (@rexemin)
+  | **returned**: always
+  | **type**: str
+  | **sample**: USER.BACKUP.RACF.DATABASE
 

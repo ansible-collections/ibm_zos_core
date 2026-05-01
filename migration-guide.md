@@ -39,6 +39,105 @@ To achieve consistent naming across the collection, some module options and retu
 
 This section includes all the module options that have been renamed. It also includes any return values which have been renamed.
 
+#### zos_archive
+* module option renamed: format.name --> format.type
+* module option renamed: format.format_options --> format.options
+* module option renamed: format.use_adrdssu --> format.adrdssu
+* module option renamed: format.format_options.terse_pack --> format.options.spack
+  * the type of the option has changed from string to bool.
+
+#### zos_bakup_restore
+* TODO
+
+#### zos_copy
+* module option renamed: is_binary --> binary
+* module option renamed: force --> replace
+  * NOTE: option 'force' remains a valid module option with different functionality.
+* module option renamed: force_lock --> force
+
+#### zos_fetch
+* module option renamed: is_binary —> binary
+* return value renamed: file —> src
+* return value renamed: is_binary —> binary
+
+#### zos_find
+* module option removed: pds_patterns - need to understand impact. TODO
+
+#### zos_job_output
+* module option renamed: ddname —> dd_name
+* return value renamed: ddnames —> dds
+* return value renamed: ddname.ddname —> dds.dd_name
+* return value renamed: ret_code.steps —> job.steps
+
+#### zos_job_query
+* return value renamed: ret_code.steps —> steps
+* return value removed: message
+
+#### zos_job_submit
+* module option removed: `location` option removed.
+    Use new module option `remote_src` of type bool.
+* module option renamed: `force` —> `replace`
+* module option renamed: wait_time_s -> wait_time
+* return value renamed: ddnames —> dds
+* return value renamed: ddnames.ddname —> dds.dd_name
+* return value renamed: ret_code.steps —> jobs.steps
+* return value removed: jobs.class, redundant to jobs.job_class
+
+#### zos_mount
+* module option renamed: persistent.data_store —> persistent.name
+* module option renamed: persistent. comment —> persistent.marker
+
+#### zos_operator
+* module option renamed: wait_time_s —> wait_time
+    * Use in conjunction w new option time_unit to indicate sec/centiseconds.
+
+#### zos_operator_action_query
+* module option renamed: use_regex —> literal
+* return value renamed: message_text —> msg_text
+* return value renamed: message_id —> msg_id
+
+#### zos_tso_command
+* return value renamed: content —> stdout
+* return value renamed: lines —> line_count
+
+#### zos_unarchive
+* module option renamed: format.name —> format.type
+* module option renamed: format.format_options —> format.options
+* module option renamed: format.format_options.use_adrdssu -> format.options.adrdssu
+
+
 ## Non-Breaking Changes
 
 This section includes all the module options that have been renamed for consistency across the collection, but still have the old module option name available as an alias. It is recommended to switch playbook tasks to use the new moddule names. This section also includes new return values.
+
+#### zos_apf
+* module option: persistent.data_set --> persistent.name. persistent.data_set_name will remain functional.
+* new return value: stdout_lines
+* new return value: stderr_lines
+
+#### zos_archive
+* new return value: dest
+
+#### zos_blockinfile
+* New module option alias: insertafter can be referenced as 'after'
+* New module option alias: insertbefore can be referenced as 'before'
+* new return value: stdout_lines
+* new return value: stderr_lines
+
+#### zos_fetch
+* new return value: encoding(from/to)
+* new return value: stderr_lines, stdout_lines
+
+#### zos_lineinfile
+* New module option alias: insertafter can be referenced as 'after'
+* New module option alias: insertbefore can be referenced as 'before'
+* new return value: stdout_lines
+* new return value: stderr_lines
+
+#### zos_operator_action_query
+* new module option renamed: message_filter —> msg_filter (alias remains)
+* new module option renamed: message_id —> msg_id (alias remains)
+
+#### zos_tso_command
+* new return value: stdout_lines
+* new return value: stderr_lines

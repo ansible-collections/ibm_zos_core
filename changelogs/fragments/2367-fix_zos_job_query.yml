@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_job_query - All default parameters are set to ``*``, causing the module to query all jobs when a parameter is not set and leading
+    to RACF violations for users with insufficient permissions to view all jobs. The fix now sets the ``job_id`` and ``owner`` parameter
+    defaults to ``None``.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2367).

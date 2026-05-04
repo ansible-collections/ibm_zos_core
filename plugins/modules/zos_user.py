@@ -42,8 +42,9 @@ options:
       - User profiles can use any of the choices.
       - C(delete) will run a RACF C(DELGROUP) or a C(DELUSER) TSO command. This will
         remove the profile but not every reference in the RACF database.
-      - C(purge) will execute the RACF utility IRRDBU00, thereby removing all references
-        of a profile from the RACF database.
+      - C(purge) will unloads the RACF database using IRRDBU00, identifies all
+        profile references via IRRRID00, and executes the necessary commands to completely
+        remove the profile and its associated references.
       - C(connect) will add a given user profile to a group. C(remove) will remove the
         user from a group.
     type: str
@@ -89,6 +90,8 @@ options:
         which locks the database during the dump to ensure consistency.
       - Using C(true) can improve performance but may result in inconsistent data if the
         database is being modified during the dump.
+      - IRRDBU00 requires READ authority to the input RACF database for C(NOLOCKINPUT).
+      - IRRDBU00 requires UPDATE authority to the input RACF database for C(LOCKINPUT).
     type: bool
     required: false
     default: true
@@ -1253,6 +1256,8 @@ database_dumped:
     description: |
         Whether the module used IRRDBU00 utility to dump the RACF database.
         Only true for purge operations that successfully execute IRRDBU00.
+        IRRDBU00 requires READ authority to the input RACF database if PARM=NOLOCKINPUT is specified (optimize_dump=true).
+        IRRDBU00 requires UPDATE authority to the input RACF database if PARM=LOCKINPUT is specified (optimize_dump=false).
     returned: always
     type: bool
     sample: false

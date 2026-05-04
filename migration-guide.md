@@ -7,8 +7,7 @@ This guide covers breaking and recommended changes for upgrading playbooks and r
 ## 📚 Table of Contents
 
 1. [Overview](#overview)
-2. [Breaking Changes](#breaking-changes)
-3. [Non-Breaking](#non-breaking_changes)
+2. [Breaking and Non-Breaking Changes](#breaking-and-non-breaking-changes)
 
 6. Testing and Validation
 7. Resources and Support
@@ -35,9 +34,9 @@ To achieve consistent naming across the collection, some module options and retu
 
 ---
 
-## 🚨 Breaking and Non-breaking Changes
+## 🚨 Breaking and Non-Breaking Changes
 
-Breaking changes are all the module options that have been renamed where the old names will no longer work. It also includes any return values which have been renamed.
+Breaking changes are all the module options that have been renamed where the old names will no longer work. It also includes any return values which have been renamed. Any automation which relies on these value will need to be updated.
 
 Non-breaking changes are all the module options that have been renamed for consistency across the collection, but still have the old module option name available as an alias. It is recommended to switch playbook tasks to use the new moddule names. This section also includes new return values.
 
@@ -45,22 +44,52 @@ Non-breaking changes are all the module options that have been renamed for consi
 
 #### zos_apf
 non-breaking:
-* module option: persistent.data_set --> persistent.name. persistent.data_set_name will remain functional.
-* new return value: stdout_lines
-* new return value: stderr_lines
+* module sub-option: ``persistent.data_set`` is renamed to ``persistent.name``.
+    * ``persistent.data_set_name`` will remain functional.
+* new return value: ``stdout_lines``.
+* new return value: ``stderr_lines``.
 
 #### zos_archive
 breaking:
-* module option renamed: format.name --> format.type
-* module option renamed: format.format_options --> format.options
-* module option renamed: format.use_adrdssu --> format.adrdssu
-* module option renamed: format.format_options.terse_pack --> format.options.spack
-  * the type of the option has changed from string to bool.
+* module sub-option renamed: ``format.name`` is renamed to ``format.type``.
+* module sub-option renamed: ``format.format_options`` is renamed to ``format.options``.
+* module sub-option renamed: ``format.use_adrdssu`` is renamed to ``format.adrdssu``.
+* module sub-option renamed: ``format.format_options`` is renamed to ``format.options.spack``.
+  * the type has changed from ``string`` to ``bool``.
   * ``spack=True`` uses 'spack' as the compression algorithm, while ``spack=False`` uses the pack algorithm.
 
-non-breaking:
-* new return value: dest
+Required actions:
+```yaml
+# Before
+- name: Archive data set into a terse, specify pack algorithm and use adrdssu.
+  zos_archive:
+    src: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+      format_options:
+        terse_pack: "spack"
+        use_adrdssu: true
+# After
+- name: Archive data set into a terse, specify pack algorithm and use adrdssu
+  zos_archive:
+    src: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      type: terse
+      options:
+        spack: true
+        adrdssu: true
+```
 
+non-breaking:
+* new return value: ``dest``.
+
+Recommended actions:
+```yaml
+// Before
+// After
+```
 
 #### zos_bakup_restore
 * TODO
@@ -73,10 +102,48 @@ non-breaking:
 * new return value: stderr_lines
 
 #### zos_copy
-* module option renamed: is_binary --> binary
-* module option renamed: force --> replace
-  * NOTE: option 'force' remains a valid module option with different functionality.
-* module option renamed: force_lock --> force
+breaking:
+* module option renamed: ``is_binary`` is renamed to ``binary``.
+* module option renamed: ``force`` is renamed to ``replace``.
+  * **NOTE**: option ``force`` remains a _valid_ module option with **different** functionality.
+* module option renamed: ``force_lock`` is renamed to ``force``.
+
+Required actions:
+```yaml
+  # Before
+  - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
+    ibm.ibm_zos_core.zos_copy:
+      src: /path/to/uss/src
+      dest: SAMPLE.SEQ.DATA.SET
+      force: true
+      remote_src: true
+
+  # After
+  - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
+    ibm.ibm_zos_core.zos_copy:
+      src: /path/to/uss/src
+      dest: SAMPLE.SEQ.DATA.SET
+      replace: true
+      remote_src: true
+
+  # Before
+  - name: Copy binary content from a PDS member to a PDS/E member, acquiring an ENQ on the PDS/E member.
+    ibm.ibm_zos_core.zos_copy:
+      src: SAMPLE.PDS.DATA.SET(MEM)
+      dest: SAMPLE.PDSE.DATA.SET(MEM)
+      is_binary: true
+      force_lock: true
+      remote_src: true
+
+  # After
+  - name: Copy a file to USS.
+    ibm.ibm_zos_core.zos_copy:
+      src: SAMPLE.PDS.DATA.SET(MEM)
+      dest: SAMPLE.PDSE.DATA.SET(MEM)
+      binary: true
+      force: true
+      remote_src: true
+```
 
 #### zos_fetch
 breaking:

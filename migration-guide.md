@@ -6,8 +6,8 @@ This guide covers breaking and recommended changes for upgrading playbooks and r
 
 ## 📚 Table of Contents
 
-1. [Overview](#overview)
-2. [Breaking and Non-Breaking Changes](#breaking-and-non-breaking-changes)
+1. [Overview](#-overview)
+2. [Breaking and Non-Breaking Changes](#-breaking-and-non-breaking-changes)
 
 6. Testing and Validation
 7. Resources and Support
@@ -127,7 +127,7 @@ Required actions:
       remote_src: true
 
   # Before
-  - name: Copy binary content from a PDS member to a PDS/E member, acquiring an ENQ on the PDS/E member.
+  - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
     ibm.ibm_zos_core.zos_copy:
       src: SAMPLE.PDS.DATA.SET(MEM)
       dest: SAMPLE.PDSE.DATA.SET(MEM)
@@ -136,7 +136,7 @@ Required actions:
       remote_src: true
 
   # After
-  - name: Copy a file to USS.
+  - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
     ibm.ibm_zos_core.zos_copy:
       src: SAMPLE.PDS.DATA.SET(MEM)
       dest: SAMPLE.PDSE.DATA.SET(MEM)

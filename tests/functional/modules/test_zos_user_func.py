@@ -5114,7 +5114,7 @@ def test_update_without_blocks(ansible_zos_module):
         
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert 'no profile blocks were provided' in result.get('msg', '').lower()
+            assert 'no parameter blocks were provided for update operation' in result.get('msg', '').lower()
             
     finally:
         cleanup_user(hosts, test_user)
@@ -5151,7 +5151,7 @@ def test_connect_without_connect_block(ansible_zos_module):
         
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert 'no profile blocks were provided' in result.get('msg', '').lower()
+            assert 'required parameter block connect was not provided for connect operation' in result.get('msg', '').lower()
             
     finally:
         cleanup_user(hosts, test_user)

@@ -37,16 +37,16 @@ options:
       - src
   operation:
     description:
-      - RACF command that will be executed.
-      - Group profiles can be created, updated, deleted and purged.
-      - User profiles can use any of the choices.
-      - C(delete) will run a RACF C(DELGROUP) or a C(DELUSER) TSO command. This will
-        remove the profile but not every reference in the RACF database.
-      - C(purge) will unloads the RACF database using IRRDBU00, identifies all
-        profile references via IRRRID00, and executes the necessary commands to completely
-        remove the profile and its associated references.
-      - C(connect) will add a given user profile to a group. C(remove) will remove the
-        user from a group.
+      - Specifies the operation to perform on the RACF profile.
+      - The available choices depend on the value of I(scope).
+      - C(create) - Creates a new profile. Supported for both I(scope=user) and I(scope=group).
+      - C(update) - Modifies an existing profile. Supported for both I(scope=user) and I(scope=group).
+      - C(delete) - Removes the profile from RACF but may leave residual references in the database. Supported for both I(scope=user) and I(scope=group).
+      - C(purge) - Completely removes the profile and all associated references from the RACF database.
+        Unloads the database using C(IRRDBU00), identifies all references via C(IRRRID00), and executes
+        the necessary commands to remove them.
+      - C(connect) - Links a user to a group. Only supported when I(scope=user).
+      - C(remove) - Removes a user from a group. Only supported when I(scope=user).
     type: str
     required: true
     choices:
@@ -58,7 +58,7 @@ options:
       - remove
   scope:
     description:
-      - Whether commands should affect a user or a group profile.
+      - Whether the RACF profile specified in I(name) is a user or group profile.
     type: str
     required: true
     choices:
@@ -82,16 +82,16 @@ options:
     default: false
   optimize_dump:
     description:
-      - Whether to optimize the database dump operation by not locking the RACF database.
+      - Whether to optimize the database dump operation without locking the input RACF database.
       - This option is only applicable when I(operation=purge).
-      - When set to C(true), the IRRDBU00 utility will run with C(NOLOCKINPUT) option,
-        which allows other processes to access the database during the dump.
-      - When set to C(false), the IRRDBU00 utility will run with C(LOCKINPUT) option,
-        which locks the database during the dump to ensure consistency.
-      - Using C(true) can improve performance but may result in inconsistent data if the
-        database is being modified during the dump.
-      - IRRDBU00 requires READ authority to the input RACF database for C(NOLOCKINPUT).
-      - IRRDBU00 requires UPDATE authority to the input RACF database for C(LOCKINPUT).
+      - When set to C(true), the IRRDBU00 utility runs with the C(NOLOCKINPUT) option.
+        This improves system availability by allowing concurrent updates to the database.
+        However, it may result in inconsistent data if changes occur during the process.
+      - The user ID requires C(READ) authority to the RACF database when using C(NOLOCKINPUT).
+      - When set to C(false), the IRRDBU00 utility runs with the C(LOCKINPUT) option.
+        This ensures data consistency by locking the database, but it prevents other
+        processes from updating RACF profiles until the dump completes.
+      - The user ID requires C(UPDATE) authority to the RACF database to permit the utility to C(LOCKINPUT).
     type: bool
     required: false
     default: true
@@ -965,6 +965,18 @@ attributes:
     support: full
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
+notes:
+  - This module requires appropriate RACF authority to execute commands.
+  - For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority
+    to perform the requested operation (typically SPECIAL or group-SPECIAL attribute).
+  - For purge operations using IRRDBU00 utility - When I(optimize_dump=true) (default), IRRDBU00 runs with PARM=NOLOCKINPUT requiring
+    READ authority to the input RACF database data sets. When I(optimize_dump=false), IRRDBU00 runs with PARM=LOCKINPUT requiring UPDATE
+    authority to lock the database during the unload.
+  - The IRRRID00 utility is used during purge operations to identify residual references and generate a CLIST of removal commands.
+    The user must have READ authority to the input dataset (the unloaded RACF database produced by IRRDBU00).
+  - To execute the generated CLIST from IRRRID00, the user must have sufficient RACF authority - DELUSER/DELGROUP requires the SPECIAL
+    attribute, group-SPECIAL (within scope), or ownership of the target profile/superior group.
+
 seealso:
   - module: ibm.ibm_zos_core.zos_tso_command
 """
@@ -987,7 +999,7 @@ EXAMPLES = r"""
 
 - name: Update a user's full name.
   zos_user:
-    name: existinguser
+    name: existusr
     operation: update
     scope: user
     general:
@@ -995,7 +1007,7 @@ EXAMPLES = r"""
 
 - name: Remove a user's full name (sets to UNKNOWN).
   zos_user:
-    name: existinguser
+    name: existusr
     operation: update
     scope: user
     general:
@@ -1197,7 +1209,7 @@ msg:
         Message returned by the module. Contains error messages on failure,
         informational messages when no changes are needed (e.g., entity already exists),
         or validation error messages.
-    returned: on failure or when no changes are needed
+    returned: always
     type: str
     sample: "An error occurred while executing the RACF command."
 rc:
@@ -1208,8 +1220,8 @@ rc:
 stdout:
     description: |
         Standard output from the RACF command execution.
-        For purge operations, may contain dump dataset and CLIST information.
         In check mode, may contain informational messages about the entity state.
+        For I(operation=purge), this includes technical details such as dump dataset names and CLIST processing messages.
     returned: always
     type: str
     sample: "User DUSR1001 is defined as PROTECTED.\n"
@@ -1222,7 +1234,7 @@ stdout_lines:
 stderr:
     description: |
         Standard error from the RACF command execution.
-        TSO command echoes are automatically filtered out.
+        TSO command output is automatically filtered out.
     returned: always
     type: str
     sample: ""
@@ -1255,24 +1267,24 @@ entities_modified:
 database_dumped:
     description: |
         Whether the module used IRRDBU00 utility to dump the RACF database.
-        Only true for purge operations that successfully execute IRRDBU00.
-        IRRDBU00 requires READ authority to the input RACF database if PARM=NOLOCKINPUT is specified (optimize_dump=true).
-        IRRDBU00 requires UPDATE authority to the input RACF database if PARM=LOCKINPUT is specified (optimize_dump=false).
+        Set to C(true) only when the purge operation successfully executes the C(IRRDBU00) utility.
+        Only relevant when I(operation=purge).
     returned: always
     type: bool
     sample: false
 dump_kept:
     description: |
-        Whether the RACF database dump was kept on the managed node.
-        Controlled by the keep_dump parameter. Only relevant when database_dumped is true.
+        Indicates whether the RACF database dump was retained on the managed node.
+        This behavior is controlled by the I(keep_dump) input parameter.
+        Only relevant when I(database_dumped=true).
     returned: always
     type: bool
     sample: false
 dump_name:
     description: |
-        Name of the dataset containing the output from the IRRDBU00 utility.
-        Only populated (non-null) when database_dumped is true and keep_dump is true.
-        Otherwise returns null.
+        The name of the dataset containing the output from the C(IRRDBU00) utility.
+        This field is only populated when both I(database_dumped) and I(keep_dump) are C(true).
+        Otherwise, this value returns C(null).
     returned: always
     type: str
     sample: USER.BACKUP.RACF.DATABASE
@@ -1632,6 +1644,22 @@ class RACFHandler():
                 return True
 
         return False
+
+    def get_missing_blocks_message(self):
+        """Generate appropriate error message when no blocks are defined.
+
+        Returns
+        -------
+            str: Error message describing which parameter blocks are missing.
+        """
+        operation_blocks = self.valid_blocks.get(self.operation, [])
+
+        if len(operation_blocks) == 1:
+            # Operations like connect, remove require specific block
+            return f'Required parameter block {operation_blocks[0]} was not provided for {self.operation} operation, no changes made.'
+        else:
+            # Operations like update accept multiple blocks
+            return f'No parameter blocks were provided for {self.operation} operation. Expected one of: {", ".join(operation_blocks)}. No changes made.'
 
     def validate_params(self):
         """Uses self.validations to validate that all parameters are withing valid ranges
@@ -2193,8 +2221,8 @@ class GroupHandler(RACFHandler):
             rc, stdout, stderr, cmd = self._purge_profile()
         else:
             self.module.fail_json(
-                f"Operation {self.operation} is not supported for group profiles. "
-                f"Supported operations for groups: create, update, delete, purge"
+                msg=f"Operation '{self.operation}' is not supported for group profiles. "
+                    f"Supported operations for groups: create, update, delete, purge"
             )
 
         self.cmd = cmd
@@ -4033,10 +4061,12 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
         module.params = parsed_args
     except ValueError as err:
-        module.fail_json(
-            msg='Parameter verification failed.',
-            stderr=str(err)
+        result = RACFHandler._get_validation_error_result(
+            error_msg=str(err),
+            rc=1
         )
+        result['msg'] = 'Parameter verification failed.'
+        module.fail_json(**result)
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
@@ -4047,7 +4077,7 @@ def run_module():
     operation_handler.clean_input()
     if not operation_handler.are_blocks_defined():
         result = operation_handler.get_state()
-        result['msg'] = 'No profile blocks were provided with this operation, no changes made.'
+        result['msg'] = operation_handler.get_missing_blocks_message()
         module.exit_json(**result)
 
     try:
@@ -4095,11 +4125,17 @@ def run_module():
 
     if result['rc'] == 0:
         result['changed'] = result['num_entities_modified'] > 0
+
+        # Successful message
+        if 'msg' not in result:
+            result['msg'] = 'Command executed successfully.'
+
+        # Successful exit
+        module.exit_json(**result)
     else:
+        result['changed'] = False
         result['msg'] = 'An error occurred while executing the RACF command.'
         module.fail_json(**result)
-
-    module.exit_json(**result)
 
 
 if __name__ == '__main__':

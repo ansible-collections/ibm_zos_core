@@ -35,17 +35,21 @@ name
 
 
 operation
-  RACF command that will be executed.
+  Specifies the operation to perform on the RACF profile.
 
-  Group profiles can be created, updated, deleted and purged.
+  The available choices depend on the value of :emphasis:`scope`.
 
-  User profiles can use any of the choices.
+  :literal:`create` \- Creates a new profile. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
 
-  :literal:`delete` will run a RACF :literal:`DELGROUP` or a :literal:`DELUSER` TSO command. This will remove the profile but not every reference in the RACF database.
+  :literal:`update` \- Modifies an existing profile. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
 
-  :literal:`purge` will execute the RACF utility IRRDBU00, thereby removing all references of a profile from the RACF database.
+  :literal:`delete` \- Removes the profile from RACF but may leave residual references in the database. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
 
-  :literal:`connect` will add a given user profile to a group. :literal:`remove` will remove the user from a group.
+  :literal:`purge` \- Completely removes the profile and all associated references from the RACF database. Unloads the database using :literal:`IRRDBU00`\ , identifies all references via :literal:`IRRRID00`\ , and executes the necessary commands to remove them.
+
+  :literal:`connect` \- Links a user to a group. Only supported when :emphasis:`scope=user`.
+
+  :literal:`remove` \- Removes a user from a group. Only supported when :emphasis:`scope=user`.
 
   | **required**: True
   | **type**: str
@@ -53,7 +57,7 @@ operation
 
 
 scope
-  Whether commands should affect a user or a group profile.
+  Whether the RACF profile specified in :emphasis:`name` is a user or group profile.
 
   | **required**: True
   | **type**: str
@@ -84,15 +88,17 @@ keep_dump
 
 
 optimize_dump
-  Whether to optimize the database dump operation by not locking the RACF database.
+  Whether to optimize the database dump operation without locking the input RACF database.
 
   This option is only applicable when :emphasis:`operation=purge`.
 
-  When set to :literal:`true`\ , the IRRDBU00 utility will run with :literal:`NOLOCKINPUT` option, which allows other processes to access the database during the dump.
+  When set to :literal:`true`\ , the IRRDBU00 utility runs with the :literal:`NOLOCKINPUT` option. This improves system availability by allowing concurrent updates to the database. However, it may result in inconsistent data if changes occur during the process.
 
-  When set to :literal:`false`\ , the IRRDBU00 utility will run with :literal:`LOCKINPUT` option, which locks the database during the dump to ensure consistency.
+  The user ID requires :literal:`READ` authority to the RACF database when using :literal:`NOLOCKINPUT`.
 
-  Using :literal:`true` can improve performance but may result in inconsistent data if the database is being modified during the dump.
+  When set to :literal:`false`\ , the IRRDBU00 utility runs with the :literal:`LOCKINPUT` option. This ensures data consistency by locking the database, but it prevents other processes from updating RACF profiles until the dump completes.
+
+  The user ID requires :literal:`UPDATE` authority to the RACF database to permit the utility to :literal:`LOCKINPUT`.
 
   | **required**: False
   | **type**: bool
@@ -1251,7 +1257,7 @@ Examples
 
    - name: Update a user's full name.
      zos_user:
-       name: existinguser
+       name: existusr
        operation: update
        scope: user
        general:
@@ -1259,7 +1265,7 @@ Examples
 
    - name: Remove a user's full name (sets to UNKNOWN).
      zos_user:
-       name: existinguser
+       name: existusr
        operation: update
        scope: user
        general:
@@ -1447,6 +1453,20 @@ Examples
 
 
 
+Notes
+-----
+
+.. note::
+   This module requires appropriate RACF authority to execute commands.
+
+   For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested operation (typically SPECIAL or group\-SPECIAL attribute).
+
+   For purge operations using IRRDBU00 utility \- When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with PARM=NOLOCKINPUT requiring READ authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with PARM=LOCKINPUT requiring UPDATE authority to lock the database during the unload.
+
+   The IRRRID00 utility is used during purge operations to identify residual references and generate a CLIST of removal commands. The user must have READ authority to the input dataset (the unloaded RACF database produced by IRRDBU00).
+
+   To execute the generated CLIST from IRRRID00, the user must have sufficient RACF authority \- DELUSER/DELGROUP requires the SPECIAL attribute, group\-SPECIAL (within scope), or ownership of the target profile/superior group.
+
 
 
 See Also
@@ -1486,7 +1506,7 @@ msg
 informational messages when no changes are needed (e.g., entity already exists),
 or validation error messages.
 
-  | **returned**: on failure or when no changes are needed
+  | **returned**: always
   | **type**: str
   | **sample**: An error occurred while executing the RACF command.
 
@@ -1498,8 +1518,8 @@ rc
 
 stdout
   Standard output from the RACF command execution.
-For purge operations, may contain dump dataset and CLIST information.
 In check mode, may contain informational messages about the entity state.
+For :emphasis:`operation=purge`\ , this includes technical details such as dump dataset names and CLIST processing messages.
 
   | **returned**: always
   | **type**: str
@@ -1523,7 +1543,7 @@ stdout_lines
 
 stderr
   Standard error from the RACF command execution.
-TSO command echoes are automatically filtered out.
+TSO command output is automatically filtered out.
 
   | **returned**: always
   | **type**: str
@@ -1572,22 +1592,24 @@ Empty list when no changes are made (entity already exists or in desired state).
 
 database_dumped
   Whether the module used IRRDBU00 utility to dump the RACF database.
-Only true for purge operations that successfully execute IRRDBU00.
+Set to :literal:`true` only when the purge operation successfully executes the :literal:`IRRDBU00` utility.
+Only relevant when :emphasis:`operation=purge`.
 
   | **returned**: always
   | **type**: bool
 
 dump_kept
-  Whether the RACF database dump was kept on the managed node.
-Controlled by the keep\_dump parameter. Only relevant when database\_dumped is true.
+  Indicates whether the RACF database dump was retained on the managed node.
+This behavior is controlled by the :emphasis:`keep\_dump` input parameter.
+Only relevant when :emphasis:`database\_dumped=true`.
 
   | **returned**: always
   | **type**: bool
 
 dump_name
-  Name of the dataset containing the output from the IRRDBU00 utility.
-Only populated (non\-null) when database\_dumped is true and keep\_dump is true.
-Otherwise returns null.
+  The name of the dataset containing the output from the :literal:`IRRDBU00` utility.
+This field is only populated when both :emphasis:`database\_dumped` and :emphasis:`keep\_dump` are :literal:`true`.
+Otherwise, this value returns :literal:`null`.
 
   | **returned**: always
   | **type**: str

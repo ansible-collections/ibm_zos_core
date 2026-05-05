@@ -49,7 +49,9 @@
     },
     "zos_find": {
         "renamed_params": {
-            "pds_pattern": "patterns"
+            "pds_pattern": "patterns",
+            "pds_patterns": "patterns",
+            "pds_paths": "patterns"
         }
     },
     "zos_lineinfile": {
@@ -78,10 +80,16 @@
             "ret_code.steps": "jobs.steps"
         }
     },
+    "zos_operator": {
+        "renamed_params": {
+            "wait_time_s": "wait_time"
+        }
+    },
     "zos_operator_action_query": {
         "renamed_params": {
             "message_filter": "msg_filter",
-            "message_id": "msg_id"
+            "message_id": "msg_id",
+            "message_filter.use_regex": "msg_filter.literal"
         },
         "renamed_response_params": {
             "actions.message_text": "actions.msg_text",

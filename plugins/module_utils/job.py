@@ -167,9 +167,9 @@ def _job_not_found(job_id, owner, job_name, dd_name):
         job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
     elif job_id != '*':
         job_not_found_msg = "with the job_id {0}".format(job_id.upper())
-    elif job_id == None and job_name == None:
+    elif job_id is None and job_name is None:
         job_not_found_msg = "{0} with the job_id {1}".format(job_name, job_id)
-    elif job_id == None:
+    elif job_id is None:
         job_not_found_msg = "with the name {0}".format(job_id)
     else:
         job_not_found_msg = "with the name {0}".format(job_name.upper())

@@ -145,6 +145,9 @@ Required actions:
       remote_src: true
 ```
 
+#### zos_data_set
+breaking:
+* return value renamed: names -> data_sets
 #### zos_fetch
 breaking:
 * module option renamed: is_binary —> binary

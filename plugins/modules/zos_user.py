@@ -4061,12 +4061,10 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
         module.params = parsed_args
     except ValueError as err:
-        result = RACFHandler._get_validation_error_result(
-            error_msg=str(err),
-            rc=1
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
         )
-        result['msg'] = 'Parameter verification failed.'
-        module.fail_json(**result)
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
@@ -4078,7 +4076,7 @@ def run_module():
     if not operation_handler.are_blocks_defined():
         result = operation_handler.get_state()
         result['msg'] = operation_handler.get_missing_blocks_message()
-        module.exit_json(**result)
+        module.fail_json(**result)
 
     try:
         operation_handler.validate_params()

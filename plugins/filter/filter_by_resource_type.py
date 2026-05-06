@@ -203,7 +203,10 @@ def filter_stat(attributes, resource):
         raise AnsibleFilterError(
         f"Invalid resource '{resource}'. Must be one of: {', '.join(VALID_RESOURCES)}"
     )
-
+    if 'stat' not in attributes:
+        raise AnsibleFilterError(
+            "Input dictionary missing required 'stat' key. Verify the output from zos_stat module is being passed for filtering."
+        )
     attributes = attributes.get('stat', {})
 
     root_attrs = [
@@ -221,7 +224,7 @@ def filter_stat(attributes, resource):
     for field in VALID_FIELDS[resource]:
         cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
 
-    if resource == 'data_set' and cleaned_attributes['attributes']['dsorg'] is not None:
+    if resource == 'data_set' and cleaned_attributes['attributes'].get('dsorg') is not None:
         if DSORG_SEQ in cleaned_attributes['attributes']['dsorg']:
             _extract_fields(attributes, VALID_FIELDS['seq'], cleaned_attributes)
         if DSORG_PARTITIONED in cleaned_attributes['attributes']['dsorg']:

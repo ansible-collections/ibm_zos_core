@@ -54,7 +54,29 @@ RETURN = r"""
     type: dict
 """
 
-
+COMMON_DS_FIELDS = [
+    'record_format',
+    'record_length',
+    'block_size',
+    'creation_time',
+    'last_reference',
+    'updated_since_backup',
+    'jcl_attrs',
+    'volser',
+    'num_volumes',
+    'volumes',
+    'missing_volumes',
+    'device_type',
+    'space_units',
+    'primary_space',
+    'secondary_space',
+    'allocation_available',
+    'allocation_used',
+    'extents_allocated',
+    'extents_used',
+    'blocks_per_track',
+    'tracks_per_cylinder',
+    ]
 VALID_FIELDS = {
     'data_set': [
         'type',
@@ -71,52 +93,9 @@ VALID_FIELDS = {
         'key_status',
         'racf',
     ],
-    'seq': [
-        'record_format',
-        'record_length',
-        'block_size',
-        'creation_time',
-        'last_reference',
-        'updated_since_backup',
-        'jcl_attrs',
-        'volser',
-        'num_volumes',
-        'volumes',
-        'missing_volumes',
-        'device_type',
-        'space_units',
-        'primary_space',
-        'secondary_space',
-        'allocation_available',
-        'allocation_used',
-        'extents_allocated',
-        'extents_used',
-        'blocks_per_track',
-        'tracks_per_cylinder',
-        'seq_type',
-    ],
-    'pds': [
-        'record_format',
-        'record_length',
-        'block_size',
-        'creation_time',
-        'last_reference',
-        'updated_since_backup',
-        'jcl_attrs',
-        'volser',
-        'num_volumes',
-        'volumes',
-        'missing_volumes',
-        'device_type',
-        'space_units',
-        'primary_space',
-        'secondary_space',
-        'allocation_available',
-        'allocation_used',
-        'extents_allocated',
-        'extents_used',
-        'blocks_per_track',
-        'tracks_per_cylinder',
+    'seq': COMMON_DS_FIELDS + ['seq_type'],
+    'pds': COMMON_DS_FIELDS +
+    [
         'dir_blocks_allocated',
         'dir_blocks_used',
         'members',
@@ -196,6 +175,16 @@ VALID_FIELDS = {
         'active_gens'
     ]
 }
+VALID_RESOURCES = ['data_set', 'file', 'aggregate', 'gdg']
+DSORG_SEQ = 'ps'
+DSORG_PARTITIONED = 'po'
+DSORG_VSAM = 'vsam'
+
+
+def _extract_fields(src_attrs, field_list, target_dict):
+    """ Extracts the fields from the source_attrs and adds them to the target_dict. """
+    for field in field_list:
+        target_dict['attributes'][field] = src_attrs.get('attributes', {}).get(field)
 
 
 def filter_stat(attributes, resource):
@@ -210,8 +199,10 @@ def filter_stat(attributes, resource):
     """
     if not isinstance(attributes, dict):
         raise AnsibleFilterError("The 'attributes' object passed is not a dictionary. This filter needs a dictionary to filter.")
-    if resource not in ['data_set', 'file', 'aggregate', 'gdg']:
-        raise AnsibleFilterError(f"The given resource {resource} is not one of 'data_set', 'file', 'aggregate' or 'gdg'.")
+    if resource not in VALID_RESOURCES:
+        raise AnsibleFilterError(
+        f"Invalid resource '{resource}'. Must be one of: {', '.join(VALID_RESOURCES)}"
+    )
 
     attributes = attributes.get('stat', {})
 
@@ -231,15 +222,12 @@ def filter_stat(attributes, resource):
         cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
 
     if resource == 'data_set' and cleaned_attributes['attributes']['dsorg'] is not None:
-        if 'ps' in cleaned_attributes['attributes']['dsorg']:
-            for field in VALID_FIELDS['seq']:
-                cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
-        if 'po' in cleaned_attributes['attributes']['dsorg']:
-            for field in VALID_FIELDS['pds']:
-                cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
-        if cleaned_attributes['attributes']['dsorg'] == 'vsam':
-            for field in VALID_FIELDS['vsam']:
-                cleaned_attributes['attributes'][field] = attributes.get('attributes', {}).get(field)
+        if DSORG_SEQ in cleaned_attributes['attributes']['dsorg']:
+            _extract_fields(attributes, VALID_FIELDS['seq'], cleaned_attributes)
+        if DSORG_PARTITIONED in cleaned_attributes['attributes']['dsorg']:
+            _extract_fields(attributes, VALID_FIELDS['pds'], cleaned_attributes)
+        if cleaned_attributes['attributes']['dsorg'] == DSORG_VSAM:
+            _extract_fields(attributes, VALID_FIELDS['vsam'], cleaned_attributes)
 
     return cleaned_attributes
 

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,8 +31,8 @@ options:
     description:
       - Type of resource whose fields should be filtered from the zos_stat JSON output.
       - If the resource is a data set, the filter will only include the relevant fields for
-        the specific type of data set queried by zos_stat. When C(isdataset=False), only
-        common data sets attribute fields will be returned.
+        the specific type of data set queried by zos_stat, which can be sequential, PDS, or VSAM. 
+        When C(isdataset=False), only common data set attribute fields will be returned.
     type: str
     required: true
     choices:

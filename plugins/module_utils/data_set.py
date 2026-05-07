@@ -883,14 +883,10 @@ class DataSet(object):
         if vsam_type:
             return vsam_type
 
-        # Check if uncataloged dataset exists
-        if volume is not None and DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq):
-            return "UNKNOWN"
-
         return None
 
     @staticmethod
-    def data_set_type(name, volume=None, tmphlq=None, return_attributes=False):
+    def data_set_type(name, volume=None, tmphlq=None):
         """Checks the type of a data set, data sets must be cataloged.
 
         Parameters
@@ -901,35 +897,31 @@ class DataSet(object):
             The volume the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
-        return_attributes : bool
-            If True, returns a tuple of (type, attributes) where attributes
-            is the dataset object from list_datasets (or None for VSAM/GDG).
-            If False (default), returns only the type for backward compatibility.
 
         Returns
         -------
-        str or tuple
-            If return_attributes is False: The type of the data set (one of "PS", "PO", "DA", "KSDS",
-            "ESDS", "LDS" or "RRDS"), or None if the data set does not exist.
-            If return_attributes is True: A tuple of (type, attributes) where attributes
-            is the dataset object from list_datasets, or None for VSAM/GDG/non-existent datasets.
+        str
+            The type of the data set (one of "PS", "PO", "DA", "KSDS",
+            "ESDS", "LDS" or "RRDS").
+        None
+            If the data set does not exist or ZOAU is not able to determine
+            the type.
 
         """
         if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
-            return (None, None) if return_attributes else None
+            return None
 
         data_sets_found = datasets.list_datasets(name)
 
         # Using the organization property when it's a sequential or partitioned
         # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
-            ds_type = data_sets_found[0].organization
-            return (ds_type, data_sets_found[0]) if return_attributes else ds_type
+            return data_sets_found[0].organization
 
         # Now trying to list GDGs through gdgs.
         data_sets_found = gdgs.list_gdg_names(name)
         if len(data_sets_found) > 0:
-            return ("GDG", None) if return_attributes else "GDG"
+            return "GDG"
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
@@ -939,26 +931,18 @@ class DataSet(object):
         data_set_attributes = re.findall(
             r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
         if len(data_set_attributes) == 0:
-            return (None, None) if return_attributes else None
+            return None
 
-        vsam_type = None
         if re.search(r"\bINDEXED\b", data_set_attributes[0]):
-            vsam_type = "KSDS"
+            return "KSDS"
         elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
-            vsam_type = "ESDS"
+            return "ESDS"
         elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
-            vsam_type = "LDS"
+            return "LDS"
         elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
-            vsam_type = "RRDS"
-
-        if vsam_type:
-            return (vsam_type, None) if return_attributes else vsam_type
-
-        # Check if uncataloged dataset exists
-        if volume is not None and DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq):
-            return ("UNKNOWN", None) if return_attributes else "UNKNOWN"
-
-        return (None, None) if return_attributes else None
+            return "RRDS"
+        else:
+            return None
 
     @staticmethod
     def _get_listcat_data(name, tmphlq=None):

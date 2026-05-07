@@ -198,11 +198,11 @@ def filter_stat(attributes, resource):
         dict -- A reduced attributes dictionary.
     """
     if not isinstance(attributes, dict):
-        raise AnsibleFilterError("The 'attributes' object passed is not a dictionary. This filter needs a dictionary to filter.")
+        raise AnsibleFilterError("The 'attributes' object passed is not a dictionary. A dictionary is required for filtering.")
     if resource not in VALID_RESOURCES:
-        raise AnsibleFilterError(f"Invalid resource '{resource}'. Must be one of: {', '.join(VALID_RESOURCES)}")
+        raise AnsibleFilterError(f"Invalid resource '{resource}'. Must be one of the following: {', '.join(VALID_RESOURCES)}")
     if 'stat' not in attributes:
-        raise AnsibleFilterError("Input dictionary missing required 'stat' key. Verify the output from zos_stat module is being passed.")
+        raise AnsibleFilterError("Input dictionary missing required 'stat' key. Verify valid output from zos_stat module is being passed.")
     attributes = attributes.get('stat', {})
 
     root_attrs = [

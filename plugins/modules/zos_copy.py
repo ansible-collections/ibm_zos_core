@@ -3567,7 +3567,7 @@ def run_module(module, arg_def):
             if not data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq):
                 raise NonExistentSourceError(src)
             src_attributes = data_set.DataSet.get_attributes(src_name)
-            src_ds_type = data_set.DataSet.get_data_set_type(src_name, attributes=src_attributes, tmphlq=tmphlq)
+            src_ds_type = data_set.DataSet.data_set_type(src_name, attributes=src_attributes, tmphlq=tmphlq)
             if src_ds_type is None:
                 raise NonExistentSourceError(src)
             elif src_ds_type == "UNKNOWN":
@@ -3638,7 +3638,7 @@ def run_module(module, arg_def):
             if data_set.DataSet.data_set_exists(dest_name, volume=volume, tmphlq=tmphlq):
                 dest_exists = True
                 dest_attributes = data_set.DataSet.get_attributes(dest_name)
-                dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
+                dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)

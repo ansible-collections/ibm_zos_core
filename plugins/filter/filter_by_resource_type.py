@@ -31,7 +31,7 @@ options:
     description:
       - Type of resource whose fields should be filtered from the zos_stat JSON output.
       - If the resource is a data set, the filter will only include the relevant fields for
-        the specific type of data set queried by zos_stat, which can be sequential, PDS, or VSAM. 
+        the specific type of data set queried by zos_stat, which can be sequential, PDS, or VSAM.
         When C(isdataset=False), only common data set attribute fields will be returned.
     type: str
     required: true
@@ -76,7 +76,7 @@ COMMON_DS_FIELDS = [
     'extents_used',
     'blocks_per_track',
     'tracks_per_cylinder',
-    ]
+]
 VALID_FIELDS = {
     'data_set': [
         'type',
@@ -200,13 +200,9 @@ def filter_stat(attributes, resource):
     if not isinstance(attributes, dict):
         raise AnsibleFilterError("The 'attributes' object passed is not a dictionary. This filter needs a dictionary to filter.")
     if resource not in VALID_RESOURCES:
-        raise AnsibleFilterError(
-        f"Invalid resource '{resource}'. Must be one of: {', '.join(VALID_RESOURCES)}"
-    )
+        raise AnsibleFilterError(f"Invalid resource '{resource}'. Must be one of: {', '.join(VALID_RESOURCES)}")
     if 'stat' not in attributes:
-        raise AnsibleFilterError(
-            "Input dictionary missing required 'stat' key. Verify the output from zos_stat module is being passed for filtering."
-        )
+        raise AnsibleFilterError("Input dictionary missing required 'stat' key. Verify the output from zos_stat module is being passed.")
     attributes = attributes.get('stat', {})
 
     root_attrs = [

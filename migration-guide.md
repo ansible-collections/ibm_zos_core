@@ -9,8 +9,23 @@ This guide covers breaking and recommended changes for upgrading playbooks and r
 1. [Overview](#-overview)
 2. [Breaking and Non-Breaking Changes](#-breaking-and-non-breaking-changes)
 
-6. Testing and Validation
-7. Resources and Support
+* [zos_apf](#zos_apf)
+* [zos_archive](#zos_archive)
+* [zos_bakup_restore](#zos_bakup_restore)
+* [zos_blockinfile](#zos_blockinfile)
+* [zos_copy](#zos_copy)
+* [zos_data_set](#zos_data_set)
+* [zos_fetch](#zos_fetch)
+* [zos_find](#zos_find)
+* [zos_job_output](#zos_job_output)
+* [zos_job_query](#zos_job_query)
+* [zos_job_submit](#zos_job_submit)
+* [zos_lineinfile](#zos_lineinfile)
+* [zos_mount](#zos_mount)
+* [zos_operator](#zos_operator)
+* [zos_operator_action_query](#zos_operator_action_query)
+* [zos_tso_command](#zos_tso_command)
+* [zos_unarchive](#zos_unarchive)
 
 ---
 

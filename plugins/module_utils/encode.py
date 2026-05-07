@@ -194,7 +194,7 @@ class EncodeUtils(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=ikjeft01 --systsprt=stdout --systsin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)

@@ -2031,7 +2031,7 @@ class VSAMDataSetHandler(DataSetHandler):
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
         mvs_cmd = 'mvscmdauth'
         if self.verbosity >= 3:
-            mvs_cmd = f'{mvs_cmd} -d'
+            mvs_cmd = f'{mvs_cmd} -v'
         mvs_cmd = f'{mvs_cmd} --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
 
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
@@ -2247,7 +2247,7 @@ class GenerationDataGroupHandler(DataSetHandler):
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
         mvs_cmd = 'mvscmdauth'
         if self.verbosity >= 3:
-            mvs_cmd = f'{mvs_cmd} -d'
+            mvs_cmd = f'{mvs_cmd} -v'
         mvs_cmd = f'{mvs_cmd} --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
         if rc > 0:

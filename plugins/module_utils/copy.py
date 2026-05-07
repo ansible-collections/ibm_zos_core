@@ -202,7 +202,7 @@ def copy_vsam_ps(src, dest, tmphlq=None):
 
     cmd = "mvscmdauth"
     if verbosity >= 3:
-        cmd = "{0} -d".format(cmd)
+        cmd = "{0} -v".format(cmd)
     cmd = "{0} --pgm=idcams --sysprint=stdout --sysin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)

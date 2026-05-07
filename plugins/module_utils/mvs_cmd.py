@@ -320,7 +320,7 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
     if authorized:
         mvscmd += "auth"
     if verbosity >= 3:
-        mvscmd += " -d"
+        mvscmd += " -v"
     if tmphlq:
         mvscmd += " -Q={0}".format(tmphlq)
     if pgm == "IEFBR14":

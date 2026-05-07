@@ -257,7 +257,7 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
 
     cmd = "mvscmdauth"
     if verbosity >= 3:
-        cmd = "{0} -d".format(cmd)
+        cmd = "{0} -v".format(cmd)
     cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -309,7 +309,7 @@ def _allocate_model(ds, model, tmphlq=None):
 
     cmd = "mvscmdauth"
     if verbosity >= 3:
-        cmd = "{0} -d".format(cmd)
+        cmd = "{0} -v".format(cmd)
     cmd = "{0} --pgm=ikjeft01 --systsprt=* --systsin=stdin".format(cmd)
     if tmphlq:
         cmd = "{0} -Q={1}".format(cmd, tmphlq)

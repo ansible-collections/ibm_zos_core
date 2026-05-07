@@ -547,7 +547,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -599,7 +599,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -881,7 +881,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -977,7 +977,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin --mydset={1}".format(
             cmd, name
         )
@@ -1553,7 +1553,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=iehprogm --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -1618,7 +1618,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -1638,7 +1638,7 @@ class DataSet(object):
 
             cmd = "mvscmdauth"
             if verbosity >= 3:
-                cmd = "{0} -d".format(cmd)
+                cmd = "{0} -v".format(cmd)
             cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
             if tmphlq:
                 cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -1700,7 +1700,7 @@ class DataSet(object):
 
             cmd = "mvscmdauth"
             if verbosity >= 3:
-                cmd = "{0} -d".format(cmd)
+                cmd = "{0} -v".format(cmd)
             cmd = "{0} --pgm=iehprogm --sysprint=* --sysin={1}".format(cmd, temp_name)
             if tmphlq:
                 cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -1736,7 +1736,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)
@@ -1824,7 +1824,7 @@ class DataSet(object):
 
         cmd = "mvscmdauth"
         if verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=* --sysin=stdin".format(cmd)
         if tmphlq:
             cmd = "{0} -Q={1}".format(cmd, tmphlq)

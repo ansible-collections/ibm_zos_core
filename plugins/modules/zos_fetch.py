@@ -401,7 +401,7 @@ class FetchHandler:
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth"
         if self.verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=idcams --sysprint=stdout --sysin=stdin".format(cmd)
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
 

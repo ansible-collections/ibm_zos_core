@@ -129,7 +129,7 @@ def _iehlist(dd, stdin, tmphlq=None):
 
     cmd = "mvscmd"
     if verbosity >= 3:
-        cmd = "{0} -d".format(cmd)
+        cmd = "{0} -v".format(cmd)
     cmd = "{0} --pgm=iehlist --sysprint=* --dd={1} --sysin=stdin ".format(cmd, dd)
 
     if tmphlq:

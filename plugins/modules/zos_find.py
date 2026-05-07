@@ -1076,7 +1076,7 @@ def _dgrep_wrapper(
     verbosity = module._verbosity
     dgrep_cmd = "dgrep"
     if verbosity >= 3:
-        dgrep_cmd += " -d"
+        dgrep_cmd += " -v"
     if ignore_case:
         dgrep_cmd += " -i"
     if line_num:
@@ -1130,7 +1130,7 @@ def _dls_wrapper(
     verbosity = module._verbosity
     dls_cmd = "dls"
     if verbosity >= 3:
-        dls_cmd += " -d"
+        dls_cmd += " -v"
     if migrated:
         dls_cmd += " -m"
     else:
@@ -1171,7 +1171,7 @@ def _vls_wrapper(module, pattern, details=False, migrated=False, verbose=False):
     verbosity = module._verbosity
     vls_cmd = "vls"
     if verbosity >= 3:
-        vls_cmd += " -d"
+        vls_cmd += " -v"
     if migrated:
         vls_cmd += " -m"
     else:

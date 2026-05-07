@@ -1212,7 +1212,7 @@ class MVSUnarchive(Unarchive):
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
         cmd = " mvscmdauth"
         if self.verbosity >= 3:
-            cmd = "{0} -d".format(cmd)
+            cmd = "{0} -v".format(cmd)
         cmd = "{0} --pgm=ADRDSSU --archive={1},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(cmd, source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd, errors='replace')
         self._get_restored_datasets(out)

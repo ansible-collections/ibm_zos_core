@@ -93,22 +93,16 @@ def get_zos_version_str():
         match = re.search(r'z/OS\s+(\d+)\.(\d+)\s+(\d+)', output)
 
         if match:
-            rr = int(match.group(1))  # e.g., 05 (release)
-            mm = int(match.group(2))  # e.g., 00 (modification level, not used)
-            vv = int(match.group(3))  # e.g., 02 (version)
-
-            # The version is VV (02 = version 2)
-            # The release is RR (05 = release 5)
-            version_major = vv
-            version_minor = rr
-
-            zos_version = f"{version_major}.{version_minor}"
+            release = int(match.group(1))  # RR (e.g., 05 → 5)
+            version = int(match.group(3))  # VV (e.g., 02 → 2)
+            
+            zos_version = f"{version}.{release}"
             logger.debug("Parsed z/OS version: %s", zos_version)
             return zos_version
-        else:
-            logger.warning("Unable to parse z/OS version from uname output: %s", output)
-            return None
-
+        
+        logger.warning("Unable to parse z/OS version from: %s", output)
+        return None
+        
     except subprocess.CalledProcessError as e:
         error_msg = f"Command 'uname -Irsv' failed with return code {e.returncode}: {e.stderr}"
         logger.warning(error_msg)

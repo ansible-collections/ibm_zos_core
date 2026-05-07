@@ -236,7 +236,6 @@ options:
     type: bool
     default: false
     required: false
-    aliases: [binary]
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -3729,7 +3728,7 @@ def run_module(module, arg_def):
                 )
 
     # ********************************************************************
-    # Alias support is not avaiable to and from USS for text-based data sets.
+    # Alias support is not available to and from USS for text-based data sets.
     # ********************************************************************
     if aliases:
         if (src_ds_type == 'USS' or dest_ds_type == 'USS') and not executable:

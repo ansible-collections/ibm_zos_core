@@ -71,7 +71,6 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
-        aliases: [ format_options ]
         suboptions:
           spack:
             description:
@@ -105,7 +104,6 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
-            aliases: [ use_adrdssu ]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -1871,25 +1869,10 @@ def run_module():
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                         aliases=['name'],
-                        deprecated_aliases=[
-                            dict(
-                                name='name',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core'
-                            )
-                        ],
                     ),
                     options=dict(
                         type='dict',
                         required=False,
-                        aliases=['format_options'],
-                        deprecated_aliases=[
-                            dict(
-                                name='format_options',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core'
-                            )
-                        ],
                         options=dict(
                             spack=dict(
                                 type='bool',
@@ -1901,14 +1884,6 @@ def run_module():
                             adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['use_adrdssu'],
-                                deprecated_aliases=[
-                                    dict(
-                                        name='use_adrdssu',
-                                        version='3.0.0',
-                                        collection_name='ibm.ibm_zos_core'
-                                    )
-                                ],
                             )
                         ),
                     ),
@@ -2008,14 +1983,12 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['use_adrdssu'],
                         )
                     ),
                     default=dict(
                         spack=True,
                         xmit_log_data_set="",
                         adrdssu=False),
-                    aliases=['format_options'],
                 ),
             ),
             default=dict(

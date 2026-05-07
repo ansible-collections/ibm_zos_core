@@ -96,7 +96,7 @@ Recommended actions:
 
 #### zos_blockinfile
 non-breaking:
-* New module option alias: insertafter can be referenced as 'after'
+* New module option alias: insert after can be referenced as 'after'
 * New module option alias: insertbefore can be referenced as 'before'
 * new return value: stdout_lines
 * new return value: stderr_lines

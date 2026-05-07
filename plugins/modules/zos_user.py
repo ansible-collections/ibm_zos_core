@@ -2034,20 +2034,14 @@ class RACFHandler():
                 self.num_entities_modified = 0
                 self.entities_modified = []
 
-            # Read CLIST content BEFORE cleanup (must be inside try block)
-            dcat_cmd = f"dcat {clist}"
+            # Read CLIST content BEFORE cleanup
+            clist_contents = ""
+            try:
+                clist_contents = datasets.read(clist)
+            except Exception as e:
+                self.module.warn(f"Failed to read CLIST content: Error: {e}")
 
-            if self.verbosity >= 3:
-                dcat_cmd = f"dcat -d {clist}"
-
-            rc_dcat, out, err = self.module.run_command(dcat_cmd)
-
-            if rc_dcat != 0:
-                # Log warning if dcat fails but don't fail the operation
-                self.module.warn(f"Failed to read CLIST content: RC={rc_dcat}, Error: {err}")
-                out = ""  # Provide empty output if dcat fails
-
-            return rc, stdout, stderr, cmd, clist, out
+            return rc, stdout, stderr, cmd, clist, clist_contents
         finally:
             # Cleaning up.
             if datasets.exists(sysin_name):

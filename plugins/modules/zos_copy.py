@@ -580,10 +580,10 @@ notes:
       and L(zos_tso_cmd,./zos_tso_cmd.html) for examples of how to recall migrated data sets
       using this collection.
 seealso:
-- module: zos_fetch
-- module: zos_data_set
-- module: zos_mvs_raw
-- module: zos_tso_cmd
+- module: ibm.ibm_zos_core.zos_fetch
+- module: ibm.ibm_zos_core.zos_data_set
+- module: ibm.ibm_zos_core.zos_mvs_raw
+- module: ibm.ibm_zos_core.zos_tso_cmd
 """
 
 EXAMPLES = r"""

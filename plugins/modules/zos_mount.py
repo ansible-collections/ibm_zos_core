@@ -323,7 +323,7 @@ notes:
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
     - Uncataloged data sets can be cataloged using the L(zos_data_set,./zos_data_set.html) module.
 seealso:
-    - module: zos_data_set
+    - module: ibm.ibm_zos_core.zos_data_set
 """
 
 EXAMPLES = r"""

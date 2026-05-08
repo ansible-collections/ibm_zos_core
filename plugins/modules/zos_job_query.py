@@ -49,6 +49,7 @@ options:
       - If no owner is set, the default set is 'None' and the parameter will not be used for job querying.
     type: str
     required: False
+    default: None
   job_id:
     description:
       - The job id that has been assigned to the job.

@@ -46,7 +46,7 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the default set is 'None' and the parameter will not be used for job querying.
+      - If no owner is set, the parameter will not be used for job querying.
     type: str
     required: False
     default: None

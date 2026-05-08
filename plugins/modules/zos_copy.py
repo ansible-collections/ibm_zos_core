@@ -3564,14 +3564,16 @@ def run_module(module, arg_def):
                 raw_src = src_data_set_object.raw_name
 
             src_name = data_set.extract_dsname(src)
-            if not data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq):
+            src_exists = data_set.DataSet.data_set_exists(src_name, volume=volume, tmphlq=tmphlq)
+            if not src_exists:
                 raise NonExistentSourceError(src)
             src_attributes = data_set.DataSet.get_attributes(src_name)
             src_ds_type = data_set.DataSet.get_data_set_type(src_name, attributes=src_attributes, tmphlq=tmphlq)
             if src_ds_type is None:
-                raise NonExistentSourceError(src)
-            elif src_ds_type == "UNKNOWN":
-                module.fail_json(msg=f"Source {src} exists but type cannot be determined (uncataloged dataset)")
+                if src_exists:
+                    module.fail_json(msg=f"Source {src} exists but type cannot be determined (uncataloged dataset)")
+                else:
+                    raise NonExistentSourceError(src)
             else:
                 if (src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG" and
                         src_attributes.record_format in ('FBA', 'VBA')):

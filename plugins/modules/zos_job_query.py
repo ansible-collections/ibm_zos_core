@@ -49,7 +49,7 @@ options:
       - If no owner is set, the parameter will not be used for job querying.
     type: str
     required: False
-    default: None
+    default: null
   job_id:
     description:
       - The job id that has been assigned to the job.
@@ -62,7 +62,7 @@ options:
       - If no job_id is set, the parameter will not be used for job querying.
     type: str
     required: False
-    default: None
+    default: null
 
 attributes:
   action:
@@ -375,8 +375,8 @@ def run_module():
     """
     module_args = dict(
         job_name=dict(type="str", required=False, default="*"),
-        owner=dict(type="str", required=False),
-        job_id=dict(type="str", required=False),
+        owner=dict(type="str", required=False, default=None),
+        job_id=dict(type="str", required=False, default=None),
     )
 
     result = dict(changed=False)

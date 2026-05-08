@@ -12,23 +12,6 @@
       stdout: "{{ ansible_playbook_python | default('/usr/bin/python3') }}"
   when: python_path_result.rc != 0
 
-- name: Check if ruamel.yaml is already installed
-  ansible.builtin.raw: python3 -m pip show ruamel.yaml
-  register: ruamel_check
-  failed_when: false
-  changed_when: false
-  delegate_to: localhost
-
-- name: Ensure ruamel.yaml is installed (for YAML parsing and playbook validation)
-  ansible.builtin.pip:
-    name: ruamel.yaml
-    state: present
-  vars:
-    ansible_python_interpreter: "{{ python_path_result.stdout }}"
-  when: ruamel_check.rc != 0
-  register: ruamel_install
-  delegate_to: localhost
-
 - name: Load migration changes from JSON file
   ansible.builtin.set_fact:
     data: "{{ lookup('file', 'dependency_config.json') | from_json }}"
@@ -66,11 +49,4 @@
 - name: Print path where validation results are stored
   debug:
     msg: "Results saved to file: {{ output_path }}"
-  delegate_to: localhost
-
-- name: Remove ruamel.yaml if installed by this role
-  ansible.builtin.pip:
-    name: ruamel.yaml
-    state: absent
-  when: ruamel_install is defined and ruamel_install.changed
   delegate_to: localhost

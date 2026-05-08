@@ -84,7 +84,7 @@ results:
   sample:
     [
         {
-            "line": 9,
+            "task_line": 9,
             "migration_actions": [
                 "[MUST_FIX] Param 'force_lock' is renamed to 'force' in zos_copy",
                 "[MUST_FIX] Param 'is_binary' is renamed to 'binary' in zos_copy",
@@ -102,36 +102,61 @@ import os
 import argparse
 import json
 import sys
+import yaml
+import re
 
 
-def load_playbook(path):
-    """Load playbook YAML and preserve line numbers."""
-    try:
-        from ruamel.yaml import YAML
-    except ImportError:
-        raise ImportError(
-            "This module requires 'ruamel.yaml'. Please install it using 'pip install ruamel.yaml'."
-        )
-
-    yaml = YAML()
-    yaml.preserve_quotes = True
-    yaml.allow_duplicate_keys = True
-    with open(path, "r") as f:
-        data = yaml.load(f)
-        if isinstance(data, dict):
-            data = [data]
-        return data
-
-
-def get_line_number(obj):
-    """Return YAML line number if available."""
-    try:
-        return obj.lc.line + 1
-    except Exception:
+class LineNumberTracker:
+    """Helper class to track line numbers in YAML files."""
+    
+    def __init__(self, filepath):
+        """Initialize with file content."""
+        with open(filepath, 'r') as f:
+            self.lines = f.readlines()
+        self.line_map = {}
+        self._build_line_map()
+    
+    def _build_line_map(self):
+        """Build a map of task names to line numbers."""
+        for i, line in enumerate(self.lines):
+            # Look for task names
+            match = re.search(r'name:\s*["\']?([^"\']+)["\']?', line)
+            if match:
+                task_name = match.group(1).strip()
+                self.line_map[task_name] = i + 1
+            
+            # Look for module names (for tasks without names)
+            match = re.search(r'^\s*-?\s*([a-z_]+\.[a-z_]+\.[a-z_]+):', line)
+            if match:
+                module_name = match.group(1)
+                self.line_map[f"_module_{module_name}"] = i + 1
+    
+    def get_line_number(self, task_name=None, module_name=None):
+        """Get line number for a task or module."""
+        if task_name and task_name in self.line_map:
+            return self.line_map[task_name]
+        if module_name:
+            key = f"_module_{module_name}"
+            if key in self.line_map:
+                return self.line_map[key]
         return None
 
 
-def walk_tasks(tasks, play_name):
+def load_playbook(path):
+    """Load playbook YAML using PyYAML."""
+    try:
+        with open(path, "r") as f:
+            data = yaml.safe_load(f)
+            if isinstance(data, dict):
+                data = [data]
+            return data
+    except yaml.YAMLError as e:
+        raise ValueError(f"Error parsing YAML file {path}: {e}")
+    except Exception as e:
+        raise ValueError(f"Error reading file {path}: {e}")
+
+
+def walk_tasks(tasks, play_name, line_tracker=None):
     """Recursively walk through tasks including block/rescue/always."""
     if not isinstance(tasks, list):
         return
@@ -160,18 +185,27 @@ def walk_tasks(tasks, play_name):
         if module_name:
             # Get params from module key or args key
             params = task.get(module_name, {})
+            
+            # Try to get line number
+            line_num = None
+            if line_tracker:
+                line_num = line_tracker.get_line_number(
+                    task_name=task_name if task_name != "unknown" else None,
+                    module_name=module_name
+                )
+            
             yield {
                 "play_name": play_name,
                 "task_name": task_name,
                 "module": module_name,
                 "params": params,
-                "line": get_line_number(task)
+                "task_line": line_num
             }
 
         # Recursive sections
         for section in ["block", "rescue", "always"]:
             if section in task:
-                yield from walk_tasks(task[section], play_name)
+                yield from walk_tasks(task[section], play_name, line_tracker)
 
 
 def has_nested_key(data, dotted_key):
@@ -187,7 +221,7 @@ def has_nested_key(data, dotted_key):
     return True
 
 
-def get_tasks_from_playbook(playbook_path):
+def get_tasks_from_playbook(playbook_path, line_tracker=None):
     """Parse a playbook and extract module data."""
     playbook = load_playbook(playbook_path)
     if not isinstance(playbook, list):
@@ -201,21 +235,26 @@ def get_tasks_from_playbook(playbook_path):
         if "hosts" in play or "tasks" in play:
             # This is a proper play structure
             play_name = play.get("name", "unknown")
-            yield from walk_tasks(play.get("tasks", []), play_name)
+            yield from walk_tasks(play.get("tasks", []), play_name, line_tracker)
         else:
             # This might be a direct task (taskfile format)
             # Treat the entire list as tasks
             play_name = "unknown"
             # Process this item as a task and break to avoid double-processing
-            yield from walk_tasks([play], play_name)
+            yield from walk_tasks([play], play_name, line_tracker)
 
 
 def validate_tasks(playbook_path, migration_map, ignore_response_params):
     """Check tasks for deprecated or renamed params."""
     results = []
-    # playbook = load_playbook(playbook_path)
+    
+    # Create line tracker for this file
+    try:
+        line_tracker = LineNumberTracker(playbook_path)
+    except Exception:
+        line_tracker = None
 
-    for mod in get_tasks_from_playbook(playbook_path):
+    for mod in get_tasks_from_playbook(playbook_path, line_tracker):
         module_name = mod["module"]
         issues = []
         params = mod.get("params", {})
@@ -261,14 +300,14 @@ def validate_tasks(playbook_path, migration_map, ignore_response_params):
                 "play_name": mod["play_name"],
                 "task_name": mod["task_name"],
                 "module": module_name,
-                "line": mod["line"],
+                "task_line": mod["task_line"],
                 "migration_actions": issues
             })
     return results
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sample Python script for z/OS Ansible role")
+    parser = argparse.ArgumentParser(description="Validate Ansible playbooks for migration changes")
     parser.add_argument("--playbook_path", type=str, required=True)
     parser.add_argument("--migration_map", type=json.loads, required=True)
     parser.add_argument("--output_path", type=str, required=True)

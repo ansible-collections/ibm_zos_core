@@ -41,7 +41,7 @@ options:
     type: str
   playbook_path:
     description:
-      - Path to the directory containing the Ansible playbooks to be validated.
+      - Path to an Ansible playbook or a directory containing playbooks to validate.
     required: true
     type: str
 notes:
@@ -50,11 +50,19 @@ notes:
 '''
 
 EXAMPLES = r'''
-- name: execute playbook_upgrade_validator role to list migration changes
+- name: Run playbook_upgrade_validator role to generate migration changes report for a playbook
   include_role:
     name: ibm.ibm_zos_core.playbook_upgrade_validator
   vars:
-    playbook_path: "/path/to/playbooks/*.yml"
+    playbook_path: "/path/to/playbooks/dataset.yml"
+    output_path: "/path/to/reports/validation_report.json"
+    ignore_response_params: false
+
+- name: Run playbook_upgrade_validator role to generate a migration changes report for playbooks within a directory
+  include_role:
+    name: ibm.ibm_zos_core.playbook_upgrade_validator
+  vars:
+    playbook_path: "/path/to/playbooks/"
     output_path: "/path/to/reports/validation_report.json"
     ignore_response_params: false
 '''
@@ -80,7 +88,7 @@ results:
   sample:
     [
         {
-            "line": 9,
+            "task_line": 9,
             "migration_actions": [
                 "[MUST_FIX] Param 'force_lock' is renamed to 'force' in zos_copy",
                 "[MUST_FIX] Param 'is_binary' is renamed to 'binary' in zos_copy",

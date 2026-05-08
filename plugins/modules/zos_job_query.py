@@ -62,6 +62,7 @@ options:
       - If no job_id is set, the default set is 'None' and the parameter will not be used for job querying.
     type: str
     required: False
+    default: None
 
 attributes:
   action:

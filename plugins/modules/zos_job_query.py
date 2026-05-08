@@ -59,7 +59,7 @@ options:
         with `S`, `J`, `T` and are followed by 7 digits.
       - The I(job_id) can contain include multiple wildcards.
       - The asterisk (`*`) wildcard will match zero or more specified characters.
-      - If no job_id is set, the default set is 'None' and the parameter will not be used for job querying.
+      - If no job_id is set, the parameter will not be used for job querying.
     type: str
     required: False
     default: None

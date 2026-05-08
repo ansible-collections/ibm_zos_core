@@ -376,9 +376,9 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         assert rc.get("code") == 0
 
 
-def test_zos_job_query_with_null_and_wildcard_job_id(ansible_zos_module):
+# test to show job_id="*" and job_id=None has the same results if job_name and owner are specified
+def test_zos_job_query_null_vs_wildcard_job_id(ansible_zos_module):
     hosts = ansible_zos_module
-    len_id = 9
     job = get_job(hosts)
     job_owner = job[0]
     job_name = job[1]
@@ -388,72 +388,28 @@ def test_zos_job_query_with_null_and_wildcard_job_id(ansible_zos_module):
 
     qresults_null = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
     
-    qresults_null_len = 0
+    qresults_null_jobs_len = 0
     for qresult in qresults_null.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
-        qresults_null_len += 1
 
-        job = qresult.get("jobs")[0]
-        assert job.get("job_name") is not None
-        assert job.get("owner") is not None
-        assert job.get("job_id") is not None
-        assert job.get("content_type") is not None
-        assert job.get("system") is not None
-        assert job.get("subsystem") is not None
-        assert job.get("origin_node") is not None
-        assert job.get("execution_node") is not None
-        assert job.get("cpu_time") is not None
-        assert job.get("job_class") is not None
-        assert job.get("priority") is not None
-        assert job.get("asid") is not None
-        assert job.get("creation_date") is not None
-        assert job.get("creation_time") is not None
-        assert job.get("program_name") is not None
-        assert job.get("svc_class") is None
-        assert job.get("steps") is not None
-
-        rc = job.get("ret_code")
-        assert rc.get("msg") is not None
-        assert rc.get("msg_code") == "0000"
-        assert rc.get("code") == 0
+        for job in qresult.get("jobs"):
+            qresults_null_jobs_len += 1
 
     qresults_all = hosts.all.zos_job_query(job_id="*", job_name=job_name, owner=job_owner)
 
-    qresults_all_len = 0
+    qresults_all_jobs_len = 0
     for qresult in qresults_all.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
-        qresults_all_len += 1
 
-        job = qresult.get("jobs")[0]
-        assert job.get("job_name") is not None
-        assert job.get("owner") is not None
-        assert job.get("job_id") is not None
-        assert job.get("content_type") is not None
-        assert job.get("system") is not None
-        assert job.get("subsystem") is not None
-        assert job.get("origin_node") is not None
-        assert job.get("execution_node") is not None
-        assert job.get("cpu_time") is not None
-        assert job.get("job_class") is not None
-        assert job.get("priority") is not None
-        assert job.get("asid") is not None
-        assert job.get("creation_date") is not None
-        assert job.get("creation_time") is not None
-        assert job.get("program_name") is not None
-        assert job.get("svc_class") is None
-        assert job.get("steps") is not None
-
-        rc = job.get("ret_code")
-        assert rc.get("msg") is not None
-        assert rc.get("msg_code") == "0000"
-        assert rc.get("code") == 0
+        for job in qresult.get("jobs"):
+            qresults_all_jobs_len += 1
 
     # Assert length of results for both queries is the same
-    assert qresults_all_len == qresults_null_len
+    qresults_null_jobs_len == qresults_all_jobs_len
 
 
 def test_zos_job_query_with_null_job_owner(ansible_zos_module):
@@ -478,6 +434,49 @@ def test_zos_job_query_with_null_job_owner(ansible_zos_module):
             assert job.get("job_name") == job_name
             assert job.get("owner") is not None
             assert job.get("job_id") == job_id
+            assert job.get("content_type") is not None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("program_name") is not None
+            assert job.get("svc_class") is None
+            assert job.get("steps") is not None
+
+            rc = job.get("ret_code")
+            assert rc.get("msg") is not None
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("code") == 0
+
+
+def test_zos_job_query_with_null_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    len_id = 9
+    job = get_job(hosts)
+    job_owner = job[0]
+    job_name = job[1]
+
+    assert job_owner is not None
+    assert job_name is not None
+
+    qresults_null = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
+    
+    for qresult in qresults_null.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        # Verify all jobs match either job_name or job_owner parameter
+        for job in qresult.get("jobs"):
+            assert job.get("job_name") == job_name
+            assert job.get("owner") == job_owner
+            assert job.get("job_id") is not None
             assert job.get("content_type") is not None
             assert job.get("system") is not None
             assert job.get("subsystem") is not None

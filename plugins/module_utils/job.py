@@ -163,14 +163,14 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     """
     # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
-    if job_id != '*' and job_name != '*':
+    if job_id is None and job_name is None:
+        job_not_found_msg = "job_name and job_id"
+    elif job_id is None:
+        job_not_found_msg = "with the name {0}".format(job_name.upper())
+    elif job_id != '*' and job_name != '*':
         job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
     elif job_id != '*':
         job_not_found_msg = "with the job_id {0}".format(job_id.upper())
-    elif job_id is None and job_name is None:
-        job_not_found_msg = "{0} with the job_id {1}".format(job_name, job_id)
-    elif job_id is None:
-        job_not_found_msg = "with the name {0}".format(job_id)
     else:
         job_not_found_msg = "with the name {0}".format(job_name.upper())
     job = {}

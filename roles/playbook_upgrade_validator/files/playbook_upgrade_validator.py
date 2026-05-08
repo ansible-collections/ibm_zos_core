@@ -108,14 +108,14 @@ import re
 
 class LineNumberTracker:
     """Helper class to track line numbers in YAML files."""
-    
+
     def __init__(self, filepath):
         """Initialize with file content."""
         with open(filepath, 'r') as f:
             self.lines = f.readlines()
         self.line_map = {}
         self._build_line_map()
-    
+
     def _build_line_map(self):
         """Build a map of task names to line numbers."""
         for i, line in enumerate(self.lines):
@@ -124,13 +124,13 @@ class LineNumberTracker:
             if match:
                 task_name = match.group(1).strip()
                 self.line_map[task_name] = i + 1
-            
+
             # Look for module names (for tasks without names)
             match = re.search(r'^\s*-?\s*([a-z_]+\.[a-z_]+\.[a-z_]+):', line)
             if match:
                 module_name = match.group(1)
                 self.line_map[f"_module_{module_name}"] = i + 1
-    
+
     def get_line_number(self, task_name=None, module_name=None):
         """Get line number for a task or module."""
         if task_name and task_name in self.line_map:
@@ -185,7 +185,7 @@ def walk_tasks(tasks, play_name, line_tracker=None):
         if module_name:
             # Get params from module key or args key
             params = task.get(module_name, {})
-            
+
             # Try to get line number
             line_num = None
             if line_tracker:
@@ -193,7 +193,7 @@ def walk_tasks(tasks, play_name, line_tracker=None):
                     task_name=task_name if task_name != "unknown" else None,
                     module_name=module_name
                 )
-            
+
             yield {
                 "play_name": play_name,
                 "task_name": task_name,
@@ -247,7 +247,7 @@ def get_tasks_from_playbook(playbook_path, line_tracker=None):
 def validate_tasks(playbook_path, migration_map, ignore_response_params):
     """Check tasks for deprecated or renamed params."""
     results = []
-    
+
     # Create line tracker for this file
     try:
         line_tracker = LineNumberTracker(playbook_path)

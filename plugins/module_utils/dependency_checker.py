@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # You may not use this file except in compliance with the License.
 # You may obtain a copy at:
@@ -27,11 +27,11 @@ __metaclass__ = type
 # ------------------------------------------------------------------------------
 COMPATIBILITY_MATRIX = {
     "2.0.0":
-        {"min_zoau_version": "1.4.0", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
-    "2.1.0":
-        {"min_zoau_version": "1.4.1", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
-    "2.2.0":
-        {"min_zoau_version": "1.4.2", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
+        {"min_zoau_version": "1.4.0", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
+    # "2.1.0":
+        # {"min_zoau_version": "1.4.1", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
+    # "2.2.0":
+    #     {"min_zoau_version": "1.4.2", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
 }
 
 REQUIRED_PYTHON_MAJOR_VERSION = 3
@@ -77,17 +77,13 @@ def get_version_tuple(ver_str):
 # ------------------------------------------------------------------------------
 # Version Fetchers
 # ------------------------------------------------------------------------------
-def get_zoau_version_str(module=None):
+def get_zoau_version_str():
     try:
         from zoautil_py import ZOAU_API_VERSION
+        logger.debug("Found ZOAU version: %s", ZOAU_API_VERSION)
         return ZOAU_API_VERSION
     except ImportError:
-        if module:
-            module.fail_json(
-                msg="Unable to import ZOAU. Please check PYTHONPATH, LIBPATH, ZOAU_HOME and PATH environment variables."
-            )
         return None
-
 
 def get_python_version_str():
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -131,16 +127,16 @@ def get_zos_version_str():
             logger.debug("Parsed z/OS version: %s", zos_version)
             return zos_version
 
-        logger.warning("Unable to parse z/OS version from: %s", output)
+        logger.debug("Unable to parse z/OS version from: %s", output)
         return None
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Command 'uname -Irsv' failed with return code {e.returncode}: {e.stderr}"
-        logger.warning(error_msg)
+        logger.debug(error_msg)
         return None
     except Exception as e:
         error_msg = f"Failed to fetch z/OS version: {e}"
-        logger.warning(error_msg)
+        logger.debug(error_msg)
         return None
 
 
@@ -148,7 +144,8 @@ def get_zos_version_str():
 # Dependency Validation
 # ------------------------------------------------------------------------------
 def validate_dependencies(module):
-    logger.debug("Starting dependency validation process.")
+    # not a useful message for the user (or to the developer)
+    # logger.debug("Starting dependency validation process.")
 
     collection_version = version.__version__
 
@@ -158,61 +155,82 @@ def validate_dependencies(module):
     compat_dict = COMPATIBILITY_MATRIX.get(collection_version, {})
 
     if not compat_dict:
-        module.fail_json(msg=f"No compatibility information for collection version: {collection_version}")
+        # what if it's a custom build and doesnt have match in the matrix??
+        # module.fail_json(msg=f"No compatibility information for collection version: {collection_version}")
+        logger.debug("Discovered unknown ibm_zos_core collection version: %s.", collection_version)
+
+    # Get version requirements
+    min_zos_ver = compat_dict.get("min_zos_version")
+    min_zoau_ver = compat_dict.get("min_zoau_version")
+    max_zoau_ver = compat_dict.get("max_zoau_version")
 
     # --- z/OS version check ---
     current_zos_ver = get_zos_version_str()
-    min_zos_ver = compat_dict["min_zos_version"]
     if current_zos_ver is None:
-        warnings.append("Unable to retrieve z/OS version.")
-    elif get_version_tuple(current_zos_ver) < get_version_tuple(min_zos_ver):
-        warnings.append(f"z/OS {current_zos_ver} is below the minimum tested version {min_zos_ver}.")
+        logger.debug("Unable to retrieve z/OS version.")
+        # no module.warn bc this code path would be our problem not the user's.
+    elif min_zos_ver:
+        current_zos_tuple = get_version_tuple(current_zos_ver)
+        min_zos_tuple = get_version_tuple(min_zos_ver)
+        if current_zos_tuple < min_zos_tuple:
+            msg = (
+                f"Incompatible z/OS version {current_zos_ver}. "
+                f"ibm_zos_core collection v{collection_version} requires z/OS {min_zos_ver} or later."
+            )
+            logger.warning(msg)
+            module.warn(msg)
 
     # --- Python version checks ---
     current_python_ver = get_python_version_str()
+    current_python_tuple = get_version_tuple(current_python_ver)
 
-    if get_version_tuple(current_python_ver)[0] < REQUIRED_PYTHON_MAJOR_VERSION:
-        err_msg = "Python version is below the minimum supported version (3.x)."
-        logger.error(err_msg)
-        module.fail_json(msg=err_msg)
+    if current_python_tuple[0] != REQUIRED_PYTHON_MAJOR_VERSION:
+        msg = f"Incompatible Python version {current_python_ver}. ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
+        logger.error(msg)
+        module.fail_json(msg=msg)
 
     # --- ZOAU version checks ---
-    current_zoau_ver = get_zoau_version_str(module)
-    min_zoau_ver = compat_dict["min_zoau_version"]
-    max_zoau_ver = compat_dict["max_zoau_version"]
+    current_zoau_ver = get_zoau_version_str()
+
     if current_zoau_ver is None:
-        msg = ("Unable to retrieve ZOAU version.")
-        logger.error(msg)
-        module.fail_json(msg=msg)
-    elif get_version_tuple(current_zoau_ver) < get_version_tuple(min_zoau_ver):
         msg = (
-            f"Incompatible ZOAU version: {current_zoau_ver}. "
-            f"For collection version {collection_version}, "
-            f"the minimum required ZOAU version is {min_zoau_ver}."
-        )
-        logger.error(msg)
-        module.fail_json(msg=msg)
-    elif get_version_tuple(current_zoau_ver) > get_version_tuple(max_zoau_ver):
-        msg = (
-            f"Incompatible ZOAU version: {current_zoau_ver}. "
-            f"For collection version {collection_version}, "
-            f"the maximum required ZOAU version is {max_zoau_ver}."
+            "Unable to import ZOAU. Verify the ZOAU installation and ensure "
+            "PYTHONPATH, LIBPATH, and PATH environment variables are configured correctly."
         )
         logger.error(msg)
         module.fail_json(msg=msg)
 
-    logger.debug(
-        "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
-        current_zoau_ver,
-        current_python_ver,
-        current_zos_ver,
-        collection_version,
-    )
+    if min_zoau_ver and max_zoau_ver:
+        current_zoau_tuple = get_version_tuple(current_zoau_ver)
+        min_zoau_tuple = get_version_tuple(min_zoau_ver)
+        max_zoau_tuple = get_version_tuple(max_zoau_ver)
+        
+        if current_zoau_tuple < min_zoau_tuple or current_zoau_tuple > max_zoau_tuple:
+            # Extract major.minor from min version for series reference
+            min_series = '.'.join(min_zoau_ver.split('.')[:2])
+            msg = (
+                f"Incompatible ZOAU version {current_zoau_ver}. "
+                f"ibm_zos_core collection v{collection_version} supports ZOAU {min_series}.x series "
+                f"(minimum {min_zoau_ver})."
+            )
+            logger.error(msg)
+            module.fail_json(msg=msg)
 
-    # --- Warn and continue ---
-    for w in warnings:
-        logger.warning(w)
-        module.warn(w)
+    # redundant, all this info is already logged during the checks.
+    # logger.debug(
+    #     "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
+    #     current_zoau_ver,
+    #     current_python_ver,
+    #     current_zos_ver,
+    #     collection_version,
+    # )
 
-    logger.debug("Dependency validation process completed.")
+    # calls to module.warn were moved into the checks so they're not lost if a later check fails.
+    # # --- Warn and continue ---
+    # for w in warnings:
+    #     logger.warning(w)
+    #     module.warn(w)
+
+    # unecessary info.
+    # logger.debug("Dependency validation process completed.")
     return  # do not exit, allow module to continue

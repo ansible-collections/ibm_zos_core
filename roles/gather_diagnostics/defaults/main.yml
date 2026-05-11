@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,8 +20,16 @@ managed_node: true
 managed_node_log_file: true
 # Creates a separate file for controller logs
 controller_node_log_file: true
-# Directory to write reports to. Defaults to controller's home dir.
-gather_diagnostics_output_dir: "{{ lookup('env', 'HOME') }}"
+# Directory to write reports to
+# In AAP: Uses artifacts directory (accessible via UI)
+# Standalone: Uses controller's home directory
+gather_diagnostics_output_dir: >-
+  {{
+    (playbook_dir + '/artifacts')
+    if (lookup('env', 'TOWER_JOB_ID') | default('') != '' or
+        lookup('env', 'CONTROLLER_JOB_ID') | default('') != '')
+    else lookup('env', 'HOME')
+  }}
 # Environment vars empty so that the test case and local host can take their own defined vars.
 environment_vars: {}
 # Whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and /etc/ssh/ssh_config

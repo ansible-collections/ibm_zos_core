@@ -19,14 +19,14 @@ The following variables, typically defined in `defaults/main.yml`, control the e
     * **Default**: `true`
 
 * **`save_controller_log`**
-    * **Description**: Controls whether the role creates a YAML report file (`gather_diagnostics_report_controller.log`) on the controller.
+    * **Description**: Controls whether the role creates a YAML report file (`gather_diagnostics_report_controller.yml`) on the controller.
     * If `true` (default), the report file is created, and sensitive data is hidden from the console (`no_log: true`).
     * If `false`, no report file is created, and all gathered data is printed to the console.
     * **Type**: `bool`
     * **Default**: `true`
 
 * **`save_managed_node_log`**
-    * **Description**: Controls whether the role creates a YAML report file for each managed node (`gather_diagnostics_report_managed_node_<hostname>.log`) on the controller.
+    * **Description**: Controls whether the role creates a YAML report file for each managed node (`gather_diagnostics_report_managed_node_<hostname>.yml`) on the controller.
     * If `true` (default), the report file is created, and sensitive data is hidden from the console (`no_log: true`).
     * If `false`, no report file is created, and all gathered data is printed to the console.
     * **Type**: `bool`

@@ -169,7 +169,7 @@
       register: managed_ssh_rc
       changed_when: false
       ignore_errors: true
-      no_log: "{{ save_managed_node_log }}"
+      no_log: "{{ not save_managed_node_log }}"
 
     - name: "z/OS | Gather system /etc/ssh/sshrc"
       ansible.builtin.shell: "cat /etc/ssh/sshrc"

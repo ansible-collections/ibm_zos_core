@@ -23,7 +23,6 @@ To achieve consistent naming across the collection, some module options and retu
 - **Breaking changes**: Some module options and return values have new names with no backward compatibility.
 - **Aliased changes**: Other module options have new primary names, with old names still supported as aliases.
 
----
 
 Modules: Breaking and non-breaking changes
 ==================================================
@@ -32,7 +31,6 @@ Breaking changes are all the module options that have been renamed where the old
 
 Non-breaking changes are all the module options that have been renamed for consistency across the collection, but still have the old module option name available as an alias. It is recommended to switch playbook tasks to use the new module names. This section also includes new return values.
 
----
 
 zos_apf
 --------------------------------------------------
@@ -47,7 +45,7 @@ Non-breaking changes
 - New return value: ``stdout_lines``.
 - New return value: ``stderr_lines``.
 
----
+
 
 zos_archive
 --------------------------------------------------
@@ -95,14 +93,14 @@ Non-breaking changes
 
 - New return value: ``dest``.
 
----
+
 
 zos_backup_restore
 --------------------------------------------------
 
 **TODO**: Documentation pending.
 
----
+
 
 zos_blockinfile
 --------------------------------------------------
@@ -115,7 +113,7 @@ Non-breaking changes
 - New return value: ``stdout_lines``.
 - New return value: ``stderr_lines``.
 
----
+
 
 zos_copy
 --------------------------------------------------
@@ -179,7 +177,7 @@ Breaking changes
 
 - Return value renamed: ``names`` → ``data_sets``.
 
----
+
 
 zos_fetch
 --------------------------------------------------
@@ -198,7 +196,7 @@ Non-breaking changes
 - New return value: ``stderr_lines``.
 - New return value: ``stdout_lines``.
 
----
+
 
 zos_find
 --------------------------------------------------
@@ -210,7 +208,7 @@ Breaking changes
   
   - **TODO**: Need to understand impact.
 
----
+
 
 zos_job_output
 --------------------------------------------------
@@ -223,7 +221,7 @@ Breaking changes
 - Return value renamed: ``ddname.ddname`` → ``dds.dd_name``.
 - Return value renamed: ``ret_code.steps`` → ``job.steps``.
 
----
+
 
 zos_job_query
 --------------------------------------------------
@@ -234,7 +232,7 @@ Breaking changes
 - Return value renamed: ``ret_code.steps`` → ``steps``.
 - Return value removed: ``message``.
 
----
+
 
 zos_job_submit
 --------------------------------------------------
@@ -253,7 +251,7 @@ Breaking changes
 - Return value renamed: ``ret_code.steps`` → ``jobs.steps``.
 - Return value removed: ``jobs.class`` (redundant to ``jobs.job_class``).
 
----
+
 
 zos_lineinfile
 --------------------------------------------------
@@ -266,7 +264,7 @@ Non-breaking changes
 - New return value: ``stdout_lines``.
 - New return value: ``stderr_lines``.
 
----
+
 
 zos_mount
 --------------------------------------------------
@@ -277,7 +275,7 @@ Breaking changes
 - Module option renamed: ``persistent.data_store`` → ``persistent.name``.
 - Module option renamed: ``persistent.comment`` → ``persistent.marker``.
 
----
+
 
 zos_operator
 --------------------------------------------------
@@ -289,7 +287,7 @@ Breaking changes
   
   - Use in conjunction with new option ``time_unit`` to indicate seconds/centiseconds.
 
----
+
 
 zos_operator_action_query
 --------------------------------------------------
@@ -307,7 +305,7 @@ Non-breaking changes
 - New module option renamed: ``message_filter`` → ``msg_filter`` (alias remains).
 - New module option renamed: ``message_id`` → ``msg_id`` (alias remains).
 
----
+
 
 zos_tso_command
 --------------------------------------------------
@@ -324,7 +322,7 @@ Non-breaking changes
 - New return value: ``stdout_lines``.
 - New return value: ``stderr_lines``.
 
----
+
 
 zos_unarchive
 --------------------------------------------------
@@ -336,7 +334,7 @@ Breaking changes
 - Module option renamed: ``format.format_options`` → ``format.options``.
 - Module option renamed: ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``.
 
----
+
 
 Testing and validation
 ==================================================
@@ -369,7 +367,7 @@ Testing checklist
 - [ ] Document changes made to playbooks.
 - [ ] Deploy to production with monitoring.
 
----
+
 
 Resources and support
 ==================================================
@@ -388,11 +386,3 @@ Community and support
 - **Issue Tracker**: https://github.com/ansible-collections/ibm_zos_core/issues
 - **Ansible Community Forum**: https://forum.ansible.com/
 - **IBM Z Community**: https://community.ibm.com/community/user/ibmz-and-linuxone/home
-
----
-
-**Document Version:** 1.0  
-**Last Updated:** 2026-05-11  
-**Collection Version:** ibm.ibm_zos_core v2.0.0
-
-.. Made with Bob

@@ -25,7 +25,7 @@ To achieve consistent naming across the collection, some module options and retu
 
 ---
 
-Breaking and non-breaking changes
+Modules: Breaking and non-breaking changes
 ==================================================
 
 Breaking changes are all the module options that have been renamed where the old names will no longer work. It also includes any return values which have been renamed. Any automation which relies on these values will need to be updated.

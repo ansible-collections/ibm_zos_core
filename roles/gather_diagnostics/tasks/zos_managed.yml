@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,7 +46,7 @@
   register: managed_env
   changed_when: false
   ignore_errors: true
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Gather system facts"
   block:
@@ -84,30 +84,30 @@
   register: managed_omvs_segment
   changed_when: false
   ignore_errors: true
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Extract paths from environment variables"
   ansible.builtin.set_fact:
     zoau_home_path: >-
       {{ (managed_env.stdout_lines
-         | select('match', '^ZOAU_HOME=')
+         | select('match', '^(ZOAU_HOME|ZOAU)=')
          | first
          | default('=not_found')
          | split('='))[1] }}
     python_exe_path: >-
       {{ (managed_env.stdout_lines
-         | select('match', '^_=.*python.*')
+         | select('match', '^_=.*/usr/lpp/IBM/cyp/.*python')
          | first
          | default('=not_found')
          | split('='))[1] }}
   when: managed_env.stdout_lines is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Determine Python home from executable path"
   ansible.builtin.set_fact:
     python_home_path: "{{ (python_exe_path | ansible.builtin.dirname) | ansible.builtin.dirname }}"
   when: python_exe_path is defined and python_exe_path != 'not_found'
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Check ZOAU home mount status (df)"
   ansible.builtin.shell:
@@ -134,32 +134,32 @@
   when: python_home_path is defined and python_home_path != 'not_found'
 
 - name: "z/OS | OPTIONAL: Gather operator command output"
-  when: gather_diagnostics_gather_syslog
+  when: gather_syslog
   block:
     - name: "Run MVS operator command 'D A,L'"
       ibm.ibm_zos_core.zos_operator:
         cmd: "D A,L"
       register: managed_operator_output
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
 
     - name: "Run MVS operator command 'D OMVS,LIMITS'"
       ibm.ibm_zos_core.zos_operator:
         cmd: "D OMVS,LIMITS"
       register: managed_omvs_limits
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
 
     - name: "Run MVS operator command 'D OMVS,OPTIONS'"
       ibm.ibm_zos_core.zos_operator:
         cmd: "D OMVS,OPTIONS"
       register: managed_omvs_options
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
   rescue:
     - name: "Note: Operator command failed"
       ansible.builtin.debug:
-        msg: "The 'zos_operator' command failed. This may be due to 'gather_diagnostics_gather_syslog' being true but the user lacking operator authority."
+        msg: "The 'zos_operator' command failed. This may be due to 'gather_syslog' being true but the user lacking operator authority."
 
 - name: "z/OS Gather SSH configuration files"
   when: gather_ssh_config
@@ -169,28 +169,28 @@
       register: managed_ssh_rc
       changed_when: false
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ save_managed_node_log }}"
 
     - name: "z/OS | Gather system /etc/ssh/sshrc"
       ansible.builtin.shell: "cat /etc/ssh/sshrc"
       register: managed_etc_ssh_rc
       changed_when: false
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
 
     - name: "z/OS | Gather system /etc/ssh/ssh_config"
       ansible.builtin.shell: "cat /etc/ssh/ssh_config"
       register: managed_etc_ssh_config
       changed_when: false
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
 
     - name: "z/OS | Gather system /etc/ssh/sshd_config"
       ansible.builtin.shell: "cat /etc/ssh/sshd_config"
       register: managed_etc_sshd_config
       changed_when: false
       ignore_errors: true
-      no_log: "{{ managed_node_log_file }}"
+      no_log: "{{ not save_managed_node_log }}"
 
   rescue:
     - name: "SSH config file gathering failed"
@@ -199,7 +199,7 @@
 
 # --- DISPLAY MANAGED NODE RESULTS ---
 
-- name: "z/OS | --- RESULTS (sensitive data is hidden if managed_node_log_file=true) ---"
+- name: "z/OS | --- RESULTS (sensitive data is hidden if save_managed_node_log=false) ---"
   ansible.builtin.debug:
     msg: "Starting z/OS managed node diagnostics display"
 
@@ -227,7 +227,7 @@
   ansible.builtin.debug:
     var: managed_env.stdout_lines
   when: managed_env is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Core Facts"
   ansible.builtin.debug:
@@ -253,7 +253,7 @@
   ansible.builtin.debug:
     var: managed_omvs_segment.stdout_lines
   when: managed_omvs_segment is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | ZOAU Path Mount Status"
   ansible.builtin.debug:
@@ -274,43 +274,43 @@
   ansible.builtin.debug:
     var: managed_operator_output.content
   when: managed_operator_output is defined and managed_operator_output.content is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Operator Output (D OMVS,LIMITS)"
   ansible.builtin.debug:
     var: managed_omvs_limits.content
   when: managed_omvs_limits is defined and managed_omvs_limits.content is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Operator Output (D OMVS,OPTIONS)"
   ansible.builtin.debug:
     var: managed_omvs_options.content
   when: managed_omvs_options is defined and managed_omvs_options.content is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | User ~/.ssh/rc"
   ansible.builtin.debug:
     var: managed_ssh_rc.stdout_lines
   when: gather_ssh_config and managed_ssh_rc is defined and managed_ssh_rc.rc is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | System /etc/ssh/sshrc"
   ansible.builtin.debug:
     var: managed_etc_ssh_rc.stdout_lines
   when: gather_ssh_config and managed_etc_ssh_rc is defined and managed_etc_ssh_rc.rc is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | System /etc/ssh/ssh_config"
   ansible.builtin.debug:
     var: managed_etc_ssh_config.stdout_lines
   when: gather_ssh_config and managed_etc_ssh_config is defined and managed_etc_ssh_config.rc is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | System /etc/ssh/sshd_config"
   ansible.builtin.debug:
     var: managed_etc_sshd_config.stdout_lines
   when: gather_ssh_config and managed_etc_sshd_config is defined and managed_etc_sshd_config.rc is defined
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Consolidate all results into one variable"
   ansible.builtin.set_fact:
@@ -336,14 +336,14 @@
       etc_ssh_rc_content: "{{ managed_etc_ssh_rc.stdout_lines | default('N/A', true) }}"
       etc_ssh_config_content: "{{ managed_etc_ssh_config.stdout_lines | default('N/A', true) }}"
       etc_sshd_config_content: "{{ managed_etc_sshd_config.stdout_lines | default('N/A', true) }}"
-  no_log: "{{ managed_node_log_file }}"
+  no_log: "{{ not save_managed_node_log }}"
 
 - name: "z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
-    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_managed_node_{{ inventory_hostname }}.log"
+    dest: "{{ diagnostics_output_dir }}/gather_diagnostics_report_managed_node_{{ inventory_hostname }}.yml"
     content: "{{ gather_diagnostics_managed_results | to_nice_yaml }}"
     mode: '0644'
   delegate_to: localhost
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  when: gather_diagnostics_managed_results is defined and managed_node_log_file
+  when: gather_diagnostics_managed_results is defined and save_managed_node_log

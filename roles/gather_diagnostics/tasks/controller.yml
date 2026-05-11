@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -50,7 +50,7 @@
   register: controller_env
   changed_when: false
   ignore_errors: true
-  no_log: "{{ controller_node_log_file }}"
+  no_log: "{{ not save_controller_log }}"
 
 - name: "CONTROLLER | Gather Ansible facts"
   ansible.builtin.setup:
@@ -93,7 +93,7 @@
   ansible.builtin.debug:
     var: controller_env.stdout_lines
   when: controller_env.stdout_lines is defined
-  no_log: "{{ controller_node_log_file }}"
+  no_log: "{{ not save_controller_log }}"
 
 - name: "CONTROLLER | Core Facts"
   ansible.builtin.debug:
@@ -113,13 +113,13 @@
       collections: "{{ controller_galaxy_list.stdout_lines | default('N/A') }}"
       environment: "{{ controller_env.stdout_lines | default('N/A') }}"
       controller_facts: "{{ controller_setup_facts.ansible_facts | default('N/A') }}"
-  no_log: "{{ controller_node_log_file }}"
+  no_log: "{{ not save_controller_log }}"
 
 - name: "CONTROLLER | Save controller node results to a YAML file"
   ansible.builtin.copy:
-    dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_controller.log"
+    dest: "{{ diagnostics_output_dir }}/gather_diagnostics_report_controller.yml"
     content: "{{ gather_diagnostics_controller_results | to_nice_yaml }}"
     mode: '0644'
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  when: (gather_diagnostics_controller_results is defined) and controller_node_log_file
+  when: (gather_diagnostics_controller_results is defined) and save_controller_log

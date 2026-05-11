@@ -9,28 +9,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-# Operator PCON command
-gather_diagnostics_gather_syslog: true
-# Whether to get controller logs
-controller_node: true
-# Whether to create the managed node logs
-managed_node: true
-# If set to true, it will create YAML report files.
-# If set to false, no report will be created, all sensitive data will be printed to the console.
-managed_node_log_file: true
-# Creates a separate file for controller logs
-controller_node_log_file: true
-# Directory to write reports to
+# Enable gathering controller node diagnostics
+gather_controller: true
+
+# Enable gathering z/OS managed node diagnostics
+gather_managed_node: true
+
+# Save controller diagnostics to file (vs console only)
+save_controller_log: true
+
+# Save managed node diagnostics to file (vs console only)
+save_managed_node_log: true
+
+# Run operator commands for system activity and OMVS info (requires operator authority)
+gather_syslog: true
+
+# Gather SSH configuration files from managed node (~/.ssh/rc, /etc/ssh/sshrc, /etc/ssh/ssh_config, /etc/ssh/sshd_config)
+gather_ssh_config: false
+
+# Directory to write diagnostic reports
 # In AAP: Uses artifacts directory (accessible via UI)
 # Standalone: Uses controller's home directory
-gather_diagnostics_output_dir: >-
+diagnostics_output_dir: >-
   {{
     (playbook_dir + '/artifacts')
     if (lookup('env', 'TOWER_JOB_ID') | default('') != '' or
         lookup('env', 'CONTROLLER_JOB_ID') | default('') != '')
     else lookup('env', 'HOME')
   }}
-# Environment vars empty so that the test case and local host can take their own defined vars.
+
+# Environment variables for z/OS tasks (empty by default so that the test case and local host can take their own defined vars)
 environment_vars: {}
-# Whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc, and /etc/ssh/ssh_config
-gather_ssh_config: false

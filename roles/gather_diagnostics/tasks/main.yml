@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,11 +14,13 @@
     file: controller.yml
     apply:
       delegate_to: localhost
-  when: controller_node
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  when: gather_controller
 
 - name: "z/OS | Gather system facts"
   environment: "{{ environment_vars }}"
   block:
   - name: "Run z/OS managed node diagnostic tasks"
     ansible.builtin.include_tasks: zos_managed.yml
-    when: managed_node
+    when: gather_managed_node

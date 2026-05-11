@@ -119,4 +119,7 @@
   ansible.builtin.copy:
     dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_controller.log"
     content: "{{ gather_diagnostics_controller_results | to_nice_yaml }}"
+    mode: '0644'
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
   when: (gather_diagnostics_controller_results is defined) and controller_node_log_file

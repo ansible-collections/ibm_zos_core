@@ -946,7 +946,7 @@ class DataSet(object):
         verbosity = module._verbosity
         ls_cmd = "mls {0}".format(name)
         if verbosity >= 3:
-            ls_cmd = "mls -d {0}".format(name)
+            ls_cmd = "mls -v {0}".format(name)
         rc, out, err = module.run_command(ls_cmd, errors='replace')
         # RC 2 for mls means that there aren't any members.
         return rc == 2

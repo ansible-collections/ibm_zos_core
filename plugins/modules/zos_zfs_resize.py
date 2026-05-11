@@ -304,7 +304,7 @@ def get_full_output(file, module):
         cmd = f"cat {file}"
     else:
         if verbosity >= 3:
-            cmd = f"dcat -d '{file}'"
+            cmd = f"dcat -v '{file}'"
         else:
             cmd = f"dcat {file}"
 

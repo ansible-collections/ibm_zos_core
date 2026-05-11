@@ -465,7 +465,7 @@ def data_set_filter(module, patterns):
                 if result[1] == "PO":
                     mls_cmd = f"mls '{result[0]}(*)'"
                     if verbosity >= 3:
-                        mls_cmd = f"mls -d '{result[0]}(*)'"
+                        mls_cmd = f"mls -v '{result[0]}(*)'"
                     mls_rc, mls_out, mls_err = module.run_command(
                         mls_cmd, errors='replace'
                     )

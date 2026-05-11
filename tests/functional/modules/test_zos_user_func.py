@@ -1825,7 +1825,7 @@ def test_user_create_with_operator_migration_and_display(ansible_zos_module):
             scope="user",
             operator={
                 "authority": "info",
-                "migration_id": True,
+                "migration_id": "yes",
                 "display": ["jobnames", "sess"]
             }
         )
@@ -1845,7 +1845,7 @@ def test_user_create_with_operator_migration_and_display(ansible_zos_module):
             scope="user",
             operator={
                 "authority": "info",
-                "migration_id": False
+                "migration_id": "no"
             }
         )
         
@@ -1941,8 +1941,8 @@ def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_modul
             scope="user",
             operator={
                 "authority": "info",
-                "automated_msgs": True,
-                "hardcopy_msgs": True
+                "automated_msgs": "yes",
+                "hardcopy_msgs": "yes"
             }
         )
         
@@ -1961,8 +1961,8 @@ def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_modul
             scope="user",
             operator={
                 "authority": "info",
-                "automated_msgs": False,
-                "hardcopy_msgs": False
+                "automated_msgs": "no",
+                "hardcopy_msgs": "no"
             }
         )
         
@@ -1998,8 +1998,8 @@ def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_modu
             scope="user",
             operator={
                 "authority": "info",
-                "unknown_msgs": True,
-                "undelivered_msgs": True
+                "unknown_msgs": "yes",
+                "undelivered_msgs": "yes"
             }
         )
         
@@ -2018,8 +2018,8 @@ def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_modu
             scope="user",
             operator={
                 "authority": "info",
-                "unknown_msgs": False,
-                "undelivered_msgs": False
+                "unknown_msgs": "no",
+                "undelivered_msgs": "no"
             }
         )
         
@@ -2056,7 +2056,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
             scope="user",
             operator={
                 "authority": "info",
-                "internal_msgs": True,
+                "internal_msgs": "yes",
                 "routing_msgs": ["1"]
             }
         )
@@ -2076,7 +2076,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
             scope="user",
             operator={
                 "authority": "info",
-                "internal_msgs": False,
+                "internal_msgs": "no",
                 "routing_msgs": ["1", "2", "11"]
             }
         )
@@ -2882,7 +2882,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
             operation="update",
             scope="user",
             operator={
-                "migration_id": True,
+                "migration_id": "yes",
                 "display": ["status", "jobnames"]
             }
         )
@@ -3036,11 +3036,11 @@ def test_user_update_operator_message_flags(ansible_zos_module):
             operation="update",
             scope="user",
             operator={
-                "automated_msgs": True,
-                "hardcopy_msgs": True,
-                "unknown_msgs": True,
-                "undelivered_msgs": True,
-                "internal_msgs": True
+                "automated_msgs": "yes",
+                "hardcopy_msgs": "yes",
+                "unknown_msgs": "yes",
+                "undelivered_msgs": "yes",
+                "internal_msgs": "yes"
             }
         )
         
@@ -3060,11 +3060,11 @@ def test_user_update_operator_message_flags(ansible_zos_module):
             operation="update",
             scope="user",
             operator={
-                "automated_msgs": False,
-                "hardcopy_msgs": False,
-                "unknown_msgs": False,
-                "undelivered_msgs": False,
-                "internal_msgs": False
+                "automated_msgs": "no",
+                "hardcopy_msgs": "no",
+                "unknown_msgs": "no",
+                "undelivered_msgs": "no",
+                "internal_msgs": "no"
             }
         )
         
@@ -3132,7 +3132,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
             scope="user",
             operator={
                 "authority": "all",
-                "automated_msgs": True,
+                "automated_msgs": "yes",
                 "routing_msgs": ["1", "2", "3"]
             }
         )
@@ -3160,6 +3160,105 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         
     finally:
         cleanup_user(hosts, user_name)
+
+def test_user_update_operator_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all operator segment fields individually.
+    Tests deletion of authority, alt_group, cmd_system, search_key, migration_id,
+    display, msg_level, msg_format, msg_storage, msg_scope, automated_msgs,
+    del_msgs, hardcopy_msgs, internal_msgs, routing_msgs, undelivered_msgs,
+    unknown_msgs, and responses.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full operator segment
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            scope="user",
+            operator={
+                "authority": "info",
+                "alt_group": "TSTGRP07",
+                "cmd_system": "MVS",
+                "search_key": "TST0705",
+                "migration_id": "yes",
+                "display": ["jobnames", "sess", "status"],
+                "msg_level": "all",
+                "msg_format": "m",
+                "msg_storage": 1000,
+                "msg_scope": {
+                    "add": ["SYS1", "SYS2"]
+                },
+                "automated_msgs": "yes",
+                "del_msgs": "normal",
+                "hardcopy_msgs": "yes",
+                "internal_msgs": "yes",
+                "routing_msgs": ["1", "2", "11"],
+                "undelivered_msgs": "no",
+                "unknown_msgs": "no",
+                "responses": "yes"
+            }
+        )
+        
+        # Update to delete all operator fields
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            scope="user",
+            operator={
+                "authority": "delete",
+                "alt_group": "",
+                "cmd_system": "",
+                "search_key": "",
+                "migration_id": "delete",
+                "display": ["delete"],
+                "msg_level": "delete",
+                "msg_format": "delete",
+                "msg_storage": 0,
+                "msg_scope": {
+                    "remove": ["SYS1", "SYS2"]
+                },
+                "automated_msgs": "delete",
+                "del_msgs": "delete",
+                "hardcopy_msgs": "delete",
+                "internal_msgs": "delete",
+                "routing_msgs": ["delete"],
+                "undelivered_msgs": "delete",
+                "unknown_msgs": "delete",
+                "responses": "delete"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "OPERPARM(" in cmd
+            assert "NOAUTH" in cmd
+            assert "NOMIGID" in cmd
+            assert "NOMONITOR" in cmd
+            assert "NOLEVEL" in cmd
+            assert "NOMFORM" in cmd
+            assert "NOSTORAGE" in cmd
+            assert "NOMSCOPE" in cmd
+            assert "NOAUTO" in cmd
+            assert "NODOM" in cmd
+            assert "NOHC" in cmd
+            assert "NOINTIDS" in cmd
+            assert "NOROUTCODE" in cmd
+            assert "NOUD" in cmd
+            assert "NOUNKNIDS" in cmd
+            assert "NOLOGCMDRESP" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
 
 # ============================================================================
 # END OF USER UPDATE TESTS
@@ -4454,9 +4553,9 @@ def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
 # USER NAME TESTS
 # ============================================================================
 
-def test_user_create_with_user_name(ansible_zos_module):
+def test_user_create_with_display_name(ansible_zos_module):
     """
-    Test: Create user with a display name (user_name).
+    Test: Create user with a display name (display_name).
     Validates that the NAME parameter is correctly set in RACF.
     """
     hosts = ansible_zos_module
@@ -4469,7 +4568,7 @@ def test_user_create_with_user_name(ansible_zos_module):
             operation="create",
             scope="user",
             general={
-                "user_name": display_name
+                "display_name": display_name
             }
         )
         
@@ -4514,7 +4613,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
             operation="create",
             scope="user",
             general={
-                "user_name": initial_name
+                "display_name": initial_name
             }
         )
         
@@ -4526,13 +4625,13 @@ def test_user_update_remove_user_name(ansible_zos_module):
         # Verify user exists with initial name
         assert verify_user_exists(hosts, user_name)
         
-        # Step 2: Update user name from "Joe Doe" to "Joe Smith"
+        # Step 2: Update display name from "Joe Doe" to "Joe Smith"
         results = hosts.all.zos_user(
             name=user_name,
             operation="update",
             scope="user",
             general={
-                "user_name": updated_name
+                "display_name": updated_name
             }
         )
         
@@ -4544,13 +4643,13 @@ def test_user_update_remove_user_name(ansible_zos_module):
             cmd = result.get("cmd", "")
             assert f"NAME('{updated_name}')" in cmd, f"Command should contain NAME('{updated_name}')"
         
-        # Step 3: Update to remove the user name (reset to UNKNOWN)
+        # Step 3: Update to remove the display name (reset to UNKNOWN)
         results = hosts.all.zos_user(
             name=user_name,
             operation="update",
             scope="user",
             general={
-                "user_name": ""
+                "display_name": ""
             }
         )
         

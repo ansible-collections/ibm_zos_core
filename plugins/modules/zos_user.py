@@ -119,11 +119,11 @@ options:
   general:
     description:
       - Options that change common attributes in a RACF profile.
-      - Supports C(user_name), C(model), C(owner), C(installation_data), and C(custom_fields).
+      - Supports C(display_name), C(model), C(owner), C(installation_data), and C(custom_fields).
     required: false
     type: dict
     suboptions:
-      user_name:
+      display_name:
         description:
           - Display name for the user profile (not the userid).
           - This corresponds to the RACF NAME parameter.
@@ -131,7 +131,7 @@ options:
           - This option is only valid for user profiles (I(scope=user)).
           - This option is only applicable when I(operation=create) or I(operation=update).
           - If omitted, RACF will display UNKNOWN when listing the user.
-          - To remove/reset the user name to default (UNKNOWN), set this to an empty string C("").
+          - To remove/reset the display name to default (UNKNOWN), set this to an empty string C("").
         type: str
         required: false
       model:
@@ -684,7 +684,7 @@ options:
     description:
       - Attributes for the RACF OPERPARM segment.
       - Configures extended MCS console session attributes for the user profile.
-      - Only valid for I(scope=user), I(operation=create) and I(operation=update).
+      - Only valid for I(scope=user) with I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
@@ -735,10 +735,16 @@ options:
         description:
           - Whether a 1-byte migration ID should be assigned to
             this console.
+          - C(yes) assigns a migration ID to the console.
+          - C(no) explicitly sets the console to not have a migration ID.
+          - C(delete) removes the migration ID parameter from the profile entirely (NOMIGID).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       display:
         description:
           - Which information should be displayed when monitoring
@@ -787,7 +793,7 @@ options:
           - Specifies the amount of storage in the TSO/E user's address
             space that can be used for message queuing to the console.
           - Its value can be a number between 1 and 2,000.
-          - A value of 0 deletes this field.
+          - When C(msg_storage=0), this field is set to 00000.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
@@ -801,19 +807,26 @@ options:
         suboptions:
           add:
             description:
-              - Add new systems to this field.
+              - Adds new systems to the message scope list.
+              - When C(operation=create), this sets the initial message scope (MSCOPE).
+              - When C(operation=update), this adds systems to the existing list (ADDMSCOPE).
+              - This option is mutually exclusive with C(remove) and C(delete).
             type: list
             elements: str
             required: false
           remove:
             description:
-              - Removes systems from this field.
+              - Removes all message scope systems from the profile.
+              - This sets the profile to have no message scope (NOMSCOPE).
+              - This option is mutually exclusive with C(add) and C(delete).
             type: list
             elements: str
             required: false
           delete:
             description:
-              - Deletes the systems from this field.
+              - Deletes specific systems from the message scope list.
+              - This removes only the specified systems from the existing list (DELMSCOPE).
+              - This option is mutually exclusive with C(add) and C(remove).
             type: list
             elements: str
             required: false
@@ -821,10 +834,16 @@ options:
         description:
           - Whether the extended console can receive messages
             that have been automated by the MFP.
+          - C(yes) enables the console to receive automated messages.
+          - C(no) explicitly disables automated messages for the console.
+          - C(delete) removes the automated messages parameter from the profile entirely (NOAUTO).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       del_msgs:
         description:
           - Which delete operator message (DOM) requests the
@@ -842,24 +861,38 @@ options:
         description:
           - Whether the console should receive all messages
             that are directed to hardcopy.
+          - C(yes) enables the console to receive hardcopy messages.
+          - C(no) explicitly disables hardcopy messages for the console.
+          - C(delete) removes the hardcopy messages parameter from the profile entirely (NOHC).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       internal_msgs:
         description:
           - Whether the console should receive messages that
             are directed to console ID zero.
+          - C(yes) enables the console to receive internal messages.
+          - C(no) explicitly disables internal messages for the console.
+          - C(delete) removes the internal messages parameter from the profile entirely (NOINTIDS).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       routing_msgs:
         description:
           - Specifies the routing codes of messages this
             operator is to receive.
           - C(ALL) can be specified to receive all codes. Conversely,
             C(NONE) can be used to receive none.
+          - C(delete) can be specified as a single-element list to remove
+            all routing codes from the profile entirely (NOROUTCODE).
           - This option is mutually exclusive with C(delete).
         type: list
         elements: str
@@ -868,31 +901,53 @@ options:
         description:
           - Whether the console should receive undelivered
             messages.
+          - C(yes) enables the console to receive undelivered messages.
+          - C(no) explicitly disables undelivered messages for the console.
+          - C(delete) removes the undelivered messages parameter from the profile entirely (NOUD).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       unknown_msgs:
         description:
           - Whether the console should receive messages that
             are directed to unknown console IDs.
+          - C(yes) enables the console to receive unknown messages.
+          - C(no) explicitly disables unknown messages for the console.
+          - C(delete) removes the unknown messages parameter from the profile entirely (NOUNKNIDS).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: false
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       responses:
         description:
           - Whether command responses should be logged.
+          - C(yes) enables logging of command responses (LOGCMDRESP(SYSTEM)).
+          - C(no) explicitly disables logging of command responses (LOGCMDRESP(NO)).
+          - C(delete) removes the command response logging parameter from the profile entirely (NOLOGCMDRESP).
           - This option is mutually exclusive with C(delete).
-        type: bool
+        type: str
         required: false
-        default: true
+        choices:
+          - 'yes'
+          - 'no'
+          - 'delete'
       delete:
         description:
-          - Delete the whole OPERPARM block from the profile.
-          - This option is only valid when updating profiles, it will be ignored
-            when creating one.
-          - This option is mutually exclusive with every other option in this section.
+          - Setting to C(true) deletes the whole OPERPARM block from the profile.
+          - This option is only valid when C(operation=update); it is ignored
+            for all other operation values, including C(operation=create).
+          - This option is mutually exclusive with C(alt_group), C(authority),
+            C(cmd_system), C(search_key), C(migration_id), C(display),
+            C(msg_level), C(msg_format), C(msg_storage), C(msg_scope),
+            C(automated_msgs), C(del_msgs), C(hardcopy_msgs), C(internal_msgs),
+            C(routing_msgs), C(undelivered_msgs), C(unknown_msgs), and C(responses).
         type: bool
         required: false
   restrictions:
@@ -1055,7 +1110,7 @@ EXAMPLES = r"""
     operation: create
     scope: user
     general:
-      user_name: John Doe
+      display_name: John Doe
       owner: admin
 
 - name: Update a user's full name.
@@ -1064,7 +1119,7 @@ EXAMPLES = r"""
     operation: update
     scope: user
     general:
-      user_name: Jane Smith
+      display_name: Jane Smith
 
 - name: Remove a user's full name (sets to UNKNOWN).
   zos_user:
@@ -1072,7 +1127,7 @@ EXAMPLES = r"""
     operation: update
     scope: user
     general:
-      user_name: ""
+      display_name: ""
 
 - name: Create a new group profile using another group as a model and setting its owner.
   zos_user:
@@ -2461,7 +2516,7 @@ class UserHandler(RACFHandler):
     }
 
     validations = [
-        (('general', 'user_name'), 'length', ((0, 20),)),
+        (('general', 'display_name'), 'length', ((0, 20),)),
         (('general', 'installation_data'), 'length', ((0, 255),)),
         (('dfp', 'data_app_id'), 'length', ((0, 8),)),
         (('dfp', 'data_class'), 'length', ((0, 8),)),
@@ -2620,10 +2675,10 @@ class UserHandler(RACFHandler):
 
         cmd = f'ADDUSER ({self.name})'
 
-        # Add NAME parameter if user_name is provided in general block
+        # Add NAME parameter if display_name is provided in general block
         general = self.params.get('general', {})
-        if general and general.get('user_name') is not None and general.get('user_name') != "":
-            cmd = f"{cmd} NAME('{general['user_name']}')"
+        if general and general.get('display_name') is not None and general.get('display_name') != "":
+            cmd = f"{cmd} NAME('{general['display_name']}')"
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
@@ -2646,15 +2701,15 @@ class UserHandler(RACFHandler):
         """
         cmd = f'ALTUSER ({self.name})'
 
-        # Add NAME parameter if user_name is provided in general block
+        # Add NAME parameter if display_name is provided in general block
         general = self.params.get('general', {})
-        if general and general.get('user_name') is not None:
-            if general['user_name'] == "":
+        if general and general.get('display_name') is not None:
+            if general['display_name'] == "":
                 # Empty string resets NAME to default (displays as UNKNOWN)
                 cmd = f"{cmd} NAME()"
             else:
                 # Non-empty string sets the actual name
-                cmd = f"{cmd} NAME('{general['user_name']}')"
+                cmd = f"{cmd} NAME('{general['display_name']}')"
 
         cmd = f'{cmd} {self._make_general_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
@@ -3030,10 +3085,11 @@ class UserHandler(RACFHandler):
                     parts.append(f" KEY({operator['search_key']})")
                 else:
                     parts.append(" NOKEY")
-            if operator.get('migration_id', False):
-                parts.append(" MIGID(YES)")
-            else:
-                parts.append(" MIGID(NO)")
+            if operator.get('migration_id') is not None:
+                if operator.get('migration_id') == 'delete':
+                    parts.append(" NOMIGID")
+                else:
+                    parts.append(f" MIGID({operator['migration_id'].upper()})")
             if operator.get('display') is not None:
                 if "delete" not in operator['display']:
                     options = operator['display']
@@ -3071,47 +3127,59 @@ class UserHandler(RACFHandler):
                     parts.append(') ')
                 elif operator['msg_scope'].get('delete') is not None:
                     scopes = operator['msg_scope']['delete']
-                    parts.append('DELMSCOPE( ')
+                    parts.append(' DELMSCOPE( ')
                     for scope in scopes:
                         parts.append(f'{scope} ')
                     parts.append(') ')
                 else:
                     parts.append(' NOMSCOPE')
-            if operator.get('automated_msgs', False):
-                parts.append(" AUTO(YES)")
-            else:
-                parts.append(" AUTO(NO)")
+            if operator.get('automated_msgs') is not None:
+                if operator.get('automated_msgs') == 'delete':
+                    parts.append(" NOAUTO")
+                else:
+                    parts.append(f" AUTO({operator['automated_msgs'].upper()})")
             if operator.get('del_msgs') is not None:
                 if operator.get('del_msgs') != 'delete':
                     parts.append(f" DOM({operator['del_msgs']})")
                 else:
                     parts.append(" NODOM")
-            if operator.get('hardcopy_msgs', False):
-                parts.append(" HC(YES)")
-            else:
-                parts.append(" HC(NO)")
-            if operator.get('internal_msgs', False):
-                parts.append(" INTIDS(YES)")
-            else:
-                parts.append(" INTIDS(NO)")
+            if operator.get('hardcopy_msgs') is not None:
+                if operator.get('hardcopy_msgs') == 'delete':
+                    parts.append(" NOHC")
+                else:
+                    parts.append(f" HC({operator['hardcopy_msgs'].upper()})")
+            if operator.get('internal_msgs') is not None:
+                if operator.get('internal_msgs') == 'delete':
+                    parts.append(" NOINTIDS")
+                else:
+                    parts.append(f" INTIDS({operator['internal_msgs'].upper()})")
             if operator.get('routing_msgs') is not None:
                 routes = operator['routing_msgs']
-                parts.append(' ROUTCODE( ')
-                for route in routes:
-                    parts.append(f'{route} ')
-                parts.append(') ')
-            if operator.get('undelivered_msgs', False):
-                parts.append(" UD(YES)")
-            else:
-                parts.append(" UD(NO)")
-            if operator.get('unknown_msgs', False):
-                parts.append(" UNKNIDS(YES)")
-            else:
-                parts.append(" UNKNIDS(NO)")
-            if operator.get('responses', False):
-                parts.append(" LOGCMDRESP(SYSTEM)")
-            else:
-                parts.append(" LOGCMDRESP(NO)")
+                # Check if 'delete' is specified to remove all routing codes
+                if len(routes) == 1 and routes[0].lower() == 'delete':
+                    parts.append(' NOROUTCODE')
+                else:
+                    parts.append(' ROUTCODE( ')
+                    for route in routes:
+                        parts.append(f'{route} ')
+                    parts.append(') ')
+            if operator.get('undelivered_msgs') is not None:
+                if operator.get('undelivered_msgs') == 'delete':
+                    parts.append(" NOUD")
+                else:
+                    parts.append(f" UD({operator['undelivered_msgs'].upper()})")
+            if operator.get('unknown_msgs') is not None:
+                if operator.get('unknown_msgs') == 'delete':
+                    parts.append(" NOUNKNIDS")
+                else:
+                    parts.append(f" UNKNIDS({operator['unknown_msgs'].upper()})")
+            if operator.get('responses') is not None:
+                if operator.get('responses') == 'delete':
+                    parts.append(" NOLOGCMDRESP")
+                elif operator.get('responses') == 'yes':
+                    parts.append(" LOGCMDRESP(SYSTEM)")
+                else:
+                    parts.append(" LOGCMDRESP(NO)")
 
             parts.append(" )")
 
@@ -3137,7 +3205,7 @@ class UserHandler(RACFHandler):
                     for auth_class in clauth:
                         parts.append(f'{auth_class} ')
                     parts.append(') ')
-                elif access['clauth'].get('delete') is not None:
+                elif access['clauth'].get('delete') is not None:   
                     clauth = access['clauth']['delete']
                     parts.append('NOCLAUTH( ')
                     for auth_class in clauth:
@@ -3317,7 +3385,7 @@ def run_module():
                 'type': 'dict',
                 'required': False,
                 'options': {
-                    'user_name': {
+                    'display_name': {
                         'type': 'str',
                         'required': False
                     },
@@ -3750,9 +3818,9 @@ def run_module():
                         'no_log': False
                     },
                     'migration_id': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'display': {
                         'type': 'list',
@@ -3801,9 +3869,9 @@ def run_module():
                         }
                     },
                     'automated_msgs': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'del_msgs': {
                         'type': 'str',
@@ -3811,14 +3879,14 @@ def run_module():
                         'choices': ['normal', 'all', 'none', 'delete']
                     },
                     'hardcopy_msgs': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'internal_msgs': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'routing_msgs': {
                         'type': 'list',
@@ -3826,19 +3894,19 @@ def run_module():
                         'elements': 'str'
                     },
                     'undelivered_msgs': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'unknown_msgs': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': False
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'responses': {
-                        'type': 'bool',
+                        'type': 'str',
                         'required': False,
-                        'default': True
+                        'choices': ['yes', 'no', 'delete']
                     },
                     'delete': {
                         'type': 'bool',
@@ -3929,7 +3997,7 @@ def run_module():
             'arg_type': 'dict',
             'required': False,
             'options': {
-                'user_name': {'arg_type': 'str', 'required': False},
+                'display_name': {'arg_type': 'str', 'required': False},
                 'model': {'arg_type': 'str', 'required': False},
                 'owner': {'arg_type': 'str', 'required': False},
                 'installation_data': {'arg_type': 'str', 'required': False},
@@ -4063,7 +4131,7 @@ def run_module():
                 'authority': {'arg_type': 'str', 'required': False},
                 'cmd_system': {'arg_type': 'str', 'required': False},
                 'search_key': {'arg_type': 'str', 'required': False},
-                'migration_id': {'arg_type': 'bool', 'required': False},
+                'migration_id': {'arg_type': 'str', 'required': False},
                 'display': {'arg_type': multiple_choice_display, 'required': False},
                 'msg_level': {'arg_type': 'str', 'required': False},
                 'msg_format': {'arg_type': 'str', 'required': False},
@@ -4077,14 +4145,14 @@ def run_module():
                         'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
                     }
                 },
-                'automated_msgs': {'arg_type': 'bool', 'required': False},
+                'automated_msgs': {'arg_type': 'str', 'required': False},
                 'del_msgs': {'arg_type': 'str', 'required': False},
-                'hardcopy_msgs': {'arg_type': 'bool', 'required': False},
-                'internal_msgs': {'arg_type': 'bool', 'required': False},
+                'hardcopy_msgs': {'arg_type': 'str', 'required': False},
+                'internal_msgs': {'arg_type': 'str', 'required': False},
                 'routing_msgs': {'arg_type': 'list', 'elements': 'str', 'required': False},
-                'undelivered_msgs': {'arg_type': 'bool', 'required': False},
-                'unknown_msgs': {'arg_type': 'bool', 'required': False},
-                'responses': {'arg_type': 'bool', 'required': False},
+                'undelivered_msgs': {'arg_type': 'str', 'required': False},
+                'unknown_msgs': {'arg_type': 'str', 'required': False},
+                'responses': {'arg_type': 'str', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         },

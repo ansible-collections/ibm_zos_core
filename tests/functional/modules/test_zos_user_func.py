@@ -4217,9 +4217,9 @@ def test_user_purge_lockinput_mode(ansible_zos_module):
         cleanup_user(hosts, user_name)
 
 
-def test_user_purge_no_exec_explicit_false(ansible_zos_module):
+def test_user_purge_execute_clist_true(ansible_zos_module):
     """
-    Test: Purge with no_exec explicitly set to False.
+    Test: Purge with execute_clist explicitly set to True.
     Verifies that IRRRID00 executes the generated CLIST immediately,
     resulting in the user being fully removed from RACF.
     """
@@ -4239,13 +4239,13 @@ def test_user_purge_no_exec_explicit_false(ansible_zos_module):
         # Verify user exists
         assert verify_user_exists(hosts, user_name)
 
-        # Purge with no_exec=false
+        # Purge with execute_clist=true
         results = hosts.all.zos_user(
             name=user_name,
             operation="purge",
             scope="user",
             database=racf_database,
-            no_exec=False
+            execute_clist=True
         )
 
         for result in results.contacted.values():
@@ -4257,24 +4257,24 @@ def test_user_purge_no_exec_explicit_false(ansible_zos_module):
             assert result.get("num_entities_modified") == 1
             assert user_name in result.get("entities_modified", [])
             assert result.get("cmd", "").startswith("EXEC")
-            assert result.get("invocation", {}).get("module_args", {}).get("no_exec") is False
+            assert result.get("invocation", {}).get("module_args", {}).get("execute_clist") is True
             stdout = result.get("stdout", "")
             assert "DELUSER" in stdout, "stdout should contain the executed DELUSER command"
             assert not re.search(r"^\s*EXIT\s*$", stdout, re.MULTILINE), (
-                "EXIT statement should not be present when no_exec=false"
+                "EXIT statement should not be present when execute_clist=true"
             )
 
         # user must not be present
         assert not verify_user_exists(hosts, user_name), (
-            "User should be removed from RACF after no_exec=false purge"
+            "User should be removed from RACF after execute_clist=true purge"
         )
 
     finally:
         cleanup_user(hosts, user_name)
 
-def test_user_purge_invalid_database_with_no_exec_false(ansible_zos_module):
+def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module):
     """
-    Test: Purge User with no_exec=false but database is invalid.
+    Test: Purge user with execute_clist=true but database is invalid.
     Verifies that when an invalid database is provided, the purge operation
     fails gracefully with an appropriate error message indicating the database
     does not exist.
@@ -4295,13 +4295,13 @@ def test_user_purge_invalid_database_with_no_exec_false(ansible_zos_module):
         # Verify user exists
         assert verify_user_exists(hosts, user_name)
 
-        # Attempt to purge with invalid database and no_exec=false
+        # Attempt to purge with invalid database and execute_clist=true
         results = hosts.all.zos_user(
             name=user_name,
             operation="purge",
             scope="user",
             database=invalid_database,
-            no_exec=False
+            execute_clist=True
         )
 
         for result in results.contacted.values():
@@ -4332,10 +4332,10 @@ def test_user_purge_invalid_database_with_no_exec_false(ansible_zos_module):
 
 
 
-def test_user_purge_no_exec_true(ansible_zos_module):
+def test_user_purge_execute_clist_false(ansible_zos_module):
     """
-    Test: Dry-run purge(no_exec=true): IRRRID00 generates the CLIST
-    with removal commands but does NOT execute them (EXIT statement is injected).
+    Test: Dry-run purge (execute_clist=false): IRRRID00 generates the CLIST
+    with removal commands but does not execute them (EXIT statement is injected).
     The user profile must still exist in RACF after the call.
     """
     hosts = ansible_zos_module
@@ -4354,13 +4354,13 @@ def test_user_purge_no_exec_true(ansible_zos_module):
         # Verify user exists before dry-run
         assert verify_user_exists(hosts, user_name)
 
-        # Purge with no_exec=true (dry-run)
+        # Purge with execute_clist=false (dry-run)
         results = hosts.all.zos_user(
             name=user_name,
             operation="purge",
             scope="user",
             database=racf_database,
-            no_exec=True
+            execute_clist=False
         )
 
         for result in results.contacted.values():
@@ -4369,7 +4369,7 @@ def test_user_purge_no_exec_true(ansible_zos_module):
             assert result.get("database_dumped") is True
             assert result.get("dump_kept") is False
             assert result.get("dump_name") is None
-            # no_exec=true
+            # execute_clist=false
             assert result.get("num_entities_modified") == 0
             assert result.get("entities_modified") == []
             stdout = result.get("stdout", "")
@@ -4377,11 +4377,11 @@ def test_user_purge_no_exec_true(ansible_zos_module):
                 "CLIST should contain standalone EXIT statement"
             )
             assert "DELUSER" in stdout, "CLIST should contain DELUSER command"
-            assert result.get("invocation", {}).get("module_args", {}).get("no_exec") is True
+            assert result.get("invocation", {}).get("module_args", {}).get("execute_clist") is False
 
-        # user must still exist because no_exec=true
+        # user must still exist because execute_clist=false
         assert verify_user_exists(hosts, user_name), (
-            "User should still exist in RACF after no_exec=true purge"
+            "User should still exist in RACF after execute_clist=false purge"
         )
 
     finally:
@@ -4419,7 +4419,7 @@ def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
             keep_dump=True,
             optimize_dump=True,
             tmp_hlq=custom_hlq,
-            no_exec=True  # Use no_exec to avoid actual deletion for verification
+            execute_clist=False  # Do not execute the CLIST to avoid deletion during verification
         )
         
         for result in results.contacted.values():

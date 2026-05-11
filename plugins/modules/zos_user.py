@@ -22,29 +22,38 @@ version_added: '2.0.0'
 author:
   - "Alex Moreno (@rexemin)"
   - "Yogesh Rana (@yrana17)"
-short_description: Manage user and group profiles in RACF
+short_description: Manage Z/OS user and group profiles in RACF
 description:
-  - The L(zos_user,./zos_user.html) module executes RACF TSO commands that can manage
-    user and group RACF profiles.
-  - The module can create, update and delete RACF profiles about them.
+    - Manage z/OS user and group profiles in RACF database.
+    - Create, update, delete, and purge RACF user and group profiles, and connect users to groups.
+    - Operations are performed using RACF TSO commands.
+    - For more details, see the L(zos_user,./zos_user.html) documentation.
 options:
   name:
     description:
-      - Name of the RACF profile the module will operate on.
+      - The name of the RACF profile to manage.
     type: str
     required: true
-    aliases:
-      - src
+  scope:
+    description:
+      - Whether the RACF profile specified in I(name) is a user or group profile.
+    type: str
+    required: true
+    choices:
+      - user
+      - group
   operation:
     description:
       - Specifies the operation to perform on the RACF profile.
       - The available choices depend on the value of I(scope).
       - C(create) - Creates a new profile. Supported for both I(scope=user) and I(scope=group).
       - C(update) - Modifies an existing profile. Supported for both I(scope=user) and I(scope=group).
-      - C(delete) - Removes the profile from RACF but may leave residual references in the database. Supported for both I(scope=user) and I(scope=group).
+      - C(delete) - Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records.
+        Supported for both I(scope=user) and I(scope=group).
       - C(purge) - Completely removes the profile and all associated references from the RACF database.
-        Unloads the database using C(IRRDBU00), identifies all references via C(IRRRID00), and executes
-        the necessary commands to remove them.
+        Unloads the RACF database using C(IRRDBU00), identifies all references via C(IRRRID00), and executes
+        the necessary commands to remove them. See U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-unload-utility-irrdbu00) and
+        U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-remove-id-irrrid00-utility)
       - C(connect) - Links a user to a group. Only supported when I(scope=user).
       - C(remove) - Removes a user from a group. Only supported when I(scope=user).
     type: str
@@ -56,14 +65,6 @@ options:
       - purge
       - connect
       - remove
-  scope:
-    description:
-      - Whether the RACF profile specified in I(name) is a user or group profile.
-    type: str
-    required: true
-    choices:
-      - user
-      - group
   database:
     description:
       - Name of the RACF database to use for the purge operation.
@@ -72,17 +73,16 @@ options:
     required: false
   keep_dump:
     description:
-      - Whether to keep the database dump datasets after the purge operation completes.
+      - Whether to keep the database dump data sets after the purge operation completes.
       - This option is only applicable when I(operation=purge).
-      - When set to C(true), the IRRDBU00 dump dataset and IRRRID00 CLIST will be retained
-        for debugging or auditing purposes.
-      - When set to C(false), these temporary datasets will be deleted after the purge operation.
+      - When set to C(true), the IRRDBU00 dump data set and IRRRID00 CLIST is retained for debugging or auditing purposes.
+      - When set to C(false), these temporary data sets are deleted after the purge operation.
     type: bool
     required: false
     default: false
   optimize_dump:
     description:
-      - Whether to optimize the database dump operation without locking the input RACF database.
+      - Whether to skip locking the RACF database during the dump operation to optimize performance.
       - This option is only applicable when I(operation=purge).
       - When set to C(true), the IRRDBU00 utility runs with the C(NOLOCKINPUT) option.
         This improves system availability by allowing concurrent updates to the database.
@@ -91,39 +91,41 @@ options:
       - When set to C(false), the IRRDBU00 utility runs with the C(LOCKINPUT) option.
         This ensures data consistency by locking the database, but it prevents other
         processes from updating RACF profiles until the dump completes.
-      - The user ID requires C(UPDATE) authority to the RACF database to permit the utility to C(LOCKINPUT).
+      - The user ID requires C(UPDATE) authority to the RACF database when using C(LOCKINPUT).
+      - See U(https://www.ibm.com/docs/en/zos/3.2.0?topic=irrdbu00-allowable-parameters) for more information about C(LOCKINPUT) and C(NOLOCKINPUT).
     type: bool
     required: false
     default: true
-  no_exec:
+  execute_clist:
     description:
-      - Whether to skip execution of generated clist.
+      - Whether to execute the generated CLIST.
       - This option is only applicable when I(operation=purge).
-      - When set to C(true), the module will generate the CLIST with DELUSER/DELGROUP
-        commands but will not execute it.
-      - When set to C(false), the CLIST will be generated and executed to purge the profiles.
+      - When set to C(true), the module generates the CLIST, removes the safety
+        C(EXIT) statement, and executes the DELUSER/DELGROUP commands.
+      - When set to C(false), the module generates the CLIST but does not execute it.
       - This option is useful for reviewing the purge commands before execution.
     type: bool
     required: false
-    default: false
+    default: true
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary data sets.
       - This option is only applicable when I(operation=purge).
       - Temporary data sets are created during the purge operation for database dumps,
         CLIST generation, and intermediate processing.
-      - If not specified, the system default HLQ will be used.
+      - If not specified, the system default HLQ is used.
     type: str
     required: false
   general:
     description:
       - Options that change common attributes in a RACF profile.
+      - Supports C(user_name), C(model), C(owner), C(installation_data), and C(custom_fields).
     required: false
     type: dict
     suboptions:
       user_name:
         description:
-          - Display name for the user profile(not the userid).
+          - Display name for the user profile (not the userid).
           - This corresponds to the RACF NAME parameter.
           - Maximum length of 20 characters.
           - This option is only valid for user profiles (I(scope=user)).
@@ -134,61 +136,63 @@ options:
         required: false
       model:
         description:
-          - RACF profile that will be used as a model for the profile being changed.
-          - An empty string will delete this field from the profile.
+          - Name of an existing RACF profile to use as a model.
+          - Attributes not explicitly specified will be copied from the model profile.
+          - To remove the model field from the profile, set C(model="").
         type: str
         required: false
       owner:
         description:
-          - Owner of the profile that is being changed.
-          - It can be a user or a group profile.
+          - Specifies the user or group profile name to set as the owner.
         type: str
         required: false
       installation_data:
         description:
-          - Installation-defined data that will be stored in the profile.
+          - Installation-defined data to store in the profile.
           - Maximum length of 255 characters.
-          - The module will automatically enclose the contents in single quotation
-            marks.
-          - An empty string will delete this field from the profile.
+          - The module automatically encloses the contents in single quotation marks.
+          - To remove the installation data from the profile, set C(installation_data="").
         type: str
         required: false
       custom_fields:
         description:
-          - Custom fields that will be stored with the profile.
+          - Custom fields to store with the profile.
         type: dict
         required: false
         suboptions:
           add:
             description:
-              - Adds custom fields to this profile.
+              - Custom fields to add to the profile.
               - "Each custom field should be a C(key: value) pair."
+              - This option is valid when C(operation=create) or C(operation=update).
+              - This option is mutually exclusive with C(delete) and C(delete_block)
             type: dict
             required: false
           delete:
             description:
-              - Deletes each custom field listed.
+              - List of custom fields to delete.
+              - This option is only valid when C(operation=update); it is ignored for all other values of operation.
+              - This option is mutually exclusive with C(add) and C(delete_block).
             type: list
             elements: str
             required: false
           delete_block:
             description:
               - Delete the whole custom fields block from the profile.
-              - This option is only valid when updating profiles, it will be ignored
-                when creating one.
+              - This option is only valid when C(operation=update); it is ignored for all other values of operation, including C(operation=create).
               - This option is mutually exclusive with C(add) and C(delete).
             type: bool
             required: false
   group:
     description:
       - Options that change group-specific attributes in a RACF profile.
-      - Only valid when changing a group profile, ignored for user profiles.
+      - Only valid when C(scope=group), ignored for user profiles.
     required: false
     type: dict
     suboptions:
       superior_group:
         description:
-          - Superior group that will be assigned to the profile.
+          - specifies the name of a group profile to set as the superior group.
         type: str
         required: false
       terminal_access:
@@ -205,16 +209,16 @@ options:
         required: false
   dfp:
     description:
-      - Options that set DFP attributes from the Storage Management Subsystem.
+      - Options that set DFP attributes from the Storage Management Subsystem (SMS).
     required: false
     type: dict
     suboptions:
       data_app_id:
-        description: Name of a DFP data application.
+        description: Specifies the name of a DFP data application.
         type: str
         required: false
       data_class:
-        description: Default data class for data set allocation.
+        description: Specifies the default data class for data set allocation.
         type: str
         required: false
       management_class:
@@ -227,54 +231,59 @@ options:
         required: false
       delete:
         description:
-          - Delete the whole DFP block from the profile.
-          - This option is only valid when updating profiles, it will be ignored
-            when creating one.
+          - Setting to C(true) deletes the whole DFP block from the profile.
+          - This option is only valid when C(operation=update), it is ignored for all other values of operation including C(operation=create).
           - This option is mutually exclusive with every other option in this section.
         type: bool
         required: false
   language:
     description:
       - Options that set the preferred national languages for a user profile.
-      - These options will override the system-wide defaults.
+      - These options override the system-wide defaults.
     required: false
     type: dict
     suboptions:
       primary:
         description:
-          - User's primary language.
+          - Specifies the user's primary language.
           - Value should be either a 3 character-long language code or an
             installation-defined name of up to 24 characters.
-          - An empty string will delete this field from the profile.
+          - To delete this field from the profile, set C(primary="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       secondary:
         description:
-          - User's secondary language.
+          - Specifies the user's secondary language.
           - Value should be either a 3 character-long language code or an
             installation-defined name of up to 24 characters.
-          - An empty string will delete this field from the profile.
+          - To delete this field from the profile, set C(secondary="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       delete:
         description:
-          - Delete the whole LANGUAGE block from the profile.
-          - This option is only valid when updating user profiles, it will be ignored
-            when creating one.
-          - This option is mutually exclusive with every other option in this section.
+          - Setting to C(true) deletes the whole LANGUAGE block from the profile.
+          - This option is only valid when C(operation=update), it is ignored for all other values of operation, including C(operation=create).
+          - This option is mutually exclusive with C(primary) and C(secondary).
         type: bool
         required: false
   omvs:
     description:
-      - Attributes for how Unix System Services should work under a profile.
+       - Attributes for the RACF OMVS segment.
+       - Configures z/OS Unix System Services access and resource limits for the profile.
+       - Valid for both I(scope=user) and I(scope=group).
     required: false
     type: dict
     suboptions:
       uid:
         description:
-          - How RACF should assign a user its UID.
-          - C(none) will be ignored when creating a profile.
-          - C(custom) and C(shared) require C(custom_uid) too.
+          - Specifies how RACF should assign UIDs to users or GIDs to groups.
+          - This option is valid when C(operation=create) and C(operation=update)
+          - C(none) deletes the user or group identifier from the OMVS segment of the profile. This is only valid when C(operation=update),
+            it is ignored for all other values of operation including C(operation=create).
+          - C(custom) and C(shared) require C(custom_uid) to be defined.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
         choices:
@@ -284,32 +293,37 @@ options:
           - none
       custom_uid:
         description:
-          - Specifies the profile's UID.
+          - Specifies the OMVS identifier for the profile.
+          - For I(scope=user), this is the UID; for I(scope=group), this is the GID.
           - A number between 0 and 2,147,483,647.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       home:
         description:
           - Path name for the z/OS Unix System Services home directory.
           - Maximum length of 1023 characters.
-          - An empty string will delete this field from the profile.
+          - To remove the home from the profile, set C(home="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       program:
         description:
-          - Path of the shell program to use when the user logs in.
+          - Specifies the path to the shell program when the user logs in.
           - Maximum length of 1023 characters.
-          - An empty string will delete this field from the profile.
+          - To remove the program from the profile, set C(program="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       nonshared_size:
         description:
           - Maximum number of bytes of nonshared memory that can be allocated
             by the user.
-          - Must be a number between 0 and 16,777,215 suffixed by a unit.
+          - Must be a number between 0 and 16,777,215, suffixed by a unit.
           - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
-          - An empty string will delete the current limit set.
+          - To delete this field from the profile, set C(nonshared_size="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       shared_size:
@@ -319,14 +333,17 @@ options:
           - Must be a number between 1 and 16,777,215 suffixed by a unit.
           - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
             p (petabytes).
-          - An empty string will delete the current limit set.
+          - To delete this field from the profile, set C(shared_size="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       addr_space_size:
         description:
           - Address space region size in bytes.
+          - Maximum address space size for the profile.
           - Value between 10,485,760 and 2,147,483,647.
-          - A value of 0 will delete this field from the profile.
+          - A value of 0 sets this field to None.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       map_size:
@@ -336,7 +353,8 @@ options:
           - This option represents the number of memory pages, not bytes,
             available.
           - Value between 1 and 16,777,216.
-          - A value of 0 will delete this field from the profile.
+          - A value of 0 sets this field to NONE.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_procs:
@@ -344,14 +362,16 @@ options:
           - Maximum number of processes the user is allowed to have active
             at the same time.
           - Value between 3 and 32,767.
-          - A value of 0 will delete this field from the profile.
+          - A value of 0 sets this field to NONE.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_threads:
         description:
           - Maximum number of threads the user can have concurrently active.
           - Value between 0 and 100,000.
-          - A value of -1 will delete this field from the profile.
+          - A value of -1 sets this field to NONE.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_cpu_time:
@@ -359,7 +379,8 @@ options:
           - Specifies the RLIMIT_CPU hard limit. Indicates the cpu-time that a
             user process is allowed to use.
           - Value between 7 and 2,147,483,647 seconds.
-          - A value of 0 will delete this field from the profile.
+          - A value of 0 sets this field to NONE.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_files:
@@ -367,135 +388,155 @@ options:
           - Maximum number of files the user is allowed to have concurrently
             active or open.
           - Value between 3 and 524,287.
-          - A value of 0 will delete this field from the profile.
+          - A value of 0 sets this field to NONE.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       delete:
         description:
-          - Delete the whole OMVS block from the profile.
-          - This option is only valid when updating profiles, it will be ignored
-            when creating one.
-          - This option is mutually exclusive with every other option in this section.
+          - Setting to C(true) deletes the whole OMVS block from the profile.
+          - This option is only valid when C(operation=update); it is ignored
+            for all other operation values, including C(operation=create).
+          - This option is mutually exclusive with C(uid), C(custom_uid),
+            C(home), C(program), C(nonshared_size), C(shared_size),
+            C(addr_space_size), C(map_size), C(max_procs),
+            C(max_threads), C(max_cpu_time), and C(max_files).
         type: bool
         required: false
   tso:
     description:
-      - Attributes for how TSO should handle a user profile.
+      - Attributes for the RACF TSO segment.
+      - Configures TSO settings for the user profile.
+      - only valid for I(scope=user), I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
       account_num:
         description:
-          - User's default TSO account number when logging in.
-          - Maximum length of 40 characters.
-          - An empty value deletes this field.
+          - Specifies the user's default TSO account number at logon.
+          - Maximum length of 39 characters.
+          - To delete this field from the profile, set C(account_num="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       logon_cmd:
         description:
-          - Command that needs to be run during TSO/E logon.
+          - Specifies the command to run during TSO/E logon.
           - Maximum length of 80 characters.
           - This option keeps case.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(logon_cmd="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       logon_proc:
         description:
-          - User's default logon procedure.
+          - Specifies the user's default logon procedure.
           - The value for this field is 1 to 8 alphanumeric characters.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(logon_proc="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       dest_id:
         description:
-          - Default destination to which the user can route dynamically allocated SYSOUT
-            data sets.
+          - Specifies the default destination for dynamically allocated SYSOUT data sets.
           - The value for this field is 1 to 7 alphanumeric characters.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(dest_id="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       hold_class:
         description:
-          - User's default hold class.
+          - Specifies the user's default hold class.
           - This option consists of 1 alphanumeric character.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(hold_class="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       job_class:
         description:
-          - User's default job class.
+          - Specifies the user's default job class.
           - This option consists of 1 alphanumeric character.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(job_class="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       msg_class:
         description:
-          - User's default message class.
+          - Specifies the user's default message class.
           - This option consists of 1 alphanumeric character.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(msg_class="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       sysout_class:
         description:
-          - User's default SYSOUT class.
+          - Specifies the user's default SYSOUT class.
           - This option consists of 1 alphanumeric character.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(sysout_class="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       region_size:
         description:
-          - Minimum region size if the user does not request a region size at logon.
+          - Specifies the minimum region size if none is requested at logon.
           - A value between 0 and 2,096,128.
-          - A value of -1 deletes this field.
+          - When C(region_size=-1) is set, this field is set to C(00000000).
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_region_size:
         description:
-          - Maximum region size that the user can request at logon.
+          - Specifies the maximum region size that can be requested at logon.
           - A value between 0 and 2,096,128.
-          - A value of -1 deletes this field.
+          - When C(max_region_size=-1) is set, this field is set to C(00000000).
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       security_label:
         description:
-          - User's security label if the user specifies one on the TSO logon panel.
-          - An empty value deletes this field.
+          - Specifies the user's security label on the TSO logon panel.
+          - To delete this field from the profile, set C(security_label="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       unit_name:
         description:
-          - Default name of a device or group of devices that a procedure uses for
-            allocations.
+          - Specifies the default device or device group name used for allocations.
           - The value for this field is 1 to 8 alphanumeric characters.
-          - An empty value deletes this field.
+          - To delete this field from the profile, set C(unit_name="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       user_data:
         description:
-          - Optional installation data defined for the user profile.
+          - Specifies optional installation data for the user profile.
           - Must be 4 EBCDIC characters.
-          - An empty value deletes this field.
+          - When C(user_data="") is set, this field is set to C(0000).
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       delete:
         description:
-          - Delete the whole TSO block from the profile.
-          - This option is only valid when updating profiles, it will be ignored
-            when creating one.
-          - This option is mutually exclusive with every other option in this section.
+          - Setting to C(true) deletes the whole TSO block from the profile.
+          - This option is only valid when C(operation=update); it is ignored
+            for all other values, including C(operation=create).
+          - This option is mutually exclusive with C(account_num),
+            C(logon_cmd), C(logon_proc), C(dest_id), C(hold_class),
+            C(job_class), C(msg_class), C(sysout_class), C(region_size),
+            C(max_region_size), C(security_label), C(unit_name), and
+            C(user_data).
         type: bool
         required: false
   connect:
     description:
-      - Options that configure what a user can do inside a group that is connected to.
-      - These options are only used when C(operation=connect) and they are ignored
-        otherwise.
+      - Options that configure a user's connection to a group.
+      - Only valid when C(operation=connect); ignored for all other operation values.
     required: false
     type: dict
     suboptions:
       authority:
         description:
-          - Level of group authority given to a user profile.
+          - Specifies the level of group authority assigned to the user.
         type: str
         required: false
         choices:
@@ -505,7 +546,7 @@ options:
           - join
       universal_access:
         description:
-          - Level of universal access authority given to a user profile.
+          - Specifies the level of universal access authority assigned for the connection.
         type: str
         required: false
         choices:
@@ -516,10 +557,10 @@ options:
           - none
       group_name:
         description:
-          - Group to which the user will be connected to.
-          - The rest of the options in this block will affect this group.
-          - If not supplied, RACF will use a default group. It is recommended to specify
-            this option when trying to connect a user to a group.
+          - Specifies the group to which the user will be connected.
+          - The other options in this block apply to this group.
+          - If omitted, RACF uses a default group. It is recommended to specify
+            this option when connecting a user to a group.
         type: str
         required: false
       group_account:
@@ -530,119 +571,120 @@ options:
         default: false
       group_operations:
         description:
-          - Whether a user should have the group-OPERATIONS attribute when connected to a group.
+          - Whether the user should have the group-OPERATIONS attribute for the connection.
         type: bool
         required: false
         default: false
       auditor:
         description:
-          - Whether a user should have auditor privileges for the group it is connected to.
+          - Whether the user should have auditor privileges for the connected group.
         type: bool
         required: false
         default: false
       adsp_attribute:
         description:
-          - Whether to give a user the ADSP attribute, which tells RACF to automatically protect
-            data sets it creates with discrete profiles.
+          - Whether to assign the ADSP attribute for the connection.
+          - This attribute tells RACF to automatically protect data sets the user creates with discrete profiles.
         type: bool
         required: false
         default: false
       special:
         description:
-          - Whether to give a user profile the SPECIAL attribute.
-          - This attribute lets a user change attributes of other profiles. Use with caution.
+          - Whether to assign the SPECIAL attribute for the connection.
+          - This attribute allows the user to change attributes of other profiles.
         type: bool
         required: false
         default: false
   access:
     description:
-      - Options that set different security attributes in a user profile.
+      - Options that configure security attributes for a user profile.
+      - Only valid for I(scope=user)
     required: false
     type: dict
     suboptions:
       default_group:
         description:
-          - RACF's default group for the user profile.
+          - Specifies the RACF default group for the user profile.
         type: str
         required: false
       clauth:
         description:
-          - Classes in which a user is allowed to define profiles to RACF for protection.
+          - Classes in which the user is allowed to define profiles to RACF for protection.
         type: dict
         required: false
         suboptions:
           add:
             description:
-              - Adds classes to the profile.
+              - List of classes to add to the profile.
             type: list
             elements: str
             required: false
           delete:
             description:
-              - Removes classes from the profile.
+              - List of classes to remove from the profile.
             type: list
             elements: str
             required: false
       roaudit:
         description:
-          - Whether a user should have full responsibility for auditing the use of system
+          - Whether the user should have full responsibility for auditing the use of system
             resources.
         type: bool
         required: false
         default: false
       category:
         description:
-          - Security categories that the profile should have.
+          - Security categories assigned to the profile.
         type: dict
         required: false
         suboptions:
           add:
             description:
-              - Adds security categories to the profile.
+              - List of security categories to add to the profile.
             type: list
             elements: str
             required: false
           delete:
             description:
-              - Removes security categories from the profile.
+              - List of security categories to remove from the profile.
             type: list
             elements: str
             required: false
       operator_card:
         description:
-          - Whether a user must supply an operator identification card when logging in.
+          - Whether the user must supply an operator identification card at logon.
         type: bool
         required: false
         default: false
       maintenance_access:
         description:
-          - Whether the user has authorization to do maintenance operations on all
-            RACF-protected DASD data sets, tape volumes, and DASD volumes.
+          - Whether the user is authorized to perform maintenance operations on all RACF-protected DASD data sets, tape volumes, and DASD volumes.
         type: bool
         required: false
         default: false
       restricted:
         description:
-          - Whether to give the profile the RESTRICTED attribute.
+          - Whether the profile should have the RESTRICTED attribute.
         type: bool
         required: false
         default: false
       security_label:
         description:
-          - Security label applied to the profile.
-          - Empty value deletes this field.
+          - Specifies the security label applied to the profile.
+          - To delete this field from the profile, set C(security_label="").
         type: str
         required: false
       security_level:
         description:
-          - Security level applied to the profile.
-          - Empty value deletes this field.
+          - Specifies the security level applied to the profile.
+          - To delete this field from the profile, set C(security_level="").
         type: str
         required: false
   operator:
     description:
-      - Attributes used when a user establishes an extended MCS
-        console session.
+      - Attributes for the RACF OPERPARM segment.
+      - Configures extended MCS console session attributes for the user profile.
+      - Only valid for I(scope=user), I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
@@ -651,12 +693,15 @@ options:
           - Console group used in recovery.
           - Must be between 1 and 8 characters in length.
           - Empty value deletes this field.
+          - To delete this field from the profile, set C(alt_group="").
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       authority:
         description:
           - Console's authority to issue operator commands.
           - C(delete) will remove the field from the profile.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
         choices:
@@ -673,6 +718,7 @@ options:
             be sent.
           - Must be between 1 and 8 characters in length.
           - Empty value deletes this field.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       search_key:
@@ -682,12 +728,14 @@ options:
             C(DISPLAY CONSOLES,KEY).
           - Must be between 1 and 8 characters in length.
           - Empty value deletes this field.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
       migration_id:
         description:
           - Whether a 1-byte migration ID should be assigned to
             this console.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
@@ -699,6 +747,7 @@ options:
             C(sesst), C(status) and C(delete).
           - Multiple choices are allowed.
           - C(delete) will remove this field from the profile.
+          - This option is mutually exclusive with C(delete).
         type: list
         elements: str
         choices: [jobnames, jobnamest, sess, sesst, status, delete]
@@ -707,6 +756,7 @@ options:
         description:
           - Specifies the messages that this console is to receive.
           - C(delete) will remove this field from the profile.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
         choices:
@@ -722,6 +772,7 @@ options:
         description:
           - Format in which messages are displayed at the console.
           - C(delete) will remove this field from the profile.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
         choices:
@@ -737,12 +788,14 @@ options:
             space that can be used for message queuing to the console.
           - Its value can be a number between 1 and 2,000.
           - A value of 0 deletes this field.
+          - This option is mutually exclusive with C(delete).
         type: int
         required: false
       msg_scope:
         description:
           - Systems from which this console can receive messages that
             are not directed to a specific console.
+          - This option is mutually exclusive with C(delete).
         type: dict
         required: false
         suboptions:
@@ -768,6 +821,7 @@ options:
         description:
           - Whether the extended console can receive messages
             that have been automated by the MFP.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
@@ -776,6 +830,7 @@ options:
           - Which delete operator message (DOM) requests the
             console can receive.
           - C(delete) will remove the field from the profile.
+          - This option is mutually exclusive with C(delete).
         type: str
         required: false
         choices:
@@ -787,6 +842,7 @@ options:
         description:
           - Whether the console should receive all messages
             that are directed to hardcopy.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
@@ -794,6 +850,7 @@ options:
         description:
           - Whether the console should receive messages that
             are directed to console ID zero.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
@@ -803,6 +860,7 @@ options:
             operator is to receive.
           - C(ALL) can be specified to receive all codes. Conversely,
             C(NONE) can be used to receive none.
+          - This option is mutually exclusive with C(delete).
         type: list
         elements: str
         required: false
@@ -810,6 +868,7 @@ options:
         description:
           - Whether the console should receive undelivered
             messages.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
@@ -817,12 +876,14 @@ options:
         description:
           - Whether the console should receive messages that
             are directed to unknown console IDs.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: false
       responses:
         description:
           - Whether command responses should be logged.
+          - This option is mutually exclusive with C(delete).
         type: bool
         required: false
         default: true
@@ -973,7 +1034,7 @@ notes:
     READ authority to the input RACF database data sets. When I(optimize_dump=false), IRRDBU00 runs with PARM=LOCKINPUT requiring UPDATE
     authority to lock the database during the unload.
   - The IRRRID00 utility is used during purge operations to identify residual references and generate a CLIST of removal commands.
-    The user must have READ authority to the input dataset (the unloaded RACF database produced by IRRDBU00).
+    The user must have READ authority to the input data set (the unloaded RACF database produced by IRRDBU00).
   - To execute the generated CLIST from IRRRID00, the user must have sufficient RACF authority - DELUSER/DELGROUP requires the SPECIAL
     attribute, group-SPECIAL (within scope), or ownership of the target profile/superior group.
 
@@ -1221,7 +1282,7 @@ stdout:
     description: |
         Standard output from the RACF command execution.
         In check mode, may contain informational messages about the entity state.
-        For I(operation=purge), this includes technical details such as dump dataset names and CLIST processing messages.
+        For I(operation=purge), this includes technical details such as dump data set names and CLIST processing messages.
     returned: always
     type: str
     sample: "User DUSR1001 is defined as PROTECTED.\n"
@@ -1282,7 +1343,7 @@ dump_kept:
     sample: false
 dump_name:
     description: |
-        The name of the dataset containing the output from the C(IRRDBU00) utility.
+        The name of the data set containing the output from the C(IRRDBU00) utility.
         This field is only populated when both I(database_dumped) and I(keep_dump) are C(true).
         Otherwise, this value returns C(null).
     returned: always
@@ -1493,7 +1554,7 @@ class RACFHandler():
         self.database = module_params['database']
         self.keep_dump = module_params['keep_dump']
         self.optimize_dump = module_params['optimize_dump']
-        self.no_exec = module_params['no_exec']
+        self.execute_clist = module_params['execute_clist']
         self.tmp_hlq = module_params.get('tmp_hlq')
         # Nested params.
         params_copy = copy.deepcopy(module_params)
@@ -1862,7 +1923,7 @@ class RACFHandler():
             database_total_space: Total space allocated for the database
 
         Returns:
-            str: Name of the dump dataset created
+            str: Name of the dump data set created
         Raises:
             Exception: If utility execution fails
         """
@@ -1905,7 +1966,7 @@ class RACFHandler():
         Run the IRRRID00 utility to generate and execute CLIST for profile purge.
 
         Args:
-            dump_data_set: Name of the dump dataset from IRRDBU00
+            dump_data_set: Name of the dump data set from IRRDBU00
             database_total_space: Total space allocated for the database
 
         Returns:
@@ -1918,7 +1979,7 @@ class RACFHandler():
         clist = datasets.tmp_name(high_level_qualifier=hlq)
 
         try:
-            # Create SYSIN dataset with profile name
+            # Create SYSIN data set with profile name
             sysin_data_set = datasets.create(
                 name=sysin_name,
                 dataset_type='SEQ',
@@ -1997,9 +2058,9 @@ class RACFHandler():
             # We need to remove it to allow the DELUSER/DELGROUP commands to execute
             clist_content = datasets.read(clist)
 
-            # Handle EXIT statement based on no_exec parameter
+            # Handle EXIT statement based on execute_clist parameter
             entities_to_modify = []
-            if not self.no_exec:
+            if self.execute_clist:
                 # Remove the EXIT statement (with surrounding whitespace)
                 clist_content_modified = re.sub(r'^\s*EXIT\s*$', '', clist_content, flags=re.MULTILINE)
 
@@ -2020,14 +2081,14 @@ class RACFHandler():
                     if entity_name and entity_name not in entities_to_modify:
                         entities_to_modify.append(entity_name)
 
-                # Write the modified CLIST back to the dataset
+                # Write the modified CLIST back to the data set
                 datasets.write(clist, clist_content_modified, append=False)
 
             cmd = f"EXEC '{clist}'"
             rc, stdout, stderr = self.module.run_command(f"""tsocmd "{cmd}" """)
 
             # Update entities_modified based on successful execution
-            if rc == 0 and entities_to_modify and not self.no_exec:
+            if rc == 0 and entities_to_modify and self.execute_clist:
                 self.num_entities_modified = len(entities_to_modify)
                 self.entities_modified = entities_to_modify
             else:
@@ -2116,7 +2177,7 @@ class RACFHandler():
             rc = self._extract_rc_from_error(error_msg)
             return rc, "", f"Failed to run IRRRID00 utility: {error_msg}", None
         finally:
-            # Clean up dump datasets if keep_dump is False
+            # Clean up dump data sets if keep_dump is False
             if not self.keep_dump:
                 if clist and datasets.exists(clist):
                     datasets.delete(clist)
@@ -2411,8 +2472,8 @@ class UserHandler(RACFHandler):
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
         (('omvs', 'home'), 'length', ((0, 1023),)),
         (('omvs', 'program'), 'length', ((0, 1023),)),
-        (('omvs', 'nonshared_size'), 'format', ('[0-9]{1,8}[mgtp]',)),
-        (('omvs', 'shared_size'), 'format', ('[0-9]{1,8}[mgtp]',)),
+        (('omvs', 'nonshared_size'), 'format', (r'(^$|^[0-9]{1,8}[mgtp]$)',)),
+        (('omvs', 'shared_size'), 'format', (r'(^$|^[0-9]{1,8}[mgtp]$)',)),
         (('omvs', 'addr_space_size'), 'range', (10_485_760, 2_147_483_647, 0)),
         (('omvs', 'map_size'), 'range', (1, 16_777_216, 0)),
         (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
@@ -2429,8 +2490,9 @@ class UserHandler(RACFHandler):
         (('tso', 'sysout_class'), 'length', ((0, 1),)),
         (('tso', 'region_size'), 'range', (0, 2_096_128, -1)),
         (('tso', 'max_region_size'), 'range', (0, 2_096_128, -1)),
+        (('tso', 'security_label'), 'length', ((0, 8),)),
         (('tso', 'unit_name'), 'length', ((0, 8),)),
-        (('tso', 'user_data'), 'format', (r'[^\s*$]|[0-9a-zA-Z]{4}',)),
+        (('tso', 'user_data'), 'format', (r'(^$|^[0-9A-F]{4}$)',)),
         (('operator', 'alt_group'), 'length', ((0, 8),)),
         (('operator', 'cmd_system'), 'length', ((0, 8),)),
         (('operator', 'search_key'), 'length', ((0, 8),)),
@@ -2471,13 +2533,13 @@ class UserHandler(RACFHandler):
         super().validate_params()
 
         if self.params.get('omvs') is not None:
-            if self.params['omvs'].get('nonshared_size') is not None:
+            if self.params['omvs'].get('nonshared_size') not in (None, ""):
                 nonshared_size = self.params['omvs']['nonshared_size']
                 nonshared_size = int(nonshared_size[:len(nonshared_size) - 1])
                 if nonshared_size < 0 or nonshared_size > 16_777_215:
                     raise ValueError('Value of omvs.nonshared_size is outside of its range.')
 
-            if self.params['omvs'].get('shared_size') is not None:
+            if self.params['omvs'].get('shared_size') not in (None, ""):
                 shared_size = self.params['omvs']['shared_size']
                 shared_size = int(shared_size[:len(shared_size) - 1])
                 if shared_size < 1 or shared_size > 16_777_215:
@@ -3014,7 +3076,7 @@ class UserHandler(RACFHandler):
                         parts.append(f'{scope} ')
                     parts.append(') ')
                 else:
-                    parts.append('NOMSCOPE')
+                    parts.append(' NOMSCOPE')
             if operator.get('automated_msgs', False):
                 parts.append(" AUTO(YES)")
             else:
@@ -3218,8 +3280,7 @@ def run_module():
         argument_spec={
             'name': {
                 'type': 'str',
-                'required': True,
-                'aliases': ['src']
+                'required': True
             },
             'operation': {
                 'type': 'str',
@@ -3243,10 +3304,10 @@ def run_module():
                 'type': 'bool',
                 'default': True
             },
-            'no_exec': {
+            'execute_clist': {
                 'type': 'bool',
                 'required': False,
-                'default': False
+                'default': True
             },
             'tmp_hlq': {
                 'type': 'str',
@@ -3856,13 +3917,13 @@ def run_module():
     validate_dependencies(module)
 
     args_def = {
-        'name': {'arg_type': 'str', 'required': True, 'aliases': ['src']},
+        'name': {'arg_type': 'str', 'required': True},
         'operation': {'arg_type': 'str', 'required': True},
         'scope': {'arg_type': 'str', 'required': True},
         'database': {'arg_type': 'str', 'required': False},
         'keep_dump': {'arg_type': 'bool', 'required': True},
         'optimize_dump': {'arg_type': 'bool', 'required': True},
-        'no_exec': {'arg_type': 'bool', 'required': False},
+        'execute_clist': {'arg_type': 'bool', 'required': False},
         'tmp_hlq': {'arg_type': 'str', 'required': False},
         'general': {
             'arg_type': 'dict',
@@ -3918,14 +3979,14 @@ def run_module():
             'options': {
                 'uid': {'arg_type': 'str', 'required': False},
                 'custom_uid': {'arg_type': 'int', 'required': False},
-                'home': {'arg_type': 'path', 'required': False},
-                'program': {'arg_type': 'path', 'required': False},
+                'home': {'arg_type': 'path_or_empty', 'required': False},
+                'program': {'arg_type': 'path_or_empty', 'required': False},
                 'nonshared_size': {'arg_type': 'str', 'required': False},
                 'shared_size': {'arg_type': 'str', 'required': False},
                 'addr_space_size': {'arg_type': 'int', 'required': False},
                 'map_size': {'arg_type': 'int', 'required': False},
                 'max_procs': {'arg_type': 'int', 'required': False},
-                'max_threads': {'arg_type': 'int', 'required': False},
+                'max_threads': {'arg_type': 'signed_int', 'required': False},
                 'max_cpu_time': {'arg_type': 'int', 'required': False},
                 'max_files': {'arg_type': 'int', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
@@ -3943,8 +4004,8 @@ def run_module():
                 'job_class': {'arg_type': 'str', 'required': False},
                 'msg_class': {'arg_type': 'str', 'required': False},
                 'sysout_class': {'arg_type': 'str', 'required': False},
-                'region_size': {'arg_type': 'int', 'required': False},
-                'max_region_size': {'arg_type': 'int', 'required': False},
+                'region_size': {'arg_type': 'signed_int', 'required': False},
+                'max_region_size': {'arg_type': 'signed_int', 'required': False},
                 'security_label': {'arg_type': 'str', 'required': False},
                 'unit_name': {'arg_type': 'str', 'required': False},
                 'user_data': {'arg_type': 'str', 'required': False},
@@ -4079,9 +4140,9 @@ def run_module():
         result['msg'] = str(err)
         module.fail_json(**result)
 
-    # In check_mode for purge operation, set no_exec to True to prevent execution
+    # In check_mode for purge operation, set execute_clist to False to prevent execution
     if module.check_mode:
-        module.params['no_exec'] = True
+        module.params['execute_clist'] = False
 
     result = operation_handler.execute_operation()
 

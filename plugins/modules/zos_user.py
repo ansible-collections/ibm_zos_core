@@ -3205,7 +3205,7 @@ class UserHandler(RACFHandler):
                     for auth_class in clauth:
                         parts.append(f'{auth_class} ')
                     parts.append(') ')
-                elif access['clauth'].get('delete') is not None:   
+                elif access['clauth'].get('delete') is not None:
                     clauth = access['clauth']['delete']
                     parts.append('NOCLAUTH( ')
                     for auth_class in clauth:

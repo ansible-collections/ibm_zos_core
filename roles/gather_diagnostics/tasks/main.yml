@@ -18,9 +18,9 @@
         ansible_python_interpreter: "{{ ansible_playbook_python }}"
   when: gather_controller
 
-- name: "z/OS | Gather system facts"
+- name: "Z/OS | Gather system facts"
   environment: "{{ environment_vars }}"
   block:
-  - name: "Run z/OS managed node diagnostic tasks"
-    ansible.builtin.include_tasks: zos_managed.yml
-    when: gather_managed_node
+    - name: "Run z/OS managed node diagnostic tasks"
+      ansible.builtin.include_tasks: zos_managed.yml
+      when: gather_managed_node

@@ -9,38 +9,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: "z/OS | Check ZOAU installation and version"
+- name: "Z/OS | Check ZOAU installation and version"
   ansible.builtin.command:
     cmd: "zoaversion -c"
   register: managed_zoaversion
   changed_when: false
   ignore_errors: true
 
-- name: "z/OS | Debug: Check ZOAU installation"
+- name: "Z/OS | Debug: Check ZOAU installation"
   ansible.builtin.debug:
     msg: "WARNING: 'zoaversion -c' command failed (rc={{ managed_zoaversion.rc }}). This often means ZOAU is not installed or not in the user's PATH."
   when: managed_zoaversion.rc | default(0) != 0
 
-- name: "z/OS | Gather Python version"
+- name: "Z/OS | Gather Python version"
   ansible.builtin.command:
     cmd: "python3 --version"
   register: managed_python_version
   changed_when: false
   ignore_errors: true
 
-- name: "z/OS | Debug: Check Python installation"
+- name: "Z/OS | Debug: Check Python installation"
   ansible.builtin.debug:
-    msg: "WARNING: 'python3 --version' command failed (rc={{ managed_python_version.rc }}). This often means Python 3 is not installed or not in the user's PATH."
+    msg: >-
+      WARNING: 'python3 --version' command failed (rc={{ managed_python_version.rc }}).
+      This often means Python 3 is not installed or not in the user's PATH.
   when: managed_python_version.rc | default(0) != 0
 
-- name: "z/OS | Gather system locale"
+- name: "Z/OS | Gather system locale"
   ansible.builtin.command:
     cmd: "locale"
   register: managed_locale
   changed_when: false
   ignore_errors: true
 
-- name: "z/OS | Gather environment variables"
+- name: "Z/OS | Gather environment variables"
   ansible.builtin.command:
     cmd: "env"
   register: managed_env
@@ -48,9 +50,9 @@
   ignore_errors: true
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Gather system facts"
+- name: "Z/OS | Gather system facts"
   block:
-    - name: "z/OS | Gather Ansible facts using zos_gather_facts"
+    - name: "Z/OS | Gather Ansible facts using zos_gather_facts"
       ibm.ibm_zos_core.zos_gather_facts:
         gather_subset:
           - ipl
@@ -59,26 +61,27 @@
           - iodf
       register: zos_facts
   rescue:
-    - name: "z/OS | Fallback: Attempt to get IPL info via zinfo shell command"
+    - name: "Z/OS | Fallback: Attempt to get IPL info via zinfo shell command"
       ansible.builtin.shell: "zinfo -a"
       register: zos_facts_fallback
+      changed_when: false
       ignore_errors: true
 
-- name: "z/OS | List installed pip packages"
+- name: "Z/OS | List installed pip packages"
   ansible.builtin.command:
     cmd: "python3 -m pip list"
   register: managed_pip_list
   changed_when: false
   ignore_errors: true
 
-- name: "z/OS | Gather user limits"
+- name: "Z/OS | Gather user limits"
   ansible.builtin.command:
     cmd: "ulimit -a"
   register: managed_ulimit
   changed_when: false
   ignore_errors: true
 
-- name: "z/OS | Gather user's OMVS segment"
+- name: "Z/OS | Gather user's OMVS segment"
   ansible.builtin.shell:
     cmd: "tsocmd \"lu $(whoami) omvs\""
   register: managed_omvs_segment
@@ -86,7 +89,7 @@
   ignore_errors: true
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Extract paths from environment variables"
+- name: "Z/OS | Extract paths from environment variables"
   ansible.builtin.set_fact:
     zoau_home_path: >-
       {{ (managed_env.stdout_lines
@@ -103,13 +106,13 @@
   when: managed_env.stdout_lines is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Determine Python home from executable path"
+- name: "Z/OS | Determine Python home from executable path"
   ansible.builtin.set_fact:
     python_home_path: "{{ (python_exe_path | ansible.builtin.dirname) | ansible.builtin.dirname }}"
   when: python_exe_path is defined and python_exe_path != 'not_found'
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Check ZOAU home mount status (df)"
+- name: "Z/OS | Check ZOAU home mount status (df)"
   ansible.builtin.shell:
     cmd: "df -P \"{{ zoau_home_path }}\""
   register: managed_df_zoau
@@ -117,7 +120,7 @@
   ignore_errors: true
   when: zoau_home_path is defined and zoau_home_path != 'not_found'
 
-- name: "z/OS | Check APF bits in ZOAU bin directory"
+- name: "Z/OS | Check APF bits in ZOAU bin directory"
   ansible.builtin.shell:
     cmd: "ls -laE \"{{ zoau_home_path }}/bin\""
   register: managed_bin_apf_bits
@@ -125,7 +128,7 @@
   ignore_errors: true
   when: zoau_home_path is defined and zoau_home_path != 'not_found'
 
-- name: "z/OS | Check Python home mount status (df)"
+- name: "Z/OS | Check Python home mount status (df)"
   ansible.builtin.shell:
     cmd: "df -P \"{{ python_home_path }}\""
   register: managed_df_python
@@ -133,7 +136,7 @@
   ignore_errors: true
   when: python_home_path is defined and python_home_path != 'not_found'
 
-- name: "z/OS | OPTIONAL: Gather operator command output"
+- name: "Z/OS | OPTIONAL: Gather operator command output"
   when: gather_syslog
   block:
     - name: "Run MVS operator command 'D A,L'"
@@ -161,31 +164,31 @@
       ansible.builtin.debug:
         msg: "The 'zos_operator' command failed. This may be due to 'gather_syslog' being true but the user lacking operator authority."
 
-- name: "z/OS Gather SSH configuration files"
+- name: "Z/OS | Gather SSH configuration files"
   when: gather_ssh_config
   block:
-    - name: "z/OS | Gather user's ~/.ssh/rc"
+    - name: "Z/OS | Gather user's ~/.ssh/rc"
       ansible.builtin.shell: "cat ~/.ssh/rc"
       register: managed_ssh_rc
       changed_when: false
       ignore_errors: true
       no_log: "{{ not save_managed_node_log }}"
 
-    - name: "z/OS | Gather system /etc/ssh/sshrc"
+    - name: "Z/OS | Gather system /etc/ssh/sshrc"
       ansible.builtin.shell: "cat /etc/ssh/sshrc"
       register: managed_etc_ssh_rc
       changed_when: false
       ignore_errors: true
       no_log: "{{ not save_managed_node_log }}"
 
-    - name: "z/OS | Gather system /etc/ssh/ssh_config"
+    - name: "Z/OS | Gather system /etc/ssh/ssh_config"
       ansible.builtin.shell: "cat /etc/ssh/ssh_config"
       register: managed_etc_ssh_config
       changed_when: false
       ignore_errors: true
       no_log: "{{ not save_managed_node_log }}"
 
-    - name: "z/OS | Gather system /etc/ssh/sshd_config"
+    - name: "Z/OS | Gather system /etc/ssh/sshd_config"
       ansible.builtin.shell: "cat /etc/ssh/sshd_config"
       register: managed_etc_sshd_config
       changed_when: false
@@ -199,120 +202,120 @@
 
 # --- DISPLAY MANAGED NODE RESULTS ---
 
-- name: "z/OS | --- RESULTS (sensitive data is hidden if save_managed_node_log=false) ---"
+- name: "Z/OS | --- RESULTS (sensitive data is hidden if save_managed_node_log=false) ---"
   ansible.builtin.debug:
     msg: "Starting z/OS managed node diagnostics display"
 
-- name: "z/OS | ZOAU Version"
+- name: "Z/OS | ZOAU Version"
   ansible.builtin.debug:
     var: managed_zoaversion.stdout
   when: managed_zoaversion is defined
 
-- name: "z/OS | Python Version (stdout)"
+- name: "Z/OS | Python Version (stdout)"
   ansible.builtin.debug:
     var: managed_python_version.stdout
   when: managed_python_version is defined and managed_python_version.stdout != ""
 
-- name: "z/OS | Python Version (stderr)"
+- name: "Z/OS | Python Version (stderr)"
   ansible.builtin.debug:
     var: managed_python_version.stderr
   when: managed_python_version is defined and managed_python_version.stderr != ""
 
-- name: "z/OS | Locale"
+- name: "Z/OS | Locale"
   ansible.builtin.debug:
     var: managed_locale.stdout_lines
   when: managed_locale is defined
 
-- name: "z/OS | Environment"
+- name: "Z/OS | Environment"
   ansible.builtin.debug:
     var: managed_env.stdout_lines
   when: managed_env is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Core Facts"
+- name: "Z/OS | Core Facts"
   ansible.builtin.debug:
     var: zos_facts.ansible_facts
   when: zos_facts is defined and zos_facts.ansible_facts is defined
 
-- name: "z/OS | Core Facts (Fallback)"
+- name: "Z/OS | Core Facts (Fallback)"
   ansible.builtin.debug:
     var: zos_facts_fallback.stdout_lines
   when: zos_facts_fallback is defined
 
-- name: "z/OS | Pip List"
+- name: "Z/OS | Pip List"
   ansible.builtin.debug:
     var: managed_pip_list.stdout_lines
   when: managed_pip_list is defined
 
-- name: "z/OS | User Limits"
+- name: "Z/OS | User Limits"
   ansible.builtin.debug:
     var: managed_ulimit.stdout_lines
   when: managed_ulimit is defined
 
-- name: "z/OS | OMVS Segment"
+- name: "Z/OS | OMVS Segment"
   ansible.builtin.debug:
     var: managed_omvs_segment.stdout_lines
   when: managed_omvs_segment is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | ZOAU Path Mount Status"
+- name: "Z/OS | ZOAU Path Mount Status"
   ansible.builtin.debug:
     var: managed_df_zoau.stdout_lines
   when: managed_df_zoau is defined and managed_df_zoau.stdout_lines is defined
 
-- name: "z/OS | ZOAU apf attributes"
+- name: "Z/OS | ZOAU apf attributes"
   ansible.builtin.debug:
     var: managed_bin_apf_bits.stdout_lines
   when: managed_bin_apf_bits is defined and managed_bin_apf_bits.stdout_lines is defined
 
-- name: "z/OS | Python Path Mount Status"
+- name: "Z/OS | Python Path Mount Status"
   ansible.builtin.debug:
     var: managed_df_python.stdout_lines
   when: managed_df_python is defined and managed_df_python.stdout_lines is defined
 
-- name: "z/OS | Operator Output (D A,L)"
+- name: "Z/OS | Operator Output (D A,L)"
   ansible.builtin.debug:
     var: managed_operator_output.content
   when: managed_operator_output is defined and managed_operator_output.content is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Operator Output (D OMVS,LIMITS)"
+- name: "Z/OS | Operator Output (D OMVS,LIMITS)"
   ansible.builtin.debug:
     var: managed_omvs_limits.content
   when: managed_omvs_limits is defined and managed_omvs_limits.content is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Operator Output (D OMVS,OPTIONS)"
+- name: "Z/OS | Operator Output (D OMVS,OPTIONS)"
   ansible.builtin.debug:
     var: managed_omvs_options.content
   when: managed_omvs_options is defined and managed_omvs_options.content is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | User ~/.ssh/rc"
+- name: "Z/OS | User ~/.ssh/rc"
   ansible.builtin.debug:
     var: managed_ssh_rc.stdout_lines
   when: gather_ssh_config and managed_ssh_rc is defined and managed_ssh_rc.rc is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | System /etc/ssh/sshrc"
+- name: "Z/OS | System /etc/ssh/sshrc"
   ansible.builtin.debug:
     var: managed_etc_ssh_rc.stdout_lines
   when: gather_ssh_config and managed_etc_ssh_rc is defined and managed_etc_ssh_rc.rc is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | System /etc/ssh/ssh_config"
+- name: "Z/OS | System /etc/ssh/ssh_config"
   ansible.builtin.debug:
     var: managed_etc_ssh_config.stdout_lines
   when: gather_ssh_config and managed_etc_ssh_config is defined and managed_etc_ssh_config.rc is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | System /etc/ssh/sshd_config"
+- name: "Z/OS | System /etc/ssh/sshd_config"
   ansible.builtin.debug:
     var: managed_etc_sshd_config.stdout_lines
   when: gather_ssh_config and managed_etc_sshd_config is defined and managed_etc_sshd_config.rc is defined
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Consolidate all results into one variable"
+- name: "Z/OS | Consolidate all results into one variable"
   ansible.builtin.set_fact:
     gather_diagnostics_managed_results:
       zoau_version: "{{ managed_zoaversion.stdout | default('N/A') }}"
@@ -338,7 +341,7 @@
       etc_sshd_config_content: "{{ managed_etc_sshd_config.stdout_lines | default('N/A', true) }}"
   no_log: "{{ not save_managed_node_log }}"
 
-- name: "z/OS | Save managed node results to a YAML file on the controller"
+- name: "Z/OS | Save managed node results to a YAML file on the controller"
   ansible.builtin.copy:
     dest: "{{ diagnostics_output_dir }}/gather_diagnostics_report_managed_node_{{ inventory_hostname }}.yml"
     content: "{{ gather_diagnostics_managed_results | to_nice_yaml }}"

@@ -16,11 +16,11 @@
       delegate_to: localhost
       vars:
         ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  when: gather_controller
+  when: gather_diagnostics_gather_controller
 
 - name: "Z/OS | Gather system facts"
-  environment: "{{ environment_vars }}"
+  environment: "{{ gather_diagnostics_environment_vars }}"
   block:
     - name: "Run z/OS managed node diagnostic tasks"
       ansible.builtin.include_tasks: zos_managed.yml
-      when: gather_managed_node
+      when: gather_diagnostics_gather_managed_node

@@ -36,19 +36,19 @@ author:
     - Ketan Kelkar (@ketankelkar)
 notes:
     - >
-      When C(gather_syslog) is C(True), the user must have operator authority
+      When C(gather_diagnostics_gather_syslog) is C(True), the user must have operator authority
       to execute MVS operator commands. If the user lacks authority, these tasks
       will fail but the role will continue with other diagnostic gathering.
     - >
-      SSH configuration file gathering (C(gather_ssh_config)) is disabled by default
+      SSH configuration file gathering (C(gather_diagnostics_gather_ssh_config)) is disabled by default
       to avoid exposing sensitive security configurations. Enable only when needed
       for troubleshooting SSH connectivity issues.
     - >
       Diagnostic files are written to the controller node. By default, files are
-      saved to the home directory or AAP artifacts directory. Use C(diagnostics_output_dir)
+      saved to the home directory or AAP artifacts directory. Use C(gather_diagnostics_output_dir)
       to specify an alternate location with sufficient disk space.
 options:
-    gather_controller:
+    gather_diagnostics_gather_controller:
         description:
             - >
               Controls whether the role will gather diagnostic facts from the
@@ -56,7 +56,7 @@ options:
         required: False
         type: bool
         default: True
-    gather_managed_node:
+    gather_diagnostics_gather_managed_node:
         description:
             - >
               Controls whether the role will gather diagnostic facts from the
@@ -64,7 +64,7 @@ options:
         required: False
         type: bool
         default: True
-    save_controller_log:
+    gather_diagnostics_save_controller_log:
         description:
             - >
               Controls whether the role creates a YAML report file for the
@@ -73,7 +73,7 @@ options:
         required: False
         type: bool
         default: True
-    save_managed_node_log:
+    gather_diagnostics_save_managed_node_log:
         description:
             - >
               Controls whether the role creates a YAML report file for the
@@ -82,7 +82,7 @@ options:
         required: False
         type: bool
         default: True
-    gather_syslog:
+    gather_diagnostics_gather_syslog:
         description:
             - >
               Controls whether the role attempts to run authorized MVS operator
@@ -91,7 +91,7 @@ options:
         required: False
         type: bool
         default: True
-    gather_ssh_config:
+    gather_diagnostics_gather_ssh_config:
         description:
             - >
               Controls whether to gather contents of ~/.ssh/rc, /etc/ssh/sshrc,
@@ -99,7 +99,7 @@ options:
         required: False
         type: bool
         default: False
-    diagnostics_output_dir:
+    gather_diagnostics_output_dir:
         description:
             - >
               Directory where diagnostic report files will be created.
@@ -107,7 +107,7 @@ options:
               defaults to the controller's home directory.
         required: False
         type: str
-    environment_vars:
+    gather_diagnostics_environment_vars:
         description:
             - >
               Dictionary of environment variables to set for z/OS tasks.
@@ -136,8 +136,8 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        save_controller_log: false
-        save_managed_node_log: false
+        gather_diagnostics_save_controller_log: false
+        gather_diagnostics_save_managed_node_log: false
 
 - name: Run gather_diagnostics and not execute operator commands
   hosts: zos_host
@@ -148,7 +148,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_syslog: false
+        gather_diagnostics_gather_syslog: false
 
 - name: Run gather_diagnostics and collect SSH configuration files
   hosts: zos_host
@@ -159,7 +159,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_ssh_config: true
+        gather_diagnostics_gather_ssh_config: true
 
 - name: Run gather_diagnostics only for z/OS node diagnostics
   hosts: zos_host
@@ -170,7 +170,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_controller: false
+        gather_diagnostics_gather_controller: false
 
 - name: Run gather_diagnostics only for controller node diagnostics
   hosts: zos_host
@@ -181,7 +181,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_managed_node: false
+        gather_diagnostics_gather_managed_node: false
 
 - name: Run gather_diagnostics with custom output directory
   hosts: zos_host
@@ -192,7 +192,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        diagnostics_output_dir: /tmp/diagnostics
+        gather_diagnostics_output_dir: /tmp/diagnostics
 """
 
 # Roles don't return anything.
@@ -207,7 +207,7 @@ gather_diagnostics_managed_results:
     description: >
         A fact set on the managed host containing all gathered diagnostic data.
         This data is also written to a YAML file on the controller if
-        C(save_managed_node_log) is C(True).
+        C(gather_diagnostics_save_managed_node_log) is C(True).
     returned: always
     type: dict
     contains:
@@ -256,45 +256,45 @@ gather_diagnostics_managed_results:
         operator_d_a_l:
             description: >
                 The output of the MVS operator command `D A,L`,
-                or 'N/A' if C(gather_syslog) is C(False).
+                or 'N/A' if C(gather_diagnostics_gather_syslog) is C(False).
             type: list
         operator_d_omvs_limits:
             description: >
                 The output of the MVS operator command `D OMVS,LIMITS`,
-                or 'N/A' if C(gather_syslog) is C(False).
+                or 'N/A' if C(gather_diagnostics_gather_syslog) is C(False).
             type: list
         operator_d_omvs_options:
             description: >
                 The output of the MVS operator command `D OMVS,OPTIONS`,
-                or 'N/A' if C(gather_syslog) is C(False).
+                or 'N/A' if C(gather_diagnostics_gather_syslog) is C(False).
             type: list
         ssh_rc_content:
             description: >
                 The contents of ~/.ssh/rc file,
-                or 'N/A' if C(gather_ssh_config) is C(False) or file doesn't exist.
+                or 'N/A' if C(gather_diagnostics_gather_ssh_config) is C(False) or file doesn't exist.
             type: list
         etc_ssh_rc_content:
             description: >
                 The contents of /etc/ssh/sshrc file,
-                or 'N/A' if C(gather_ssh_config) is C(False) or file doesn't exist.
+                or 'N/A' if C(gather_diagnostics_gather_ssh_config) is C(False) or file doesn't exist.
             type: list
         etc_ssh_config_content:
             description: >
                 The contents of /etc/ssh/ssh_config file,
-                or 'N/A' if C(gather_ssh_config) is C(False) or file doesn't exist.
+                or 'N/A' if C(gather_diagnostics_gather_ssh_config) is C(False) or file doesn't exist.
             type: list
         etc_sshd_config_content:
             description: >
                 The contents of /etc/ssh/sshd_config file,
-                or 'N/A' if C(gather_ssh_config) is C(False) or file doesn't exist.
+                or 'N/A' if C(gather_diagnostics_gather_ssh_config) is C(False) or file doesn't exist.
             type: list
 
 gather_diagnostics_controller_results:
     description: >
         A fact set on the controller node containing all controller
         diagnostic data. This data is also written to a YAML file on the
-        controller if C(save_controller_log) is C(True).
-    returned: when C(gather_controller) is C(True)
+        controller if C(gather_diagnostics_save_controller_log) is C(True).
+    returned: when C(gather_diagnostics_gather_controller) is C(True)
     type: dict
     contains:
         ansible_version:

@@ -64,7 +64,7 @@
       register: gather_diagnostics_zos_facts
   rescue:
     - name: "Z/OS | Fallback: Attempt to get IPL info via zinfo shell command"
-      ansible.builtin.shell: "zinfo -a"
+      ansible.builtin.command: "zinfo -a"
       register: gather_diagnostics_zos_facts_fallback
       changed_when: false
       ignore_errors: true
@@ -115,24 +115,24 @@
   no_log: "{{ not gather_diagnostics_save_managed_node_log }}"
 
 - name: "Z/OS | Check ZOAU home mount status (df)"
-  ansible.builtin.shell:
-    cmd: "df -P \"{{ gather_diagnostics_zoau_home_path }}\""
+  ansible.builtin.command:
+    cmd: "df -P {{ gather_diagnostics_zoau_home_path }}"
   register: gather_diagnostics_managed_df_zoau
   changed_when: false
   ignore_errors: true
   when: gather_diagnostics_zoau_home_path is defined and gather_diagnostics_zoau_home_path != 'not_found'
 
 - name: "Z/OS | Check APF bits in ZOAU bin directory"
-  ansible.builtin.shell:
-    cmd: "ls -laE \"{{ gather_diagnostics_zoau_home_path }}/bin\""
+  ansible.builtin.command:
+    cmd: "ls -laE {{ gather_diagnostics_zoau_home_path }}/bin"
   register: gather_diagnostics_managed_bin_apf_bits
   changed_when: false
   ignore_errors: true
   when: gather_diagnostics_zoau_home_path is defined and gather_diagnostics_zoau_home_path != 'not_found'
 
 - name: "Z/OS | Check Python home mount status (df)"
-  ansible.builtin.shell:
-    cmd: "df -P \"{{ gather_diagnostics_python_home_path }}\""
+  ansible.builtin.command:
+    cmd: "df -P {{ gather_diagnostics_python_home_path }}"
   register: gather_diagnostics_managed_df_python
   changed_when: false
   ignore_errors: true
@@ -170,28 +170,28 @@
   when: gather_diagnostics_gather_ssh_config
   block:
     - name: "Z/OS | Gather user's ~/.ssh/rc"
-      ansible.builtin.shell: "cat ~/.ssh/rc"
+      ansible.builtin.command: "cat ~/.ssh/rc"
       register: gather_diagnostics_managed_ssh_rc
       changed_when: false
       ignore_errors: true
       no_log: "{{ not gather_diagnostics_save_managed_node_log }}"
 
     - name: "Z/OS | Gather system /etc/ssh/sshrc"
-      ansible.builtin.shell: "cat /etc/ssh/sshrc"
+      ansible.builtin.command: "cat /etc/ssh/sshrc"
       register: gather_diagnostics_managed_etc_ssh_rc
       changed_when: false
       ignore_errors: true
       no_log: "{{ not gather_diagnostics_save_managed_node_log }}"
 
     - name: "Z/OS | Gather system /etc/ssh/ssh_config"
-      ansible.builtin.shell: "cat /etc/ssh/ssh_config"
+      ansible.builtin.command: "cat /etc/ssh/ssh_config"
       register: gather_diagnostics_managed_etc_ssh_config
       changed_when: false
       ignore_errors: true
       no_log: "{{ not gather_diagnostics_save_managed_node_log }}"
 
     - name: "Z/OS | Gather system /etc/ssh/sshd_config"
-      ansible.builtin.shell: "cat /etc/ssh/sshd_config"
+      ansible.builtin.command: "cat /etc/ssh/sshd_config"
       register: gather_diagnostics_managed_etc_sshd_config
       changed_when: false
       ignore_errors: true

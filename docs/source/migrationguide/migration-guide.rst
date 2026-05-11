@@ -38,7 +38,7 @@ zos_apf
 Non-breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module sub-option: ``persistent.data_set`` is renamed to ``persistent.name``.
+- Module sub-option renamed: ``persistent.data_set`` is renamed to ``persistent.name``.
   
   - ``persistent.data_set_name`` will remain functional.
 
@@ -175,7 +175,7 @@ zos_data_set
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Return value renamed: ``names`` → ``data_sets``.
+- Return value renamed: ``names`` is renamed to ``data_sets``.
 
 
 
@@ -185,9 +185,9 @@ zos_fetch
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``is_binary`` → ``binary``.
-- Return value renamed: ``file`` → ``src``.
-- Return value renamed: ``is_binary`` → ``binary``.
+- Module option renamed: ``is_binary`` is renamed to ``binary``.
+- Return value renamed: ``file`` is renamed to ``src``.
+- Return value renamed: ``is_binary`` is renamed to ``binary``.
 
 Non-breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,10 +216,10 @@ zos_job_output
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``ddname`` → ``dd_name``.
-- Return value renamed: ``ddnames`` → ``dds``.
-- Return value renamed: ``ddname.ddname`` → ``dds.dd_name``.
-- Return value renamed: ``ret_code.steps`` → ``job.steps``.
+- Module option renamed: ``ddname`` is renamed to ``dd_name``.
+- Return value renamed: ``ddnames`` is renamed to ``dds``.
+- Return value renamed: ``ddname.ddname`` is renamed to ``dds.dd_name``.
+- Return value renamed: ``ret_code.steps`` is renamed to ``job.steps``.
 
 
 
@@ -229,7 +229,7 @@ zos_job_query
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Return value renamed: ``ret_code.steps`` → ``steps``.
+- Return value renamed: ``ret_code.steps`` is renamed to ``steps``.
 - Return value removed: ``message``.
 
 
@@ -244,11 +244,11 @@ Breaking changes
   
   - Use new module option ``remote_src`` of type bool.
 
-- Module option renamed: ``force`` → ``replace``.
-- Module option renamed: ``wait_time_s`` → ``wait_time``.
-- Return value renamed: ``ddnames`` → ``dds``.
-- Return value renamed: ``ddnames.ddname`` → ``dds.dd_name``.
-- Return value renamed: ``ret_code.steps`` → ``jobs.steps``.
+- Module option renamed: ``force`` is renamed to ``replace``.
+- Module option renamed: ``wait_time_s`` is renamed to ``wait_time``.
+- Return value renamed: ``ddnames`` is renamed to ``dds``.
+- Return value renamed: ``ddnames.ddname`` is renamed to ``dds.dd_name``.
+- Return value renamed: ``ret_code.steps`` is renamed to ``jobs.steps``.
 - Return value removed: ``jobs.class`` (redundant to ``jobs.job_class``).
 
 
@@ -272,8 +272,8 @@ zos_mount
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``persistent.data_store`` → ``persistent.name``.
-- Module option renamed: ``persistent.comment`` → ``persistent.marker``.
+- Module option renamed: ``persistent.data_store`` is renamed to ``persistent.name``.
+- Module option renamed: ``persistent.comment`` is renamed to ``persistent.marker``.
 
 
 
@@ -283,7 +283,7 @@ zos_operator
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``wait_time_s`` → ``wait_time``.
+- Module option renamed: ``wait_time_s`` is renamed to ``wait_time``.
   
   - Use in conjunction with new option ``time_unit`` to indicate seconds/centiseconds.
 
@@ -295,15 +295,15 @@ zos_operator_action_query
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``use_regex`` → ``literal``.
-- Return value renamed: ``message_text`` → ``msg_text``.
-- Return value renamed: ``message_id`` → ``msg_id``.
+- Module option renamed: ``use_regex`` is renamed to ``literal``.
+- Return value renamed: ``message_text`` is renamed to ``msg_text``.
+- Return value renamed: ``message_id`` is renamed to ``msg_id``.
 
 Non-breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- New module option renamed: ``message_filter`` → ``msg_filter`` (alias remains).
-- New module option renamed: ``message_id`` → ``msg_id`` (alias remains).
+- Module option renamed: ``message_filter`` is renamed to ``msg_filter`` (alias remains).
+- Module option renamed: ``message_id`` is renamed to ``msg_id`` (alias remains).
 
 
 
@@ -313,8 +313,8 @@ zos_tso_command
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Return value renamed: ``content`` → ``stdout``.
-- Return value renamed: ``lines`` → ``line_count``.
+- Return value renamed: ``content`` is renamed to ``stdout``.
+- Return value renamed: ``lines`` is renamed to ``line_count``.
 
 Non-breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -330,9 +330,9 @@ zos_unarchive
 Breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Module option renamed: ``format.name`` → ``format.type``.
-- Module option renamed: ``format.format_options`` → ``format.options``.
-- Module option renamed: ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``.
+- Module option renamed: ``format.name`` is renamed to ``format.type``.
+- Module option renamed: ``format.format_options`` is renamed to ``format.options``.
+- Module option renamed: ``format.format_options.use_adrdssu`` is renamed to ``format.options.adrdssu``.
 
 
 

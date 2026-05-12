@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2025, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -705,7 +705,7 @@ def run_module():
         if replaced > 0:
             try:
                 # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-                with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as ds:
+                with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*"):
                     pass
                 content = [line.rstrip() for line in full_text]
                 full_text = "\n".join(content)

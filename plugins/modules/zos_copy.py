@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -582,7 +582,7 @@ seealso:
 - module: ibm.ibm_zos_core.zos_fetch
 - module: ibm.ibm_zos_core.zos_data_set
 - module: ibm.ibm_zos_core.zos_mvs_raw
-- module: ibm.ibm_zos_core.zos_tso_cmd
+- module: ibm.ibm_zos_core.zos_tso_command
 """
 
 EXAMPLES = r"""
@@ -1218,7 +1218,7 @@ class CopyHandler(object):
                     success = False
             except zoau_exceptions.ZOAUException as e:
                 stderr = getattr(e.response, 'stderr_response', str(e))
-                if "BGYSC0514E" in stderr :
+                if "BGYSC0514E" in stderr:
                     raise GenerationDataGroupCreateError(
                         msg=(
                             "BGYSC0514E An error occurred while attempting to define the file."

@@ -143,7 +143,22 @@ class LineNumberTracker:
 
 
 def load_playbook(path):
-    """Load playbook YAML using PyYAML."""
+    """Load playbook YAML using PyYAML with support for custom tags."""
+    
+    # Register constructors for common custom YAML tags
+    def generic_constructor(loader, tag_suffix, node):
+        """Generic constructor that preserves the tag and value as a string."""
+        if isinstance(node, yaml.ScalarNode):
+            return f"{tag_suffix} {loader.construct_scalar(node)}"
+        elif isinstance(node, yaml.SequenceNode):
+            return loader.construct_sequence(node)
+        elif isinstance(node, yaml.MappingNode):
+            return loader.construct_mapping(node)
+        return loader.construct_object(node)
+    
+    # Register multi-constructor to handle any custom tag (!, !var, !vault, etc.)
+    yaml.add_multi_constructor('!', generic_constructor, Loader=yaml.SafeLoader)
+    
     try:
         with open(path, "r") as f:
             data = yaml.safe_load(f)

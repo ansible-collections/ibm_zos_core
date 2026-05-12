@@ -197,7 +197,7 @@ def validate_dependencies(module):
         logger.warning(msg)
         module.warn(msg)
 
-    if min_zoau_ver and max_zoau_ver:
+    if min_zoau_ver and max_zoau_ver and current_zoau_ver is not None:
         current_zoau_tuple = get_version_tuple(current_zoau_ver)
         min_zoau_tuple = get_version_tuple(min_zoau_ver)
         max_zoau_tuple = get_version_tuple(max_zoau_ver)

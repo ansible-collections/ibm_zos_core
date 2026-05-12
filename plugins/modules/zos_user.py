@@ -34,7 +34,7 @@ options:
       - The name of the RACF profile to manage.
     type: str
     required: true
-  scope:
+  profile_type:
     description:
       - Whether the RACF profile specified in I(name) is a user or group profile.
     type: str
@@ -45,17 +45,17 @@ options:
   operation:
     description:
       - Specifies the operation to perform on the RACF profile.
-      - The available choices depend on the value of I(scope).
-      - C(create) - Creates a new profile. Supported for both I(scope=user) and I(scope=group).
-      - C(update) - Modifies an existing profile. Supported for both I(scope=user) and I(scope=group).
+      - The available choices depend on the value of I(profile_type).
+      - C(create) - Creates a new profile. Supported for both I(profile_type=user) and I(profile_type=group).
+      - C(update) - Modifies an existing profile. Supported for both I(profile_type=user) and I(profile_type=group).
       - C(delete) - Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records.
-        Supported for both I(scope=user) and I(scope=group).
+        Supported for both I(profile_type=user) and I(profile_type=group).
       - C(purge) - Completely removes the profile and all associated references from the RACF database.
         Unloads the RACF database using C(IRRDBU00), identifies all references via C(IRRRID00), and executes
         the necessary commands to remove them. See U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-unload-utility-irrdbu00) and
         U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-remove-id-irrrid00-utility)
-      - C(connect) - Links a user to a group. Only supported when I(scope=user).
-      - C(remove) - Removes a user from a group. Only supported when I(scope=user).
+      - C(connect) - Links a user to a group. Only supported when I(profile_type=user).
+      - C(remove) - Removes a user from a group. Only supported when I(profile_type=user).
     type: str
     required: true
     choices:
@@ -119,9 +119,9 @@ options:
   base_segment:
     description:
       - Configures the RACF BASE segment attributes.
-      - The BASE segment contains core profile information applicable to both I(scope=user) and I(scope=group).
+      - The BASE segment contains core profile information applicable to both I(profile_type=user) and I(profile_type=group).
       - Supported attributes include C(display_name), C(model), C(owner), C(installation_data), and C(custom_fields).
-      - Note that C(display_name) is only valid when I(scope=user).
+      - Note that C(display_name) is only valid when I(profile_type=user).
     required: false
     type: dict
     suboptions:
@@ -130,7 +130,7 @@ options:
           - Display name for the user profile (not the userid).
           - This corresponds to the RACF NAME parameter.
           - Maximum length of 20 characters.
-          - This option is only valid for user profiles (I(scope=user)).
+          - This option is only valid for user profiles (I(profile_type=user)).
           - This option is only applicable when I(operation=create) or I(operation=update).
           - If omitted, RACF will display UNKNOWN when listing the user.
           - To remove/reset the display name to default (UNKNOWN), set this to an empty string C("").
@@ -188,7 +188,7 @@ options:
   group:
     description:
       - Options that change group-specific attributes in a RACF profile.
-      - Only valid when C(scope=group), ignored for user profiles.
+      - Only valid when C(profile_type=group), ignored for user profiles.
     required: false
     type: dict
     suboptions:
@@ -274,7 +274,7 @@ options:
     description:
        - Attributes for the RACF OMVS segment.
        - Configures z/OS Unix System Services access and resource limits for the profile.
-       - Valid for both I(scope=user) and I(scope=group).
+       - Valid for both I(profile_type=user) and I(profile_type=group).
     required: false
     type: dict
     suboptions:
@@ -296,7 +296,7 @@ options:
       custom_uid:
         description:
           - Specifies the OMVS identifier for the profile.
-          - For I(scope=user), this is the UID; for I(scope=group), this is the GID.
+          - For I(profile_type=user), this is the UID; for I(profile_type=group), this is the GID.
           - A number between 0 and 2,147,483,647.
           - This option is mutually exclusive with C(delete).
         type: int
@@ -409,7 +409,7 @@ options:
     description:
       - Attributes for the RACF TSO segment.
       - Configures TSO settings for the user profile.
-      - only valid for I(scope=user), I(operation=create) and I(operation=update).
+      - only valid for I(profile_type=user), I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
@@ -600,7 +600,7 @@ options:
   access:
     description:
       - Options that configure security attributes for a user profile.
-      - Only valid for I(scope=user)
+      - Only valid for I(profile_type=user)
     required: false
     type: dict
     suboptions:
@@ -686,7 +686,7 @@ options:
     description:
       - Attributes for the RACF OPERPARM segment.
       - Configures extended MCS console session attributes for the user profile.
-      - Only valid for I(scope=user) with I(operation=create) and I(operation=update).
+      - Only valid for I(profile_type=user) with I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
@@ -1021,7 +1021,7 @@ options:
   password_mgmt:
     description:
       - Options that manage password and passphrase settings for a user profile.
-      - These options are only valid for user profiles (I(scope=user)).
+      - These options are only valid for user profiles (I(profile_type=user)).
       - These options are only applicable when I(operation=create) or I(operation=update).
     required: false
     type: dict
@@ -1104,13 +1104,13 @@ EXAMPLES = r"""
   zos_user:
     name: newgrp
     operation: create
-    scope: group
+    profile_type: group
 
 - name: Create a user with full name and owner.
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     base_segment:
       display_name: John Doe
       owner: admin
@@ -1119,7 +1119,7 @@ EXAMPLES = r"""
   zos_user:
     name: existusr
     operation: update
-    scope: user
+    profile_type: user
     base_segment:
       display_name: Jane Smith
 
@@ -1127,7 +1127,7 @@ EXAMPLES = r"""
   zos_user:
     name: existusr
     operation: update
-    scope: user
+    profile_type: user
     base_segment:
       display_name: ""
 
@@ -1135,7 +1135,7 @@ EXAMPLES = r"""
   zos_user:
     name: newgrp
     operation: create
-    scope: group
+    profile_type: group
     base_segment:
       model: oldgrp
       owner: admin
@@ -1144,7 +1144,7 @@ EXAMPLES = r"""
   zos_user:
     name: newgrp
     operation: create
-    scope: group
+    profile_type: group
     group:
       superior_group: sys1
       terminal_access: true
@@ -1154,7 +1154,7 @@ EXAMPLES = r"""
   zos_user:
     name: usergrp
     operation: update
-    scope: group
+    profile_type: group
     base_segment:
       installation_data: New installation data
       custom_fields:
@@ -1164,13 +1164,13 @@ EXAMPLES = r"""
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
 
 - name: Create a user using another profile as a model.
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     base_segment:
       model: olduser
 
@@ -1178,7 +1178,7 @@ EXAMPLES = r"""
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     omvs:
       uid: auto
       home: /u/newuser
@@ -1196,7 +1196,7 @@ EXAMPLES = r"""
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     access:
       default_group: usergrp
       roaudit: true
@@ -1214,7 +1214,7 @@ EXAMPLES = r"""
   zos_user:
     name: user
     operation: update
-    scope: user
+    profile_type: user
     base_segment:
       owner: admin
     tso:
@@ -1229,7 +1229,7 @@ EXAMPLES = r"""
   zos_user:
     name: user
     operation: connect
-    scope: user
+    profile_type: user
     connect:
       group_name: usergrp
 
@@ -1237,7 +1237,7 @@ EXAMPLES = r"""
   zos_user:
     name: user
     operation: connect
-    scope: user
+    profile_type: user
     connect:
       group_name: usergrp
       authority: connect
@@ -1252,7 +1252,7 @@ EXAMPLES = r"""
   zos_user:
     name: user
     operation: remove
-    scope: user
+    profile_type: user
     connect:
       group_name: usergrp
 
@@ -1260,33 +1260,33 @@ EXAMPLES = r"""
   zos_user:
     name: user
     operation: delete
-    scope: user
+    profile_type: user
 
 - name: Delete group from the RACF database.
   zos_user:
     name: usergrp
     operation: delete
-    scope: group
+    profile_type: group
 
 - name: Purge user from RACF database
   zos_user:
     name: user
     operation: purge
-    scope: user
+    profile_type: user
     database: racf_db
 
 - name: Purge group from RACF database
   zos_user:
     name: newgrp
     operation: purge
-    scope: group
+    profile_type: group
     database: racf_db
 
 - name: Create a user with password (will be marked as EXPIRED by default)
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     password_mgmt:
       password: "{{ user_password }}"
 
@@ -1294,7 +1294,7 @@ EXAMPLES = r"""
   zos_user:
     name: newuser
     operation: create
-    scope: user
+    profile_type: user
     password_mgmt:
       passphrase: "{{ user_passphrase }}"
 
@@ -1302,7 +1302,7 @@ EXAMPLES = r"""
   zos_user:
     name: newuser
     operation: update
-    scope: user
+    profile_type: user
     password_mgmt:
       password: "{{ user_password }}"
       expired: false
@@ -1364,20 +1364,20 @@ stderr_lines:
     sample: [""]
 num_entities_modified:
     description: |
-        Number of profiles and references modified by the operation.
-        Set to 0 when entity already exists or is already in desired state.
-        Set to 1 for successful single entity operations.
-        For purge operations, reflects the count of entities deleted.
+        Returns the number of profiles and references modified by the operation.
+        Set to C(0) if no changes were made (e.g., the entity is already in the desired state).
+        Set to C(1) for successful single-entity operations (create, update, or delete).
+        For I(operations=purge), this reflects the total number of user and group entities deleted.
     returned: always
     type: int
     sample: 1
 entities_modified:
     description: |
-        List of all profiles and references modified by the operation.
-        For user scope operations (create, update, delete, connect, remove), contains the user profile name when successful.
-        For group scope operations (create, update, delete), contains the group profile name when successful.
-        For purge operations, contains all users/groups deleted by the CLIST.
-        Empty list when no changes are made (entity already exists or in desired state).
+        A list of profiles and references modified by the operation.
+        For I(profile_type=user), operations (C(create), C(update), C(delete), C(connect), C(remove)): Contains the user profile name upon success.
+        For I(profile_type=group), operations C(create), C(update), C(delete)): Contains the group profile name upon success.
+        For I(operations=purge), contains all users/groups IDs deleted by the CLIST.
+        Returns an empty list if no changes were necessary (e.g., entity is already in the desired state).
     returned: always
     type: list
     elements: str
@@ -1607,7 +1607,7 @@ class RACFHandler():
         # Standalone params.
         self.name = module_params['name']
         self.operation = module_params['operation']
-        self.scope = module_params['scope']
+        self.profile_type = module_params['profile_type']
         self.database = module_params['database']
         self.keep_dump = module_params['keep_dump']
         self.optimize_dump = module_params['optimize_dump']
@@ -1617,7 +1617,7 @@ class RACFHandler():
         params_copy = copy.deepcopy(module_params)
         del params_copy['name']
         del params_copy['operation']
-        del params_copy['scope']
+        del params_copy['profile_type']
         self.params = params_copy
         # Execution data.
         self.cmd = None
@@ -2317,7 +2317,7 @@ class GroupHandler(RACFHandler):
             self.params = {}
 
     def execute_operation(self):
-        """Given the operation and scope, it executes a RACF command.
+        """Given the operation and profile_type, it executes a RACF command.
 
         Returns
         -------
@@ -2624,7 +2624,7 @@ class UserHandler(RACFHandler):
                     )
 
     def execute_operation(self):
-        """Given the operation and scope, it executes a RACF command.
+        """Given the operation and profile_type, it executes a RACF command.
 
         Returns
         -------
@@ -3324,7 +3324,7 @@ class UserHandler(RACFHandler):
 
 
 def get_racf_handler(module, module_params):
-    """Returns the correct handler needed for the scope and operation given in a task.
+    """Returns the correct handler needed for the profile_type and operation given in a task.
 
     Parameters
     ----------
@@ -3337,9 +3337,9 @@ def get_racf_handler(module, module_params):
     -------
         RACFHandler: Object with the necessary context to execute a RACF command.
     """
-    if module_params['scope'] == 'group':
+    if module_params['profile_type'] == 'group':
         return GroupHandler(module, module_params)
-    elif module_params['scope'] == 'user':
+    elif module_params['profile_type'] == 'user':
         return UserHandler(module, module_params)
 
 
@@ -3357,7 +3357,7 @@ def run_module():
                 'required': True,
                 'choices': ['create', 'update', 'delete', 'purge', 'connect', 'remove']
             },
-            'scope': {
+            'profile_type': {
                 'type': 'str',
                 'required': True,
                 'choices': ['user', 'group']
@@ -3989,7 +3989,7 @@ def run_module():
     args_def = {
         'name': {'arg_type': 'str', 'required': True},
         'operation': {'arg_type': 'str', 'required': True},
-        'scope': {'arg_type': 'str', 'required': True},
+        'profile_type': {'arg_type': 'str', 'required': True},
         'database': {'arg_type': 'str', 'required': False},
         'keep_dump': {'arg_type': 'bool', 'required': True},
         'optimize_dump': {'arg_type': 'bool', 'required': True},

@@ -42,8 +42,8 @@ def test_start_task_with_invalid_member(ansible_zos_module):
     hosts = ansible_zos_module
     # Check with non-existing member
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMTASK"
+        state="started",
+        member_name="SAMTASK"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -51,8 +51,8 @@ def test_start_task_with_invalid_member(ansible_zos_module):
         assert result.get("msg") is not None
     # Validating with member name more than 8 chars
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLETASK"
+        state="started",
+        member_name="SAMPLETASK"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -63,10 +63,10 @@ def test_start_task_with_jobname_identifier(ansible_zos_module):
     hosts = ansible_zos_module
     # validate jobname and identifier with non-existing member
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLE",
-        job_name = "SAMTASK",
-        identifier = "TESTER"
+        state="started",
+        member_name="SAMPLE",
+        job_name="SAMTASK",
+        identifier="TESTER"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -77,9 +77,9 @@ def test_start_task_with_invalid_identifier(ansible_zos_module):
     hosts = ansible_zos_module
     # validate using invalid identifier
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPTASK",
-        identifier = "$HELLO"
+        state="started",
+        member_name="SAMPTASK",
+        identifier="$HELLO"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -88,9 +88,9 @@ def test_start_task_with_invalid_identifier(ansible_zos_module):
 
     # validate using proper identifier and non-existing member
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLE",
-        identifier = "HELLO"
+        state="started",
+        member_name="SAMPLE",
+        identifier="HELLO"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -102,9 +102,9 @@ def test_start_task_with_invalid_jobaccount(ansible_zos_module):
     job_account = "(T043JM,JM00,1,0,0,This is the invalid job account information to test negative scenario)"
     # validate invalid job_account with non-existing member
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLE",
-        job_account = job_account
+        state="started",
+        member_name="SAMPLE",
+        job_account=job_account
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -140,9 +140,9 @@ def test_start_task_with_invalid_jobaccount(ansible_zos_module):
 def test_start_task_with_invalid_parameters(ansible_zos_module):
     hosts = ansible_zos_module
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLE",
-        parameters = ["KEY1"]
+        state="started",
+        member_name="SAMPLE",
+        parameters=["KEY1"]
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -151,9 +151,9 @@ def test_start_task_with_invalid_parameters(ansible_zos_module):
         assert result.get("msg") is not None
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "SAMPLE",
-        parameters = ["KEY1", "KEY2", "KEY3"]
+        state="started",
+        member_name="SAMPLE",
+        parameters=["KEY1", "KEY2", "KEY3"]
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -178,9 +178,9 @@ def test_start_task_with_invalid_parameters(ansible_zos_module):
 def test_start_task_with_invalid_subsystem_negative(ansible_zos_module):
     hosts = ansible_zos_module
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "VLF",
-        subsystem = "MSTRS"
+        state="started",
+        member_name="VLF",
+        subsystem="MSTRS"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is False
@@ -191,9 +191,9 @@ def test_start_task_with_invalid_subsystem_negative(ansible_zos_module):
 def test_start_task_with_invalid_keywordparams_negative(ansible_zos_module):
     hosts = ansible_zos_module
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "VLF",
-        keyword_parameters = {
+        state="started",
+        member_name="VLF",
+        keyword_parameters={
             "key1key1key1key1key1key1key1key1": "value1value1value1value1value1value1"
         }
     )
@@ -203,9 +203,9 @@ def test_start_task_with_invalid_keywordparams_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "VLF",
-        keyword_parameters = {
+        state="started",
+        member_name="VLF",
+        keyword_parameters={
             "key1key1key1key1key1key1key1key1key1key1key1key1": "value1"
         }
     )
@@ -215,9 +215,9 @@ def test_start_task_with_invalid_keywordparams_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member_name = "VLF",
-        keyword_parameters = {
+        state="started",
+        member_name="VLF",
+        keyword_parameters={
             "KEY1": "VALUE1",
             "KEY2": "VALUE2"
         }
@@ -247,8 +247,8 @@ def test_start_task_with_invalid_keywordparams_negative(ansible_zos_module):
 def test_display_task_negative(ansible_zos_module):
     hosts = ansible_zos_module
     display_results = hosts.all.zos_started_task(
-        state = "displayed",
-        identifier = "SAMPLE"
+        state="displayed",
+        identifier="SAMPLE"
     )
     for result in display_results.contacted.values():
         assert result.get("changed") is False
@@ -259,8 +259,8 @@ def test_display_task_negative(ansible_zos_module):
 def test_stop_task_negative(ansible_zos_module):
     hosts = ansible_zos_module
     stop_results = hosts.all.zos_started_task(
-        state = "stopped",
-        job_name = "SAMPLE"
+        state="stopped",
+        job_name="SAMPLE"
     )
     for result in stop_results.contacted.values():
         assert result.get("changed") is False
@@ -268,9 +268,9 @@ def test_stop_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     stop_results = hosts.all.zos_started_task(
-        state = "stopped",
-        job_name = "TESTER",
-        identifier = "SAMPLE"
+        state="stopped",
+        job_name="TESTER",
+        identifier="SAMPLE"
     )
     for result in stop_results.contacted.values():
         assert result.get("changed") is False
@@ -280,8 +280,8 @@ def test_stop_task_negative(ansible_zos_module):
 def test_modify_task_negative(ansible_zos_module):
     hosts = ansible_zos_module
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        identifier = "SAMPLE"
+        state="modified",
+        identifier="SAMPLE"
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is False
@@ -289,8 +289,8 @@ def test_modify_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
     
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        job_name = "TESTER"
+        state="modified",
+        job_name="TESTER"
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is False
@@ -298,10 +298,10 @@ def test_modify_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        job_name = "TESTER",
-        identifier = "SAMPLE",
-        parameters = ["REPLACE", "VX=10"]
+        state="modified",
+        job_name="TESTER",
+        identifier="SAMPLE",
+        parameters=["REPLACE", "VX=10"]
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is False
@@ -311,8 +311,8 @@ def test_modify_task_negative(ansible_zos_module):
 def test_cancel_task_negative(ansible_zos_module):
     hosts = ansible_zos_module
     cancel_results = hosts.all.zos_started_task(
-        state = "cancelled",
-        identifier = "SAMPLE"
+        state="cancelled",
+        identifier="SAMPLE"
     )
     for result in cancel_results.contacted.values():
         assert result.get("changed") is False
@@ -320,9 +320,9 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     cancel_results = hosts.all.zos_started_task(
-        state = "cancelled",
-        job_name = "TESTER",
-        identifier = "SAMPLE"
+        state="cancelled",
+        job_name="TESTER",
+        identifier="SAMPLE"
     )
     for result in cancel_results.contacted.values():
         assert result.get("changed") is False
@@ -330,10 +330,10 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     cancel_results = hosts.all.zos_started_task(
-        state = "cancelled",
-        asidx = "0012",
-        user_id = "OMVSTEST",
-        dump = True,
+        state="cancelled",
+        asidx="0012",
+        user_id="OMVSTEST",
+        dump=True,
         verbose=True
     )
     for result in cancel_results.contacted.values():
@@ -341,9 +341,9 @@ def test_cancel_task_negative(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("msg") is not None
     cancel_results = hosts.all.zos_started_task(
-        state = "cancelled",
-        user_id = "OMVSADM",
-        armrestart = True
+        state="cancelled",
+        user_id="OMVSADM",
+        armrestart=True
     )
     for result in cancel_results.contacted.values():
         assert result.get("changed") is False
@@ -353,8 +353,8 @@ def test_cancel_task_negative(ansible_zos_module):
 def test_force_task_negative(ansible_zos_module):
     hosts = ansible_zos_module
     force_results = hosts.all.zos_started_task(
-        state = "forced",
-        identifier = "SAMPLE"
+        state="forced",
+        identifier="SAMPLE"
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
@@ -362,18 +362,18 @@ def test_force_task_negative(ansible_zos_module):
         assert result.get("msg") is not None
 
     force_results = hosts.all.zos_started_task(
-        state = "forced",
-        job_name = "TESTER",
-        identifier = "SAMPLE"
+        state="forced",
+        job_name="TESTER",
+        identifier="SAMPLE"
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
         assert result.get("failed") is True
         assert result.get("msg") is not None
     force_results = hosts.all.zos_started_task(
-        state = "forced",
-        user_id = "OMVSADM",
-        armrestart = True
+        state="forced",
+        user_id="OMVSADM",
+        armrestart=True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is False
@@ -444,9 +444,10 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
         )
 
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member_name = member_name,
-            verbose=True
+            state="started",
+            member_name=member_name,
+            verbose=True,
+            system_logs=True
         )
 
         for result in start_results.contacted.values():
@@ -454,11 +455,12 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
             assert len(result.get("tasks")) > 0
+            assert result.get("system_logs") != ""
             assert result.get("verbose_output") != ""
 
         force_results = hosts.all.zos_started_task(
-            state = "forced",
-            task_name = member_name
+            state="forced",
+            task_name=member_name
         )
         for result in force_results.contacted.values():
             assert result.get("changed") is False
@@ -469,8 +471,8 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert "CANCELABLE - ISSUE CANCEL BEFORE FORCE" in result.get("stderr")
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_name = member_name
+            state="cancelled",
+            task_name=member_name
         )
 
         for result in stop_results.contacted.values():
@@ -482,10 +484,10 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
 
         # validate identifier
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = member_name,
-            identifier = "TESTER",
-            reusable_asid = True
+            state="started",
+            member=member_name,
+            identifier="TESTER",
+            reusable_asid=True
         )
         for result in start_results.contacted.values():
             assert result.get("changed") is True
@@ -496,17 +498,17 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("cmd") == f"S {member_name}.TESTER,REUSASID=YES"
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_name = member_name
+            state="cancelled",
+            task_name=member_name
         )
         for result in stop_results.contacted.values():
             assert result.get("changed") is False
             assert result.get("msg") is not None
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_name = member_name,
-            identifier = "TESTER"
+            state="cancelled",
+            task_name=member_name,
+            identifier="TESTER"
         )
         for result in stop_results.contacted.values():
             assert result.get("changed") is True
@@ -517,9 +519,9 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
 
         job_account = "(T043JM,JM00,1,0,0,)"
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = member_name,
-            job_account = job_account
+            state="started",
+            member=member_name,
+            job_account=job_account
         )
 
         for result in start_results.contacted.values():
@@ -529,9 +531,9 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert len(result.get("tasks")) > 0
             assert result.get("verbose_output") == ""
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = member_name,
-            job_account = job_account
+            state="started",
+            member=member_name,
+            job_account=job_account
         )
 
         for result in start_results.contacted.values():
@@ -542,8 +544,8 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("verbose_output") == ""
 
         display_result = hosts.all.zos_started_task(
-            state = "displayed",
-            task = member_name
+            state="displayed",
+            task=member_name
         )
         for result in display_result.contacted.values():
             assert result.get("changed") is False
@@ -556,9 +558,9 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
         asid_val =  re.search(r"\bA=([^ \n\r\t]+)", display_output).group(1)
         
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_name = member_name,
-            asidx = asid_val,
+            state="cancelled",
+            task_name=member_name,
+            asidx=asid_val,
             verbose=True
         )
 
@@ -569,8 +571,8 @@ def test_start_and_cancel_zos_started_task(ansible_zos_module):
             assert len(result.get("tasks")) > 0
             assert result.get("verbose_output") == ""
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_name = member_name,
+            state="cancelled",
+            task_name=member_name,
             verbose=True
         )
 
@@ -610,9 +612,9 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
         )
 
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "SAMPLE",
-            job_name = "TESTTSK"
+            state="started",
+            member="SAMPLE",
+            job_name="TESTTSK"
         )
 
         for result in start_results.contacted.values():
@@ -622,8 +624,8 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
             assert result.get("stderr") == ""
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task = "TESTTSK"
+            state="cancelled",
+            task="TESTTSK"
         )
 
         for result in stop_results.contacted.values():
@@ -644,20 +646,22 @@ def test_start_with_jobname_and_cancel_zos_started_task(ansible_zos_module):
 def test_stop_and_modify_with_vlf_task(ansible_zos_module):
     hosts = ansible_zos_module
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        task = "VLF",
-        parameters = ["REPLACE" ,"NN=00"]
+        state="modified",
+        task="VLF",
+        parameters=["REPLACE" ,"NN=00"],
+        system_logs=True
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is True
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
         assert result.get("stderr") == ""
+        assert result.get("system_logs") != ""
         assert result.get("cmd") == "F VLF.VLF,REPLACE,NN=00"
 
     display_result = hosts.all.zos_started_task(
-        state = "displayed",
-        task = "VLF"
+        state="displayed",
+        task="VLF"
     )
     for result in display_result.contacted.values():
         asid_val = result.get("tasks")[0]["asidx"]
@@ -668,9 +672,9 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert result.get("verbose_output") == ""
 
     stop_results = hosts.all.zos_started_task(
-        state = "stopped",
-        task = "VLF",
-        asidx = asid_val
+        state="stopped",
+        task="VLF",
+        asidx=asid_val
     )
     for result in stop_results.contacted.values():
         assert result.get("changed") is True
@@ -680,10 +684,10 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert result.get("cmd") == f"P VLF.VLF,A={asid_val}"
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member = "VLF",
-        identifier = "TESTER",
-        subsystem = "MSTR"
+        state="started",
+        member="VLF",
+        identifier="TESTER",
+        subsystem="MSTR"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is True
@@ -692,10 +696,10 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert result.get("stderr") == ""
 
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        task = "VLF",
-        identifier = "TESTER",
-        parameters = ["REPLACE" ,"NN=00"]
+        state="modified",
+        task="VLF",
+        identifier="TESTER",
+        parameters=["REPLACE" ,"NN=00"]
     )
     for result in modify_results.contacted.values():
         assert result.get("changed") is True
@@ -705,9 +709,9 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert result.get("cmd") == "F VLF.TESTER,REPLACE,NN=00"
     
     stop_results = hosts.all.zos_started_task(
-        state = "stopped",
-        task = "VLF",
-        identifier = "TESTER"
+        state="stopped",
+        task="VLF",
+        identifier="TESTER"
     )
     for result in stop_results.contacted.values():
         assert result.get("changed") is True
@@ -716,9 +720,9 @@ def test_stop_and_modify_with_vlf_task(ansible_zos_module):
         assert len(result.get("tasks")) > 0
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member = "VLF",
-        subsystem = "MSTR"
+        state="started",
+        member="VLF",
+        subsystem="MSTR"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is True
@@ -747,22 +751,24 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
         )
 
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "SAMPLE2",
-            job_name = "SPROC",
-            verbose=True
+            state="started",
+            member="SAMPLE2",
+            job_name="SPROC",
+            verbose=True,
+            system_logs=True
         )
 
         for result in start_results.contacted.values():
             assert result.get("changed") is True
             assert result.get("rc") == 0
             assert result.get("stderr") == ""
+            assert result.get("system_logs") != ""
             assert len(result.get("tasks")) > 0
             assert result.get("verbose_output") != ""
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task = "SPROC"
+            state="cancelled",
+            task="SPROC"
         )
 
         for result in stop_results.contacted.values():
@@ -783,8 +789,8 @@ def test_starting_and_cancel_zos_started_task_with_params(ansible_zos_module):
 def test_force_and_start_with_icsf_task(ansible_zos_module):
     hosts = ansible_zos_module
     display_results = hosts.all.zos_started_task(
-        state = "displayed",
-        task = "ICSF"
+        state="displayed",
+        task="ICSF"
     )
     for result in display_results.contacted.values():
         assert result.get("changed") is False
@@ -795,8 +801,8 @@ def test_force_and_start_with_icsf_task(ansible_zos_module):
         asidx = result.get("tasks")[0]["asidx"]
     
     cancel_results = hosts.all.zos_started_task(
-        state = "cancelled",
-        task = "ICSF"
+        state="cancelled",
+        task="ICSF"
     )
     for result in cancel_results.contacted.values():
         assert result.get("changed") is False
@@ -804,11 +810,11 @@ def test_force_and_start_with_icsf_task(ansible_zos_module):
         assert result.get("stderr") != ""
         assert len(result.get("tasks")) == 0
     force_results = hosts.all.zos_started_task(
-        state = "forced",
-        task = "ICSF",
-        identifier = "ICSF",
-        asidx = asidx,
-        arm = True
+        state="forced",
+        task="ICSF",
+        identifier="ICSF",
+        asidx=asidx,
+        arm=True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is True
@@ -817,8 +823,8 @@ def test_force_and_start_with_icsf_task(ansible_zos_module):
         assert result.get("cmd") == f"FORCE ICSF.ICSF,A={asidx},ARM"
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member = "ICSF"
+        state="started",
+        member="ICSF"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is True
@@ -846,8 +852,8 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             cmd="dcp {0} \"//'{1}(MSLEEP)'\"".format(data_set_name, PROC_PDS)
         )
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task = "MSLEEP"
+            state="displayed",
+            task="MSLEEP"
         )
         for result in display_results.contacted.values():
             assert result.get("changed") is False
@@ -856,10 +862,10 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             assert result.get("msg") is not None
 
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "MSLEEP",
-            keyword_parameters = {"SECS": "60"},
-            verbose = True
+            state="started",
+            member="MSLEEP",
+            keyword_parameters={"SECS": "60"},
+            verbose=True
         )
 
         for result in start_results.contacted.values():
@@ -869,10 +875,10 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             assert result.get("stderr") == ""
         
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "MSLEEP",
-            keyword_parameters = {"SECS": "80"},
-            verbose = True
+            state="started",
+            member="MSLEEP",
+            keyword_parameters={"SECS": "80"},
+            verbose=True
         )
 
         for result in start_results.contacted.values():
@@ -882,8 +888,8 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             assert result.get("stderr") == ""
 
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task = "MSLEEP"
+            state="displayed",
+            task="MSLEEP"
         )
 
         for result in display_results.contacted.values():
@@ -894,9 +900,9 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             asid_val = result.get("tasks")[0]["asidx"]
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task = "MSLEEP",
-            asidx = asid_val
+            state="cancelled",
+            task="MSLEEP",
+            asidx=asid_val
         )
 
         for result in stop_results.contacted.values():
@@ -906,8 +912,8 @@ def test_start_with_keyword_param_and_cancel_zos_started_task(ansible_zos_module
             assert result.get("stderr") == ""
         
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task = "MSLEEP"
+            state="displayed",
+            task="MSLEEP"
         )
 
         for result in display_results.contacted.values():
@@ -942,8 +948,8 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             cmd="dcp {0} \"//'{1}(TSLEEP)'\"".format(data_set_name, PROC_PDS)
         )
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task_id = "STCABCDEF"
+            state="displayed",
+            task_id="STCABCDEF"
         )
         for result in display_results.contacted.values():
             assert result.get("changed") is False
@@ -951,10 +957,10 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             assert result.get("msg") != ""
 
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "TSLEEP",
-            keyword_parameters = {"SECS": "100"},
-            verbose = True
+            state="started",
+            member="TSLEEP",
+            keyword_parameters={"SECS": "100"},
+            verbose=True
         )
 
         for result in start_results.contacted.values():
@@ -964,10 +970,10 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             assert result.get("stderr") == ""
         
         start_results = hosts.all.zos_started_task(
-            state = "started",
-            member = "TSLEEP",
-            keyword_parameters = {"SECS": "100"},
-            verbose = True
+            state="started",
+            member="TSLEEP",
+            keyword_parameters={"SECS": "100"},
+            verbose=True
         )
 
         for result in start_results.contacted.values():
@@ -977,8 +983,8 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             assert result.get("stderr") == ""
 
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task = "TSLEEP"
+            state="displayed",
+            task="TSLEEP"
         )
 
         for result in display_results.contacted.values():
@@ -989,8 +995,8 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             assert result.get("stderr") == ""
 
         stop_results = hosts.all.zos_started_task(
-            state = "cancelled",
-            task_id = task_id
+            state="cancelled",
+            task_id=task_id
         )
         for result in stop_results.contacted.values():
             assert result.get("changed") is True
@@ -998,8 +1004,8 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
             assert len(result.get("tasks")) == 1
             assert result.get("stderr") == ""
         display_results = hosts.all.zos_started_task(
-            state = "displayed",
-            task = "TSLEEP"
+            state="displayed",
+            task="TSLEEP"
         )
 
         for result in display_results.contacted.values():
@@ -1019,8 +1025,8 @@ def test_start_and_cancel_zos_started_task_using_task_id(ansible_zos_module):
 def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
     hosts = ansible_zos_module
     display_result = hosts.all.zos_started_task(
-        state = "displayed",
-        task = "ICSF"
+        state="displayed",
+        task="ICSF"
     )
     for result in display_result.contacted.values():
         task_id = result.get('tasks')[0]['task_id']
@@ -1031,8 +1037,8 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert len(result.get("tasks")) > 0
         assert result.get("verbose_output") == ""
     stop_results = hosts.all.zos_started_task(
-        state = "stopped",
-        task_id = task_id
+        state="stopped",
+        task_id=task_id
     )
     for result in stop_results.contacted.values():
         assert result.get("changed") is True
@@ -1042,8 +1048,8 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert result.get("cmd") == f"P ICSF.ICSF,A={asid_val}"
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member = "ICSF"
+        state="started",
+        member="ICSF"
     )
     for result in start_results.contacted.values():
         task_id = result.get('tasks')[0]['task_id']
@@ -1053,9 +1059,9 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert len(result.get("tasks")) > 0
         assert result.get("stderr") == ""
     modify_results = hosts.all.zos_started_task(
-        state = "modified",
-        task_id = task_id,
-        parameters = ["REFRESH"]
+        state="modified",
+        task_id=task_id,
+        parameters=["REFRESH"]
     )
     for result in modify_results.contacted.values():
         task_id = result.get('tasks')[0]['task_id']
@@ -1065,9 +1071,9 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert len(result.get("tasks")) > 0
         assert result.get("stderr") == ""
     force_results = hosts.all.zos_started_task(
-        state = "forced",
-        task_id = task_id,
-        arm = True
+        state="forced",
+        task_id=task_id,
+        arm=True
     )
     for result in force_results.contacted.values():
         assert result.get("changed") is True
@@ -1077,8 +1083,8 @@ def test_stop_and_force_with_ICSF_task_using_task_id(ansible_zos_module):
         assert result.get("cmd") == f"FORCE ICSF.ICSF,A={asid_val},ARM"
 
     start_results = hosts.all.zos_started_task(
-        state = "started",
-        member = "ICSF"
+        state="started",
+        member="ICSF"
     )
     for result in start_results.contacted.values():
         assert result.get("changed") is True

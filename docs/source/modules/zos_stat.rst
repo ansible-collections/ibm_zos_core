@@ -32,7 +32,7 @@ name
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
-  This option doesn't accept the use of wilcards (? and *).
+  This option doesn't accept the use of wildcards (\? and \*).
 
   | **required**: True
   | **type**: str
@@ -229,7 +229,6 @@ See Also
 
 .. seealso::
 
-   - :ref:`ansible.builtin.stat_module`
    - :ref:`zos_find_module`
    - :ref:`zos_gather_facts_module`
 

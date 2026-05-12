@@ -274,6 +274,10 @@ def validate_tasks(playbook_path, migration_map, ignore_response_params):
         issues = []
         params = mod.get("params", {})
 
+        # Skip if module_name is not a string (e.g., from custom YAML tags)
+        if not isinstance(module_name, str):
+            continue
+
         if "." in module_name:
             short_name = module_name.split(".")[-1]
         else:

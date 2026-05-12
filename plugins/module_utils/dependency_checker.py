@@ -171,7 +171,7 @@ def validate_dependencies(module):
                 f"ibm_zos_core collection v{collection_version} requires z/OS {min_zos_ver} or later."
             )
             logger.warning(msg)
-            module.warn(msg=msg)
+            module.warn(msg)
 
     # --- Python version checks ---
     current_python_ver = get_python_version_str()
@@ -180,7 +180,7 @@ def validate_dependencies(module):
     if current_python_tuple[0] != REQUIRED_PYTHON_MAJOR_VERSION:
         msg = f"Incompatible Python version {current_python_ver}. ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
         logger.warning(msg)
-        module.warn(msg=msg)
+        module.warn(msg)
 
     # --- ZOAU version checks ---
     current_zoau_ver = get_zoau_version_str()
@@ -191,7 +191,7 @@ def validate_dependencies(module):
             "PYTHONPATH, LIBPATH, and PATH environment variables are configured correctly."
         )
         logger.warning(msg)
-        module.warn(msg=msg)
+        module.warn(msg)
 
     if min_zoau_ver and max_zoau_ver:
         current_zoau_tuple = get_version_tuple(current_zoau_ver)
@@ -207,6 +207,6 @@ def validate_dependencies(module):
                 f"(minimum {min_zoau_ver})."
             )
             logger.warning(msg)
-            module.warn(msg=msg)
+            module.warn(msg)
 
     return  # do not exit, allow module to continue

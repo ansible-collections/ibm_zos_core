@@ -913,7 +913,7 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
-    
+
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)

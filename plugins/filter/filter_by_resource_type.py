@@ -97,7 +97,7 @@ VALID_FIELDS = {
     [
         'dir_blocks_allocated',
         'dir_blocks_used',
-        'max_pdse_generation',        
+        'max_pdse_generation',
         'members',
         'pages_allocated',
         'pages_used',
@@ -111,7 +111,7 @@ VALID_FIELDS = {
     'file': [
         'atime',
         'audit_bits',
-        'charset',        
+        'charset',
         'checksum',
         'ctime',
         'dev',
@@ -129,10 +129,10 @@ VALID_FIELDS = {
         'islnk',
         'isreg',
         'issock',
-        'isuid', 
+        'isuid',
         'lnk_source',
         'lnk_target',
-        'mimetype',      
+        'mimetype',
         'mode',
         'mtime',
         'nlink',
@@ -166,13 +166,13 @@ VALID_FIELDS = {
         'version',
     ],
     'gdg': [
-        'active_gens',       
+        'active_gens',
         'creation_date',
-        'empty', 
-        'extended',               
+        'empty',
+        'extended',
         'limit',
         'order',
-        'purge',               
+        'purge',
         'scratch',
     ]
 }

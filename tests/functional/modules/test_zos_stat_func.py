@@ -1571,24 +1571,23 @@ def test_filter_data_set_option_no_data_set_output(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic data set information.
-        assert 'type' in stat['attributes']
+        # Checking for generic data set information (12 attributes).
+        assert 'creation_date' in stat['attributes']      
         assert 'dsorg' in stat['attributes']
-        assert 'has_extended_attrs' in stat['attributes']
-        assert 'extended_attrs_bits' in stat['attributes']
-        assert 'creation_date' in stat['attributes']
-        assert 'expiration_date' in stat['attributes']
-        assert 'sms_data_class' in stat['attributes']
-        assert 'sms_mgmt_class' in stat['attributes']
-        assert 'sms_storage_class' in stat['attributes']
         assert 'encrypted' in stat['attributes']
+        assert 'expiration_date' in stat['attributes']
+        assert 'has_extended_attrs' in stat['attributes']        
         assert 'key_label' in stat['attributes']
         assert 'key_status' in stat['attributes']
         assert 'racf' in stat['attributes']
+        assert 'sms_data_class' in stat['attributes']
+        assert 'sms_mgmt_class' in stat['attributes']
+        assert 'sms_storage_class' in stat['attributes']        
+        assert 'type' in stat['attributes']
 
-        # There are a total of 13 attributes above, so the resulting dictionary
+        # There are a total of 12 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 13
+        assert len(stat['attributes'].keys()) == 12
 
 
 def test_filter_file(ansible_zos_module):

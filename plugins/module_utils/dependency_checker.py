@@ -12,7 +12,6 @@
 
 from __future__ import absolute_import, division, print_function
 import re
-import subprocess
 import sys
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
@@ -92,7 +91,7 @@ def get_python_version_str():
     return python_version
 
 
-def get_zos_version_str():
+def get_zos_version_str(module):
     """
     Get z/OS version by calling 'uname -Irsv' and parsing the output.
 
@@ -100,19 +99,22 @@ def get_zos_version_str():
     Where the last number (02) is the version and the middle number (05) is the release,
     resulting in z/OS version 2.5.
 
+    Args:
+        module: Ansible module object with run_command method
+
     Returns:
         str: z/OS version (e.g., "2.5"), or None if unable to determine.
     """
     try:
-        # Execute uname -Irsv command
-        result = subprocess.run(
-            ['uname', '-Irsv'],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5
-        )
-        output = result.stdout.strip()
+        # Execute uname -Irsv command using module.run_command
+        rc, stdout, stderr = module.run_command(['uname', '-Irsv'])
+
+        if rc != 0:
+            error_msg = f"Command 'uname -Irsv' failed with return code {rc}: {stderr}"
+            logger.debug(error_msg)
+            return None
+
+        output = stdout.strip()
         logger.debug("uname -Irsv output: %s", output)
 
         # Parse output format: "z/OS RR.MM VV"
@@ -131,10 +133,6 @@ def get_zos_version_str():
         logger.debug("Unable to parse z/OS version from: %s", output)
         return None
 
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Command 'uname -Irsv' failed with return code {e.returncode}: {e.stderr}"
-        logger.debug(error_msg)
-        return None
     except Exception as e:
         error_msg = f"Failed to fetch z/OS version: {e}"
         logger.debug(error_msg)
@@ -160,7 +158,7 @@ def validate_dependencies(module):
     max_zoau_ver = compat_dict.get("max_zoau_version")
 
     # --- z/OS version check ---
-    current_zos_ver = get_zos_version_str()
+    current_zos_ver = get_zos_version_str(module)
     if current_zos_ver is None:
         logger.debug("Unable to retrieve z/OS version.")
     elif min_zos_ver:

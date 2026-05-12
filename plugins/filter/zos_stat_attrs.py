@@ -14,7 +14,7 @@ from ansible.errors import AnsibleFilterError
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-name: filter_by_resource_type
+name: zos_stat_attrs
 author: Alex Moreno (@rexemin)
 version_added: "2.0.0"
 short_description: Filter returned fields from zos_stat
@@ -45,7 +45,7 @@ options:
 EXAMPLES = r"""
 - name: Get only data set specific attributes.
   set_fact:
-    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}"
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('data_set') }}"
 """
 
 RETURN = r"""
@@ -237,6 +237,6 @@ class FilterModule(object):
 
     def filters(self):
         filters = {
-            "filter_by_resource_type": filter_stat,
+            "zos_stat_attrs": filter_stat,
         }
         return filters

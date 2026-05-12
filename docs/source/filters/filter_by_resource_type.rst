@@ -1,10 +1,10 @@
 
-:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/filter_by_resource_type.py
+:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_stat_attrs.py
 
-.. _filter_by_resource_type_module:
+.. _zos_stat_attrs_module:
 
 
-filter_by_resource_type -- Filter returned fields from zos_stat
+zos_stat_attrs -- Filter returned fields from zos_stat
 ===============================================================
 
 
@@ -56,7 +56,7 @@ Examples
    
    - name: Get only data set specific attributes.
      set_fact:
-       clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.filter_by_resource_type('data_set') }}"
+       clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('data_set') }}"
 
 
 

@@ -27,11 +27,11 @@ __metaclass__ = type
 # ------------------------------------------------------------------------------
 COMPATIBILITY_MATRIX = {
     "2.0.0":
-        {"min_zoau_version": "1.4.0", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
+        {"min_zoau_version": "1.4.0", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
     # "2.1.0":
-        # {"min_zoau_version": "1.4.1", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
+        # {"min_zoau_version": "1.4.1", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
     # "2.2.0":
-    #     {"min_zoau_version": "1.4.2", "max_zoau_version": "1.5.0", "min_zos_version": "2.5" },
+    #     {"min_zoau_version": "1.4.2", "max_zoau_version": "1.5.0", "min_zos_version": "2.5"},
 }
 
 REQUIRED_PYTHON_MAJOR_VERSION = 3
@@ -84,6 +84,7 @@ def get_zoau_version_str():
         return ZOAU_API_VERSION
     except ImportError:
         return None
+
 
 def get_python_version_str():
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -178,7 +179,10 @@ def validate_dependencies(module):
     current_python_tuple = get_version_tuple(current_python_ver)
 
     if current_python_tuple[0] != REQUIRED_PYTHON_MAJOR_VERSION:
-        msg = f"Incompatible Python version {current_python_ver}. ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
+        msg = (
+            f"Incompatible Python version {current_python_ver}. "
+            f"ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
+        )
         logger.warning(msg)
         module.warn(msg)
 
@@ -197,7 +201,7 @@ def validate_dependencies(module):
         current_zoau_tuple = get_version_tuple(current_zoau_ver)
         min_zoau_tuple = get_version_tuple(min_zoau_ver)
         max_zoau_tuple = get_version_tuple(max_zoau_ver)
-        
+
         if current_zoau_tuple < min_zoau_tuple or current_zoau_tuple > max_zoau_tuple:
             # Extract major.minor from min version for series reference
             min_series = '.'.join(min_zoau_ver.split('.')[:2])

@@ -144,19 +144,13 @@ def get_zos_version_str():
 # Dependency Validation
 # ------------------------------------------------------------------------------
 def validate_dependencies(module):
-    # not a useful message for the user (or to the developer)
-    # logger.debug("Starting dependency validation process.")
 
     collection_version = version.__version__
-
-    warnings = []
 
     # Find compatibility entry
     compat_dict = COMPATIBILITY_MATRIX.get(collection_version, {})
 
     if not compat_dict:
-        # what if it's a custom build and doesnt have match in the matrix??
-        # module.fail_json(msg=f"No compatibility information for collection version: {collection_version}")
         logger.debug("Discovered unknown ibm_zos_core collection version: %s.", collection_version)
 
     # Get version requirements
@@ -168,7 +162,6 @@ def validate_dependencies(module):
     current_zos_ver = get_zos_version_str()
     if current_zos_ver is None:
         logger.debug("Unable to retrieve z/OS version.")
-        # no module.warn bc this code path would be our problem not the user's.
     elif min_zos_ver:
         current_zos_tuple = get_version_tuple(current_zos_ver)
         min_zos_tuple = get_version_tuple(min_zos_ver)
@@ -178,7 +171,7 @@ def validate_dependencies(module):
                 f"ibm_zos_core collection v{collection_version} requires z/OS {min_zos_ver} or later."
             )
             logger.warning(msg)
-            module.warn(msg)
+            module.warn(msg=msg)
 
     # --- Python version checks ---
     current_python_ver = get_python_version_str()
@@ -186,8 +179,8 @@ def validate_dependencies(module):
 
     if current_python_tuple[0] != REQUIRED_PYTHON_MAJOR_VERSION:
         msg = f"Incompatible Python version {current_python_ver}. ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
-        logger.error(msg)
-        module.fail_json(msg=msg)
+        logger.warning(msg)
+        module.warn(msg=msg)
 
     # --- ZOAU version checks ---
     current_zoau_ver = get_zoau_version_str()
@@ -197,8 +190,8 @@ def validate_dependencies(module):
             "Unable to import ZOAU. Verify the ZOAU installation and ensure "
             "PYTHONPATH, LIBPATH, and PATH environment variables are configured correctly."
         )
-        logger.error(msg)
-        module.fail_json(msg=msg)
+        logger.warning(msg)
+        module.warn(msg=msg)
 
     if min_zoau_ver and max_zoau_ver:
         current_zoau_tuple = get_version_tuple(current_zoau_ver)
@@ -213,24 +206,7 @@ def validate_dependencies(module):
                 f"ibm_zos_core collection v{collection_version} supports ZOAU {min_series}.x series "
                 f"(minimum {min_zoau_ver})."
             )
-            logger.error(msg)
-            module.fail_json(msg=msg)
+            logger.warning(msg)
+            module.warn(msg=msg)
 
-    # redundant, all this info is already logged during the checks.
-    # logger.debug(
-    #     "Detected versions - ZOAU: %s, Python: %s, z/OS: %s, Collection: %s",
-    #     current_zoau_ver,
-    #     current_python_ver,
-    #     current_zos_ver,
-    #     collection_version,
-    # )
-
-    # calls to module.warn were moved into the checks so they're not lost if a later check fails.
-    # # --- Warn and continue ---
-    # for w in warnings:
-    #     logger.warning(w)
-    #     module.warn(w)
-
-    # unecessary info.
-    # logger.debug("Dependency validation process completed.")
     return  # do not exit, allow module to continue

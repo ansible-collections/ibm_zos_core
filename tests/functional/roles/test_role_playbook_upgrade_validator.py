@@ -221,7 +221,7 @@ def test_validator_role_with_vars(ansible_zos_module):
         zos_archive_issues = [i for i in report_data if i["module"] == "zos_archive"]
         assert len(zos_archive_issues) > 0, "Should detect zos_archive issues"
 
-        print("\n✅ Report validation successful!")
+        print("\n Report validation successful!")
         print(f"   Total issues found: {len(report_data)}")
         print(f"   zos_copy issues: {len(zos_copy_issues)}")
         print(f"   zos_blockinfile issues: {len(zos_blockinfile_issues)}")
@@ -307,7 +307,7 @@ def test_validator_role_with_taskfile(ansible_zos_module):
 
         assert any("insertafter" in action for action in lineinfile_actions), "Should detect 'insertafter' parameter"
 
-        print("\n✅ Taskfile validation successful!")
+        print("\n Taskfile validation successful!")
         print(f"   File tested: {taskfile}")
         print(f"   Total issues found: {len(report_data)}")
         print(f"   zos_job_submit issues: {len(zos_job_submit_issues)}")
@@ -370,7 +370,7 @@ def test_validator_role_with_single_file(ansible_zos_module):
         assert "zos_blockinfile" in modules_found, "Should detect zos_blockinfile in single file"
         assert "zos_archive" in modules_found, "Should detect zos_archive in single file"
 
-        print("\n✅ Single file validation successful!")
+        print("\n Single file validation successful!")
         print(f"   File tested: {playbook_file}")
         print(f"   Total issues found: {len(report_data)}")
         print(f"   Modules with issues: {', '.join(sorted(modules_found))}")

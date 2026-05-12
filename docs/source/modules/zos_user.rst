@@ -36,7 +36,7 @@ name
   | **type**: str
 
 
-scope
+profile_type
   Whether the RACF profile specified in :emphasis:`name` is a user or group profile.
 
   | **required**: True
@@ -47,19 +47,19 @@ scope
 operation
   Specifies the operation to perform on the RACF profile.
 
-  The available choices depend on the value of :emphasis:`scope`.
+  The available choices depend on the value of :emphasis:`profile\_type`.
 
-  :literal:`create` \- Creates a new profile. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
+  :literal:`create` \- Creates a new profile. Supported for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
-  :literal:`update` \- Modifies an existing profile. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
+  :literal:`update` \- Modifies an existing profile. Supported for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
-  :literal:`delete` \- Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records. Supported for both :emphasis:`scope=user` and :emphasis:`scope=group`.
+  :literal:`delete` \- Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records. Supported for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
   :literal:`purge` \- Completely removes the profile and all associated references from the RACF database. Unloads the RACF database using :literal:`IRRDBU00`\ , identifies all references via :literal:`IRRRID00`\ , and executes the necessary commands to remove them. See \ `https://www.ibm.com/docs/en/zos/3.2.0?topic=database\-using\-racf\-unload\-utility\-irrdbu00 <https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-unload-utility-irrdbu00>`__ and \ `https://www.ibm.com/docs/en/zos/3.2.0?topic=database\-using\-racf\-remove\-id\-irrrid00\-utility <https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-remove-id-irrrid00-utility>`__
 
-  :literal:`connect` \- Links a user to a group. Only supported when :emphasis:`scope=user`.
+  :literal:`connect` \- Links a user to a group. Only supported when :emphasis:`profile\_type=user`.
 
-  :literal:`remove` \- Removes a user from a group. Only supported when :emphasis:`scope=user`.
+  :literal:`remove` \- Removes a user from a group. Only supported when :emphasis:`profile\_type=user`.
 
   | **required**: True
   | **type**: str
@@ -138,10 +138,14 @@ tmp_hlq
   | **type**: str
 
 
-general
-  Options that change common attributes in a RACF profile.
+base_segment
+  Configures the RACF BASE segment attributes.
 
-  Supports :literal:`display\_name`\ , :literal:`model`\ , :literal:`owner`\ , :literal:`installation\_data`\ , and :literal:`custom\_fields`.
+  The BASE segment contains core profile information applicable to both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
+
+  Supported attributes include :literal:`display\_name`\ , :literal:`model`\ , :literal:`owner`\ , :literal:`installation\_data`\ , and :literal:`custom\_fields`.
+
+  Note that :literal:`display\_name` is only valid when :emphasis:`profile\_type=user`.
 
   | **required**: False
   | **type**: dict
@@ -154,7 +158,7 @@ general
 
     Maximum length of 20 characters.
 
-    This option is only valid for user profiles (\ :emphasis:`scope=user`\ ).
+    This option is only valid for user profiles (\ :emphasis:`profile\_type=user`\ ).
 
     This option is only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
 
@@ -245,7 +249,7 @@ general
 group
   Options that change group\-specific attributes in a RACF profile.
 
-  Only valid when :literal:`scope=group`\ , ignored for user profiles.
+  Only valid when :literal:`profile\_type=group`\ , ignored for user profiles.
 
   | **required**: False
   | **type**: dict
@@ -372,7 +376,7 @@ omvs
 
   Configures z/OS Unix System Services access and resource limits for the profile.
 
-  Valid for both :emphasis:`scope=user` and :emphasis:`scope=group`.
+  Valid for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
   | **required**: False
   | **type**: dict
@@ -397,7 +401,7 @@ omvs
   custom_uid
     Specifies the OMVS identifier for the profile.
 
-    For :emphasis:`scope=user`\ , this is the UID; for :emphasis:`scope=group`\ , this is the GID.
+    For :emphasis:`profile\_type=user`\ , this is the UID; for :emphasis:`profile\_type=group`\ , this is the GID.
 
     A number between 0 and 2,147,483,647.
 
@@ -562,7 +566,7 @@ tso
 
   Configures TSO settings for the user profile.
 
-  only valid for :emphasis:`scope=user`\ , :emphasis:`operation=create` and :emphasis:`operation=update`.
+  only valid for :emphasis:`profile\_type=user`\ , :emphasis:`operation=create` and :emphasis:`operation=update`.
 
   | **required**: False
   | **type**: dict
@@ -833,7 +837,7 @@ connect
 access
   Options that configure security attributes for a user profile.
 
-  Only valid for :emphasis:`scope=user`
+  Only valid for :emphasis:`profile\_type=user`
 
   | **required**: False
   | **type**: dict
@@ -950,7 +954,7 @@ operator
 
   Configures extended MCS console session attributes for the user profile.
 
-  Only valid for :emphasis:`scope=user` with :emphasis:`operation=create` and :emphasis:`operation=update`.
+  Only valid for :emphasis:`profile\_type=user` with :emphasis:`operation=create` and :emphasis:`operation=update`.
 
   | **required**: False
   | **type**: dict
@@ -1340,7 +1344,7 @@ restrictions
 password_mgmt
   Options that manage password and passphrase settings for a user profile.
 
-  These options are only valid for user profiles (\ :emphasis:`scope=user`\ ).
+  These options are only valid for user profiles (\ :emphasis:`profile\_type=user`\ ).
 
   These options are only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
 
@@ -1430,14 +1434,14 @@ Examples
      zos_user:
        name: newgrp
        operation: create
-       scope: group
+       profile_type: group
 
    - name: Create a user with full name and owner.
      zos_user:
        name: newuser
        operation: create
-       scope: user
-       general:
+       profile_type: user
+       base_segment:
          display_name: John Doe
          owner: admin
 
@@ -1445,24 +1449,24 @@ Examples
      zos_user:
        name: existusr
        operation: update
-       scope: user
-       general:
+       profile_type: user
+       base_segment:
          display_name: Jane Smith
 
    - name: Remove a user's full name (sets to UNKNOWN).
      zos_user:
        name: existusr
        operation: update
-       scope: user
-       general:
+       profile_type: user
+       base_segment:
          display_name: ""
 
    - name: Create a new group profile using another group as a model and setting its owner.
      zos_user:
        name: newgrp
        operation: create
-       scope: group
-       general:
+       profile_type: group
+       base_segment:
          model: oldgrp
          owner: admin
 
@@ -1470,7 +1474,7 @@ Examples
      zos_user:
        name: newgrp
        operation: create
-       scope: group
+       profile_type: group
        group:
          superior_group: sys1
          terminal_access: true
@@ -1480,8 +1484,8 @@ Examples
      zos_user:
        name: usergrp
        operation: update
-       scope: group
-       general:
+       profile_type: group
+       base_segment:
          installation_data: New installation data
          custom_fields:
            delete_block: true
@@ -1490,21 +1494,21 @@ Examples
      zos_user:
        name: newuser
        operation: create
-       scope: user
+       profile_type: user
 
    - name: Create a user using another profile as a model.
      zos_user:
        name: newuser
        operation: create
-       scope: user
-       general:
+       profile_type: user
+       base_segment:
          model: olduser
 
    - name: Create a user and set how Unix System Services should behave when it logs in.
      zos_user:
        name: newuser
        operation: create
-       scope: user
+       profile_type: user
        omvs:
          uid: auto
          home: /u/newuser
@@ -1522,7 +1526,7 @@ Examples
      zos_user:
        name: newuser
        operation: create
-       scope: user
+       profile_type: user
        access:
          default_group: usergrp
          roaudit: true
@@ -1540,8 +1544,8 @@ Examples
      zos_user:
        name: user
        operation: update
-       scope: user
-       general:
+       profile_type: user
+       base_segment:
          owner: admin
        tso:
          hold_class: K
@@ -1555,7 +1559,7 @@ Examples
      zos_user:
        name: user
        operation: connect
-       scope: user
+       profile_type: user
        connect:
          group_name: usergrp
 
@@ -1563,7 +1567,7 @@ Examples
      zos_user:
        name: user
        operation: connect
-       scope: user
+       profile_type: user
        connect:
          group_name: usergrp
          authority: connect
@@ -1578,7 +1582,7 @@ Examples
      zos_user:
        name: user
        operation: remove
-       scope: user
+       profile_type: user
        connect:
          group_name: usergrp
 
@@ -1586,33 +1590,33 @@ Examples
      zos_user:
        name: user
        operation: delete
-       scope: user
+       profile_type: user
 
    - name: Delete group from the RACF database.
      zos_user:
        name: usergrp
        operation: delete
-       scope: group
+       profile_type: group
 
    - name: Purge user from RACF database
      zos_user:
        name: user
        operation: purge
-       scope: user
+       profile_type: user
        database: racf_db
 
    - name: Purge group from RACF database
      zos_user:
        name: newgrp
        operation: purge
-       scope: group
+       profile_type: group
        database: racf_db
 
    - name: Create a user with password (will be marked as EXPIRED by default)
      zos_user:
        name: newuser
        operation: create
-       scope: user
+       profile_type: user
        password_mgmt:
          password: "{{ user_password }}"
 
@@ -1620,7 +1624,7 @@ Examples
      zos_user:
        name: newuser
        operation: create
-       scope: user
+       profile_type: user
        password_mgmt:
          passphrase: "{{ user_passphrase }}"
 
@@ -1628,7 +1632,7 @@ Examples
      zos_user:
        name: newuser
        operation: update
-       scope: user
+       profile_type: user
        password_mgmt:
          password: "{{ user_password }}"
          expired: false
@@ -1749,21 +1753,21 @@ stderr_lines
         ]
 
 num_entities_modified
-  Number of profiles and references modified by the operation.
-Set to 0 when entity already exists or is already in desired state.
-Set to 1 for successful single entity operations.
-For purge operations, reflects the count of entities deleted.
+  Returns the number of profiles and references modified by the operation.
+Set to :literal:`0` if no changes were made (e.g., the entity is already in the desired state).
+Set to :literal:`1` for successful single\-entity operations (create, update, or delete).
+For :emphasis:`operations=purge`\ , this reflects the total number of user and group entities deleted.
 
   | **returned**: always
   | **type**: int
   | **sample**: 1
 
 entities_modified
-  List of all profiles and references modified by the operation.
-For user scope operations (create, update, delete, connect, remove), contains the user profile name when successful.
-For group scope operations (create, update, delete), contains the group profile name when successful.
-For purge operations, contains all users/groups deleted by the CLIST.
-Empty list when no changes are made (entity already exists or in desired state).
+  A list of profiles and references modified by the operation.
+For :emphasis:`profile\_type=user`\ , operations (\ :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ , :literal:`connect`\ , :literal:`remove`\ ): Contains the user profile name upon success.
+For :emphasis:`profile\_type=group`\ , operations :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ ): Contains the group profile name upon success.
+For :emphasis:`operations=purge`\ , contains all users/groups IDs deleted by the CLIST.
+Returns an empty list if no changes were necessary (e.g., entity is already in the desired state).
 
   | **returned**: always
   | **type**: list

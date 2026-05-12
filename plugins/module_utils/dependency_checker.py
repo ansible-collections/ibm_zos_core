@@ -157,6 +157,10 @@ def validate_dependencies(module):
     min_zoau_ver = compat_dict.get("min_zoau_version")
     max_zoau_ver = compat_dict.get("max_zoau_version")
 
+    # Collect all warnings to display them together
+    # ansible known issue - module.warn displays only latest warning
+    warnings = []
+
     # --- z/OS version check ---
     current_zos_ver = get_zos_version_str(module)
     if current_zos_ver is None:
@@ -170,7 +174,7 @@ def validate_dependencies(module):
                 f"ibm_zos_core collection v{collection_version} requires z/OS {min_zos_ver} or later."
             )
             logger.warning(msg)
-            module.warn(msg)
+            warnings.append(msg)
 
     # --- Python version checks ---
     current_python_ver = get_python_version_str()
@@ -182,7 +186,7 @@ def validate_dependencies(module):
             f"ibm_zos_core collection v{collection_version} requires Python {REQUIRED_PYTHON_MAJOR_VERSION}."
         )
         logger.warning(msg)
-        module.warn(msg)
+        warnings.append(msg)
 
     # --- ZOAU version checks ---
     current_zoau_ver = get_zoau_version_str()
@@ -193,7 +197,7 @@ def validate_dependencies(module):
             "PYTHONPATH, LIBPATH, and PATH environment variables are configured correctly."
         )
         logger.warning(msg)
-        module.warn(msg)
+        warnings.append(msg)
 
     if min_zoau_ver and max_zoau_ver and current_zoau_ver is not None:
         current_zoau_tuple = get_version_tuple(current_zoau_ver)
@@ -209,6 +213,11 @@ def validate_dependencies(module):
                 f"(minimum {min_zoau_ver})."
             )
             logger.warning(msg)
-            module.warn(msg)
+            warnings.append(msg)
+
+    # Issue all warnings as a single combined message
+    if warnings:
+        combined_warning = "\n".join(warnings)
+        module.warn(combined_warning)
 
     return  # do not exit, allow module to continue

@@ -319,26 +319,48 @@ options:
         required: false
       nonshared_size:
         description:
-          - Maximum number of bytes of nonshared memory that can be allocated
-            by the user.
-          - Must be a number between 0 and 16,777,215, suffixed by a unit.
-          - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
-            p (petabytes).
-          - To delete this field from the profile, set C(nonshared_size="").
+          - Maximum number of bytes of nonshared memory that can be allocated by the user.
+          - Value between 0 and 16,777,215.
+          - Set to -1 to remove the limit (NOMEMLIMIT). When set to C(-1), C(nonshared_size_unit) is ignored.
+          - Unit is specified separately via C(nonshared_size_unit), defaults to 'm' (megabytes) if not specified.
           - This option is mutually exclusive with C(delete).
+        type: int
+        required: false
+      nonshared_size_unit:
+        description:
+          - The unit for the nonshared memory size.
+          - Only used when C(nonshared_size) is specified and not set to -1.
+          - Ignored when C(nonshared_size) is -1.
+          - Defaults to 'm' (megabytes) if not specified.
         type: str
         required: false
+        choices:
+          - m
+          - g
+          - t
+          - p
       shared_size:
         description:
-          - Maximum number of bytes of shared memory that can be allocated
-            by the user.
-          - Must be a number between 1 and 16,777,215 suffixed by a unit.
-          - Valid units are m (megabytes), g (gigabytes), t (terabytes) or
-            p (petabytes).
-          - To delete this field from the profile, set C(shared_size="").
+          - Maximum number of bytes of shared memory that can be allocated by the user.
+          - Value between 1 and 16,777,215.
+          - Set to -1 to remove the limit (NOSHMEMMAX). When set to -1, C(shared_size_unit) is ignored.
+          - Unit is specified separately via C(shared_size_unit), defaults to 'm' (megabytes) if not specified.
           - This option is mutually exclusive with C(delete).
+        type: int
+        required: false
+      shared_size_unit:
+        description:
+          - The unit for the shared memory size.
+          - Only used when C(shared_size) is specified and not set to -1.
+          - Ignored when C(shared_size) is -1.
+          - Defaults to 'm' (megabytes) if not specified.
         type: str
         required: false
+        choices:
+          - m
+          - g
+          - t
+          - p
       addr_space_size:
         description:
           - Address space region size in bytes.
@@ -400,8 +422,8 @@ options:
           - This option is only valid when C(operation=update); it is ignored
             for all other operation values, including C(operation=create).
           - This option is mutually exclusive with C(uid), C(custom_uid),
-            C(home), C(program), C(nonshared_size), C(shared_size),
-            C(addr_space_size), C(map_size), C(max_procs),
+            C(home), C(program), C(nonshared_size), C(nonshared_size_unit),
+            C(shared_size), C(shared_size_unit), C(addr_space_size), C(map_size), C(max_procs),
             C(max_threads), C(max_cpu_time), and C(max_files).
         type: bool
         required: false
@@ -684,25 +706,31 @@ options:
         required: false
   operator:
     description:
-      - Attributes for the RACF OPERPARM segment.
-      - Configures extended MCS console session attributes for the user profile.
-      - Only valid for I(profile_type=user) with I(operation=create) and I(operation=update).
+      - Configures the RACF OPERPARM segment attributes.
+      - The OPERPARM segment contains extended MCS console session attributes for the user.
+      - Only valid when I(profile_type=user).
+      - Supported for I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
       alt_group:
         description:
-          - Console group used in recovery.
+          - The console group used in recovery operations.
           - Must be between 1 and 8 characters in length.
-          - Empty value deletes this field.
           - To delete this field from the profile, set C(alt_group="").
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
       authority:
         description:
-          - Console's authority to issue operator commands.
-          - C(delete) will remove the field from the profile.
+          - The console's authority to issue operator commands.
+          - C(master) - Full authority to issue all commands.
+          - C(all) - Authority to issue all commands except those requiring master authority.
+          - C(info) - Authority to issue information-only commands.
+          - C(cons) - Authority to issue console-related commands.
+          - C(io) - Authority to issue I/O-related commands.
+          - C(sys) - Authority to issue system-related commands.
+          - C(delete) - Removes this field from the profile.
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -716,30 +744,27 @@ options:
           - delete
       cmd_system:
         description:
-          - System to which commands from this console are to
-            be sent.
-          - Must be between 1 and 8 characters in length.
-          - Empty value deletes this field.
+          - The system to which commands from this console are sent.
+          - Specify 1 to 8 characters.
+          - To remove this field from the profile, set to an empty string (C("")).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
       search_key:
         description:
-          - Name used to display information for all consoles
-            with the specified key by using the MVS command
-            C(DISPLAY CONSOLES,KEY).
-          - Must be between 1 and 8 characters in length.
-          - Empty value deletes this field.
+          - The name used to display information for all consoles with the specified key.
+          - Use the MVS command C(DISPLAY CONSOLES,KEY) to view consoles by this key.
+          - Length must be between 1 and 8 characters.
+          - To remove this field from the profile, set to an empty string (C("")).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
       migration_id:
         description:
-          - Whether a 1-byte migration ID should be assigned to
-            this console.
-          - C(yes) assigns a migration ID to the console.
-          - C(no) explicitly sets the console to not have a migration ID.
-          - C(delete) removes the migration ID parameter from the profile entirely (NOMIGID).
+          - Whether a 1-byte migration ID should be assigned to this console.
+          - C(yes) - Assigns a migration ID to the console (MIGID).
+          - C(no) - Explicitly sets the console to not have a migration ID.
+          - C(delete) - Removes the migration ID parameter from the profile (NOMIGID).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -749,21 +774,36 @@ options:
           - 'delete'
       display:
         description:
-          - Which information should be displayed when monitoring
-            jobs, TSO sessions, or data set status.
-          - Possible values are C(jobnames), C(jobnamest), C(sess),
-            C(sesst), C(status) and C(delete).
-          - Multiple choices are allowed.
-          - C(delete) will remove this field from the profile.
+          - The information displayed when monitoring jobs, TSO sessions, or data set status.
+          - C(jobnames) - Display job names.
+          - C(jobnamest) - Display job names with timestamps.
+          - C(sess) - Display TSO session information.
+          - C(sesst) - Display TSO session information with timestamps.
+          - C(status) - Display status information.
+          - C(delete) - Removes this field from the profile.
+          - Multiple values can be specified.
           - This option is mutually exclusive with C(delete).
         type: list
         elements: str
-        choices: [jobnames, jobnamest, sess, sesst, status, delete]
+        choices:
+          - jobnames
+          - jobnamest
+          - sess
+          - sesst
+          - status
+          - delete
         required: false
       msg_level:
         description:
-          - Specifies the messages that this console is to receive.
-          - C(delete) will remove this field from the profile.
+          - The messages that this console receives.
+          - C(nb) - Non-broadcast messages only.
+          - C(all) - All messages.
+          - C(r) - Routing messages.
+          - C(i) - Information messages.
+          - C(ce) - Critical and eventual action messages.
+          - C(e) - Eventual action messages.
+          - C(in) - Immediate and eventual action messages.
+          - C(delete) - Removes this field from the profile.
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -778,8 +818,13 @@ options:
           - delete
       msg_format:
         description:
-          - Format in which messages are displayed at the console.
-          - C(delete) will remove this field from the profile.
+          - The format in which messages are displayed at the console.
+          - C(j) - Job-related format.
+          - C(m) - Mixed format.
+          - C(s) - Short format.
+          - C(t) - Time-stamped format.
+          - C(x) - Extended format.
+          - C(delete) - Removes this field from the profile.
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -792,17 +837,15 @@ options:
           - delete
       msg_storage:
         description:
-          - Specifies the amount of storage in the TSO/E user's address
-            space that can be used for message queuing to the console.
-          - Its value can be a number between 1 and 2,000.
-          - When C(msg_storage=0), this field is set to 00000.
+          - The amount of storage in the TSO/E user's address space for message queuing to the console.
+          - Specify a value between C(1) and C(2000).
+          - Set to C(0) to reset this field to C(00000).
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       msg_scope:
         description:
-          - Systems from which this console can receive messages that
-            are not directed to a specific console.
+          - The systems from which this console can receive messages not directed to a specific console.
           - This option is mutually exclusive with C(delete).
         type: dict
         required: false
@@ -810,9 +853,9 @@ options:
           add:
             description:
               - Adds new systems to the message scope list.
-              - When C(operation=create), this sets the initial message scope (MSCOPE).
-              - When C(operation=update), this adds systems to the existing list (ADDMSCOPE).
-              - This option is mutually exclusive with C(remove) and C(delete).
+              - When I(operation=create), this sets the initial message scope (MSCOPE).
+              - When I(operation=update), this adds systems to the existing list (ADDMSCOPE).
+              - This option is mutually exclusive with I(remove) and I(delete).
             type: list
             elements: str
             required: false
@@ -820,7 +863,7 @@ options:
             description:
               - Removes all message scope systems from the profile.
               - This sets the profile to have no message scope (NOMSCOPE).
-              - This option is mutually exclusive with C(add) and C(delete).
+              - This option is mutually exclusive with I(add) and I(delete).
             type: list
             elements: str
             required: false
@@ -828,17 +871,16 @@ options:
             description:
               - Deletes specific systems from the message scope list.
               - This removes only the specified systems from the existing list (DELMSCOPE).
-              - This option is mutually exclusive with C(add) and C(remove).
+              - This option is mutually exclusive with I(add) and I(remove).
             type: list
             elements: str
             required: false
       automated_msgs:
         description:
-          - Whether the extended console can receive messages
-            that have been automated by the MFP.
-          - C(yes) enables the console to receive automated messages.
-          - C(no) explicitly disables automated messages for the console.
-          - C(delete) removes the automated messages parameter from the profile entirely (NOAUTO).
+          - Whether the extended console can receive messages automated by the Message Flood Automation (MFA).
+          - C(yes) - Enables the console to receive automated messages (AUTO).
+          - C(no) - Explicitly disables automated messages for the console.
+          - C(delete) - Removes the automated messages parameter from the profile (NOAUTO).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -848,9 +890,11 @@ options:
           - 'delete'
       del_msgs:
         description:
-          - Which delete operator message (DOM) requests the
-            console can receive.
-          - C(delete) will remove the field from the profile.
+          - The delete operator message (DOM) requests the console can receive.
+          - C(normal) - Normal delete requests.
+          - C(all) - All delete requests.
+          - C(none) - No delete requests.
+          - C(delete) - Removes this field from the profile.
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -861,11 +905,10 @@ options:
           - delete
       hardcopy_msgs:
         description:
-          - Whether the console should receive all messages
-            that are directed to hardcopy.
-          - C(yes) enables the console to receive hardcopy messages.
-          - C(no) explicitly disables hardcopy messages for the console.
-          - C(delete) removes the hardcopy messages parameter from the profile entirely (NOHC).
+          - Whether the console receives all messages directed to hardcopy.
+          - C(yes) - Enables the console to receive hardcopy messages (HC).
+          - C(no) - Explicitly disables hardcopy messages for the console.
+          - C(delete) - Removes the hardcopy messages parameter from the profile (NOHC).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -875,11 +918,10 @@ options:
           - 'delete'
       internal_msgs:
         description:
-          - Whether the console should receive messages that
-            are directed to console ID zero.
-          - C(yes) enables the console to receive internal messages.
-          - C(no) explicitly disables internal messages for the console.
-          - C(delete) removes the internal messages parameter from the profile entirely (NOINTIDS).
+          - Whether the console receives messages directed to console ID zero.
+          - C(yes) - Enables the console to receive internal messages (INTIDS).
+          - C(no) - Explicitly disables internal messages for the console.
+          - C(delete) - Removes the internal messages parameter from the profile (NOINTIDS).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -889,23 +931,20 @@ options:
           - 'delete'
       routing_msgs:
         description:
-          - Specifies the routing codes of messages this
-            operator is to receive.
-          - C(ALL) can be specified to receive all codes. Conversely,
-            C(NONE) can be used to receive none.
-          - C(delete) can be specified as a single-element list to remove
-            all routing codes from the profile entirely (NOROUTCODE).
+          - The routing codes of messages this operator receives.
+          - Specify C(ALL) to receive all routing codes.
+          - Specify C(NONE) to receive no routing codes.
+          - Specify C(delete) as a single-element list to remove all routing codes from the profile (NOROUTCODE).
           - This option is mutually exclusive with C(delete).
         type: list
         elements: str
         required: false
       undelivered_msgs:
         description:
-          - Whether the console should receive undelivered
-            messages.
-          - C(yes) enables the console to receive undelivered messages.
-          - C(no) explicitly disables undelivered messages for the console.
-          - C(delete) removes the undelivered messages parameter from the profile entirely (NOUD).
+          - Whether the console receives undelivered messages.
+          - C(yes) - Enables the console to receive undelivered messages (UD).
+          - C(no) - Explicitly disables undelivered messages for the console.
+          - C(delete) - Removes the undelivered messages parameter from the profile (NOUD).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -915,11 +954,10 @@ options:
           - 'delete'
       unknown_msgs:
         description:
-          - Whether the console should receive messages that
-            are directed to unknown console IDs.
-          - C(yes) enables the console to receive unknown messages.
-          - C(no) explicitly disables unknown messages for the console.
-          - C(delete) removes the unknown messages parameter from the profile entirely (NOUNKNIDS).
+          - Whether the console receives messages directed to unknown console IDs.
+          - C(yes) - Enables the console to receive unknown messages (UNKNIDS).
+          - C(no) - Explicitly disables unknown messages for the console.
+          - C(delete) - Removes the unknown messages parameter from the profile (NOUNKNIDS).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -930,9 +968,9 @@ options:
       responses:
         description:
           - Whether command responses should be logged.
-          - C(yes) enables logging of command responses (LOGCMDRESP(SYSTEM)).
-          - C(no) explicitly disables logging of command responses (LOGCMDRESP(NO)).
-          - C(delete) removes the command response logging parameter from the profile entirely (NOLOGCMDRESP).
+          - C(yes) - Enables logging of command responses (LOGCMDRESP(SYSTEM)).
+          - C(no) - Explicitly disables logging of command responses (LOGCMDRESP(NO)).
+          - C(delete) - Removes the command response logging parameter from the profile (NOLOGCMDRESP).
           - This option is mutually exclusive with C(delete).
         type: str
         required: false
@@ -942,9 +980,8 @@ options:
           - 'delete'
       delete:
         description:
-          - Setting to C(true) deletes the whole OPERPARM block from the profile.
-          - This option is only valid when C(operation=update); it is ignored
-            for all other operation values, including C(operation=create).
+          - When set to C(true), deletes the entire OPERPARM segment from the profile.
+          - This option is only valid when I(operation=update); it is ignored for all other operation values.
           - This option is mutually exclusive with C(alt_group), C(authority),
             C(cmd_system), C(search_key), C(migration_id), C(display),
             C(msg_level), C(msg_format), C(msg_storage), C(msg_scope),
@@ -1183,8 +1220,10 @@ EXAMPLES = r"""
       uid: auto
       home: /u/newuser
       program: /bin/sh
-      nonshared_size: '10g'
-      shared_size: '10g'
+      nonshared_size: 10
+      nonshared_size_unit: g
+      shared_size: 10
+      shared_size_unit: g
       addr_space_size: 10485760
       map_size: 2056
       max_procs: 16
@@ -2472,8 +2511,9 @@ class UserHandler(RACFHandler):
             'flat': [
                 ('dfp', ('data_app_id', 'data_class', 'storage_class', 'management_class')),
                 ('language', ('primary', 'secondary')),
-                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'shared_size',
-                          'addr_space_size', 'map_size', 'max_procs', 'max_threads', 'max_cpu_time', 'max_files')),
+                ('omvs', ('uid', 'custom_uid', 'home', 'program', 'nonshared_size', 'nonshared_size_unit',
+                          'shared_size', 'shared_size_unit', 'addr_space_size', 'map_size', 'max_procs',
+                          'max_threads', 'max_cpu_time', 'max_files')),
                 ('tso', ('account_num', 'logon_cmd', 'logon_proc', 'dest_id', 'hold_class', 'job_class',
                          'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label',
                          'unit_name', 'user_data')),
@@ -2529,8 +2569,8 @@ class UserHandler(RACFHandler):
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
         (('omvs', 'home'), 'length', ((0, 1023),)),
         (('omvs', 'program'), 'length', ((0, 1023),)),
-        (('omvs', 'nonshared_size'), 'format', (r'(^$|^[0-9]{1,8}[mgtp]$)',)),
-        (('omvs', 'shared_size'), 'format', (r'(^$|^[0-9]{1,8}[mgtp]$)',)),
+        (('omvs', 'nonshared_size'), 'range', (0, 16_777_215, -1)),
+        (('omvs', 'shared_size'), 'range', (1, 16_777_215, -1)),
         (('omvs', 'addr_space_size'), 'range', (10_485_760, 2_147_483_647, 0)),
         (('omvs', 'map_size'), 'range', (1, 16_777_216, 0)),
         (('omvs', 'max_procs'), 'range', (3, 32_767, 0)),
@@ -2588,19 +2628,6 @@ class UserHandler(RACFHandler):
             ValueError: When a parameter has an invalid value.
         """
         super().validate_params()
-
-        if self.params.get('omvs') is not None:
-            if self.params['omvs'].get('nonshared_size') not in (None, ""):
-                nonshared_size = self.params['omvs']['nonshared_size']
-                nonshared_size = int(nonshared_size[:len(nonshared_size) - 1])
-                if nonshared_size < 0 or nonshared_size > 16_777_215:
-                    raise ValueError('Value of omvs.nonshared_size is outside of its range.')
-
-            if self.params['omvs'].get('shared_size') not in (None, ""):
-                shared_size = self.params['omvs']['shared_size']
-                shared_size = int(shared_size[:len(shared_size) - 1])
-                if shared_size < 1 or shared_size > 16_777_215:
-                    raise ValueError('Value of omvs.shared_size is outside of its range.')
 
         # Validate password_mgmt parameters
         if self.params.get('password_mgmt') is not None:
@@ -2921,13 +2948,15 @@ class UserHandler(RACFHandler):
                 else:
                     parts.append(" NOPROGRAM")
             if omvs.get('nonshared_size') is not None:
-                if omvs.get('nonshared_size') != "":
-                    parts.append(f" MEMLIMIT({omvs['nonshared_size']})")
+                if omvs.get('nonshared_size') != -1:
+                    unit = omvs.get('nonshared_size_unit', 'm')
+                    parts.append(f" MEMLIMIT({omvs['nonshared_size']}{unit})")
                 else:
                     parts.append(" NOMEMLIMIT")
             if omvs.get('shared_size') is not None:
-                if omvs.get('shared_size') != "":
-                    parts.append(f" SHMEMMAX({omvs['shared_size']})")
+                if omvs.get('shared_size') != -1:
+                    unit = omvs.get('shared_size_unit', 'm')
+                    parts.append(f" SHMEMMAX({omvs['shared_size']}{unit})")
                 else:
                     parts.append(" NOSHMEMMAX")
             if omvs.get('addr_space_size') is not None:
@@ -3121,7 +3150,7 @@ class UserHandler(RACFHandler):
                     scopes = operator['msg_scope']['add']
                     # added MSCOPE command option for create option
                     if self.operation == 'create':
-                        parts.append('MSCOPE( ')
+                        parts.append(' MSCOPE( ')
                     elif self.operation == 'update':
                         parts.append('ADDMSCOPE( ')
                     for scope in scopes:
@@ -3541,12 +3570,22 @@ def run_module():
                         'required': False
                     },
                     'nonshared_size': {
-                        'type': 'str',
+                        'type': 'int',
                         'required': False
                     },
-                    'shared_size': {
+                    'nonshared_size_unit': {
                         'type': 'str',
+                        'required': False,
+                        'choices': ['m', 'g', 't', 'p']
+                    },
+                    'shared_size': {
+                        'type': 'int',
                         'required': False
+                    },
+                    'shared_size_unit': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['m', 'g', 't', 'p']
                     },
                     'addr_space_size': {
                         'type': 'int',
@@ -4051,8 +4090,10 @@ def run_module():
                 'custom_uid': {'arg_type': 'int', 'required': False},
                 'home': {'arg_type': 'path_or_empty', 'required': False},
                 'program': {'arg_type': 'path_or_empty', 'required': False},
-                'nonshared_size': {'arg_type': 'str', 'required': False},
-                'shared_size': {'arg_type': 'str', 'required': False},
+                'nonshared_size': {'arg_type': 'signed_int', 'required': False},
+                'nonshared_size_unit': {'arg_type': 'str', 'required': False},
+                'shared_size': {'arg_type': 'signed_int', 'required': False},
+                'shared_size_unit': {'arg_type': 'str', 'required': False},
                 'addr_space_size': {'arg_type': 'int', 'required': False},
                 'map_size': {'arg_type': 'int', 'required': False},
                 'max_procs': {'arg_type': 'int', 'required': False},

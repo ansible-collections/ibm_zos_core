@@ -440,31 +440,59 @@ omvs
   nonshared_size
     Maximum number of bytes of nonshared memory that can be allocated by the user.
 
-    Must be a number between 0 and 16,777,215, suffixed by a unit.
+    Value between 0 and 16,777,215.
 
-    Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
+    Set to \-1 to remove the limit (NOMEMLIMIT). When set to :literal:`\-1`\ , :literal:`nonshared\_size\_unit` is ignored.
 
-    To delete this field from the profile, set :literal:`nonshared\_size=""`.
+    Unit is specified separately via :literal:`nonshared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
     This option is mutually exclusive with :literal:`delete`.
 
     | **required**: False
+    | **type**: int
+
+
+  nonshared_size_unit
+    The unit for the nonshared memory size.
+
+    Only used when :literal:`nonshared\_size` is specified and not set to \-1.
+
+    Ignored when :literal:`nonshared\_size` is \-1.
+
+    Defaults to 'm' (megabytes) if not specified.
+
+    | **required**: False
     | **type**: str
+    | **choices**: m, g, t, p
 
 
   shared_size
     Maximum number of bytes of shared memory that can be allocated by the user.
 
-    Must be a number between 1 and 16,777,215 suffixed by a unit.
+    Value between 1 and 16,777,215.
 
-    Valid units are m (megabytes), g (gigabytes), t (terabytes) or p (petabytes).
+    Set to \-1 to remove the limit (NOSHMEMMAX). When set to \-1, :literal:`shared\_size\_unit` is ignored.
 
-    To delete this field from the profile, set :literal:`shared\_size=""`.
+    Unit is specified separately via :literal:`shared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
     This option is mutually exclusive with :literal:`delete`.
 
     | **required**: False
+    | **type**: int
+
+
+  shared_size_unit
+    The unit for the shared memory size.
+
+    Only used when :literal:`shared\_size` is specified and not set to \-1.
+
+    Ignored when :literal:`shared\_size` is \-1.
+
+    Defaults to 'm' (megabytes) if not specified.
+
+    | **required**: False
     | **type**: str
+    | **choices**: m, g, t, p
 
 
   addr_space_size
@@ -554,7 +582,7 @@ omvs
 
     This option is only valid when :literal:`operation=update`\ ; it is ignored for all other operation values, including :literal:`operation=create`.
 
-    This option is mutually exclusive with :literal:`uid`\ , :literal:`custom\_uid`\ , :literal:`home`\ , :literal:`program`\ , :literal:`nonshared\_size`\ , :literal:`shared\_size`\ , :literal:`addr\_space\_size`\ , :literal:`map\_size`\ , :literal:`max\_procs`\ , :literal:`max\_threads`\ , :literal:`max\_cpu\_time`\ , and :literal:`max\_files`.
+    This option is mutually exclusive with :literal:`uid`\ , :literal:`custom\_uid`\ , :literal:`home`\ , :literal:`program`\ , :literal:`nonshared\_size`\ , :literal:`nonshared\_size\_unit`\ , :literal:`shared\_size`\ , :literal:`shared\_size\_unit`\ , :literal:`addr\_space\_size`\ , :literal:`map\_size`\ , :literal:`max\_procs`\ , :literal:`max\_threads`\ , :literal:`max\_cpu\_time`\ , and :literal:`max\_files`.
 
     | **required**: False
     | **type**: bool
@@ -950,22 +978,22 @@ access
 
 
 operator
-  Attributes for the RACF OPERPARM segment.
+  Configures the RACF OPERPARM segment attributes.
 
-  Configures extended MCS console session attributes for the user profile.
+  The OPERPARM segment contains extended MCS console session attributes for the user.
 
-  Only valid for :emphasis:`profile\_type=user` with :emphasis:`operation=create` and :emphasis:`operation=update`.
+  Only valid when :emphasis:`profile\_type=user`.
+
+  Supported for :emphasis:`operation=create` and :emphasis:`operation=update`.
 
   | **required**: False
   | **type**: dict
 
 
   alt_group
-    Console group used in recovery.
+    The console group used in recovery operations.
 
     Must be between 1 and 8 characters in length.
-
-    Empty value deletes this field.
 
     To delete this field from the profile, set :literal:`alt\_group=""`.
 
@@ -976,9 +1004,21 @@ operator
 
 
   authority
-    Console's authority to issue operator commands.
+    The console's authority to issue operator commands.
 
-    :literal:`delete` will remove the field from the profile.
+    :literal:`master` \- Full authority to issue all commands.
+
+    :literal:`all` \- Authority to issue all commands except those requiring master authority.
+
+    :literal:`info` \- Authority to issue information\-only commands.
+
+    :literal:`cons` \- Authority to issue console\-related commands.
+
+    :literal:`io` \- Authority to issue I/O\-related commands.
+
+    :literal:`sys` \- Authority to issue system\-related commands.
+
+    :literal:`delete` \- Removes this field from the profile.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -988,11 +1028,11 @@ operator
 
 
   cmd_system
-    System to which commands from this console are to be sent.
+    The system to which commands from this console are sent.
 
-    Must be between 1 and 8 characters in length.
+    Specify 1 to 8 characters.
 
-    Empty value deletes this field.
+    To remove this field from the profile, set to an empty string (\ :literal:`""`\ ).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1001,11 +1041,13 @@ operator
 
 
   search_key
-    Name used to display information for all consoles with the specified key by using the MVS command :literal:`DISPLAY CONSOLES,KEY`.
+    The name used to display information for all consoles with the specified key.
 
-    Must be between 1 and 8 characters in length.
+    Use the MVS command :literal:`DISPLAY CONSOLES,KEY` to view consoles by this key.
 
-    Empty value deletes this field.
+    Length must be between 1 and 8 characters.
+
+    To remove this field from the profile, set to an empty string (\ :literal:`""`\ ).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1016,11 +1058,11 @@ operator
   migration_id
     Whether a 1\-byte migration ID should be assigned to this console.
 
-    :literal:`yes` assigns a migration ID to the console.
+    :literal:`yes` \- Assigns a migration ID to the console (MIGID).
 
-    :literal:`no` explicitly sets the console to not have a migration ID.
+    :literal:`no` \- Explicitly sets the console to not have a migration ID.
 
-    :literal:`delete` removes the migration ID parameter from the profile entirely (NOMIGID).
+    :literal:`delete` \- Removes the migration ID parameter from the profile (NOMIGID).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1030,13 +1072,21 @@ operator
 
 
   display
-    Which information should be displayed when monitoring jobs, TSO sessions, or data set status.
+    The information displayed when monitoring jobs, TSO sessions, or data set status.
 
-    Possible values are :literal:`jobnames`\ , :literal:`jobnamest`\ , :literal:`sess`\ , :literal:`sesst`\ , :literal:`status` and :literal:`delete`.
+    :literal:`jobnames` \- Display job names.
 
-    Multiple choices are allowed.
+    :literal:`jobnamest` \- Display job names with timestamps.
 
-    :literal:`delete` will remove this field from the profile.
+    :literal:`sess` \- Display TSO session information.
+
+    :literal:`sesst` \- Display TSO session information with timestamps.
+
+    :literal:`status` \- Display status information.
+
+    :literal:`delete` \- Removes this field from the profile.
+
+    Multiple values can be specified.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1047,9 +1097,23 @@ operator
 
 
   msg_level
-    Specifies the messages that this console is to receive.
+    The messages that this console receives.
 
-    :literal:`delete` will remove this field from the profile.
+    :literal:`nb` \- Non\-broadcast messages only.
+
+    :literal:`all` \- All messages.
+
+    :literal:`r` \- Routing messages.
+
+    :literal:`i` \- Information messages.
+
+    :literal:`ce` \- Critical and eventual action messages.
+
+    :literal:`e` \- Eventual action messages.
+
+    :literal:`in` \- Immediate and eventual action messages.
+
+    :literal:`delete` \- Removes this field from the profile.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1059,9 +1123,19 @@ operator
 
 
   msg_format
-    Format in which messages are displayed at the console.
+    The format in which messages are displayed at the console.
 
-    :literal:`delete` will remove this field from the profile.
+    :literal:`j` \- Job\-related format.
+
+    :literal:`m` \- Mixed format.
+
+    :literal:`s` \- Short format.
+
+    :literal:`t` \- Time\-stamped format.
+
+    :literal:`x` \- Extended format.
+
+    :literal:`delete` \- Removes this field from the profile.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1071,11 +1145,11 @@ operator
 
 
   msg_storage
-    Specifies the amount of storage in the TSO/E user's address space that can be used for message queuing to the console.
+    The amount of storage in the TSO/E user's address space for message queuing to the console.
 
-    Its value can be a number between 1 and 2,000.
+    Specify a value between :literal:`1` and :literal:`2000`.
 
-    When :literal:`msg\_storage=0`\ , this field is set to 00000.
+    Set to :literal:`0` to reset this field to :literal:`00000`.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1084,7 +1158,7 @@ operator
 
 
   msg_scope
-    Systems from which this console can receive messages that are not directed to a specific console.
+    The systems from which this console can receive messages not directed to a specific console.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1095,11 +1169,11 @@ operator
     add
       Adds new systems to the message scope list.
 
-      When :literal:`operation=create`\ , this sets the initial message scope (MSCOPE).
+      When :emphasis:`operation=create`\ , this sets the initial message scope (MSCOPE).
 
-      When :literal:`operation=update`\ , this adds systems to the existing list (ADDMSCOPE).
+      When :emphasis:`operation=update`\ , this adds systems to the existing list (ADDMSCOPE).
 
-      This option is mutually exclusive with :literal:`remove` and :literal:`delete`.
+      This option is mutually exclusive with :emphasis:`remove` and :emphasis:`delete`.
 
       | **required**: False
       | **type**: list
@@ -1111,7 +1185,7 @@ operator
 
       This sets the profile to have no message scope (NOMSCOPE).
 
-      This option is mutually exclusive with :literal:`add` and :literal:`delete`.
+      This option is mutually exclusive with :emphasis:`add` and :emphasis:`delete`.
 
       | **required**: False
       | **type**: list
@@ -1123,7 +1197,7 @@ operator
 
       This removes only the specified systems from the existing list (DELMSCOPE).
 
-      This option is mutually exclusive with :literal:`add` and :literal:`remove`.
+      This option is mutually exclusive with :emphasis:`add` and :emphasis:`remove`.
 
       | **required**: False
       | **type**: list
@@ -1132,13 +1206,13 @@ operator
 
 
   automated_msgs
-    Whether the extended console can receive messages that have been automated by the MFP.
+    Whether the extended console can receive messages automated by the Message Flood Automation (MFA).
 
-    :literal:`yes` enables the console to receive automated messages.
+    :literal:`yes` \- Enables the console to receive automated messages (AUTO).
 
-    :literal:`no` explicitly disables automated messages for the console.
+    :literal:`no` \- Explicitly disables automated messages for the console.
 
-    :literal:`delete` removes the automated messages parameter from the profile entirely (NOAUTO).
+    :literal:`delete` \- Removes the automated messages parameter from the profile (NOAUTO).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1148,9 +1222,15 @@ operator
 
 
   del_msgs
-    Which delete operator message (DOM) requests the console can receive.
+    The delete operator message (DOM) requests the console can receive.
 
-    :literal:`delete` will remove the field from the profile.
+    :literal:`normal` \- Normal delete requests.
+
+    :literal:`all` \- All delete requests.
+
+    :literal:`none` \- No delete requests.
+
+    :literal:`delete` \- Removes this field from the profile.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1160,13 +1240,13 @@ operator
 
 
   hardcopy_msgs
-    Whether the console should receive all messages that are directed to hardcopy.
+    Whether the console receives all messages directed to hardcopy.
 
-    :literal:`yes` enables the console to receive hardcopy messages.
+    :literal:`yes` \- Enables the console to receive hardcopy messages (HC).
 
-    :literal:`no` explicitly disables hardcopy messages for the console.
+    :literal:`no` \- Explicitly disables hardcopy messages for the console.
 
-    :literal:`delete` removes the hardcopy messages parameter from the profile entirely (NOHC).
+    :literal:`delete` \- Removes the hardcopy messages parameter from the profile (NOHC).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1176,13 +1256,13 @@ operator
 
 
   internal_msgs
-    Whether the console should receive messages that are directed to console ID zero.
+    Whether the console receives messages directed to console ID zero.
 
-    :literal:`yes` enables the console to receive internal messages.
+    :literal:`yes` \- Enables the console to receive internal messages (INTIDS).
 
-    :literal:`no` explicitly disables internal messages for the console.
+    :literal:`no` \- Explicitly disables internal messages for the console.
 
-    :literal:`delete` removes the internal messages parameter from the profile entirely (NOINTIDS).
+    :literal:`delete` \- Removes the internal messages parameter from the profile (NOINTIDS).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1192,11 +1272,13 @@ operator
 
 
   routing_msgs
-    Specifies the routing codes of messages this operator is to receive.
+    The routing codes of messages this operator receives.
 
-    :literal:`ALL` can be specified to receive all codes. Conversely, :literal:`NONE` can be used to receive none.
+    Specify :literal:`ALL` to receive all routing codes.
 
-    :literal:`delete` can be specified as a single\-element list to remove all routing codes from the profile entirely (NOROUTCODE).
+    Specify :literal:`NONE` to receive no routing codes.
+
+    Specify :literal:`delete` as a single\-element list to remove all routing codes from the profile (NOROUTCODE).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1206,13 +1288,13 @@ operator
 
 
   undelivered_msgs
-    Whether the console should receive undelivered messages.
+    Whether the console receives undelivered messages.
 
-    :literal:`yes` enables the console to receive undelivered messages.
+    :literal:`yes` \- Enables the console to receive undelivered messages (UD).
 
-    :literal:`no` explicitly disables undelivered messages for the console.
+    :literal:`no` \- Explicitly disables undelivered messages for the console.
 
-    :literal:`delete` removes the undelivered messages parameter from the profile entirely (NOUD).
+    :literal:`delete` \- Removes the undelivered messages parameter from the profile (NOUD).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1222,13 +1304,13 @@ operator
 
 
   unknown_msgs
-    Whether the console should receive messages that are directed to unknown console IDs.
+    Whether the console receives messages directed to unknown console IDs.
 
-    :literal:`yes` enables the console to receive unknown messages.
+    :literal:`yes` \- Enables the console to receive unknown messages (UNKNIDS).
 
-    :literal:`no` explicitly disables unknown messages for the console.
+    :literal:`no` \- Explicitly disables unknown messages for the console.
 
-    :literal:`delete` removes the unknown messages parameter from the profile entirely (NOUNKNIDS).
+    :literal:`delete` \- Removes the unknown messages parameter from the profile (NOUNKNIDS).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1240,11 +1322,11 @@ operator
   responses
     Whether command responses should be logged.
 
-    :literal:`yes` enables logging of command responses (LOGCMDRESP(SYSTEM)).
+    :literal:`yes` \- Enables logging of command responses (LOGCMDRESP(SYSTEM)).
 
-    :literal:`no` explicitly disables logging of command responses (LOGCMDRESP(NO)).
+    :literal:`no` \- Explicitly disables logging of command responses (LOGCMDRESP(NO)).
 
-    :literal:`delete` removes the command response logging parameter from the profile entirely (NOLOGCMDRESP).
+    :literal:`delete` \- Removes the command response logging parameter from the profile (NOLOGCMDRESP).
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -1254,9 +1336,9 @@ operator
 
 
   delete
-    Setting to :literal:`true` deletes the whole OPERPARM block from the profile.
+    When set to :literal:`true`\ , deletes the entire OPERPARM segment from the profile.
 
-    This option is only valid when :literal:`operation=update`\ ; it is ignored for all other operation values, including :literal:`operation=create`.
+    This option is only valid when :emphasis:`operation=update`\ ; it is ignored for all other operation values.
 
     This option is mutually exclusive with :literal:`alt\_group`\ , :literal:`authority`\ , :literal:`cmd\_system`\ , :literal:`search\_key`\ , :literal:`migration\_id`\ , :literal:`display`\ , :literal:`msg\_level`\ , :literal:`msg\_format`\ , :literal:`msg\_storage`\ , :literal:`msg\_scope`\ , :literal:`automated\_msgs`\ , :literal:`del\_msgs`\ , :literal:`hardcopy\_msgs`\ , :literal:`internal\_msgs`\ , :literal:`routing\_msgs`\ , :literal:`undelivered\_msgs`\ , :literal:`unknown\_msgs`\ , and :literal:`responses`.
 
@@ -1513,8 +1595,10 @@ Examples
          uid: auto
          home: /u/newuser
          program: /bin/sh
-         nonshared_size: '10g'
-         shared_size: '10g'
+         nonshared_size: 10
+         nonshared_size_unit: g
+         shared_size: 10
+         shared_size_unit: g
          addr_space_size: 10485760
          map_size: 2056
          max_procs: 16

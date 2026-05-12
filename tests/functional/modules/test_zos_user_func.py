@@ -1538,8 +1538,10 @@ def test_user_create_with_omvs_memory_limits(ansible_zos_module):
                 "program": "/bin/sh",
                 "addr_space_size": 10485760,
                 "map_size": 2048,
-                "nonshared_size": "7g",
-                "shared_size": "5g"
+                "nonshared_size": 7,
+                "nonshared_size_unit": "g",
+                "shared_size": 5,
+                "shared_size_unit": "g"
             }
         )
         
@@ -2552,8 +2554,10 @@ def test_user_update_omvs_limits_and_delete(ansible_zos_module):
             omvs={
                 "addr_space_size": 10485760,
                 "map_size": 2048,
-                "nonshared_size": "7g",
-                "shared_size": "5g"
+                "nonshared_size": 7,
+                "nonshared_size_unit": "g",
+                "shared_size": 5,
+                "shared_size_unit": "g"
             }
         )
         
@@ -3258,6 +3262,161 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
         
     finally:
         cleanup_user(hosts, user_name)
+
+def test_user_update_tso_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all TSO segment fields individually.
+    Tests deletion of account_num, logon_proc, logon_cmd, region_size,
+    max_region_size, job_class, msg_class, sysout_class, hold_class,
+    user_data, dest_id, unit_name, and security_label.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full TSO segment
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            profile_type="user",
+            tso={
+                "account_num": "33000",
+                "logon_proc": "IKJACCNT",
+                "logon_cmd": "'ISPF PANEL(ISR@390)'",
+                "region_size": 16384,
+                "max_region_size": 32768,
+                "job_class": "A",
+                "msg_class": "X",
+                "sysout_class": "A",
+                "hold_class": "H",
+                "user_data": "E4F1",
+                "dest_id": "RMT001",
+                "unit_name": "SYSDA"
+            }
+        )
+        
+        # Update to delete all TSO fields
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            tso={
+                "account_num": "",
+                "logon_proc": "",
+                "logon_cmd": "",
+                "region_size": -1,
+                "max_region_size": -1,
+                "job_class": "",
+                "msg_class": "",
+                "sysout_class": "",
+                "hold_class": "",
+                "user_data": "",
+                "dest_id": "",
+                "unit_name": "",
+                "security_label": ""
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "TSO(" in cmd
+            assert "NOACCTNUM" in cmd
+            assert "NOCOMMAND" in cmd
+            assert "NODEST" in cmd
+            assert "NOHOLDCLASS" in cmd
+            assert "NOJOBCLASS" in cmd
+            assert "NOMSGCLASS" in cmd
+            assert "NOSYS" in cmd
+            assert "NOSIZE" in cmd
+            assert "NOMAXSIZE" in cmd
+            assert "NOPROC" in cmd
+            assert "NOSECLABEL" in cmd
+            assert "NOUNIT" in cmd
+            assert "NOUSERDATA" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_omvs_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all OMVS segment fields individually.
+    Tests deletion of nonshared_size, shared_size, addr_space_size, map_size,
+    max_procs, max_threads, max_cpu_time, and max_files.
+    Note: home and program are required fields and tested separately.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full OMVS segment
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            profile_type="user",
+            omvs={
+                "uid": "auto",
+                "home": f"/u/{user_name.lower()}",
+                "program": "/bin/bash",
+                "nonshared_size": 9,
+                "nonshared_size_unit": "g",
+                "shared_size": 7,
+                "shared_size_unit": "g",
+                "addr_space_size": 104857600,
+                "map_size": 4096,
+                "max_procs": 200,
+                "max_threads": 400,
+                "max_cpu_time": 7200,
+                "max_files": 5000
+            }
+        )
+        
+        # Update to delete all OMVS fields (except required home/program)
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            omvs={
+                "home": f"/u/{user_name.lower()}",
+                "program": "/bin/bash",
+                "nonshared_size": -1,
+                "shared_size": -1,
+                "addr_space_size": 0,
+                "map_size": 0,
+                "max_procs": 0,
+                "max_threads": -1,
+                "max_cpu_time": 0,
+                "max_files": 0
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "OMVS(" in cmd
+            assert "NOMEMLIMIT" in cmd
+            assert "NOSHMEMMAX" in cmd
+            assert "NOASSIZEMAX" in cmd
+            assert "NOMMAPAREAMAX" in cmd
+            assert "NOPROCUSERMAX" in cmd
+            assert "NOTHREADSMAX" in cmd
+            assert "NOCPUTIMEMAX" in cmd
+            assert "NOFILEPROCMAX" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
 
 
 # ============================================================================

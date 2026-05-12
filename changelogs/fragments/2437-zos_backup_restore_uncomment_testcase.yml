@@ -1,0 +1,9 @@
+bugfixes:
+  - zos_backup_restore - Updated documentation to clarify `temp_volume` usage and document
+    known issue where operations fail if `temp_volume` matches source volume or is unspecified.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2437)
+
+trivial:
+  - zos_backup_restore - Enabled test case test_backup_and_restore_of_data_set_from_volume_to_new_volume
+    with `temp_volume` parameter.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2437)

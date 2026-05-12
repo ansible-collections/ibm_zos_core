@@ -102,7 +102,7 @@ def test_group_create_with_model(ansible_zos_module):
             name=group_name_model,
             operation="create",
             scope="group",
-            general={"model":"SYS1"}
+            base_segment={"model":"SYS1"}
         )
     
         for result in results.contacted.values():
@@ -115,7 +115,7 @@ def test_group_create_with_model(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"model": group_name_model}
+            base_segment={"model": group_name_model}
         )
     
         for result in results.contacted.values():
@@ -143,7 +143,7 @@ def test_group_create_with_all_attributes_comprehensive(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={
+            base_segment={
                 "owner": "SYS1",
                 "installation_data": "Full configuration test group"
             },
@@ -489,9 +489,9 @@ def test_group_create_error_custom_uid_missing(ansible_zos_module):
 # GROUP UPDATE Tests
 # ============================================================================
 
-def test_group_update_general_attributes(ansible_zos_module):
+def test_group_update_base_segment_attributes(ansible_zos_module):
     """
-    Test: Update group general attributes (owner, installation_data).
+    Test: Update group base segment attributes (owner, installation_data).
     """
     hosts = ansible_zos_module
     group_name = generate_random_name("TGU")
@@ -502,7 +502,7 @@ def test_group_update_general_attributes(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"installation_data": "Initial data"}
+            base_segment={"installation_data": "Initial data"}
         )
         
         # Update owner and installation data
@@ -510,7 +510,7 @@ def test_group_update_general_attributes(ansible_zos_module):
             name=group_name,
             operation="update",
             scope="group",
-            general={
+            base_segment={
                 "owner": "SYS1",
                 "installation_data": "Updated installation data"
             }
@@ -526,9 +526,9 @@ def test_group_update_general_attributes(ansible_zos_module):
     finally:
         cleanup_group(hosts, group_name)
 
-def test_group_update_clear_general_attributes(ansible_zos_module):
+def test_group_update_clear_base_segment_attributes(ansible_zos_module):
     """
-    Test: Clear general group attributes using empty strings.
+    Test: Clear base segment group attributes using empty strings.
     """
     hosts = ansible_zos_module
     group_name = generate_random_name("TGU")
@@ -539,7 +539,7 @@ def test_group_update_clear_general_attributes(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"installation_data": "Data to clear"}
+            base_segment={"installation_data": "Data to clear"}
         )
         
         # Clear installation data
@@ -547,7 +547,7 @@ def test_group_update_clear_general_attributes(ansible_zos_module):
             name=group_name,
             operation="update",
             scope="group",
-            general={"installation_data": ""}
+            base_segment={"installation_data": ""}
         )
         
         for result in results.contacted.values():
@@ -735,7 +735,7 @@ def test_group_update_delete_dfp_block(ansible_zos_module):
 
 def test_group_update_combined_attributes(ansible_zos_module):
     """
-    Test: Update multiple attribute types together (general + group + DFP).
+    Test: Update multiple attribute types together (base_segment + group + DFP).
     """
     hosts = ansible_zos_module
     group_name = generate_random_name("TGU")
@@ -753,7 +753,7 @@ def test_group_update_combined_attributes(ansible_zos_module):
             name=group_name,
             operation="update",
             scope="group",
-            general={
+            base_segment={
                 "owner": "SYS1",
                 "installation_data": "Combined update test"
             },
@@ -793,7 +793,7 @@ def test_group_update_omvs_and_delete(ansible_zos_module):
             name=nonexistent_group,
             operation="update",
             scope="group",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         
         for result in results.contacted.values():
@@ -948,7 +948,7 @@ def test_group_purge_default_options(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         
         # Verify group exists
@@ -994,7 +994,7 @@ def test_group_purge_keep_dump(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         
         # Purge group with keep_dump=true
@@ -1041,7 +1041,7 @@ def test_group_purge_lockinput_mode(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         
         # Purge group with optimize_dump=false (LOCKINPUT)
@@ -1084,7 +1084,7 @@ def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
             name=group_name,
             operation="create",
             scope="group",
-            general={
+            base_segment={
                 "owner": "SYS1",
                 "installation_data": "Group to be purged"
             },
@@ -1175,7 +1175,7 @@ def test_user_create_with_owner(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": owner}
+            base_segment={"owner": owner}
         )
         
         for result in results.contacted.values():
@@ -1212,7 +1212,7 @@ def test_user_create_with_model(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"model": model_user}
+            base_segment={"model": model_user}
         )
         
         for result in results.contacted.values():
@@ -1242,7 +1242,7 @@ def test_user_create_with_installation_data(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"installation_data": install_data}
+            base_segment={"installation_data": install_data}
         )
         
         for result in results.contacted.values():
@@ -2124,7 +2124,7 @@ def test_user_update_basic_attributes(ansible_zos_module):
             name=user_name,
             operation="update",
             scope="user",
-            general={"owner": group_name}
+            base_segment={"owner": group_name}
         )
         
         for result in results.contacted.values():
@@ -2138,7 +2138,7 @@ def test_user_update_basic_attributes(ansible_zos_module):
             name=user_name,
             operation="update",
             scope="user",
-            general={"installation_data": "Updated Installation Data"}
+            base_segment={"installation_data": "Updated Installation Data"}
         )
         
         for result in results.contacted.values():
@@ -2172,7 +2172,7 @@ def test_user_update_model_dataset(ansible_zos_module):
             name=user_name,
             operation="update",
             scope="user",
-            general={"model": model_dsname}
+            base_segment={"model": model_dsname}
         )
         
         for result in results.contacted.values():
@@ -3549,7 +3549,7 @@ def test_user_connect_with_owner(ansible_zos_module):
             operation="connect",
             scope="user",
             connect={"group_name": group_name},
-            general={"owner": owner_group}
+            base_segment={"owner": owner_group}
         )
         
         for result in results.contacted.values():
@@ -3752,7 +3752,7 @@ def test_user_connect_combined_attributes(ansible_zos_module):
                 "adsp_attribute": False,
                 "special": False
             },
-            general={"owner": owner_group}
+            base_segment={"owner": owner_group}
         )
         
         for result in results.contacted.values():
@@ -4165,13 +4165,13 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         hosts.all.zos_user(
             name=user_no_db,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Purge without 'database' should fail with arg validation error
@@ -4232,7 +4232,7 @@ def test_user_purge_keep_dump(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Verify user exists
@@ -4284,7 +4284,7 @@ def test_user_purge_lockinput_mode(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Purge with optimize_dump=false (LOCKINPUT mode)
@@ -4332,7 +4332,7 @@ def test_user_purge_execute_clist_true(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Verify user exists
@@ -4388,7 +4388,7 @@ def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module)
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Verify user exists
@@ -4447,7 +4447,7 @@ def test_user_purge_execute_clist_false(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
 
         # Verify user exists before dry-run
@@ -4503,7 +4503,7 @@ def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={"owner": "SYS1"}
+            base_segment={"owner": "SYS1"}
         )
         
         # Verify user exists
@@ -4567,7 +4567,7 @@ def test_user_create_with_display_name(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={
+            base_segment={
                 "display_name": display_name
             }
         )
@@ -4612,7 +4612,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
             name=user_name,
             operation="create",
             scope="user",
-            general={
+            base_segment={
                 "display_name": initial_name
             }
         )
@@ -4630,7 +4630,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
             name=user_name,
             operation="update",
             scope="user",
-            general={
+            base_segment={
                 "display_name": updated_name
             }
         )
@@ -4648,7 +4648,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
             name=user_name,
             operation="update",
             scope="user",
-            general={
+            base_segment={
                 "display_name": ""
             }
         )
@@ -5245,7 +5245,7 @@ def test_connect_without_connect_block(ansible_zos_module):
             name=test_user,
             operation='connect',
             scope='user',
-            general={'owner': 'ADMIN'}  # Wrong block
+            base_segment={'owner': 'ADMIN'}  # Wrong block
         )
         
         for result in results.contacted.values():

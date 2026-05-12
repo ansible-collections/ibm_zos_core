@@ -116,10 +116,12 @@ options:
       - If not specified, the system default HLQ is used.
     type: str
     required: false
-  general:
+  base_segment:
     description:
-      - Options that change common attributes in a RACF profile.
-      - Supports C(display_name), C(model), C(owner), C(installation_data), and C(custom_fields).
+      - Configures the RACF BASE segment attributes.
+      - The BASE segment contains core profile information applicable to both I(scope=user) and I(scope=group).
+      - Supported attributes include C(display_name), C(model), C(owner), C(installation_data), and C(custom_fields).
+      - Note that C(display_name) is only valid when I(scope=user).
     required: false
     type: dict
     suboptions:
@@ -1109,7 +1111,7 @@ EXAMPLES = r"""
     name: newuser
     operation: create
     scope: user
-    general:
+    base_segment:
       display_name: John Doe
       owner: admin
 
@@ -1118,7 +1120,7 @@ EXAMPLES = r"""
     name: existusr
     operation: update
     scope: user
-    general:
+    base_segment:
       display_name: Jane Smith
 
 - name: Remove a user's full name (sets to UNKNOWN).
@@ -1126,7 +1128,7 @@ EXAMPLES = r"""
     name: existusr
     operation: update
     scope: user
-    general:
+    base_segment:
       display_name: ""
 
 - name: Create a new group profile using another group as a model and setting its owner.
@@ -1134,7 +1136,7 @@ EXAMPLES = r"""
     name: newgrp
     operation: create
     scope: group
-    general:
+    base_segment:
       model: oldgrp
       owner: admin
 
@@ -1153,7 +1155,7 @@ EXAMPLES = r"""
     name: usergrp
     operation: update
     scope: group
-    general:
+    base_segment:
       installation_data: New installation data
       custom_fields:
         delete_block: true
@@ -1169,7 +1171,7 @@ EXAMPLES = r"""
     name: newuser
     operation: create
     scope: user
-    general:
+    base_segment:
       model: olduser
 
 - name: Create a user and set how Unix System Services should behave when it logs in.
@@ -1213,7 +1215,7 @@ EXAMPLES = r"""
     name: user
     operation: update
     scope: user
-    general:
+    base_segment:
       owner: admin
     tso:
       hold_class: K
@@ -1870,44 +1872,44 @@ class RACFHandler():
         """
         return self.get_state()
 
-    def _make_general_string(self):
-        """Creates a string that defines various common parameters of a profile.
+    def _make_base_segment_string(self):
+        """Creates a string that defines the BASE segment parameters of a profile.
 
         Returns
         -------
             str: A portion of the parameters of a RACF command.
         """
         parts = []
-        general = self.params.get('general')
+        base_segment = self.params.get('base_segment')
 
-        if general is not None:
-            if general.get('custom_fields') is not None:
-                if general['custom_fields'].get('add') is not None:
-                    custom_fields = general['custom_fields']['add']
+        if base_segment is not None:
+            if base_segment.get('custom_fields') is not None:
+                if base_segment['custom_fields'].get('add') is not None:
+                    custom_fields = base_segment['custom_fields']['add']
                     parts.append('CSDATA( ')
                     for field in custom_fields:
                         parts.append(f'{field}({custom_fields[field]}) ')
                     parts.append(') ')
-                elif general['custom_fields'].get('delete') is not None:
-                    custom_fields = general['custom_fields']['delete']
+                elif base_segment['custom_fields'].get('delete') is not None:
+                    custom_fields = base_segment['custom_fields']['delete']
                     parts.append('CSDATA( ')
                     for field in custom_fields:
                         parts.append(f'NO{field.upper()} ')
                     parts.append(') ')
-                elif general['custom_fields'].get('delete_block') is not None:
+                elif base_segment['custom_fields'].get('delete_block') is not None:
                     parts.append('NOCSDATA ')
-            if general.get('installation_data') is not None:
-                if general.get('installation_data') != "":
-                    parts.append(f"DATA('{general['installation_data']}') ")
+            if base_segment.get('installation_data') is not None:
+                if base_segment.get('installation_data') != "":
+                    parts.append(f"DATA('{base_segment['installation_data']}') ")
                 else:
                     parts.append("NODATA ")
-            if general.get('model') is not None:
-                if general.get('model') != "":
-                    parts.append(f"MODEL({general['model']}) ")
+            if base_segment.get('model') is not None:
+                if base_segment.get('model') != "":
+                    parts.append(f"MODEL({base_segment['model']}) ")
                 else:
                     parts.append("NOMODEL ")
-            if general.get('owner') is not None and general.get('owner') != "":
-                parts.append(f"OWNER({general['owner']}) ")
+            if base_segment.get('owner') is not None and base_segment.get('owner') != "":
+                parts.append(f"OWNER({base_segment['owner']}) ")
 
         return ''.join(parts)
 
@@ -2247,7 +2249,7 @@ class GroupHandler(RACFHandler):
     filters = {
         'create': {
             'nested': [
-                ('general', 'custom_fields', ('add',))
+                ('base_segment', 'custom_fields', ('add',))
             ],
             'flat': [
                 ('omvs', ('uid', 'custom_uid')),
@@ -2276,7 +2278,7 @@ class GroupHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'group', 'dfp', 'omvs'],
+        'update': ['base_segment', 'group', 'dfp', 'omvs'],
         'delete': [],
         'purge': [],
         'list': [],
@@ -2288,7 +2290,7 @@ class GroupHandler(RACFHandler):
     }
 
     validations = [
-        (('general', 'installation_data'), 'length', ((0, 255),)),
+        (('base_segment', 'installation_data'), 'length', ((0, 255),)),
         (('dfp', 'data_app_id'), 'length', ((0, 8),)),
         (('dfp', 'data_class'), 'length', ((0, 8),)),
         (('dfp', 'management_class'), 'length', ((0, 8),)),
@@ -2368,7 +2370,7 @@ class GroupHandler(RACFHandler):
 
         cmd = f'ADDGROUP ({self.name})'
 
-        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_base_segment_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_group_string()}'.strip()
 
@@ -2395,7 +2397,7 @@ class GroupHandler(RACFHandler):
         """
         cmd = f'ALTGROUP ({self.name})'
 
-        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_base_segment_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_group_string()}'.strip()
 
@@ -2462,7 +2464,7 @@ class UserHandler(RACFHandler):
     filters = {
         'create': {
             'nested': [
-                ('general', 'custom_fields', ('add',)),
+                ('base_segment', 'custom_fields', ('add',)),
                 ('access', 'clauth', ('add',)),
                 ('access', 'category', ('add',)),
                 ('operator', 'msg_scope', ('add',))
@@ -2507,7 +2509,7 @@ class UserHandler(RACFHandler):
     # block to make sense.
     valid_blocks = {
         'create': [],
-        'update': ['general', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions', 'password_mgmt'],
+        'update': ['base_segment', 'dfp', 'language', 'omvs', 'tso', 'access', 'operator', 'restrictions', 'password_mgmt'],
         'delete': [],
         'purge': [],
         'list': [],
@@ -2516,8 +2518,8 @@ class UserHandler(RACFHandler):
     }
 
     validations = [
-        (('general', 'display_name'), 'length', ((0, 20),)),
-        (('general', 'installation_data'), 'length', ((0, 255),)),
+        (('base_segment', 'display_name'), 'length', ((0, 20),)),
+        (('base_segment', 'installation_data'), 'length', ((0, 255),)),
         (('dfp', 'data_app_id'), 'length', ((0, 8),)),
         (('dfp', 'data_class'), 'length', ((0, 8),)),
         (('dfp', 'management_class'), 'length', ((0, 8),)),
@@ -2675,12 +2677,12 @@ class UserHandler(RACFHandler):
 
         cmd = f'ADDUSER ({self.name})'
 
-        # Add NAME parameter if display_name is provided in general block
-        general = self.params.get('general', {})
-        if general and general.get('display_name') is not None and general.get('display_name') != "":
-            cmd = f"{cmd} NAME('{general['display_name']}')"
+        # Add NAME parameter if display_name is provided in base_segment block
+        base_segment = self.params.get('base_segment', {})
+        if base_segment and base_segment.get('display_name') is not None and base_segment.get('display_name') != "":
+            cmd = f"{cmd} NAME('{base_segment['display_name']}')"
 
-        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_base_segment_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_language_substring()}'.strip()
         cmd = f'{cmd} {self._make_tso_substring()}'.strip()
@@ -2701,17 +2703,17 @@ class UserHandler(RACFHandler):
         """
         cmd = f'ALTUSER ({self.name})'
 
-        # Add NAME parameter if display_name is provided in general block
-        general = self.params.get('general', {})
-        if general and general.get('display_name') is not None:
-            if general['display_name'] == "":
+        # Add NAME parameter if display_name is provided in base_segment block
+        base_segment = self.params.get('base_segment', {})
+        if base_segment and base_segment.get('display_name') is not None:
+            if base_segment['display_name'] == "":
                 # Empty string resets NAME to default (displays as UNKNOWN)
                 cmd = f"{cmd} NAME()"
             else:
                 # Non-empty string sets the actual name
-                cmd = f"{cmd} NAME('{general['display_name']}')"
+                cmd = f"{cmd} NAME('{base_segment['display_name']}')"
 
-        cmd = f'{cmd} {self._make_general_string()}'.strip()
+        cmd = f'{cmd} {self._make_base_segment_string()}'.strip()
         cmd = f'{cmd} {self._make_dfp_substring()}'.strip()
         cmd = f'{cmd} {self._make_language_substring()}'.strip()
         cmd = f'{cmd} {self._make_tso_substring()}'.strip()
@@ -2803,9 +2805,9 @@ class UserHandler(RACFHandler):
         else:
             cmd = f"{cmd}NOSPECIAL "
 
-        if self.params.get('general') is not None:
-            if self.params['general'].get('owner') is not None:
-                cmd = f"{cmd} OWNER({self.params['general']['owner']})"
+        if self.params.get('base_segment') is not None:
+            if self.params['base_segment'].get('owner') is not None:
+                cmd = f"{cmd} OWNER({self.params['base_segment']['owner']})"
 
         if self.params.get('restrictions') is not None:
             restrictions = self.params['restrictions']
@@ -2845,9 +2847,9 @@ class UserHandler(RACFHandler):
         else:
             return 1, "", "No group was provided for a remove operation.", cmd
 
-        if self.params.get('general') is not None:
-            if self.params['general'].get('owner') is not None:
-                cmd = f"{cmd} OWNER({self.params['general']['owner']})"
+        if self.params.get('base_segment') is not None:
+            if self.params['base_segment'].get('owner') is not None:
+                cmd = f"{cmd} OWNER({self.params['base_segment']['owner']})"
 
         return self._execute_racf_command(cmd)
 
@@ -3381,7 +3383,7 @@ def run_module():
                 'type': 'str',
                 'required': False
             },
-            'general': {
+            'base_segment': {
                 'type': 'dict',
                 'required': False,
                 'options': {
@@ -3993,7 +3995,7 @@ def run_module():
         'optimize_dump': {'arg_type': 'bool', 'required': True},
         'execute_clist': {'arg_type': 'bool', 'required': False},
         'tmp_hlq': {'arg_type': 'str', 'required': False},
-        'general': {
+        'base_segment': {
             'arg_type': 'dict',
             'required': False,
             'options': {

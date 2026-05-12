@@ -1286,48 +1286,48 @@ def test_filter_seq_data_set(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic data set information.
-        assert 'type' in stat['attributes']
+        # Checking for generic data set information (12 attributes).
+        assert 'creation_date' in stat['attributes']      
         assert 'dsorg' in stat['attributes']
-        assert 'has_extended_attrs' in stat['attributes']
-        assert 'extended_attrs_bits' in stat['attributes']
-        assert 'creation_date' in stat['attributes']
-        assert 'expiration_date' in stat['attributes']
-        assert 'sms_data_class' in stat['attributes']
-        assert 'sms_mgmt_class' in stat['attributes']
-        assert 'sms_storage_class' in stat['attributes']
         assert 'encrypted' in stat['attributes']
+        assert 'expiration_date' in stat['attributes']
+        assert 'has_extended_attrs' in stat['attributes']        
         assert 'key_label' in stat['attributes']
         assert 'key_status' in stat['attributes']
         assert 'racf' in stat['attributes']
+        assert 'sms_data_class' in stat['attributes']
+        assert 'sms_mgmt_class' in stat['attributes']
+        assert 'sms_storage_class' in stat['attributes']        
+        assert 'type' in stat['attributes']
 
-        # Checking for sequential-data-set-specific information.
-        assert 'record_format' in stat['attributes']
-        assert 'record_length' in stat['attributes']
-        assert 'block_size' in stat['attributes']
-        assert 'creation_time' in stat['attributes']
-        assert 'last_reference' in stat['attributes']
-        assert 'updated_since_backup' in stat['attributes']
-        assert 'jcl_attrs' in stat['attributes']
-        assert 'volser' in stat['attributes']
-        assert 'num_volumes' in stat['attributes']
-        assert 'volumes' in stat['attributes']
-        assert 'missing_volumes' in stat['attributes']
-        assert 'device_type' in stat['attributes']
-        assert 'space_units' in stat['attributes']
-        assert 'primary_space' in stat['attributes']
-        assert 'secondary_space' in stat['attributes']
+        # Checking for sequential-data-set-specific information (22 attributes).
         assert 'allocation_available' in stat['attributes']
         assert 'allocation_used' in stat['attributes']
+        assert 'block_size' in stat['attributes']
+        assert 'blocks_per_track' in stat['attributes']
+        assert 'creation_time' in stat['attributes']  
+        assert 'device_type' in stat['attributes']
         assert 'extents_allocated' in stat['attributes']
         assert 'extents_used' in stat['attributes']
-        assert 'blocks_per_track' in stat['attributes']
+        assert 'jcl_attrs' in stat['attributes']
+        assert 'last_reference' in stat['attributes']
+        assert 'missing_volumes' in stat['attributes']
+        assert 'num_volumes' in stat['attributes']
+        assert 'primary_space' in stat['attributes']    
+        assert 'record_format' in stat['attributes']
+        assert 'record_length' in stat['attributes']
+        assert 'secondary_space' in stat['attributes']
+        assert 'space_units' in stat['attributes']
         assert 'tracks_per_cylinder' in stat['attributes']
+        assert 'updated_since_backup' in stat['attributes']
+        assert 'volser' in stat['attributes']
+        assert 'volumes' in stat['attributes']
+
         assert 'seq_type' in stat['attributes']
 
-        # There are a total of 35 attributes above, so the resulting dictionary
+        # There are a total of 34 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 35
+        assert len(stat['attributes'].keys()) == 34
 
 
 def test_filter_pdse_data_set(ansible_zos_module):
@@ -1387,55 +1387,55 @@ def test_filter_pdse_data_set(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic data set information.
-        assert 'type' in stat['attributes']
+        # Checking for generic data set information (12 attributes).
+        assert 'creation_date' in stat['attributes']      
         assert 'dsorg' in stat['attributes']
-        assert 'has_extended_attrs' in stat['attributes']
-        assert 'extended_attrs_bits' in stat['attributes']
-        assert 'creation_date' in stat['attributes']
-        assert 'expiration_date' in stat['attributes']
-        assert 'sms_data_class' in stat['attributes']
-        assert 'sms_mgmt_class' in stat['attributes']
-        assert 'sms_storage_class' in stat['attributes']
         assert 'encrypted' in stat['attributes']
+        assert 'expiration_date' in stat['attributes']
+        assert 'has_extended_attrs' in stat['attributes']        
         assert 'key_label' in stat['attributes']
         assert 'key_status' in stat['attributes']
         assert 'racf' in stat['attributes']
+        assert 'sms_data_class' in stat['attributes']
+        assert 'sms_mgmt_class' in stat['attributes']
+        assert 'sms_storage_class' in stat['attributes']        
+        assert 'type' in stat['attributes']
 
-        # Checking for partitioned-data-set-specific information.
-        assert 'record_format' in stat['attributes']
-        assert 'record_length' in stat['attributes']
-        assert 'block_size' in stat['attributes']
-        assert 'creation_time' in stat['attributes']
-        assert 'last_reference' in stat['attributes']
-        assert 'updated_since_backup' in stat['attributes']
-        assert 'jcl_attrs' in stat['attributes']
-        assert 'volser' in stat['attributes']
-        assert 'num_volumes' in stat['attributes']
-        assert 'volumes' in stat['attributes']
-        assert 'missing_volumes' in stat['attributes']
-        assert 'device_type' in stat['attributes']
-        assert 'space_units' in stat['attributes']
-        assert 'primary_space' in stat['attributes']
-        assert 'secondary_space' in stat['attributes']
+        # Checking for partitioned-data-set-specific information (29 attributes).
         assert 'allocation_available' in stat['attributes']
         assert 'allocation_used' in stat['attributes']
+        assert 'block_size' in stat['attributes']
+        assert 'blocks_per_track' in stat['attributes']
+        assert 'creation_time' in stat['attributes']  
+        assert 'device_type' in stat['attributes']
         assert 'extents_allocated' in stat['attributes']
         assert 'extents_used' in stat['attributes']
-        assert 'blocks_per_track' in stat['attributes']
+        assert 'jcl_attrs' in stat['attributes']
+        assert 'last_reference' in stat['attributes']
+        assert 'missing_volumes' in stat['attributes']
+        assert 'num_volumes' in stat['attributes']
+        assert 'primary_space' in stat['attributes']    
+        assert 'record_format' in stat['attributes']
+        assert 'record_length' in stat['attributes']
+        assert 'secondary_space' in stat['attributes']
+        assert 'space_units' in stat['attributes']
         assert 'tracks_per_cylinder' in stat['attributes']
+        assert 'updated_since_backup' in stat['attributes']
+        assert 'volser' in stat['attributes']
+        assert 'volumes' in stat['attributes']
+
         assert 'dir_blocks_allocated' in stat['attributes']
         assert 'dir_blocks_used' in stat['attributes']
+        assert 'max_pdse_generation' in stat['attributes']
         assert 'members' in stat['attributes']
         assert 'pages_allocated' in stat['attributes']
         assert 'pages_used' in stat['attributes']
-        assert 'perc_pages_used' in stat['attributes']
         assert 'pdse_version' in stat['attributes']
-        assert 'max_pdse_generation' in stat['attributes']
+        assert 'perc_pages_used' in stat['attributes']
 
-        # There are a total of 42 attributes above, so the resulting dictionary
+        # There are a total of 41 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 42
+        assert len(stat['attributes'].keys()) == 41
 
 
 def test_filter_vsam_data_set(ansible_zos_module):
@@ -1495,28 +1495,27 @@ def test_filter_vsam_data_set(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic data set information.
-        assert 'type' in stat['attributes']
+        # Checking for generic data set information (12 attributes).
+        assert 'creation_date' in stat['attributes']      
         assert 'dsorg' in stat['attributes']
-        assert 'has_extended_attrs' in stat['attributes']
-        assert 'extended_attrs_bits' in stat['attributes']
-        assert 'creation_date' in stat['attributes']
-        assert 'expiration_date' in stat['attributes']
-        assert 'sms_data_class' in stat['attributes']
-        assert 'sms_mgmt_class' in stat['attributes']
-        assert 'sms_storage_class' in stat['attributes']
         assert 'encrypted' in stat['attributes']
+        assert 'expiration_date' in stat['attributes']
+        assert 'has_extended_attrs' in stat['attributes']        
         assert 'key_label' in stat['attributes']
         assert 'key_status' in stat['attributes']
         assert 'racf' in stat['attributes']
+        assert 'sms_data_class' in stat['attributes']
+        assert 'sms_mgmt_class' in stat['attributes']
+        assert 'sms_storage_class' in stat['attributes']        
+        assert 'type' in stat['attributes']
 
-        # Checking for partitioned-data-set-specific information.
+        # Checking for partitioned-data-set-specific information (2 attributes).
         assert 'data' in stat['attributes']
         assert 'index' in stat['attributes']
 
-        # There are a total of 15 attributes above, so the resulting dictionary
+        # There are a total of 14 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 15
+        assert len(stat['attributes'].keys()) == 14
 
 
 def test_filter_data_set_option_no_data_set_output(ansible_zos_module):
@@ -1639,51 +1638,52 @@ def test_filter_file(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic file information.
-        assert 'mode' in stat['attributes']
+        # Checking for file-specific information (41 attributes).
         assert 'atime' in stat['attributes']
-        assert 'mtime' in stat['attributes']
-        assert 'ctime' in stat['attributes']
+        assert 'audit_bits' in stat['attributes']
+        assert 'charset' in stat['attributes']
         assert 'checksum' in stat['attributes']
-        assert 'uid' in stat['attributes']
-        assert 'gid' in stat['attributes']
-        assert 'size' in stat['attributes']
-        assert 'inode' in stat['attributes']
+        assert 'ctime' in stat['attributes']
         assert 'dev' in stat['attributes']
-        assert 'nlink' in stat['attributes']
-        assert 'isdir' in stat['attributes']
-        assert 'ischr' in stat['attributes']
+        assert 'executable' in stat['attributes']
+        assert 'extended_attrs_bits' in stat['attributes']
+        assert 'file_format' in stat['attributes']
+        assert 'gid' in stat['attributes']
+        assert 'gr_name' in stat['attributes']
+        assert 'inode' in stat['attributes']
         assert 'isblk' in stat['attributes']
-        assert 'isreg' in stat['attributes']
+        assert 'ischr' in stat['attributes']
+        assert 'isdir' in stat['attributes']
         assert 'isfifo' in stat['attributes']
+        assert 'isgid' in stat['attributes']
         assert 'islnk' in stat['attributes']
+        assert 'isreg' in stat['attributes']
         assert 'issock' in stat['attributes']
         assert 'isuid' in stat['attributes']
-        assert 'isgid' in stat['attributes']
-        assert 'wusr' in stat['attributes']
-        assert 'rusr' in stat['attributes']
-        assert 'xusr' in stat['attributes']
-        assert 'wgrp' in stat['attributes']
-        assert 'rgrp' in stat['attributes']
-        assert 'xgrp' in stat['attributes']
-        assert 'woth' in stat['attributes']
-        assert 'roth' in stat['attributes']
-        assert 'xoth' in stat['attributes']
-        assert 'writeable' in stat['attributes']
-        assert 'readable' in stat['attributes']
-        assert 'executable' in stat['attributes']
-        assert 'pw_name' in stat['attributes']
-        assert 'gr_name' in stat['attributes']
         assert 'lnk_source' in stat['attributes']
         assert 'lnk_target' in stat['attributes']
-        assert 'charset' in stat['attributes']
         assert 'mimetype' in stat['attributes']
-        assert 'audit_bits' in stat['attributes']
-        assert 'file_format' in stat['attributes']
+        assert 'mode' in stat['attributes']
+        assert 'mtime' in stat['attributes']
+        assert 'nlink' in stat['attributes']
+        assert 'pw_name' in stat['attributes']
+        assert 'readable' in stat['attributes']
+        assert 'rgrp' in stat['attributes']
+        assert 'roth' in stat['attributes']
+        assert 'rusr' in stat['attributes']
+        assert 'size' in stat['attributes']
+        assert 'uid' in stat['attributes']
+        assert 'wgrp' in stat['attributes']
+        assert 'woth' in stat['attributes']
+        assert 'writeable' in stat['attributes']
+        assert 'wusr' in stat['attributes']
+        assert 'xgrp' in stat['attributes']
+        assert 'xoth' in stat['attributes']
+        assert 'xusr' in stat['attributes']
 
-        # There are a total of 40 attributes above, so the resulting dictionary
+        # There are a total of 41 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 40
+        assert len(stat['attributes'].keys()) == 41
 
 
 def test_filter_aggregate(ansible_zos_module):
@@ -1733,7 +1733,7 @@ def test_filter_aggregate(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic aggregate information.
+        # Checking for generic aggregate information (12 attributes).
         assert 'auditfid' in stat['attributes']
         assert 'bitmap_file_size' in stat['attributes']
         assert 'converttov5' in stat['attributes']
@@ -1742,10 +1742,10 @@ def test_filter_aggregate(ansible_zos_module):
         assert 'free_1k_fragments' in stat['attributes']
         assert 'free_8k_blocks' in stat['attributes']
         assert 'log_file_size' in stat['attributes']
+        assert 'quiesced' in stat['attributes']
         assert 'sysplex_aware' in stat['attributes']
         assert 'total_size' in stat['attributes']
         assert 'version' in stat['attributes']
-        assert 'quiesced' in stat['attributes']
 
         # There are a total of 12 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
@@ -1799,15 +1799,16 @@ def test_filter_gdg(ansible_zos_module):
         assert stat.get('isgdg') is not None
         assert stat.get('attributes') is not None
 
-        # Checking for generic generation data group information.
-        assert 'limit' in stat['attributes']
-        assert 'scratch' in stat['attributes']
+        # Checking for generic generation data group information (8 attributes).
+        assert 'active_gens' in stat['attributes']
+        assert 'creation_date' in stat['attributes']
         assert 'empty' in stat['attributes']
+        assert 'extended' in stat['attributes']
+        assert 'limit' in stat['attributes']
         assert 'order' in stat['attributes']
         assert 'purge' in stat['attributes']
-        assert 'extended' in stat['attributes']
-        assert 'active_gens' in stat['attributes']
-
-        # There are a total of 7 attributes above, so the resulting dictionary
+        assert 'scratch' in stat['attributes']
+        
+        # There are a total of 8 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 7
+        assert len(stat['attributes'].keys()) == 8

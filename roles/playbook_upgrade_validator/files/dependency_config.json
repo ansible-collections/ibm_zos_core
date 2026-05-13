@@ -8,7 +8,7 @@
     },
     "zos_archive": {
         "renamed_params": {
-            "format.type": "format.name",
+            "format.name": "format.type",
             "format.format_options": "format.options",
             "format.format_options.terse_pack": "format.options.spack",
             "format.format_options.use_adrdssu": "format.options.adrdssu"
@@ -19,6 +19,14 @@
         "deprecated_params": [],
         "functionality_impact": []
     },
+    "zos_backup_restore": {
+        "renamed_params": {
+            "sms_storage_class": "sms.storage_class",
+            "sms_management_class": "sms.management_class",
+            "hlq": "output.hlq"
+        }
+    },
+    "zos_blockinfile": {},
     "zos_copy": {
         "renamed_params": {
             "force": "replace",
@@ -40,12 +48,16 @@
         ]
     },
     "zos_fetch": {
-        "deprecated_params": [
-            "note"
-        ],
+        "renamed_params": {
+            "is_binary": "binary"
+        },
         "renamed_response_params": {
-            "file": "src"
-        }
+            "file": "src",
+            "is_binary": "binary"
+        },
+        "deprecated_response_params": [
+            "note"
+        ]
     },
     "zos_find": {
         "renamed_params": {
@@ -55,17 +67,13 @@
         }
     },
     "zos_lineinfile": {
-        "renamed_params": {
-            "insertafter": "after",
-            "insertbefore": "before"
-        },
-        "renamed_response_params": {
-            "return_content": "stdout"
-        }
+        "deprecated_response_params": [
+            "return_content"
+        ]
     },
     "zos_unarchive": {
         "renamed_params": {
-            "format.type": "format.name",
+            "format.name": "format.type",
             "format.format_options": "format.options",
             "format.format_options.use_adrdssu": "format.options.adrdssu"
         }
@@ -83,6 +91,9 @@
     "zos_operator": {
         "renamed_params": {
             "wait_time_s": "wait_time"
+        },
+        "renamed_response_params": {
+            "wait_time_s": "wait_time"
         }
     },
     "zos_operator_action_query": {
@@ -99,9 +110,7 @@
     "zos_mount": {
         "renamed_params": {
             "persistent.data_store": "persistent.name",
-            "persistent.comment": "persistent.marker",
-            "persistent.addDataset": "persistent.state",
-            "persistent.delDataset": "persistent.name"
+            "persistent.comment": "persistent.marker"
         }
     },
     "zos_tso_command": {
@@ -123,26 +132,6 @@
             "ddnames": "dds",
             "ddnames.ddname": "dds.dd_name",
             "ret_code.steps": "jobs.steps"
-        },
-        "deprecated_response_params": [
-            "system",
-            "subsystem",
-            "cpu_time",
-            "execution_node",
-            "origin_node"
-        ]
-    },
-    "zos_blockinfile": {
-        "renamed_params": {
-            "insertafter": "after",
-            "insertbefore": "before"
-        }
-    },
-    "zos_backup_restore": {
-        "renamed_params": {
-            "sms_storage_class": "sms.storage_class",
-            "sms_management_class": "sms.management_class",
-            "hlq": "output.hlq"
         }
     }
 }

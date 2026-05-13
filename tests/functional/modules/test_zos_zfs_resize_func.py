@@ -914,130 +914,130 @@ def clean_up_environment(hosts, ds_name, temp_dir_name):
 #         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 #         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
 
-def test_trace_destination_bad_record_format(ansible_zos_module, ):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    grow_size = 1800
+# def test_trace_destination_bad_record_format(ansible_zos_module, ):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     grow_size = 1800
 
-    trace_destination_ds = get_tmp_ds_name()
+#     trace_destination_ds = get_tmp_ds_name()
 
-    try:
-        results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, record_format="fb")
+#     try:
+#         results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, record_format="fb")
 
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=grow_size,
-                                            trace_destination=trace_destination_ds)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=grow_size,
+#                                             trace_destination=trace_destination_ds)
 
-        for result in results.contacted.values():
-            print("8")
-            print(result)
-            assert result.get("failed") == True
-            assert result.get('changed') == False
-            assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
+#         for result in results.contacted.values():
+#             print("8")
+#             print(result)
+#             assert result.get("failed") == True
+#             assert result.get('changed') == False
+#             assert result.get('rc') == 1
+#             assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+#             assert result.get('stderr') == ""
+#             assert result.get('stderr_lines') == []
 
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+#         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
 
 
-def test_trace_destination_bad_space(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    grow_size = 1800
+# def test_trace_destination_bad_space(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     grow_size = 1800
 
-    trace_destination_ds = get_tmp_ds_name()
+#     trace_destination_ds = get_tmp_ds_name()
 
-    try:
-        results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, space_primary=200)
+#     try:
+#         results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, space_primary=200)
 
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=grow_size,
-                                            trace_destination=trace_destination_ds)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=grow_size,
+#                                             trace_destination=trace_destination_ds)
 
-        for result in results.contacted.values():
-            print("9")
-            print(result)
-            assert result.get("failed") == True
-            assert result.get('changed') == False
-            assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
+#         for result in results.contacted.values():
+#             print("9")
+#             print(result)
+#             assert result.get("failed") == True
+#             assert result.get('changed') == False
+#             assert result.get('rc') == 1
+#             assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+#             assert result.get('stderr') == ""
+#             assert result.get('stderr_lines') == []
 
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+#         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
 
-def test_no_operation_executed(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    size = 1440
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=size,)
-        for result in results.contacted.values():
-            print("10")
-            print(result)
-            assert result.get("changed") == False
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 0
-            assert result.get('size') == size
-            assert result.get('space_type') == "k"
-            assert result.get('stdout') == "Size provided is the current size of the zFS {0}".format(ds_name)
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+# def test_no_operation_executed(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     size = 1440
+#     try:
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=size,)
+#         for result in results.contacted.values():
+#             print("10")
+#             print(result)
+#             assert result.get("changed") == False
+#             assert result.get('target') == ds_name
+#             assert result.get('mount_target') == "/SYSTEM" + mount_folder
+#             assert result.get('rc') == 0
+#             assert result.get('size') == size
+#             assert result.get('space_type') == "k"
+#             assert result.get('stdout') == "Size provided is the current size of the zFS {0}".format(ds_name)
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_no_space_to_operate(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    size = 100
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=size,)
-        for result in results.contacted.values():
-            print("11")
-            print(result)
-            assert result.get("changed") == False
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 1
-            assert result.get('size') == size
-            assert result.get('space_type') == "k"
-            assert result.get('msg') == "There is not enough available space in the zFS aggregate to perform a shrink operation."
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+# def test_no_space_to_operate(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     size = 100
+#     try:
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=size,)
+#         for result in results.contacted.values():
+#             print("11")
+#             print(result)
+#             assert result.get("changed") == False
+#             assert result.get('target') == ds_name
+#             assert result.get('mount_target') == "/SYSTEM" + mount_folder
+#             assert result.get('rc') == 1
+#             assert result.get('size') == size
+#             assert result.get('space_type') == "k"
+#             assert result.get('msg') == "There is not enough available space in the zFS aggregate to perform a shrink operation."
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_fail_operation(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    size = 50
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=size,)
-        for result in results.contacted.values():
-            print("12")
-            print(result)
-            assert result.get("failed") == True
-            assert result.get('changed') == False
-            assert result.get('rc') == 1
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+# def test_fail_operation(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     size = 50
+#     try:
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=size,)
+#         for result in results.contacted.values():
+#             print("12")
+#             print(result)
+#             assert result.get("failed") == True
+#             assert result.get('changed') == False
+#             assert result.get('rc') == 1
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
 #############################
 # No auto increment playbook

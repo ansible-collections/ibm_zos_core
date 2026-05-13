@@ -115,6 +115,15 @@
       control_facts: "{{ gather_diagnostics_control_setup_facts.ansible_facts | default('N/A') }}"
   no_log: "{{ not gather_diagnostics_save_control_log }}"
 
+- name: "CONTROL | Ensure output directory exists"
+  ansible.builtin.file:
+    path: "{{ gather_diagnostics_output_dir }}"
+    state: directory
+    mode: '0755'
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  when: (gather_diagnostics_control_results is defined) and gather_diagnostics_save_control_log
+
 - name: "CONTROL | Save control node results to a YAML file"
   ansible.builtin.copy:
     dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_control.yml"

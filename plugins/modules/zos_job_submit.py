@@ -57,7 +57,6 @@ options:
     required: false
     default: 10
     type: int
-    aliases: [wait_time]
     description:
       - Option I(wait_time) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
@@ -1061,7 +1060,7 @@ def run_module():
     # used and return undersirable results
     job_output_txt = None
     is_changed = True
-    # If wait_time_s is 0, we do a deploy and forget strategy.
+    # If wait_time is 0, we do a deploy and forget strategy.
     if wait_time != 0:
 
         try:

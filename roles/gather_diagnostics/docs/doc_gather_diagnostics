@@ -68,7 +68,7 @@ options:
         description:
             - >
               Controls whether the role creates a YAML report file for the
-              control node and hides sensitive data (C(no_log: true))
+              control node and hides sensitive data (C(no_log=true))
               from the console for control node tasks.
         required: False
         type: bool
@@ -77,7 +77,7 @@ options:
         description:
             - >
               Controls whether the role creates a YAML report file for the
-              z/OS managed node and hides sensitive data (C(no_log: true))
+              z/OS managed node and hides sensitive data (C(no_log=true))
               from the console for z/OS tasks.
         required: False
         type: bool

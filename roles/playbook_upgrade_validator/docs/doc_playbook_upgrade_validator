@@ -17,7 +17,7 @@ author:
   - "Ravella Surendra Babu (@surendrababuravella)"
 short_description: Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 description:
-  - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
+  - Scans one or more Ansible playbooks to identify removed or renamed parameters
     based on migration rules for IBM z/OS Core collection version 2.0.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
@@ -29,7 +29,7 @@ options:
     type: bool
   migration_map:
     description:
-      - A structured set of migration rules that specifies deprecated, renamed, and modified parameters
+      - A structured set of migration rules that specifies removed, renamed, and modified parameters
         to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
     required: true
     type: dict

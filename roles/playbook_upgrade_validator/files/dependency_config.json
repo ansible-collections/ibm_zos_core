@@ -1,13 +1,13 @@
 {
     "zos_apf": {
-        "deprecated_params": [],
+        "removed_params": [],
         "renamed_params": {
             "persistent.data_set_name": "persistent.target"
         },
         "renamed_response_params": {}
     },
     "zos_archive": {
-        "deprecated_params": [],
+        "removed_params": [],
         "functionality_impact": [],
         "renamed_params": {
             "format.format_options": "format.options",
@@ -40,7 +40,7 @@
         }
     },
     "zos_fetch": {
-        "deprecated_response_params": [
+        "removed_response_params": [
             "note"
         ],
         "renamed_params": {
@@ -69,7 +69,7 @@
         }
     },
     "zos_job_query": {
-        "deprecated_response_params": [
+        "removed_response_params": [
             "message"
         ],
         "renamed_response_params": {
@@ -77,7 +77,7 @@
         }
     },
     "zos_job_submit": {
-        "deprecated_params": [],
+        "removed_params": [],
         "renamed_params": {
             "location": "remote_src",
             "wait_time_s": "wait_time"
@@ -92,7 +92,7 @@
         }
     },
     "zos_lineinfile": {
-        "deprecated_response_params": [
+        "removed_response_params": [
             "return_content"
         ]
     },

@@ -21,7 +21,7 @@ author:
   - "Ravella Surendra Babu (@surendrababuravella)"
 short_description: Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 description:
-  - Scans one or more Ansible playbooks to identify deprecated or renamed parameters
+  - Scans one or more Ansible playbooks to identify removed or renamed parameters
     based on migration rules for IBM z/OS Core collection version 2.0.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
@@ -32,7 +32,7 @@ options:
     type: bool
   migration_map:
     description:
-      - A structured set of migration rules that specifies deprecated, renamed, and modified parameters
+      - A structured set of migration rules that specifies removed, renamed, and modified parameters
         to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
     required: true
     type: dict
@@ -259,7 +259,7 @@ def get_tasks_from_playbook(playbook_path, line_tracker=None):
 
 
 def validate_tasks(playbook_path, migration_map, ignore_response_params):
-    """Check tasks for deprecated or renamed params."""
+    """Check tasks for removed or renamed params."""
     results = []
 
     # Create line tracker for this file
@@ -286,10 +286,10 @@ def validate_tasks(playbook_path, migration_map, ignore_response_params):
         if not short_name.startswith("zos_"):
             continue
 
-        # Deprecated params validation
-        for param in details.get("deprecated_params", []):
+        # Removed params validation
+        for param in details.get("removed_params", []):
             if has_nested_key(params, param):
-                issues.append(f"[MUST_FIX] Param '{param}' is deprecated in {module_name}")
+                issues.append(f"[MUST_FIX] Param '{param}' is removed in {module_name}")
 
         # Renamed params validation
         for param, new_name in details.get("renamed_params", {}).items():
@@ -304,9 +304,9 @@ def validate_tasks(playbook_path, migration_map, ignore_response_params):
                     f"[MUST_FIX] Param '{param}' type changed from '{old_type}' to '{new_type}' in {module_name}"
                 )
         if not ignore_response_params:
-            # Response parameters validation
-            for param in details.get("deprecated_response_params", []):
-                issues.append(f"[WARNING] Response param '{param}' is deprecated in {module_name}")
+            # Removed response parameters validation
+            for param in details.get("removed_response_params", []):
+                issues.append(f"[WARNING] Response param '{param}' is removed in {module_name}")
 
             # Renamed response params validation
             for param, new_name in details.get("renamed_response_params", {}).items():

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -47,8 +47,10 @@ def cleanup_test_directory(hosts, path):
 
 def test_gather_diagnostics_role_default(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
+    control_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_control.yml"
+    # Get the inventory hostname from the hosts object to build the diagnostic file name
+    inventory_hostname = list(hosts.all.options['inventory_manager']._inventory.hosts.keys())[0]
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node_{inventory_hostname}.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
@@ -58,15 +60,17 @@ def test_gather_diagnostics_role_default(ansible_zos_module):
             name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
-        assert_controller_file_exists(hosts, controller_report)
+        assert_controller_file_exists(hosts, control_report)
         assert_controller_file_exists(hosts, managed_report)
     finally:
         cleanup_test_directory(hosts, TMP_DIRECTORY)
 
 def test_gather_diagnostics_role_with_syslog_false(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
+    control_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_control.yml"
+    # Get the inventory hostname from the hosts object to build the diagnostic file name
+    inventory_hostname = list(hosts.all.options['inventory_manager']._inventory.hosts.keys())[0]
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node_{inventory_hostname}.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
@@ -77,7 +81,7 @@ def test_gather_diagnostics_role_with_syslog_false(ansible_zos_module):
             name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
-        assert_controller_file_exists(hosts, controller_report)
+        assert_controller_file_exists(hosts, control_report)
         assert_controller_file_exists(hosts, managed_report)
 
     finally:
@@ -85,20 +89,22 @@ def test_gather_diagnostics_role_with_syslog_false(ansible_zos_module):
 
 def test_gather_diagnostics_role_with_log_false(ansible_zos_module):
     hosts = ansible_zos_module
-    controller_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_controller.yml"
-    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node.yml"
+    control_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_control.yml"
+    # Get the inventory hostname from the hosts object
+    inventory_hostname = list(hosts.all.options['inventory_manager']._inventory.hosts.keys())[0]
+    managed_report = f"{TMP_DIRECTORY}/gather_diagnostics_report_managed_node_{inventory_hostname}.yml"
     try:
         setup_test_directory(hosts, TMP_DIRECTORY)
         hosts.all.set_fact(
             gather_diagnostics_output_dir=TMP_DIRECTORY,
-            controller_node_log_file=False,
-            managed_node_log_file=False
+            gather_diagnostics_save_control_log=False,
+            gather_diagnostics_save_managed_node_log=False
         )
         results = hosts.all.include_role(
             name="gather_diagnostics"
         )
         assert_module_did_not_fail(results)
-        assert_controller_file_does_not_exist(hosts, controller_report)
+        assert_controller_file_does_not_exist(hosts, control_report)
         assert_controller_file_does_not_exist(hosts, managed_report)
 
     finally:

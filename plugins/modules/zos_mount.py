@@ -1141,13 +1141,6 @@ def main():
                         type="str",
                         required=True,
                         aliases=["data_store"],
-                        deprecated_aliases=[
-                            dict(
-                                name='data_store',
-                                version='3.0.0',  # Version when it will be removed
-                                collection_name='ibm.ibm_zos_core',
-                            )
-                        ],
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
@@ -1156,13 +1149,6 @@ def main():
                         elements="str",
                         required=False,
                         aliases=["comment"],
-                        deprecated_aliases=[
-                            dict(
-                                name='comment',
-                                version='3.0.0',  # Version when it will be removed
-                                collection_name='ibm.ibm_zos_core',
-                            )
-                        ],
                     ),
                 ),
             ),

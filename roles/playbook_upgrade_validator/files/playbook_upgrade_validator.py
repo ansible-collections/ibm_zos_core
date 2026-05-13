@@ -51,6 +51,7 @@ options:
 notes:
   - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.0.
   - Supports reading tasks, blocks, and nested includes.
+  - Reported task line numbers rely on task names and may be ambiguous when duplicate task names are used within a playbook.
 '''
 
 EXAMPLES = r'''

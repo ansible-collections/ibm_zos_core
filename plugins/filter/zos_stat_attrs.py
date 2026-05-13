@@ -46,6 +46,18 @@ EXAMPLES = r"""
 - name: Get only data set specific attributes.
   set_fact:
     clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('data_set') }}"
+
+- name: Get only file specific attributes.
+  set_fact:
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('file') }}"
+
+- name: Get only aggregate specific attributes.
+  set_fact:
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('aggregate') }}"
+
+- name: Get only GDG specific attributes.
+  set_fact:
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('gdg') }}"
 """
 
 RETURN = r"""

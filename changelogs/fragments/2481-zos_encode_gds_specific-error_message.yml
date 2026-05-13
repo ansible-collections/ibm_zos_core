@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_encode - When a generation data set (GDS) cannot be found, the module throws an error message stating the generation data group (GDG) is not cataloged.
+    Fix adds specificity to the error message by denoting that the GDS does not exist or is not cataloged when a GDS is the source or destination for encoding.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2284).

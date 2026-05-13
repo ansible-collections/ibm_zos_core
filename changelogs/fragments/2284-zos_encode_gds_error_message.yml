@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_encode - When a generation data set (GDS) cannot be found, the module throws an error message stating the generation data group (GDG) is not found.
-    Fix updates the error message to state the GDS cannot be found when a GDS is specified as the source or destination for encoding.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2284).

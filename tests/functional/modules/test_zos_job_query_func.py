@@ -378,7 +378,7 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
 
 
 # zos_job_query should not return jobs user is not authorized to view when defaults are specified
-def test_zos_job_query_does_not_return_unauthorized_jobs(ansible_zos_module, z_python_interpreter):
+def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
     managed_user = None
     data_set_name = None

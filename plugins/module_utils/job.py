@@ -255,10 +255,10 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         {"job_id": job_id, "owner": owner, "job_name": job_name}
     )
 
-    job_id = parsed_args.get("job_id") or None
+    job_id = parsed_args.get("job_id")
     # Defaults to wildcard
     job_name = parsed_args.get("job_name") or "*"
-    owner = parsed_args.get("owner") or None
+    owner = parsed_args.get("owner")
 
     job_status_result = _get_job_status(
         job_id=job_id,

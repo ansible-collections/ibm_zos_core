@@ -215,6 +215,7 @@ def test_grow_operation(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == size
             assert result.get('space_type') == "k"
@@ -243,6 +244,7 @@ def test_shrink_operation(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == size
             assert result.get('space_type') == "k"
@@ -275,6 +277,7 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
                                                 size=grow_size,
                                                 space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == space_type
@@ -296,6 +299,7 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
                                             size=shrink_size,
                                             space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == space_type
@@ -329,6 +333,7 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
                                             size=grow_size,
                                             space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == space_type
@@ -350,6 +355,7 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
                                             size=shrink_size,
                                             space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == space_type
@@ -383,6 +389,7 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
                                             size=grow_size,
                                             space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == space_type
@@ -404,6 +411,7 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
                                             size=shrink_size,
                                             space_type=space_type)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == space_type
@@ -436,6 +444,7 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
                                             size=grow_size,
                                             verbose=True)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == "k"
@@ -458,6 +467,7 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
                                             size=shrink_size,
                                             verbose=True)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == "k"
@@ -495,6 +505,7 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
                                             size=grow_size,
                                             trace_destination=trace_destination_file)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == "k"
@@ -522,6 +533,7 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
                                             size=shrink_size,
                                             trace_destination=trace_destination_file_s)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == "k"
@@ -564,6 +576,7 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
                                             size=grow_size,
                                             trace_destination=trace_destination_file)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == "k"
@@ -590,6 +603,7 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
                                             size=shrink_size,
                                             trace_destination=trace_destination_file_s)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == "k"
@@ -640,6 +654,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == "k"
@@ -672,6 +687,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
                                             size=shrink_size,
                                             trace_destination=trace_destination_ds_s)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == "k"
@@ -721,6 +737,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == grow_size
             assert result.get('space_type') == "k"
@@ -747,6 +764,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
                                             size=shrink_size,
                                             trace_destination=trace_destination_ds_s)
         for result in results.contacted.values():
+            print(result)
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size
             assert result.get('space_type') == "k"
@@ -791,6 +809,7 @@ def test_space_type_not_accept(ansible_zos_module, space_type):
                                         size=size,
                                         space_type=space_type)
     for result in results.contacted.values():
+        print(result)
         assert result.get('failed') == True
         assert result.get('msg') == "value of space_type must be one of: k, m, g, cyl, trk, got: {0}".format(space_type)
 
@@ -802,6 +821,7 @@ def test_target_does_not_exist(ansible_zos_module):
     results = hosts.all.zos_zfs_resize(target=ds_name,
                                         size=size,)
     for result in results.contacted.values():
+        print(result)
         assert result.get('target') == ds_name
         assert result.get('size') == size
         assert result.get('rc') == 1
@@ -818,6 +838,7 @@ def test_mount_point_does_not_exist(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size,)
         for result in results.contacted.values():
+            print(result)
             assert result.get('target') == ds_name
             assert result.get('size') == size
             assert result.get('rc') == 1
@@ -844,6 +865,7 @@ def test_trace_destination_bad_data_set_type(ansible_zos_module):
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
@@ -873,6 +895,7 @@ def test_trace_destination_bad_record_length(ansible_zos_module):
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
@@ -902,6 +925,7 @@ def test_trace_destination_bad_record_format(ansible_zos_module, ):
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
@@ -932,6 +956,7 @@ def test_trace_destination_bad_space(ansible_zos_module):
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
@@ -953,6 +978,7 @@ def test_no_operation_executed(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size,)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == False
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -973,6 +999,7 @@ def test_no_space_to_operate(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size,)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == False
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -993,6 +1020,7 @@ def test_fail_operation(ansible_zos_module):
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=size,)
         for result in results.contacted.values():
+            print(result)
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
@@ -1016,6 +1044,7 @@ def test_no_auto_increase_wrapper(get_config):
         result = no_auto_increase(path)
 
         if result:
+            print(result)
             success = True
             break
 
@@ -1079,6 +1108,7 @@ def test_no_auto_increase_accept_wrapper(get_config):
         result = no_auto_increase_accept(path)
 
         if result:
+            print(result)
             success = True
             break
 

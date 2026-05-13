@@ -2069,7 +2069,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
             cmd = result.get("cmd", "")
             assert "OPERPARM(" in cmd
             assert "INTIDS(YES)" in cmd
-            assert "ROUTCODE( 1 )" in cmd
+            assert "ROUTCODE(1)" in cmd
 
         # Test with internal messages disabled and multiple routing codes
         results_multi = hosts.all.zos_user(
@@ -2089,7 +2089,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
             cmd = result.get("cmd", "")
             assert "OPERPARM(" in cmd
             assert "INTIDS(NO)" in cmd
-            assert "ROUTCODE( 1 2 11 )" in cmd
+            assert "ROUTCODE(1 2 11)" in cmd
         
         assert verify_user_exists(hosts, user_internal_single)
         assert verify_user_exists(hosts, user_no_internal_multi)
@@ -3088,8 +3088,8 @@ def test_user_update_operator_message_flags(ansible_zos_module):
 
 def test_user_update_operator_routing_and_delete(ansible_zos_module):
     """
-    Test: Update operator routing messages and delete segment - 
-    routing_msgs (single/multiple), delete.
+    Test: Update operator routing messages and delete segment -
+    routing_msgs (single/multiple/ALL/NONE), delete.
     """
     hosts = ansible_zos_module
     user_name = generate_random_name("TSTU")
@@ -3114,7 +3114,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("rc") == 0
-            assert "ROUTCODE( 1" in result.get("cmd", "")
+            assert "ROUTCODE(1)" in result.get("cmd", "")
         
         # Update routing messages - multiple codes
         results = hosts.all.zos_user(
@@ -3127,7 +3127,33 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("rc") == 0
-            assert "ROUTCODE( 1 2 11 )" in result.get("cmd", "")
+            assert "ROUTCODE(1 2 11)" in result.get("cmd", "")
+        
+        # Update routing messages - ALL
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(ALL)" in result.get("cmd", "")
+        
+        # Update routing messages - NONE
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["NONE"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(NONE)" in result.get("cmd", "")
         
         # Update with multiple operator attributes
         results = hosts.all.zos_user(
@@ -3145,7 +3171,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("rc") == 0
             cmd = result.get("cmd", "")
-            assert "ROUTCODE( 1 2 3" in cmd
+            assert "ROUTCODE(1 2 3)" in cmd
             assert "AUTH(all)" in cmd
             assert "AUTO(YES)" in cmd
         
@@ -3170,8 +3196,8 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
     Test: Update user to delete all operator segment fields individually.
     Tests deletion of authority, alt_group, cmd_system, search_key, migration_id,
     display, msg_level, msg_format, msg_storage, msg_scope, automated_msgs,
-    del_msgs, hardcopy_msgs, internal_msgs, routing_msgs, undelivered_msgs,
-    unknown_msgs, and responses.
+    delete_operator_msgs, hardcopy_msgs, internal_msgs, routing_msgs, undelivered_msgs,
+    unknown_msgs, and log_responses.
     """
     hosts = ansible_zos_module
     user_name = generate_random_name("TSTU")
@@ -3196,13 +3222,13 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
                     "add": ["SYS1", "SYS2"]
                 },
                 "automated_msgs": "yes",
-                "del_msgs": "normal",
+                "delete_operator_msgs": "normal",
                 "hardcopy_msgs": "yes",
                 "internal_msgs": "yes",
                 "routing_msgs": ["1", "2", "11"],
                 "undelivered_msgs": "no",
                 "unknown_msgs": "no",
-                "responses": "yes"
+                "log_responses": "yes"
             }
         )
         
@@ -3222,16 +3248,16 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
                 "msg_format": "delete",
                 "msg_storage": 0,
                 "msg_scope": {
-                    "remove": ["SYS1", "SYS2"]
+                    "remove": True
                 },
                 "automated_msgs": "delete",
-                "del_msgs": "delete",
+                "delete_operator_msgs": "delete",
                 "hardcopy_msgs": "delete",
                 "internal_msgs": "delete",
                 "routing_msgs": ["delete"],
                 "undelivered_msgs": "delete",
                 "unknown_msgs": "delete",
-                "responses": "delete"
+                "log_responses": "delete"
             }
         )
         
@@ -3262,6 +3288,78 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
         
     finally:
         cleanup_user(hosts, user_name)
+
+def test_user_operator_routing_msgs_validation(ansible_zos_module):
+    """
+    Test: Validate routing_msgs parameter rejects invalid combinations.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            operation="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Test 1: ALL mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL", "1", "2"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 2: NONE mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["NONE", "1"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 3: delete mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["delete", "1"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 4: ALL and NONE together should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            operation="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL", "NONE"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "only one of" in result.get("msg", "").lower()
+        
+    finally:
+        # Cleanup
+        hosts.all.zos_user(
+            name=user_name,
+            operation="delete",
+            profile_type="user"
+        )
 
 def test_user_update_tso_delete_all_fields(ansible_zos_module):
     """
@@ -5492,4 +5590,3 @@ def test_invalid_operation_value(ansible_zos_module):
 # ============================================================================
 # End Of Invalid Operation/Scope Combinations Testing
 # ============================================================================
-

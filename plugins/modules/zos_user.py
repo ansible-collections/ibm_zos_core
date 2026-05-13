@@ -22,12 +22,11 @@ version_added: '2.0.0'
 author:
   - "Alex Moreno (@rexemin)"
   - "Yogesh Rana (@yrana17)"
-short_description: Manage Z/OS user and group profiles in RACF
+short_description: Manage z/OS user and group profiles in RACF
 description:
     - Manage z/OS user and group profiles in RACF database.
     - Create, update, delete, and purge RACF user and group profiles, and connect users to groups.
     - Operations are performed using RACF TSO commands.
-    - For more details, see the L(zos_user,./zos_user.html) documentation.
 options:
   name:
     description:
@@ -51,9 +50,9 @@ options:
       - C(delete) - Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records.
         Supported for both I(profile_type=user) and I(profile_type=group).
       - C(purge) - Completely removes the profile and all associated references from the RACF database.
-        Unloads the RACF database using C(IRRDBU00), identifies all references via C(IRRRID00), and executes
-        the necessary commands to remove them. See U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-unload-utility-irrdbu00) and
-        U(https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-remove-id-irrrid00-utility)
+        Unloads the RACF database using L(IRRDBU00,https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00),
+        identifies all references via L(IRRRID00,https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility), and executes
+        the necessary commands to remove them.
       - C(connect) - Links a user to a group. Only supported when I(profile_type=user).
       - C(remove) - Removes a user from a group. Only supported when I(profile_type=user).
     type: str
@@ -92,7 +91,8 @@ options:
         This ensures data consistency by locking the database, but it prevents other
         processes from updating RACF profiles until the dump completes.
       - The user ID requires C(UPDATE) authority to the RACF database when using C(LOCKINPUT).
-      - See U(https://www.ibm.com/docs/en/zos/3.2.0?topic=irrdbu00-allowable-parameters) for more information about C(LOCKINPUT) and C(NOLOCKINPUT).
+      - See L(IRRDBU00 allowable parameters,https://www.ibm.com/docs/en/zos/latest?topic=irrdbu00-allowable-parameters)
+        for more information about C(LOCKINPUT) and C(NOLOCKINPUT).
     type: bool
     required: false
     default: true
@@ -194,7 +194,7 @@ options:
     suboptions:
       superior_group:
         description:
-          - specifies the name of a group profile to set as the superior group.
+          - Specifies the name of a group profile to set as the superior group.
         type: str
         required: false
       terminal_access:
@@ -303,7 +303,7 @@ options:
         required: false
       home:
         description:
-          - Path name for the z/OS Unix System Services home directory.
+          - Specifies the path name for the z/OS Unix System Services home directory.
           - Maximum length of 1023 characters.
           - To remove the home from the profile, set C(home="").
           - This option is mutually exclusive with C(delete).
@@ -319,16 +319,16 @@ options:
         required: false
       nonshared_size:
         description:
-          - Maximum number of bytes of nonshared memory that can be allocated by the user.
+          - Specifies the maximum number of bytes of nonshared memory that can be allocated by the user.
           - Value between 0 and 16,777,215.
-          - Set to -1 to remove the limit (NOMEMLIMIT). When set to C(-1), C(nonshared_size_unit) is ignored.
+          - Set to C(-1) to remove the limit C(NOMEMLIMIT). When set to C(-1), C(nonshared_size_unit) is ignored.
           - Unit is specified separately via C(nonshared_size_unit), defaults to 'm' (megabytes) if not specified.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       nonshared_size_unit:
         description:
-          - The unit for the nonshared memory size.
+          - Specifies the unit for the nonshared memory size.
           - Only used when C(nonshared_size) is specified and not set to -1.
           - Ignored when C(nonshared_size) is -1.
           - Defaults to 'm' (megabytes) if not specified.
@@ -341,16 +341,16 @@ options:
           - p
       shared_size:
         description:
-          - Maximum number of bytes of shared memory that can be allocated by the user.
+          - Specifies the maximum number of bytes of shared memory that can be allocated by the user.
           - Value between 1 and 16,777,215.
-          - Set to -1 to remove the limit (NOSHMEMMAX). When set to -1, C(shared_size_unit) is ignored.
+          - Set to C(-1) to remove the limit C(NOSHMEMMAX). When set to C(-1), C(shared_size_unit) is ignored.
           - Unit is specified separately via C(shared_size_unit), defaults to 'm' (megabytes) if not specified.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       shared_size_unit:
         description:
-          - The unit for the shared memory size.
+          - Specifies the unit for the shared memory size.
           - Only used when C(shared_size) is specified and not set to -1.
           - Ignored when C(shared_size) is -1.
           - Defaults to 'm' (megabytes) if not specified.
@@ -363,38 +363,37 @@ options:
           - p
       addr_space_size:
         description:
-          - Address space region size in bytes.
-          - Maximum address space size for the profile.
+          - Specifies the maximum size of the address space region in bytes for the profile.
           - Value between 10,485,760 and 2,147,483,647.
-          - A value of 0 sets this field to None.
+          - Set to C(0) to remove the user-specific limit C(NOASSIZEMAX). This allows the system default from C(BPXPRMxx) to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       map_size:
         description:
-          - Maximum amount of data space storage that can be allocated by
+          - Specifies the maximum amount of data space storage that can be allocated by
             the user.
           - This option represents the number of memory pages, not bytes,
             available.
           - Value between 1 and 16,777,216.
-          - A value of 0 sets this field to NONE.
+          - Set this to C(0) to remove the user-specific limit (C(NOMMAPAREAMAX)). This allows the system default from C(BPXPRMxx) to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_procs:
         description:
-          - Maximum number of processes the user is allowed to have active
+          - Specifies the maximum number of processes the user is allowed to have active
             at the same time.
           - Value between 3 and 32,767.
-          - A value of 0 sets this field to NONE.
+          - Set this to C(0) to remove the user-specific limit (NOPROCUSERMAX). This allows the system default from BPXPRMxx to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_threads:
         description:
-          - Maximum number of threads the user can have concurrently active.
+          - Specifies the maximum number of threads the user can have concurrently active.
           - Value between 0 and 100,000.
-          - A value of -1 sets this field to NONE.
+          - Set this to C(-1) to remove the user-specific limit (NOTHREADSMAX). This allows the system default from BPXPRMxx to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
@@ -403,16 +402,16 @@ options:
           - Specifies the RLIMIT_CPU hard limit. Indicates the cpu-time that a
             user process is allowed to use.
           - Value between 7 and 2,147,483,647 seconds.
-          - A value of 0 sets this field to NONE.
+          - Set this to C(0) to remove the user-specific limit (NOCPUTIMEMAX). This allows the system default from BPXPRMxx to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
       max_files:
         description:
-          - Maximum number of files the user is allowed to have concurrently
+          - Specifies the maximum number of files the user is allowed to have concurrently
             active or open.
           - Value between 3 and 524,287.
-          - A value of 0 sets this field to NONE.
+          - Set this to C(0) to remove the user-specific limit (NOFILEPROCMAX). This allows the system default from BPXPRMxx to apply.
           - This option is mutually exclusive with C(delete).
         type: int
         required: false
@@ -431,7 +430,7 @@ options:
     description:
       - Attributes for the RACF TSO segment.
       - Configures TSO settings for the user profile.
-      - only valid for I(profile_type=user), I(operation=create) and I(operation=update).
+      - Only valid for I(profile_type=user), I(operation=create) and I(operation=update).
     required: false
     type: dict
     suboptions:
@@ -447,7 +446,7 @@ options:
         description:
           - Specifies the command to run during TSO/E logon.
           - Maximum length of 80 characters.
-          - This option keeps case.
+          - This option is case-sensitive.
           - To delete this field from the profile, set C(logon_cmd="").
           - This option is mutually exclusive with C(delete).
         type: str
@@ -535,6 +534,7 @@ options:
         description:
           - Specifies optional installation data for the user profile.
           - Must be 4 EBCDIC characters.
+          - Valid characters are 0 - 9 and A - F.
           - When C(user_data="") is set, this field is set to C(0000).
           - This option is mutually exclusive with C(delete).
         type: str
@@ -581,10 +581,8 @@ options:
           - none
       group_name:
         description:
-          - Specifies the group to which the user will be connected.
-          - The other options in this block apply to this group.
-          - If omitted, RACF uses a default group. It is recommended to specify
-            this option when connecting a user to a group.
+          - Specifies the group to connect the user to.
+          - If omitted, the user is connected to the current connect group.
         type: str
         required: false
       group_account:
@@ -608,7 +606,7 @@ options:
       adsp_attribute:
         description:
           - Whether to assign the ADSP attribute for the connection.
-          - This attribute tells RACF to automatically protect data sets the user creates with discrete profiles.
+          - Specifies whether RACF automatically protects data sets created by the user with discrete profiles.
         type: bool
         required: false
         default: false
@@ -633,7 +631,7 @@ options:
         required: false
       clauth:
         description:
-          - Classes in which the user is allowed to define profiles to RACF for protection.
+          - Specifies the RACF resource classes the user is permitted to define profiles in.
         type: dict
         required: false
         suboptions:
@@ -651,8 +649,10 @@ options:
             required: false
       roaudit:
         description:
-          - Whether the user should have full responsibility for auditing the use of system
-            resources.
+          - Specifies whether to assign the ROAUDIT attribute to the user.
+          - When enabled, the user has responsibility for auditing system resources with read-only access to audit records and settings.
+          - In RACF output, this appears under the user's ATTRIBUTES list.
+          - Requires the SPECIAL attribute to modify.
         type: bool
         required: false
         default: false
@@ -688,7 +688,10 @@ options:
         default: false
       restricted:
         description:
-          - Whether the profile should have the RESTRICTED attribute.
+          - Whether the user profile should have the RESTRICTED attribute.
+          - When enabled, the user is denied access to resources via UACC or ID(*). Access is only granted if the user or their group is explicitly
+            added to the resource's access list.
+          - Also bypasses global access checking and z/OS UNIX other permission bits.
         type: bool
         required: false
         default: false
@@ -707,7 +710,7 @@ options:
   operator:
     description:
       - Configures the RACF OPERPARM segment attributes.
-      - The OPERPARM segment contains extended MCS console session attributes for the user.
+      - The OPERPARM segment defined extended MCS console session attributes for the user.
       - Only valid when I(profile_type=user).
       - Supported for I(operation=create) and I(operation=update).
     required: false
@@ -718,12 +721,12 @@ options:
           - The console group used in recovery operations.
           - Must be between 1 and 8 characters in length.
           - To delete this field from the profile, set C(alt_group="").
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
       authority:
         description:
-          - The console's authority to issue operator commands.
+          - The console authority level for issuing operator commands.
           - C(master) - Full authority to issue all commands.
           - C(all) - Authority to issue all commands except those requiring master authority.
           - C(info) - Authority to issue information-only commands.
@@ -731,7 +734,7 @@ options:
           - C(io) - Authority to issue I/O-related commands.
           - C(sys) - Authority to issue system-related commands.
           - C(delete) - Removes this field from the profile.
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -746,8 +749,8 @@ options:
         description:
           - The system to which commands from this console are sent.
           - Specify 1 to 8 characters.
-          - To remove this field from the profile, set to an empty string (C("")).
-          - This option is mutually exclusive with C(delete).
+          - To remove this field from the profile, set I(cmd_system="")..
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
       search_key:
@@ -755,8 +758,8 @@ options:
           - The name used to display information for all consoles with the specified key.
           - Use the MVS command C(DISPLAY CONSOLES,KEY) to view consoles by this key.
           - Length must be between 1 and 8 characters.
-          - To remove this field from the profile, set to an empty string (C("")).
-          - This option is mutually exclusive with C(delete).
+          - To remove this field from the profile, set I(search_key="").
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
       migration_id:
@@ -765,7 +768,7 @@ options:
           - C(yes) - Assigns a migration ID to the console (MIGID).
           - C(no) - Explicitly sets the console to not have a migration ID.
           - C(delete) - Removes the migration ID parameter from the profile (NOMIGID).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -774,7 +777,7 @@ options:
           - 'delete'
       display:
         description:
-          - The information displayed when monitoring jobs, TSO sessions, or data set status.
+          - List of information to display when monitoring jobs, TSO sessions, or data set status.
           - C(jobnames) - Display job names.
           - C(jobnamest) - Display job names with timestamps.
           - C(sess) - Display TSO session information.
@@ -782,7 +785,7 @@ options:
           - C(status) - Display status information.
           - C(delete) - Removes this field from the profile.
           - Multiple values can be specified.
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: list
         elements: str
         choices:
@@ -795,16 +798,17 @@ options:
         required: false
       msg_level:
         description:
-          - The messages that this console receives.
-          - C(nb) - Non-broadcast messages only.
-          - C(all) - All messages.
-          - C(r) - Routing messages.
-          - C(i) - Information messages.
-          - C(ce) - Critical and eventual action messages.
-          - C(e) - Eventual action messages.
-          - C(in) - Immediate and eventual action messages.
-          - C(delete) - Removes this field from the profile.
-          - This option is mutually exclusive with C(delete).
+          - Specifies the message levels that the Extended MCS (EMCS) console associated with this user profile receives.
+          - This attribute acts as a filter for the messages routed to the user's console session.
+          - C(r) - The console receives messages requiring an operator reply.
+          - C(i) - The console receives immediate action messages.
+          - C(ce) - The console receives critical eventual action messages.
+          - C(e) - The console receives eventual action messages.
+          - C(in) - The console receives informational messages.
+          - C(nb) - The console receives no broadcast messages.
+          - C(all) - The console receives all message levels (R, I, CE, E, and IN).
+          - C(delete) - Removes the message level field from the user's profile.
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -825,7 +829,7 @@ options:
           - C(t) - Time-stamped format.
           - C(x) - Extended format.
           - C(delete) - Removes this field from the profile.
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -840,38 +844,41 @@ options:
           - The amount of storage in the TSO/E user's address space for message queuing to the console.
           - Specify a value between C(1) and C(2000).
           - Set to C(0) to reset this field to C(00000).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: int
         required: false
       msg_scope:
         description:
-          - The systems from which this console can receive messages not directed to a specific console.
-          - This option is mutually exclusive with C(delete).
+          - Specifies the systems from which the Extended MCS (EMCS) console associated with this user profile receives
+            unsolicited messages (messages not directed to a specific console).
+          - This field updates the OPERPARM segment of the RACF user profile.
+          - C(*) - The console receives messages only from the system on which the console session is currently active.
+          - C(*all) - The console receives messages from all systems in the sysplex.
+          - C(system_names) - A list of one or more specific system names (e.g., SYS1, SYS2) to define the scope.
+          - This option is mutually exclusive with C(operator.delete).
         type: dict
         required: false
         suboptions:
           add:
             description:
-              - Adds new systems to the message scope list.
+              - List of new systems to add to the message scope list.
               - When I(operation=create), this sets the initial message scope (MSCOPE).
               - When I(operation=update), this adds systems to the existing list (ADDMSCOPE).
-              - This option is mutually exclusive with I(remove) and I(delete).
+              - This option is mutually exclusive with I(msg_scope.remove) and I(msg_scope.delete).
             type: list
             elements: str
             required: false
           remove:
             description:
-              - Removes all message scope systems from the profile.
-              - This sets the profile to have no message scope (NOMSCOPE).
-              - This option is mutually exclusive with I(add) and I(delete).
-            type: list
-            elements: str
+              - Set to C(true) to remove all message scope systems from the profile (NOMSCOPE).
+              - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.delete).
+            type: bool
             required: false
           delete:
             description:
-              - Deletes specific systems from the message scope list.
-              - This removes only the specified systems from the existing list (DELMSCOPE).
-              - This option is mutually exclusive with I(add) and I(remove).
+              - List of specific systems to delete from the message scope list (DELMSCOPE).
+              - This does not clear the entire list unless all listed systems are specified.
+              - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.remove).
             type: list
             elements: str
             required: false
@@ -881,21 +888,23 @@ options:
           - C(yes) - Enables the console to receive automated messages (AUTO).
           - C(no) - Explicitly disables automated messages for the console.
           - C(delete) - Removes the automated messages parameter from the profile (NOAUTO).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
           - 'yes'
           - 'no'
           - 'delete'
-      del_msgs:
+      delete_operator_msgs:
         description:
-          - The delete operator message (DOM) requests the console can receive.
-          - C(normal) - Normal delete requests.
-          - C(all) - All delete requests.
-          - C(none) - No delete requests.
-          - C(delete) - Removes this field from the profile.
-          - This option is mutually exclusive with C(delete).
+          - Specifies which Delete Operator Message (DOM) requests the Extended MCS (EMCS) console associated with this user profile can receive.
+          - C(normal) - The system queues all appropriate local DOM requests to the console.
+          - C(all) - All systems in the sysplex queue DOM requests to the console.
+          - C(none) - No DOM requests are queued to the console.
+          - C(delete) - Removes the DOM field from the user profile. This corresponds to the RACF C(NODOM) operand.
+          - Note that when this field is deleted or omitted C(NODOM), the DOM information will not appear in profile listings
+            (e.g., C(LU) command), and the EMCS console will default to C(normal) behavior when a session is established.
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -909,7 +918,7 @@ options:
           - C(yes) - Enables the console to receive hardcopy messages (HC).
           - C(no) - Explicitly disables hardcopy messages for the console.
           - C(delete) - Removes the hardcopy messages parameter from the profile (NOHC).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -922,7 +931,7 @@ options:
           - C(yes) - Enables the console to receive internal messages (INTIDS).
           - C(no) - Explicitly disables internal messages for the console.
           - C(delete) - Removes the internal messages parameter from the profile (NOINTIDS).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -932,10 +941,13 @@ options:
       routing_msgs:
         description:
           - The routing codes of messages this operator receives.
-          - Specify C(ALL) to receive all routing codes.
-          - Specify C(NONE) to receive no routing codes.
-          - Specify C(delete) as a single-element list to remove all routing codes from the profile (NOROUTCODE).
-          - This option is mutually exclusive with C(delete).
+          - Accepts one of the following (mutually exclusive).
+          - C(["ALL"]) - Receive all routing codes.
+          - C(["NONE"]) - Receive no routing codes.
+          - C(["delete"]) - Removes routing code information from the profile (NOROUTCODE).
+          - List of routing codes - One or more routing codes (integers 1-128) or sequences (ranges).
+          - 'Examples: C(["1"]), C(["1", "2", "11"]), C(["1:5"]), C(["1:5", "10", "20:25"]).'
+          - This option is mutually exclusive with C(operator.delete).
         type: list
         elements: str
         required: false
@@ -945,7 +957,7 @@ options:
           - C(yes) - Enables the console to receive undelivered messages (UD).
           - C(no) - Explicitly disables undelivered messages for the console.
           - C(delete) - Removes the undelivered messages parameter from the profile (NOUD).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -958,20 +970,20 @@ options:
           - C(yes) - Enables the console to receive unknown messages (UNKNIDS).
           - C(no) - Explicitly disables unknown messages for the console.
           - C(delete) - Removes the unknown messages parameter from the profile (NOUNKNIDS).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
           - 'yes'
           - 'no'
           - 'delete'
-      responses:
+      log_responses:
         description:
           - Whether command responses should be logged.
           - C(yes) - Enables logging of command responses (LOGCMDRESP(SYSTEM)).
           - C(no) - Explicitly disables logging of command responses (LOGCMDRESP(NO)).
           - C(delete) - Removes the command response logging parameter from the profile (NOLOGCMDRESP).
-          - This option is mutually exclusive with C(delete).
+          - This option is mutually exclusive with C(operator.delete).
         type: str
         required: false
         choices:
@@ -985,7 +997,7 @@ options:
           - This option is mutually exclusive with C(alt_group), C(authority),
             C(cmd_system), C(search_key), C(migration_id), C(display),
             C(msg_level), C(msg_format), C(msg_storage), C(msg_scope),
-            C(automated_msgs), C(del_msgs), C(hardcopy_msgs), C(internal_msgs),
+            C(automated_msgs), C(delete_operator_msgs), C(hardcopy_msgs), C(internal_msgs),
             C(routing_msgs), C(undelivered_msgs), C(unknown_msgs), and C(responses).
         type: bool
         required: false
@@ -1021,6 +1033,7 @@ options:
         description:
           - Daily time period when the user is allowed to login.
           - The value for this option must be in the format HHMM:HHMM.
+          - 'Note: Enclose the time value in quotes (e.g., "0900:1700") to avoid YAML parsing issues with colons.'
           - This field uses a 24-hour format.
           - This field also accepts the value C(anytime) to indicate a
             user is free to login at any time of the day.
@@ -1038,7 +1051,7 @@ options:
         description:
           - Delete the resume field from the profile.
           - This option is only valid when connecting a user to a group.
-          - This option is mutually exclusive with I(resume).
+          - This option is mutually exclusive with I(restrictions.resume).
         type: bool
         required: false
       revoke:
@@ -1052,7 +1065,7 @@ options:
         description:
           - Delete the revoke field from the profile.
           - This option is only valid when connecting a user to a group.
-          - This option is mutually exclusive with I(revoke).
+          - This option is mutually exclusive with I(restrictions.revoke).
         type: bool
         required: false
   password_mgmt:
@@ -1068,13 +1081,11 @@ options:
           - Password for the user.
           - Maximum length of 8 characters.
           - When creating a user, if neither I(password) nor I(passphrase) is specified,
-            RACF will not assign a password and the user will need to be assigned one
-            before they can log in.
-          - When a password is set for the first time during user creation, RACF marks it
-            as EXPIRED by default. To change this, update the user with I(expired=false)
-            after creation.
-          - An empty string will remove the password and set it to NOPASSWORD.
-          - It is recommended to use Ansible Vault to encrypt this value.
+            no password is assigned. The user must be assigned one before logging in.
+          - When a password is set for the first time during user creation, RACF marks it as EXPIRED by default.
+            To allow the user to use the password without an immediate change, update the user with I(expired=false) after creation.
+          - I(password="") removes the password and sets the NOPASSWORD attribute on the user profile.
+          - It is highly recommended to use B(Ansible Vault) to encrypt this value.
           - This option is mutually exclusive with I(passphrase).
         type: str
         required: false
@@ -1083,12 +1094,11 @@ options:
           - Passphrase for the user.
           - Minimum length of 9 characters, maximum length of 100 characters.
           - When creating a user, if neither I(password) nor I(passphrase) is specified,
-            RACF will not assign a password and the user will need to be assigned one
-            before they can log in.
+            no password or passphrase is assigned. The user must be assigned one before logging in.
           - When a passphrase is set for the first time during user creation, RACF marks it
             as EXPIRED by default. To change this, update the user with I(expired=false)
             after creation.
-          - An empty string will remove the passphrase and set it to NOPHRASE.
+          - Setting I(passphrase="") removes the passphrase and sets the NOPHRASE attribute on the user profile.
           - It is recommended to use Ansible Vault to encrypt this value.
           - This option is mutually exclusive with I(password).
         type: str
@@ -1123,14 +1133,15 @@ attributes:
 notes:
   - This module requires appropriate RACF authority to execute commands.
   - For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority
-    to perform the requested operation (typically SPECIAL or group-SPECIAL attribute).
-  - For purge operations using IRRDBU00 utility - When I(optimize_dump=true) (default), IRRDBU00 runs with PARM=NOLOCKINPUT requiring
-    READ authority to the input RACF database data sets. When I(optimize_dump=false), IRRDBU00 runs with PARM=LOCKINPUT requiring UPDATE
-    authority to lock the database during the unload.
-  - The IRRRID00 utility is used during purge operations to identify residual references and generate a CLIST of removal commands.
-    The user must have READ authority to the input data set (the unloaded RACF database produced by IRRDBU00).
-  - To execute the generated CLIST from IRRRID00, the user must have sufficient RACF authority - DELUSER/DELGROUP requires the SPECIAL
-    attribute, group-SPECIAL (within scope), or ownership of the target profile/superior group.
+    to perform the requested operation (typically C(SPECIAL) or C(group-SPECIAL) attribute).
+  - For purge operations using the L(IRRDBU00 utility, https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00),
+    When I(optimize_dump=true) (default), IRRDBU00 runs with C(PARM=NOLOCKINPUT) requiring C(READ) authority to the input RACF database data sets.
+    When I(optimize_dump=false), IRRDBU00 runs with C(PARM=LOCKINPUT) requiring C(UPDATE) authority to lock the database during the unload.
+  - The L(IRRRID00, https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility) utility is used during purge
+    operations to identify residual references and generate a C(CLIST) of removal commands.
+    The user must have C(READ) authority to the input data set (the unloaded RACF database produced by IRRDBU00).
+  - To execute the generated C(CLIST) from IRRRID00, the user must have sufficient RACF authority - C(DELUSER/DELGROUP) requires the C(SPECIAL)
+    attribute, C(group-SPECIAL) (within scope), or ownership of the target profile/superior group.
 
 seealso:
   - module: ibm.ibm_zos_core.zos_tso_command
@@ -2520,9 +2531,9 @@ class UserHandler(RACFHandler):
                 ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card',
                             'maintenance_access', 'restricted', 'security_label', 'security_level')),
                 ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display',
-                              'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'del_msgs',
+                              'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'delete_operator_msgs',
                               'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs',
-                              'responses')),
+                              'log_responses')),
                 ('restrictions', ('days', 'time', 'resume', 'revoke')),
                 ('password_mgmt', ('password', 'passphrase', 'expired'))
             ]
@@ -2648,6 +2659,32 @@ class UserHandler(RACFHandler):
                 if len(passphrase) < 9 or len(passphrase) > 100:
                     raise ValueError(
                         "Passphrase must be either empty string (to remove passphrase) or 9-100 characters long."
+                    )
+
+        # Validate operator.routing_msgs parameters
+        if self.params.get('operator') is not None:
+            operator = self.params['operator']
+            routing_msgs = operator.get('routing_msgs')
+
+            if routing_msgs is not None and len(routing_msgs) > 0:
+                special_keywords = {'ALL', 'NONE', 'DELETE'}
+                upper_routes = [r.upper() for r in routing_msgs]
+
+                # Count how many special keywords are present
+                special_count = sum(1 for r in upper_routes if r in special_keywords)
+
+                # Check if multiple special keywords are specified
+                if special_count > 1:
+                    raise ValueError(
+                        "routing_msgs: Only one of 'ALL', 'NONE', or 'delete' can be specified at a time. "
+                        f"Received: {routing_msgs}"
+                    )
+
+                # Check if special keyword is mixed with routing codes
+                if special_count > 0 and len(routing_msgs) > 1:
+                    raise ValueError(
+                        "routing_msgs: 'ALL', 'NONE', and 'delete' must be specified alone and cannot be combined with routing codes. "
+                        f"Received: {routing_msgs}"
                     )
 
     def execute_operation(self):
@@ -3162,16 +3199,16 @@ class UserHandler(RACFHandler):
                     for scope in scopes:
                         parts.append(f'{scope} ')
                     parts.append(') ')
-                else:
+                elif operator['msg_scope'].get('remove'):
                     parts.append(' NOMSCOPE')
             if operator.get('automated_msgs') is not None:
                 if operator.get('automated_msgs') == 'delete':
                     parts.append(" NOAUTO")
                 else:
                     parts.append(f" AUTO({operator['automated_msgs'].upper()})")
-            if operator.get('del_msgs') is not None:
-                if operator.get('del_msgs') != 'delete':
-                    parts.append(f" DOM({operator['del_msgs']})")
+            if operator.get('delete_operator_msgs') is not None:
+                if operator.get('delete_operator_msgs') != 'delete':
+                    parts.append(f" DOM({operator['delete_operator_msgs']})")
                 else:
                     parts.append(" NODOM")
             if operator.get('hardcopy_msgs') is not None:
@@ -3189,11 +3226,14 @@ class UserHandler(RACFHandler):
                 # Check if 'delete' is specified to remove all routing codes
                 if len(routes) == 1 and routes[0].lower() == 'delete':
                     parts.append(' NOROUTCODE')
+                # Check if 'ALL' or 'NONE' is specified
+                elif len(routes) == 1 and routes[0].upper() in ['ALL', 'NONE']:
+                    parts.append(f' ROUTCODE({routes[0].upper()})')
                 else:
-                    parts.append(' ROUTCODE( ')
-                    for route in routes:
-                        parts.append(f'{route} ')
-                    parts.append(') ')
+                    # Specific routing codes or ranges
+                    parts.append(' ROUTCODE(')
+                    parts.append(' '.join(routes))
+                    parts.append(')')
             if operator.get('undelivered_msgs') is not None:
                 if operator.get('undelivered_msgs') == 'delete':
                     parts.append(" NOUD")
@@ -3204,10 +3244,10 @@ class UserHandler(RACFHandler):
                     parts.append(" NOUNKNIDS")
                 else:
                     parts.append(f" UNKNIDS({operator['unknown_msgs'].upper()})")
-            if operator.get('responses') is not None:
-                if operator.get('responses') == 'delete':
+            if operator.get('log_responses') is not None:
+                if operator.get('log_responses') == 'delete':
                     parts.append(" NOLOGCMDRESP")
-                elif operator.get('responses') == 'yes':
+                elif operator.get('log_responses') == 'yes':
                     parts.append(" LOGCMDRESP(SYSTEM)")
                 else:
                     parts.append(" LOGCMDRESP(NO)")
@@ -3831,13 +3871,13 @@ def run_module():
                     ('msg_storage', 'delete'),
                     ('msg_scope', 'delete'),
                     ('automated_msgs', 'delete'),
-                    ('del_msgs', 'delete'),
+                    ('delete_operator_msgs', 'delete'),
                     ('hardcopy_msgs', 'delete'),
                     ('internal_msgs', 'delete'),
                     ('routing_msgs', 'delete'),
                     ('undelivered_msgs', 'delete'),
                     ('unknown_msgs', 'delete'),
-                    ('responses', 'delete')
+                    ('log_responses', 'delete')
                 ],
                 'options': {
                     'alt_group': {
@@ -3898,8 +3938,7 @@ def run_module():
                                 'required': False
                             },
                             'remove': {
-                                'type': 'list',
-                                'elements': 'str',
+                                'type': 'bool',
                                 'required': False
                             },
                             'delete': {
@@ -3914,7 +3953,7 @@ def run_module():
                         'required': False,
                         'choices': ['yes', 'no', 'delete']
                     },
-                    'del_msgs': {
+                    'delete_operator_msgs': {
                         'type': 'str',
                         'required': False,
                         'choices': ['normal', 'all', 'none', 'delete']
@@ -3944,7 +3983,7 @@ def run_module():
                         'required': False,
                         'choices': ['yes', 'no', 'delete']
                     },
-                    'responses': {
+                    'log_responses': {
                         'type': 'str',
                         'required': False,
                         'choices': ['yes', 'no', 'delete']
@@ -4184,18 +4223,18 @@ def run_module():
                     'required': False,
                     'options': {
                         'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
-                        'remove': {'arg_type': 'list', 'elements': 'str', 'required': False},
+                        'remove': {'arg_type': 'bool', 'required': False},
                         'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
                     }
                 },
                 'automated_msgs': {'arg_type': 'str', 'required': False},
-                'del_msgs': {'arg_type': 'str', 'required': False},
+                'delete_operator_msgs': {'arg_type': 'str', 'required': False},
                 'hardcopy_msgs': {'arg_type': 'str', 'required': False},
                 'internal_msgs': {'arg_type': 'str', 'required': False},
                 'routing_msgs': {'arg_type': 'list', 'elements': 'str', 'required': False},
                 'undelivered_msgs': {'arg_type': 'str', 'required': False},
                 'unknown_msgs': {'arg_type': 'str', 'required': False},
-                'responses': {'arg_type': 'str', 'required': False},
+                'log_responses': {'arg_type': 'str', 'required': False},
                 'delete': {'arg_type': 'bool', 'required': False}
             }
         },

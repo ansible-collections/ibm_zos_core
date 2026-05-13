@@ -4,7 +4,7 @@
 .. _zos_user_module:
 
 
-zos_user -- Manage Z/OS user and group profiles in RACF
+zos_user -- Manage z/OS user and group profiles in RACF
 =======================================================
 
 
@@ -19,7 +19,6 @@ Synopsis
 - Manage z/OS user and group profiles in RACF database.
 - Create, update, delete, and purge RACF user and group profiles, and connect users to groups.
 - Operations are performed using RACF TSO commands.
-- For more details, see the \ `zos\_user <./zos_user.html>`__ documentation.
 
 
 
@@ -55,7 +54,7 @@ operation
 
   :literal:`delete` \- Removes the profile from RACF database, but may leave references to the profile in other RACF profiles or database records. Supported for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
-  :literal:`purge` \- Completely removes the profile and all associated references from the RACF database. Unloads the RACF database using :literal:`IRRDBU00`\ , identifies all references via :literal:`IRRRID00`\ , and executes the necessary commands to remove them. See \ `https://www.ibm.com/docs/en/zos/3.2.0?topic=database\-using\-racf\-unload\-utility\-irrdbu00 <https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-unload-utility-irrdbu00>`__ and \ `https://www.ibm.com/docs/en/zos/3.2.0?topic=database\-using\-racf\-remove\-id\-irrrid00\-utility <https://www.ibm.com/docs/en/zos/3.2.0?topic=database-using-racf-remove-id-irrrid00-utility>`__
+  :literal:`purge` \- Completely removes the profile and all associated references from the RACF database. Unloads the RACF database using \ `IRRDBU00 <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , identifies all references via \ `IRRRID00 <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility>`__\ , and executes the necessary commands to remove them.
 
   :literal:`connect` \- Links a user to a group. Only supported when :emphasis:`profile\_type=user`.
 
@@ -102,7 +101,7 @@ optimize_dump
 
   The user ID requires :literal:`UPDATE` authority to the RACF database when using :literal:`LOCKINPUT`.
 
-  See \ `https://www.ibm.com/docs/en/zos/3.2.0?topic=irrdbu00\-allowable\-parameters <https://www.ibm.com/docs/en/zos/3.2.0?topic=irrdbu00-allowable-parameters>`__ for more information about :literal:`LOCKINPUT` and :literal:`NOLOCKINPUT`.
+  See \ `IRRDBU00 allowable parameters <https://www.ibm.com/docs/en/zos/latest?topic=irrdbu00-allowable-parameters>`__ for more information about :literal:`LOCKINPUT` and :literal:`NOLOCKINPUT`.
 
   | **required**: False
   | **type**: bool
@@ -256,7 +255,7 @@ group
 
 
   superior_group
-    specifies the name of a group profile to set as the superior group.
+    Specifies the name of a group profile to set as the superior group.
 
     | **required**: False
     | **type**: str
@@ -412,7 +411,7 @@ omvs
 
 
   home
-    Path name for the z/OS Unix System Services home directory.
+    Specifies the path name for the z/OS Unix System Services home directory.
 
     Maximum length of 1023 characters.
 
@@ -438,11 +437,11 @@ omvs
 
 
   nonshared_size
-    Maximum number of bytes of nonshared memory that can be allocated by the user.
+    Specifies the maximum number of bytes of nonshared memory that can be allocated by the user.
 
     Value between 0 and 16,777,215.
 
-    Set to \-1 to remove the limit (NOMEMLIMIT). When set to :literal:`\-1`\ , :literal:`nonshared\_size\_unit` is ignored.
+    Set to :literal:`\-1` to remove the limit :literal:`NOMEMLIMIT`. When set to :literal:`\-1`\ , :literal:`nonshared\_size\_unit` is ignored.
 
     Unit is specified separately via :literal:`nonshared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
@@ -453,7 +452,7 @@ omvs
 
 
   nonshared_size_unit
-    The unit for the nonshared memory size.
+    Specifies the unit for the nonshared memory size.
 
     Only used when :literal:`nonshared\_size` is specified and not set to \-1.
 
@@ -467,11 +466,11 @@ omvs
 
 
   shared_size
-    Maximum number of bytes of shared memory that can be allocated by the user.
+    Specifies the maximum number of bytes of shared memory that can be allocated by the user.
 
     Value between 1 and 16,777,215.
 
-    Set to \-1 to remove the limit (NOSHMEMMAX). When set to \-1, :literal:`shared\_size\_unit` is ignored.
+    Set to :literal:`\-1` to remove the limit :literal:`NOSHMEMMAX`. When set to :literal:`\-1`\ , :literal:`shared\_size\_unit` is ignored.
 
     Unit is specified separately via :literal:`shared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
@@ -482,7 +481,7 @@ omvs
 
 
   shared_size_unit
-    The unit for the shared memory size.
+    Specifies the unit for the shared memory size.
 
     Only used when :literal:`shared\_size` is specified and not set to \-1.
 
@@ -496,13 +495,11 @@ omvs
 
 
   addr_space_size
-    Address space region size in bytes.
-
-    Maximum address space size for the profile.
+    Specifies the maximum size of the address space region in bytes for the profile.
 
     Value between 10,485,760 and 2,147,483,647.
 
-    A value of 0 sets this field to None.
+    Set to :literal:`0` to remove the user\-specific limit :literal:`NOASSIZEMAX`. This allows the system default from :literal:`BPXPRMxx` to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -511,13 +508,13 @@ omvs
 
 
   map_size
-    Maximum amount of data space storage that can be allocated by the user.
+    Specifies the maximum amount of data space storage that can be allocated by the user.
 
     This option represents the number of memory pages, not bytes, available.
 
     Value between 1 and 16,777,216.
 
-    A value of 0 sets this field to NONE.
+    Set this to :literal:`0` to remove the user\-specific limit (\ :literal:`NOMMAPAREAMAX`\ ). This allows the system default from :literal:`BPXPRMxx` to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -526,11 +523,11 @@ omvs
 
 
   max_procs
-    Maximum number of processes the user is allowed to have active at the same time.
+    Specifies the maximum number of processes the user is allowed to have active at the same time.
 
     Value between 3 and 32,767.
 
-    A value of 0 sets this field to NONE.
+    Set this to :literal:`0` to remove the user\-specific limit (NOPROCUSERMAX). This allows the system default from BPXPRMxx to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -539,11 +536,11 @@ omvs
 
 
   max_threads
-    Maximum number of threads the user can have concurrently active.
+    Specifies the maximum number of threads the user can have concurrently active.
 
     Value between 0 and 100,000.
 
-    A value of \-1 sets this field to NONE.
+    Set this to :literal:`\-1` to remove the user\-specific limit (NOTHREADSMAX). This allows the system default from BPXPRMxx to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -556,7 +553,7 @@ omvs
 
     Value between 7 and 2,147,483,647 seconds.
 
-    A value of 0 sets this field to NONE.
+    Set this to :literal:`0` to remove the user\-specific limit (NOCPUTIMEMAX). This allows the system default from BPXPRMxx to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -565,11 +562,11 @@ omvs
 
 
   max_files
-    Maximum number of files the user is allowed to have concurrently active or open.
+    Specifies the maximum number of files the user is allowed to have concurrently active or open.
 
     Value between 3 and 524,287.
 
-    A value of 0 sets this field to NONE.
+    Set this to :literal:`0` to remove the user\-specific limit (NOFILEPROCMAX). This allows the system default from BPXPRMxx to apply.
 
     This option is mutually exclusive with :literal:`delete`.
 
@@ -594,7 +591,7 @@ tso
 
   Configures TSO settings for the user profile.
 
-  only valid for :emphasis:`profile\_type=user`\ , :emphasis:`operation=create` and :emphasis:`operation=update`.
+  Only valid for :emphasis:`profile\_type=user`\ , :emphasis:`operation=create` and :emphasis:`operation=update`.
 
   | **required**: False
   | **type**: dict
@@ -618,7 +615,7 @@ tso
 
     Maximum length of 80 characters.
 
-    This option keeps case.
+    This option is case\-sensitive.
 
     To delete this field from the profile, set :literal:`logon\_cmd=""`.
 
@@ -761,6 +758,8 @@ tso
 
     Must be 4 EBCDIC characters.
 
+    Valid characters are 0 \- 9 and A \- F.
+
     When :literal:`user\_data=""` is set, this field is set to :literal:`0000`.
 
     This option is mutually exclusive with :literal:`delete`.
@@ -807,11 +806,9 @@ connect
 
 
   group_name
-    Specifies the group to which the user will be connected.
+    Specifies the group to connect the user to.
 
-    The other options in this block apply to this group.
-
-    If omitted, RACF uses a default group. It is recommended to specify this option when connecting a user to a group.
+    If omitted, the user is connected to the current connect group.
 
     | **required**: False
     | **type**: str
@@ -844,7 +841,7 @@ connect
   adsp_attribute
     Whether to assign the ADSP attribute for the connection.
 
-    This attribute tells RACF to automatically protect data sets the user creates with discrete profiles.
+    Specifies whether RACF automatically protects data sets created by the user with discrete profiles.
 
     | **required**: False
     | **type**: bool
@@ -879,7 +876,7 @@ access
 
 
   clauth
-    Classes in which the user is allowed to define profiles to RACF for protection.
+    Specifies the RACF resource classes the user is permitted to define profiles in.
 
     | **required**: False
     | **type**: dict
@@ -903,7 +900,13 @@ access
 
 
   roaudit
-    Whether the user should have full responsibility for auditing the use of system resources.
+    Specifies whether to assign the ROAUDIT attribute to the user.
+
+    When enabled, the user has responsibility for auditing system resources with read\-only access to audit records and settings.
+
+    In RACF output, this appears under the user's ATTRIBUTES list.
+
+    Requires the SPECIAL attribute to modify.
 
     | **required**: False
     | **type**: bool
@@ -951,7 +954,11 @@ access
 
 
   restricted
-    Whether the profile should have the RESTRICTED attribute.
+    Whether the user profile should have the RESTRICTED attribute.
+
+    When enabled, the user is denied access to resources via UACC or ID(\*). Access is only granted if the user or their group is explicitly added to the resource's access list.
+
+    Also bypasses global access checking and z/OS UNIX other permission bits.
 
     | **required**: False
     | **type**: bool
@@ -980,7 +987,7 @@ access
 operator
   Configures the RACF OPERPARM segment attributes.
 
-  The OPERPARM segment contains extended MCS console session attributes for the user.
+  The OPERPARM segment defined extended MCS console session attributes for the user.
 
   Only valid when :emphasis:`profile\_type=user`.
 
@@ -997,14 +1004,14 @@ operator
 
     To delete this field from the profile, set :literal:`alt\_group=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
 
 
   authority
-    The console's authority to issue operator commands.
+    The console authority level for issuing operator commands.
 
     :literal:`master` \- Full authority to issue all commands.
 
@@ -1020,7 +1027,7 @@ operator
 
     :literal:`delete` \- Removes this field from the profile.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1032,9 +1039,9 @@ operator
 
     Specify 1 to 8 characters.
 
-    To remove this field from the profile, set to an empty string (\ :literal:`""`\ ).
+    To remove this field from the profile, set :emphasis:`cmd\_system=""`..
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1047,9 +1054,9 @@ operator
 
     Length must be between 1 and 8 characters.
 
-    To remove this field from the profile, set to an empty string (\ :literal:`""`\ ).
+    To remove this field from the profile, set :emphasis:`search\_key=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1064,7 +1071,7 @@ operator
 
     :literal:`delete` \- Removes the migration ID parameter from the profile (NOMIGID).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1072,7 +1079,7 @@ operator
 
 
   display
-    The information displayed when monitoring jobs, TSO sessions, or data set status.
+    List of information to display when monitoring jobs, TSO sessions, or data set status.
 
     :literal:`jobnames` \- Display job names.
 
@@ -1088,7 +1095,7 @@ operator
 
     Multiple values can be specified.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: list
@@ -1097,25 +1104,27 @@ operator
 
 
   msg_level
-    The messages that this console receives.
+    Specifies the message levels that the Extended MCS (EMCS) console associated with this user profile receives.
 
-    :literal:`nb` \- Non\-broadcast messages only.
+    This attribute acts as a filter for the messages routed to the user's console session.
 
-    :literal:`all` \- All messages.
+    :literal:`r` \- The console receives messages requiring an operator reply.
 
-    :literal:`r` \- Routing messages.
+    :literal:`i` \- The console receives immediate action messages.
 
-    :literal:`i` \- Information messages.
+    :literal:`ce` \- The console receives critical eventual action messages.
 
-    :literal:`ce` \- Critical and eventual action messages.
+    :literal:`e` \- The console receives eventual action messages.
 
-    :literal:`e` \- Eventual action messages.
+    :literal:`in` \- The console receives informational messages.
 
-    :literal:`in` \- Immediate and eventual action messages.
+    :literal:`nb` \- The console receives no broadcast messages.
 
-    :literal:`delete` \- Removes this field from the profile.
+    :literal:`all` \- The console receives all message levels (R, I, CE, E, and IN).
 
-    This option is mutually exclusive with :literal:`delete`.
+    :literal:`delete` \- Removes the message level field from the user's profile.
+
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1137,7 +1146,7 @@ operator
 
     :literal:`delete` \- Removes this field from the profile.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1151,29 +1160,37 @@ operator
 
     Set to :literal:`0` to reset this field to :literal:`00000`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: int
 
 
   msg_scope
-    The systems from which this console can receive messages not directed to a specific console.
+    Specifies the systems from which the Extended MCS (EMCS) console associated with this user profile receives unsolicited messages (messages not directed to a specific console).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This field updates the OPERPARM segment of the RACF user profile.
+
+    :literal:`\*` \- The console receives messages only from the system on which the console session is currently active.
+
+    :literal:`\*all` \- The console receives messages from all systems in the sysplex.
+
+    :literal:`system\_names` \- A list of one or more specific system names (e.g., SYS1, SYS2) to define the scope.
+
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: dict
 
 
     add
-      Adds new systems to the message scope list.
+      List of new systems to add to the message scope list.
 
       When :emphasis:`operation=create`\ , this sets the initial message scope (MSCOPE).
 
       When :emphasis:`operation=update`\ , this adds systems to the existing list (ADDMSCOPE).
 
-      This option is mutually exclusive with :emphasis:`remove` and :emphasis:`delete`.
+      This option is mutually exclusive with :emphasis:`msg\_scope.remove` and :emphasis:`msg\_scope.delete`.
 
       | **required**: False
       | **type**: list
@@ -1181,23 +1198,20 @@ operator
 
 
     remove
-      Removes all message scope systems from the profile.
+      Set to :literal:`true` to remove all message scope systems from the profile (NOMSCOPE).
 
-      This sets the profile to have no message scope (NOMSCOPE).
-
-      This option is mutually exclusive with :emphasis:`add` and :emphasis:`delete`.
+      This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.delete`.
 
       | **required**: False
-      | **type**: list
-      | **elements**: str
+      | **type**: bool
 
 
     delete
-      Deletes specific systems from the message scope list.
+      List of specific systems to delete from the message scope list (DELMSCOPE).
 
-      This removes only the specified systems from the existing list (DELMSCOPE).
+      This does not clear the entire list unless all listed systems are specified.
 
-      This option is mutually exclusive with :emphasis:`add` and :emphasis:`remove`.
+      This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.remove`.
 
       | **required**: False
       | **type**: list
@@ -1214,25 +1228,27 @@ operator
 
     :literal:`delete` \- Removes the automated messages parameter from the profile (NOAUTO).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
     | **choices**: yes, no, delete
 
 
-  del_msgs
-    The delete operator message (DOM) requests the console can receive.
+  delete_operator_msgs
+    Specifies which Delete Operator Message (DOM) requests the Extended MCS (EMCS) console associated with this user profile can receive.
 
-    :literal:`normal` \- Normal delete requests.
+    :literal:`normal` \- The system queues all appropriate local DOM requests to the console.
 
-    :literal:`all` \- All delete requests.
+    :literal:`all` \- All systems in the sysplex queue DOM requests to the console.
 
-    :literal:`none` \- No delete requests.
+    :literal:`none` \- No DOM requests are queued to the console.
 
-    :literal:`delete` \- Removes this field from the profile.
+    :literal:`delete` \- Removes the DOM field from the user profile. This corresponds to the RACF :literal:`NODOM` operand.
 
-    This option is mutually exclusive with :literal:`delete`.
+    Note that when this field is deleted or omitted :literal:`NODOM`\ , the DOM information will not appear in profile listings (e.g., :literal:`LU` command), and the EMCS console will default to :literal:`normal` behavior when a session is established.
+
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1248,7 +1264,7 @@ operator
 
     :literal:`delete` \- Removes the hardcopy messages parameter from the profile (NOHC).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1264,7 +1280,7 @@ operator
 
     :literal:`delete` \- Removes the internal messages parameter from the profile (NOINTIDS).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1274,13 +1290,19 @@ operator
   routing_msgs
     The routing codes of messages this operator receives.
 
-    Specify :literal:`ALL` to receive all routing codes.
+    Accepts one of the following (mutually exclusive).
 
-    Specify :literal:`NONE` to receive no routing codes.
+    :literal:`["ALL"]` \- Receive all routing codes.
 
-    Specify :literal:`delete` as a single\-element list to remove all routing codes from the profile (NOROUTCODE).
+    :literal:`["NONE"]` \- Receive no routing codes.
 
-    This option is mutually exclusive with :literal:`delete`.
+    :literal:`["delete"]` \- Removes routing code information from the profile (NOROUTCODE).
+
+    List of routing codes \- One or more routing codes (integers 1\-128) or sequences (ranges).
+
+    Examples: :literal:`["1"]`\ , :literal:`["1", "2", "11"]`\ , :literal:`["1:5"]`\ , :literal:`["1:5", "10", "20:25"]`.
+
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: list
@@ -1296,7 +1318,7 @@ operator
 
     :literal:`delete` \- Removes the undelivered messages parameter from the profile (NOUD).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1312,14 +1334,14 @@ operator
 
     :literal:`delete` \- Removes the unknown messages parameter from the profile (NOUNKNIDS).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
     | **choices**: yes, no, delete
 
 
-  responses
+  log_responses
     Whether command responses should be logged.
 
     :literal:`yes` \- Enables logging of command responses (LOGCMDRESP(SYSTEM)).
@@ -1328,7 +1350,7 @@ operator
 
     :literal:`delete` \- Removes the command response logging parameter from the profile (NOLOGCMDRESP).
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :literal:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1340,7 +1362,7 @@ operator
 
     This option is only valid when :emphasis:`operation=update`\ ; it is ignored for all other operation values.
 
-    This option is mutually exclusive with :literal:`alt\_group`\ , :literal:`authority`\ , :literal:`cmd\_system`\ , :literal:`search\_key`\ , :literal:`migration\_id`\ , :literal:`display`\ , :literal:`msg\_level`\ , :literal:`msg\_format`\ , :literal:`msg\_storage`\ , :literal:`msg\_scope`\ , :literal:`automated\_msgs`\ , :literal:`del\_msgs`\ , :literal:`hardcopy\_msgs`\ , :literal:`internal\_msgs`\ , :literal:`routing\_msgs`\ , :literal:`undelivered\_msgs`\ , :literal:`unknown\_msgs`\ , and :literal:`responses`.
+    This option is mutually exclusive with :literal:`alt\_group`\ , :literal:`authority`\ , :literal:`cmd\_system`\ , :literal:`search\_key`\ , :literal:`migration\_id`\ , :literal:`display`\ , :literal:`msg\_level`\ , :literal:`msg\_format`\ , :literal:`msg\_storage`\ , :literal:`msg\_scope`\ , :literal:`automated\_msgs`\ , :literal:`delete\_operator\_msgs`\ , :literal:`hardcopy\_msgs`\ , :literal:`internal\_msgs`\ , :literal:`routing\_msgs`\ , :literal:`undelivered\_msgs`\ , :literal:`unknown\_msgs`\ , and :literal:`responses`.
 
     | **required**: False
     | **type**: bool
@@ -1373,6 +1395,8 @@ restrictions
 
     The value for this option must be in the format HHMM:HHMM.
 
+    Note: Enclose the time value in quotes (e.g., "0900:1700") to avoid YAML parsing issues with colons.
+
     This field uses a 24\-hour format.
 
     This field also accepts the value :literal:`anytime` to indicate a user is free to login at any time of the day.
@@ -1396,7 +1420,7 @@ restrictions
 
     This option is only valid when connecting a user to a group.
 
-    This option is mutually exclusive with :emphasis:`resume`.
+    This option is mutually exclusive with :emphasis:`restrictions.resume`.
 
     | **required**: False
     | **type**: bool
@@ -1416,7 +1440,7 @@ restrictions
 
     This option is only valid when connecting a user to a group.
 
-    This option is mutually exclusive with :emphasis:`revoke`.
+    This option is mutually exclusive with :emphasis:`restrictions.revoke`.
 
     | **required**: False
     | **type**: bool
@@ -1439,13 +1463,13 @@ password_mgmt
 
     Maximum length of 8 characters.
 
-    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, RACF will not assign a password and the user will need to be assigned one before they can log in.
+    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, no password is assigned. The user must be assigned one before logging in.
 
-    When a password is set for the first time during user creation, RACF marks it as EXPIRED by default. To change this, update the user with :emphasis:`expired=false` after creation.
+    When a password is set for the first time during user creation, RACF marks it as EXPIRED by default. To allow the user to use the password without an immediate change, update the user with :emphasis:`expired=false` after creation.
 
-    An empty string will remove the password and set it to NOPASSWORD.
+    :emphasis:`password=""` removes the password and sets the NOPASSWORD attribute on the user profile.
 
-    It is recommended to use Ansible Vault to encrypt this value.
+    It is highly recommended to use :strong:`Ansible Vault` to encrypt this value.
 
     This option is mutually exclusive with :emphasis:`passphrase`.
 
@@ -1458,11 +1482,11 @@ password_mgmt
 
     Minimum length of 9 characters, maximum length of 100 characters.
 
-    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, RACF will not assign a password and the user will need to be assigned one before they can log in.
+    When creating a user, if neither :emphasis:`password` nor :emphasis:`passphrase` is specified, no password or passphrase is assigned. The user must be assigned one before logging in.
 
     When a passphrase is set for the first time during user creation, RACF marks it as EXPIRED by default. To change this, update the user with :emphasis:`expired=false` after creation.
 
-    An empty string will remove the passphrase and set it to NOPHRASE.
+    Setting :emphasis:`passphrase=""` removes the passphrase and sets the NOPHRASE attribute on the user profile.
 
     It is recommended to use Ansible Vault to encrypt this value.
 
@@ -1733,13 +1757,13 @@ Notes
 .. note::
    This module requires appropriate RACF authority to execute commands.
 
-   For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested operation (typically SPECIAL or group\-SPECIAL attribute).
+   For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested operation (typically :literal:`SPECIAL` or :literal:`group\-SPECIAL` attribute).
 
-   For purge operations using IRRDBU00 utility \- When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with PARM=NOLOCKINPUT requiring READ authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with PARM=LOCKINPUT requiring UPDATE authority to lock the database during the unload.
+   For purge operations using the \ `IRRDBU00 utility <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with :literal:`PARM=NOLOCKINPUT` requiring :literal:`READ` authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with :literal:`PARM=LOCKINPUT` requiring :literal:`UPDATE` authority to lock the database during the unload.
 
-   The IRRRID00 utility is used during purge operations to identify residual references and generate a CLIST of removal commands. The user must have READ authority to the input data set (the unloaded RACF database produced by IRRDBU00).
+   The \ `IRRRID00 <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility>`__ utility is used during purge operations to identify residual references and generate a :literal:`CLIST` of removal commands. The user must have :literal:`READ` authority to the input data set (the unloaded RACF database produced by IRRDBU00).
 
-   To execute the generated CLIST from IRRRID00, the user must have sufficient RACF authority \- DELUSER/DELGROUP requires the SPECIAL attribute, group\-SPECIAL (within scope), or ownership of the target profile/superior group.
+   To execute the generated :literal:`CLIST` from IRRRID00, the user must have sufficient RACF authority \- :literal:`DELUSER/DELGROUP` requires the :literal:`SPECIAL` attribute, :literal:`group\-SPECIAL` (within scope), or ownership of the target profile/superior group.
 
 
 

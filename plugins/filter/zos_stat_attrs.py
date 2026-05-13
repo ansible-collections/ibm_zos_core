@@ -195,13 +195,13 @@ DSORG_VSAM = 'vsam'
 
 
 def _extract_fields(src_attrs, valid_fields, target_dict):
-    """ Extracts the fields from the source_attrs and adds them to the target_dict. 
-    
+    """ Extracts the fields from the source_attrs and adds them to the target_dict.
+
     Arguments:
         src_attrs {dict} -- Dictionary containing all stat attributes returned by zos_stat.
         valid_fields {list} -- List of resource type valid attributes.
         target_dict {dict} -- Dictionary containing all valid attributes for resource type in zos_stat output.
-    
+
     """
     for field in valid_fields:
         target_dict['attributes'][field] = src_attrs.get('attributes', {}).get(field)
@@ -252,7 +252,11 @@ def filter_stat(attributes, resource):
 
 
 class FilterModule(object):
-    """ Jinja2 filter for the returned JSON by the zos_stat module. """
+    """ Jinja2 filter module for processing zos_stat output.
+        Provides the zos_stat_attrs filter to extract resource-type-specific
+        attributes from zos_stat module output for data set, file, aggregate,
+         and GDG resource types.
+    """
 
     def filters(self):
         filters = {

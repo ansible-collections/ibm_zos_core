@@ -526,13 +526,7 @@ def run_module():
             type="str",
             required=False,
             aliases=['ddname'],
-            deprecated_aliases=[
-                dict(
-                    name='ddname',
-                    version='3.0.0',
-                    collection_name='ibm.ibm_zos_core',
-                )
-            ],),
+        ),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
 

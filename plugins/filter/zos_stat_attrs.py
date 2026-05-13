@@ -194,9 +194,16 @@ DSORG_PARTITIONED = 'po'
 DSORG_VSAM = 'vsam'
 
 
-def _extract_fields(src_attrs, field_list, target_dict):
-    """ Extracts the fields from the source_attrs and adds them to the target_dict. """
-    for field in field_list:
+def _extract_fields(src_attrs, valid_fields, target_dict):
+    """ Extracts the fields from the source_attrs and adds them to the target_dict. 
+    
+    Arguments:
+        src_attrs {dict} -- Dictionary containing all stat attributes returned by zos_stat.
+        valid_fields {list} -- List of resource type valid attributes.
+        target_dict {dict} -- Dictionary containing all valid attributes for resource type in zos_stat output.
+    
+    """
+    for field in valid_fields:
         target_dict['attributes'][field] = src_attrs.get('attributes', {}).get(field)
 
 

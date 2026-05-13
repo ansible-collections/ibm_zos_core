@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2023, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -676,7 +676,7 @@ class Unarchive():
             'missing': self.missing,
             'encoded': getattr(self, 'encoded', []),
             'failed_on_encoding': getattr(self, 'failed_on_encoding', []),
-            'skipped_encoding_targets' : getattr(self, 'skipped_encoding_targets', []),
+            'skipped_encoding_targets': getattr(self, 'skipped_encoding_targets', []),
         }
 
     def extract_all(self, members):
@@ -1769,9 +1769,9 @@ def run_module():
         encoding=dict(
             type='dict',
             options={
-                'from' : dict(type='str'),
-                'to' : dict(type='str'),
-                'skip_encoding' : dict(type='list', elements='str', required=False),
+                'from': dict(type='str'),
+                'to': dict(type='str'),
+                'skip_encoding': dict(type='list', elements='str', required=False),
             }
         ),
     )

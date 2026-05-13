@@ -55,7 +55,7 @@ argument_specs:
         description:
           - >-
             Controls whether the role creates a YAML report file for the control node and hides sensitive data
-            (C(no_log{{':'}} true)) from the console for control node tasks.
+            (C(no_log=true)) from the console for control node tasks.
         type: bool
         required: false
         default: true
@@ -64,7 +64,7 @@ argument_specs:
         description:
           - >-
             Controls whether the role creates a YAML report file for the z/OS managed node and hides sensitive data
-            (C(no_log{{':'}} true)) from the console for z/OS tasks.
+            (C(no_log=true)) from the console for z/OS tasks.
         type: bool
         required: false
         default: true

@@ -599,3 +599,36 @@ def test_filter_gdg(ansible_zos_module):
         # There are a total of 8 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
         assert len(stat['attributes'].keys()) == 8
+
+
+def test_filter_nonexistent_resource(ansible_zos_module):
+    hosts = ansible_zos_module
+    zos_stat_result = """{
+        "changed": true, 
+        "stat": {
+            "name": "NONEXIST.DATA.SET",
+            "resource_type": "data_set",
+            "exists": false,
+            "isfile": false,
+            "isdataset": false,
+            "isaggregate": false,
+            "isgdg": false,
+            "attributes": {}
+        }
+    }"""
+    zos_stat_result_dict = json.loads(zos_stat_result)
+    hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
+    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('data_set') }}")
+
+    for result in filter_results.contacted.values():
+        stat = result['msg']
+        
+        # Verify root attribute defaults are present
+        assert stat.get('name') == 'NONEXIST.DATA.SET'
+        assert stat.get('resource_type') == 'data_set'
+        assert stat.get('exists') == False
+        assert stat.get('isfile') == False
+        assert stat.get('isdataset') == False
+        assert stat.get('isaggregate') == False
+        assert stat.get('isgdg') == False
+

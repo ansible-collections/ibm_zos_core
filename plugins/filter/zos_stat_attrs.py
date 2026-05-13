@@ -233,7 +233,13 @@ def filter_stat(attributes, resource):
         'isaggregate',
         'isgdg'
     ]
-    cleaned_attributes = {key: attributes.get(key) for key in root_attrs}
+    cleaned_attributes = {}
+    for key in root_attrs:
+        # Default resource type indicators to False
+        if key in ['isfile', 'isdataset', 'isaggregate', 'isgdg']:
+            cleaned_attributes[key] = attributes.get(key, False)
+        else:
+            cleaned_attributes[key] = attributes.get(key)
     cleaned_attributes['attributes'] = {}
 
     for field in VALID_FIELDS[resource]:

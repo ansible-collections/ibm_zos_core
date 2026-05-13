@@ -101,7 +101,7 @@
          | split('='))[1] }}
     gather_diagnostics_python_exe_path: >-
       {{ (gather_diagnostics_managed_env.stdout_lines
-         | select('match', '^_=.*/pyz/v3r[0-9]{1,2}/bin/python')
+         | select('match', '^_=.*/v3r[0-9]{1,2}/pyz/bin/python')
          | first
          | default('=not_found')
          | split('='))[1] }}

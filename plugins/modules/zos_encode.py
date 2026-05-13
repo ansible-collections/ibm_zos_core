@@ -574,17 +574,16 @@ def run_module():
             is_mvs_src = True
             src_data_set = data_set.MVSDataSet(src)
             is_name_member = data_set.is_member(src_data_set.name)
-            dest_exists = False
 
             if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
+                src_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
             else:
-                dest_exists = data_set.DataSet.data_set_exists(
+                src_exists = data_set.DataSet.data_set_exists(
                     data_set.extract_dsname(src_data_set.name),
                     tmphlq=tmphlq
                 )
 
-            if not dest_exists:
+            if not src_exists:
                 # Check if src is a GDS
                 gds_relative_name = data_set.DataSet.is_gds_relative_name(src)
                 gds_absolute_name = data_set.DataSet.is_gds_absolute_name(src)

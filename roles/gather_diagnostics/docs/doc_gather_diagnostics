@@ -11,26 +11,26 @@
 
 DOCUMENTATION = r"""
 role: gather_diagnostics
-short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible controller.
+short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
 description:
     - >
       The B(gather_diagnostics) role gathers a comprehensive set of diagnostic facts
-      from both the z/OS managed node and the Ansible controller node.
+      from both the z/OS managed node and the Ansible control node.
     - >
       B(Managed Node (z/OS):) Gathers ZOAU version, Python version, locale,
       environment variables, user limits, pip packages, z/OS system facts,
       OMVS segment, filesystem mount status, ZOAU APF attributes, and optionally
       SSH configuration files and operator command output.
     - >
-      B(Controller Node:) Gathers Ansible version, SSH version, Ansible config,
+      B(Control Node:) Gathers Ansible version, SSH version, Ansible config,
       locale, installed collections, environment, and system facts.
     - >
       This role can create separate YAML report files for the z/OS node
-      (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the controller node
-      (C(gather_diagnostics_report_controller.yml)) in the specified output directory.
+      (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the control node
+      (C(gather_diagnostics_report_control.yml)) in the specified output directory.
     - >
       Facts are also set on the respective hosts: C(gather_diagnostics_managed_results)
-      on the z/OS host and C(gather_diagnostics_controller_results) on localhost.
+      on the z/OS host and C(gather_diagnostics_control_results) on localhost.
 author:
     - Rohitash Goyal (@Rohitcodes28)
     - Ketan Kelkar (@ketankelkar)
@@ -44,15 +44,15 @@ notes:
       to avoid exposing sensitive security configurations. Enable only when needed
       for troubleshooting SSH connectivity issues.
     - >
-      Diagnostic files are written to the controller node. By default, files are
+      Diagnostic files are written to the control node. By default, files are
       saved to the home directory or AAP artifacts directory. Use C(gather_diagnostics_output_dir)
       to specify an alternate location with sufficient disk space.
 options:
-    gather_diagnostics_gather_controller:
+    gather_diagnostics_gather_control:
         description:
             - >
               Controls whether the role will gather diagnostic facts from the
-              Ansible controller node.
+              Ansible control node.
         required: False
         type: bool
         default: True
@@ -64,12 +64,12 @@ options:
         required: False
         type: bool
         default: True
-    gather_diagnostics_save_controller_log:
+    gather_diagnostics_save_control_log:
         description:
             - >
               Controls whether the role creates a YAML report file for the
-              controller node and hides sensitive data (C(no_log: true))
-              from the console for controller tasks.
+              control node and hides sensitive data (C(no_log: true))
+              from the console for control node tasks.
         required: False
         type: bool
         default: True
@@ -104,7 +104,7 @@ options:
             - >
               Directory where diagnostic report files will be created.
               In AAP, defaults to the artifacts directory. In standalone mode,
-              defaults to the controller's home directory.
+              defaults to the control node's home directory.
         required: False
         type: str
     gather_diagnostics_environment_vars:
@@ -118,7 +118,7 @@ options:
 """
 
 EXAMPLES = r"""
-- name: Run gather_diagnostics to gather z/OS and controller node diagnostics (default)
+- name: Run gather_diagnostics to gather z/OS and control node diagnostics (default)
   hosts: zos_host
   gather_facts: false
   collections:
@@ -136,7 +136,7 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_diagnostics_save_controller_log: false
+        gather_diagnostics_save_control_log: false
         gather_diagnostics_save_managed_node_log: false
 
 - name: Run gather_diagnostics and not execute operator commands
@@ -170,9 +170,9 @@ EXAMPLES = r"""
     - include_role:
         name: gather_diagnostics
       vars:
-        gather_diagnostics_gather_controller: false
+        gather_diagnostics_gather_control: false
 
-- name: Run gather_diagnostics only for controller node diagnostics
+- name: Run gather_diagnostics only for control node diagnostics
   hosts: zos_host
   gather_facts: false
   collections:
@@ -206,7 +206,7 @@ changed:
 gather_diagnostics_managed_results:
     description: >
         A fact set on the managed host containing all gathered diagnostic data.
-        This data is also written to a YAML file on the controller if
+        This data is also written to a YAML file on the control node if
         C(gather_diagnostics_save_managed_node_log) is C(True).
     returned: always
     type: dict
@@ -289,12 +289,12 @@ gather_diagnostics_managed_results:
                 or 'N/A' if C(gather_diagnostics_gather_ssh_config) is C(False) or file doesn't exist.
             type: list
 
-gather_diagnostics_controller_results:
+gather_diagnostics_control_results:
     description: >
-        A fact set on the controller node containing all controller
+        A fact set on the control node containing all control node
         diagnostic data. This data is also written to a YAML file on the
-        controller if C(gather_diagnostics_save_controller_log) is C(True).
-    returned: when C(gather_diagnostics_gather_controller) is C(True)
+        control node if C(gather_diagnostics_save_control_log) is C(True).
+    returned: when C(gather_diagnostics_gather_control) is C(True)
     type: dict
     contains:
         ansible_version:
@@ -310,15 +310,15 @@ gather_diagnostics_controller_results:
             description: A list of changed Ansible configuration settings from `ansible-config dump --only-changed`.
             type: list
         locale:
-            description: A list of locale settings from the controller.
+            description: A list of locale settings from the control node.
             type: list
         collections:
             description: A list of installed Ansible collections from `ansible-galaxy collection list`.
             type: list
         environment:
-            description: A list of environment variables from the controller.
+            description: A list of environment variables from the control node.
             type: list
-        controller_facts:
-            description: A dictionary of facts from the controller gathered via `ansible.builtin.setup`.
+        control_facts:
+            description: A dictionary of facts from the control node gathered via `ansible.builtin.setup`.
             type: dict
 """

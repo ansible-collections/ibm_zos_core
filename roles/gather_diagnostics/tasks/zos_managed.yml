@@ -349,7 +349,7 @@
       etc_sshd_config_content: "{{ gather_diagnostics_managed_etc_sshd_config.stdout_lines | default('N/A', true) }}"
   no_log: "{{ not gather_diagnostics_save_managed_node_log }}"
 
-- name: "Z/OS | Save managed node results to a YAML file on the controller"
+- name: "Z/OS | Save managed node results to a YAML file on the control node"
   ansible.builtin.copy:
     dest: "{{ gather_diagnostics_output_dir }}/gather_diagnostics_report_managed_node_{{ inventory_hostname }}.yml"
     content: "{{ gather_diagnostics_managed_results | to_nice_yaml }}"

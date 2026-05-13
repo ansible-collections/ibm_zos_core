@@ -12,34 +12,34 @@
 ---
 argument_specs:
   main:
-    short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible controller
+    short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible control node
     description:
       - >-
         The B(gather_diagnostics) role gathers a comprehensive set of diagnostic facts from both the z/OS managed node
-        and the Ansible controller node.
+        and the Ansible control node.
       - >-
         B(Managed Node (z/OS):) Gathers ZOAU version, Python version, locale, environment variables, user limits,
         pip packages, z/OS system facts, OMVS segment, filesystem mount status, ZOAU APF attributes, and optionally
         SSH configuration files and operator command output.
       - >-
-        B(Controller Node:) Gathers Ansible version, SSH version, Ansible config, locale, installed collections,
+        B(Control Node:) Gathers Ansible version, SSH version, Ansible config, locale, installed collections,
         environment, and system facts.
       - >-
         This role can create separate YAML report files for the z/OS node
-        (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the controller node
-        (C(gather_diagnostics_report_controller.yml)) in the specified output directory.
+        (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the control node
+        (C(gather_diagnostics_report_control.yml)) in the specified output directory.
       - >-
         Facts are also set on the respective hosts: C(gather_diagnostics_managed_results) on the z/OS host and
-        C(gather_diagnostics_controller_results) on localhost.
+        C(gather_diagnostics_control_results) on localhost.
 
     author:
       - Rohitash Goyal (@Rohitcodes28)
       - Ketan Kelkar (@ketankelkar)
 
     options:
-      gather_diagnostics_gather_controller:
+      gather_diagnostics_gather_control:
         description:
-          - Controls whether the role will gather diagnostic facts from the Ansible controller node.
+          - Controls whether the role will gather diagnostic facts from the Ansible control node.
         type: bool
         required: false
         default: true
@@ -51,11 +51,11 @@ argument_specs:
         required: false
         default: true
 
-      gather_diagnostics_save_controller_log:
+      gather_diagnostics_save_control_log:
         description:
           - >-
-            Controls whether the role creates a YAML report file for the controller node and hides sensitive data
-            (C(no_log{{':'}} true)) from the console for controller tasks.
+            Controls whether the role creates a YAML report file for the control node and hides sensitive data
+            (C(no_log{{':'}} true)) from the console for control node tasks.
         type: bool
         required: false
         default: true
@@ -92,7 +92,7 @@ argument_specs:
       gather_diagnostics_output_dir:
         description:
           - Directory where diagnostic report files will be created.
-          - In AAP, defaults to the artifacts directory. In standalone mode, defaults to the controller's home directory.
+          - In AAP, defaults to the artifacts directory. In standalone mode, defaults to the control node's home directory.
         type: str
         required: false
 

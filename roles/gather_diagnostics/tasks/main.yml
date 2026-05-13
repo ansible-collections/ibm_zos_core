@@ -9,14 +9,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: "Run controller diagnostic tasks"
+- name: "Run control node diagnostic tasks"
   ansible.builtin.include_tasks:
-    file: controller.yml
+    file: control_node.yml
     apply:
       delegate_to: localhost
       vars:
         ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  when: gather_diagnostics_gather_controller
+  when: gather_diagnostics_gather_control
 
 - name: "Z/OS | Gather system facts"
   environment: "{{ gather_diagnostics_environment_vars }}"

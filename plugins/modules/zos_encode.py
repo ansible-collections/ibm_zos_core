@@ -588,13 +588,9 @@ def run_module():
                 # Check if src is a GDS
                 gds_relative_name = data_set.DataSet.is_gds_relative_name(src)
                 gds_absolute_name = data_set.DataSet.is_gds_absolute_name(src)
-                relative_gds_gdg_name = data_set.extract_dsname(src_data_set.raw_name)
-                absolute_gds_gdg_name = relative_gds_gdg_name[:-9]
                 if gds_relative_name or gds_absolute_name:
-                    gdg_name = relative_gds_gdg_name if gds_relative_name else absolute_gds_gdg_name
                     raise EncodeError(
-                        "Generation Data Set {0} does not exist in the "
-                        "Generation Data Group {1} or is not cataloged.".format(src, gdg_name)
+                        "Generation Data Set {0} does not exist or is not cataloged.".format(src)
                     )
                 else:
                     raise EncodeError(
@@ -648,13 +644,9 @@ def run_module():
                     # Check if dest is a GDS
                     gds_relative_name = data_set.DataSet.is_gds_relative_name(dest)
                     gds_absolute_name = data_set.DataSet.is_gds_absolute_name(dest)
-                    relative_gds_gdg_name = data_set.extract_dsname(dest_data_set.raw_name)
-                    absolute_gds_gdg_name = relative_gds_gdg_name[:-9]
                     if gds_relative_name or gds_absolute_name:
-                        gdg_name = relative_gds_gdg_name if gds_relative_name else absolute_gds_gdg_name
                         raise EncodeError(
-                            "Generation Data Set {0} does not exist in the "
-                            "Generation Data Group {1} or is not cataloged.".format(dest, gdg_name)
+                            "Generation Data Set {0} does not exist or is not cataloged.".format(dest)
                         )
                     else:
                         raise EncodeError(

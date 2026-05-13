@@ -127,8 +127,9 @@ options:
     suboptions:
       display_name:
         description:
-          - Display name for the user profile (not the userid).
+          - Display name for the user profile (the descriptive name shown in listings, not the 8-character userid used for login).
           - This corresponds to the RACF NAME parameter.
+          - For example, userid "JSMITH01" might have display_name "John Smith".
           - Maximum length of 20 characters.
           - This option is only valid for user profiles (I(profile_type=user)).
           - This option is only applicable when I(operation=create) or I(operation=update).
@@ -165,9 +166,10 @@ options:
           add:
             description:
               - Custom fields to add to the profile.
-              - "Each custom field should be a C(key: value) pair."
+              - "Custom fields are specified as a dictionary of C(key: value) pairs."
               - This option is valid when C(operation=create) or C(operation=update).
-              - This option is mutually exclusive with C(delete) and C(delete_block)
+              - This option is mutually exclusive with C(delete) and C(delete_block).
+              - 'Note: Values containing colons should be enclosed in quotes (e.g., "key: value") to ensure correct YAML parsing in playbooks.'
             type: dict
             required: false
           delete:
@@ -180,7 +182,9 @@ options:
             required: false
           delete_block:
             description:
-              - Delete the whole custom fields block from the profile.
+              - Delete all custom fields from the profile.
+              - This removes the entire custom fields section, not just individual fields.
+              - Use C(delete) to remove specific custom fields, or C(delete_block=true) to remove all custom fields at once.
               - This option is only valid when C(operation=update); it is ignored for all other values of operation, including C(operation=create).
               - This option is mutually exclusive with C(add) and C(delete).
             type: bool
@@ -274,7 +278,10 @@ options:
     description:
        - Attributes for the RACF OMVS segment.
        - Configures z/OS Unix System Services access and resource limits for the profile.
-       - Valid for both I(profile_type=user) and I(profile_type=group).
+       - "Valid for both I(profile_type=user) and I(profile_type=group): C(uid), C(custom_uid), C(delete)."
+       - "Valid only for I(profile_type=user): C(home), C(program), C(nonshared_size), C(shared_size), C(addr_space_size), C(map_size),
+         C(max_procs), C(max_threads), C(max_cpu_time), C(max_files), and their related unit options."
+       - User-only options control process and memory resource limits which do not apply to group profiles.
     required: false
     type: dict
     suboptions:

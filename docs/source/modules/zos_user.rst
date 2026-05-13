@@ -151,9 +151,11 @@ base_segment
 
 
   display_name
-    Display name for the user profile (not the userid).
+    Display name for the user profile (the descriptive name shown in listings, not the 8\-character userid used for login).
 
     This corresponds to the RACF NAME parameter.
+
+    For example, userid "JSMITH01" might have display\_name "John Smith".
 
     Maximum length of 20 characters.
 
@@ -210,11 +212,13 @@ base_segment
     add
       Custom fields to add to the profile.
 
-      Each custom field should be a :literal:`key: value` pair.
+      Custom fields are specified as a dictionary of :literal:`key: value` pairs.
 
       This option is valid when :literal:`operation=create` or :literal:`operation=update`.
 
-      This option is mutually exclusive with :literal:`delete` and :literal:`delete\_block`
+      This option is mutually exclusive with :literal:`delete` and :literal:`delete\_block`.
+
+      Note: Values containing colons should be enclosed in quotes (e.g., "key: value") to ensure correct YAML parsing in playbooks.
 
       | **required**: False
       | **type**: dict
@@ -233,7 +237,11 @@ base_segment
 
 
     delete_block
-      Delete the whole custom fields block from the profile.
+      Delete all custom fields from the profile.
+
+      This removes the entire custom fields section, not just individual fields.
+
+      Use :literal:`delete` to remove specific custom fields, or :literal:`delete\_block=true` to remove all custom fields at once.
 
       This option is only valid when :literal:`operation=update`\ ; it is ignored for all other values of operation, including :literal:`operation=create`.
 
@@ -375,7 +383,11 @@ omvs
 
   Configures z/OS Unix System Services access and resource limits for the profile.
 
-  Valid for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
+  Valid for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`\ : :literal:`uid`\ , :literal:`custom\_uid`\ , :literal:`delete`.
+
+  Valid only for :emphasis:`profile\_type=user`\ : :literal:`home`\ , :literal:`program`\ , :literal:`nonshared\_size`\ , :literal:`shared\_size`\ , :literal:`addr\_space\_size`\ , :literal:`map\_size`\ , :literal:`max\_procs`\ , :literal:`max\_threads`\ , :literal:`max\_cpu\_time`\ , :literal:`max\_files`\ , and their related unit options.
+
+  User\-only options control process and memory resource limits which do not apply to group profiles.
 
   | **required**: False
   | **type**: dict

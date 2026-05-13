@@ -1,5 +1,5 @@
 =====
-Ansible z/OS Core Collection migration guide: ibm.ibm_zos_core v1.x → v2.0.0
+Ansible z/OS Core Collection migration v1.x → v2.0.0
 =====
 
 This guide covers breaking and recommended changes for upgrading playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to module options and return values.

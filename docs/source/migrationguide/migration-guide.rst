@@ -2,7 +2,7 @@
 Ansible z/OS Core Collection migration v1.x → v2.0.0
 =====
 
-This guide covers breaking and recommended changes for upgrading playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to module options and return values.
+This section covers breaking and recommended changes for upgrading playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to module options and return values.
 
 Overview
 ==================================================
@@ -342,7 +342,7 @@ Testing and validation
 Recommended testing approach
 --------------------------------------------------
 
-1. **Review changes**: Identify all modules used in your playbooks and review the breaking changes listed in this guide.
+1. **Review changes**: Identify all modules used in your playbooks and review the breaking changes listed in this section.
 
 2. **Update playbooks**: Modify your playbooks to use the new module option names and return values.
 

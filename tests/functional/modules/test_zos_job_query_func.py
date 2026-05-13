@@ -24,6 +24,7 @@ from shellescape import quote
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.users import ManagedUser, ManagedUserType
 
 def get_job_id(hosts, len_id=9):
     """
@@ -374,6 +375,126 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         assert rc.get("msg") is not None
         assert rc.get("msg_code") == "0000"
         assert rc.get("code") == 0
+
+
+# zos_job_query should not return jobs user is not authorized to view when defaults are specified
+def test_zos_job_query_does_not_return_unauthorized_jobs(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+    data_set_name = None
+    temp_path = None
+
+    try:
+        # Submit a job as the original user (with full permissions)
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+        )
+        results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Create Ansible temp directory with permissions for managed user
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_test_query_unauthorized_jobs",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        if ansible_tmp_dir:
+            hosts.all.file(path=ansible_tmp_dir, state="absent")
+
+
+def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
+    hosts = ansible_zos_module
+    
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+        )
+        
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+        )
+        
+        MANAGED_USER_JOB_NAME = "HELLO"
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+            
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+            
+        # Test owner and job_id defaults - job query should only return job of managed user
+        # Job submitted with the same name by a different user should not appear
+        job_name_query_results = hosts.all.zos_job_query(job_name=MANAGED_USER_JOB_NAME)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+            
+            for job in jobs:
+                assert job.get("owner") == current_user, \
+                    f"Retrieved job owner mismatch: expected {current_user}"
+                assert job.get("job_id") == managed_user_job_id
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
 # test to show job_id="*" and job_id=None has the same results if job_name and owner are specified

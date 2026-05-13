@@ -43,6 +43,7 @@ class ManagedUserType (Enum):
     - ZOS_RANDOM_SYMBOLS
     - ZOS_LIMITED_HLQ
     - ZOS_LIMITED_TMP_HLQ
+    - ZOS_LIMITED_JOB_VIEW
     """
 
     ZOAU_LIMITED_ACCESS_OPERCMD=("zoau_limited_access_opercmd")
@@ -76,6 +77,11 @@ class ManagedUserType (Enum):
     """
     A z/OS managed user with restricted access to High Level
     Qualifiers (HLQ): (RESTRICT, NOPERMIT, ....).
+    """
+
+    ZOS_LIMITED_JOB_VIEW=("zos_limited_job_view")
+    """
+    A z/OS managed user with restricted job viewing permissions.
     """
 
     def __str__(self) -> str:
@@ -922,6 +928,74 @@ class ManagedUser:
             raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
         self._managed_group = group
 
+    def _create_user_zos_limited_job_view(self) -> None:
+        """
+        Update a managed user id for the remote node with limited job viewing permissions.
+        Restricts access to JESSPOOL resources in the JESJOBS class, limiting the user's
+        ability to view job output for jobs they don't own.
+
+        This implementation sets up SAF profiles to restrict job viewing:
+        - JESJOBS class with limited access to JESSPOOL resources
+        - User can only view their own jobs by default
+
+        Parameters
+        ----------
+        None - uses self._managed_racf_user
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+            :py:func:`_create_managed_user`
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
+        saf_class = "JESJOBS"
+        saf_profile = f"{self._managed_racf_user}.*.JESSPOOL"
+        command = StringIO()
+
+        command.write(f"Configuring limited job view permissions for USER '{self._managed_racf_user}';")
+        # Set universal access to NONE for the JESJOBS class profile
+        command.write(f"tsocmd RDEFINE {saf_class} {saf_profile} UACC\\(NONE\\);")
+        command.write(f"echo RDEFINE RC=$?;")
+        # Grants READ access to user for jobs matching pattern of saf_profile
+        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(READ\\);")
+        command.write(f"echo PERMIT RC=$?;")
+        # Refresh the RACLIST for the class
+        command.write(f"tsocmd SETROPTS RACLIST\\({saf_class}\\) REFRESH;")
+        command.write(f"echo SETROPTS RC=$?;")
+
+        cmd = f"{command.getvalue()}"
+        results_stdout_lines = self._connect(self._remote_host, self._model_user, cmd)
+
+        try:
+            # Evaluate the results
+            rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
+            if not rdefine_rc or int(rdefine_rc[0]) > 4:
+                err_details = f"rdefine {saf_class} {saf_profile}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
+            if not permit_rc or int(permit_rc[0]) > 4:
+                err_details = f"permit {saf_profile} class {saf_class}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
+            if not setropts_rc or int(setropts_rc[0]) > 4:
+                err_details = f"setropts raclist {saf_class} refresh"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable to access the results, this is required to configure job viewing permissions for user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
+        except Exception as err:
+            raise Exception(f"The model user {self._model_user} is unable to configure job viewing permissions for RACF user {self._managed_racf_user}, exception [{err}]")
+
     def _noop(self) -> None:
         """
         Method intentionally takes any number of args and does nothing.
@@ -938,6 +1012,7 @@ class ManagedUser:
     operations = {
         ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD.name: _create_user_zoau_limited_access_opercmd,
         ManagedUserType.ZOS_LIMITED_HLQ.name: _create_user_zos_limited_hlq,
+        ManagedUserType.ZOS_LIMITED_JOB_VIEW.name: _create_user_zos_limited_job_view,
         ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name: _noop,
         ManagedUserType.ZOS_BEGIN_WITH_POUND.name: _noop,
         ManagedUserType.ZOS_RANDOM_SYMBOLS.name: _noop

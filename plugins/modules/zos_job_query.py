@@ -46,7 +46,7 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the parameter will not be used for job querying.
+      - If no owner is set, the parameter will default to the current user.
     type: str
     required: False
     default: null
@@ -361,6 +361,7 @@ from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+import os
 
 
 def run_module():
@@ -444,7 +445,16 @@ def query_jobs(job_name, job_id, owner):
         No job with was found.
     """
     jobs = []
-    jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
+
+    try:
+        # Owner defaults to current user if none is specified
+        if owner is None:
+            current_user = os.environ.get('USER') or os.environ.get('LOGNAME')
+            jobs = job_status(job_id=job_id, owner=current_user, job_name=job_name, dd_name=False)
+        else:
+            jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
+    except Exception as e:
+        raise RuntimeError("Error querying jobs: " + str(e))
     return jobs
 
 

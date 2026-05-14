@@ -2104,7 +2104,6 @@ def run_module():
             # Initialize logging module
             module_verbosity_level = module._verbosity
             logger = SingletonLogger().get_logger(module_verbosity_level)
-            logger.info("Logger initialized successfully")
 
             for data_set_params in data_set_param_list:
                 data_set_params["scratch"] = determine_scratch(data_set_params)

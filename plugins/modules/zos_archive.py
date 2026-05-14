@@ -2083,7 +2083,6 @@ def run_module():
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
 
     encoding = parsed_args.get("encoding")
     archive = get_archive_handler(module)

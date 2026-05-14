@@ -34,16 +34,16 @@ class SingletonLogger:
         """
         Initialize the logger configuration.
 
-        Creates and configures a logger named 'AnsibleCoreLogger' with a
-        StreamHandler that outputs logs to stdout. Sets a standard log
-        format and INFO as the default logging level.
+        Creates and configures a root logger with a StreamHandler
+        that outputs logs to stdout. Sets a standard log format
+        and INFO as the default logging level.
         """
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
         if not self.logger.handlers:
             stream_handler = logging.StreamHandler()
-            formatter = logging.Formatter("AnsibleCoreLogger %(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
+            formatter = logging.Formatter("ibm_zos_core %(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
             stream_handler.setFormatter(formatter)
             self.logger.addHandler(stream_handler)
 

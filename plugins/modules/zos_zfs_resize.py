@@ -518,7 +518,6 @@ def run_module():
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
 
     result = dict()
     target = module.params.get("target")

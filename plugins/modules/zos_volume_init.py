@@ -277,7 +277,6 @@ def run_module():
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
 
     # sms managed and index are defined by ickdsf init as mutually exclusive.
     if module.params['sms_managed'] and not module.params['index']:

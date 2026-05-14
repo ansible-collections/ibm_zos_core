@@ -355,7 +355,6 @@ def run_module():
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
 
     cmd_str = module.params.get('cmd')
     cmd_parts = shlex.split(cmd_str)

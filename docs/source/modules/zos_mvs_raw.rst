@@ -121,6 +121,18 @@ dds
       | **type**: str
 
 
+    raw
+      Create a new data set and let the MVS program assign its own default DCB attributes.
+
+      When ``raw=true``, all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
+
+      Using ``raw`` option is not possible for all programs, use this for cases where the MVS program that is called is able to assign its own default dataset attributes.
+
+      | **required**: False
+      | **type**: bool
+      | **default**: False
+
+
     type
       The data set type. Only required when *disposition=new*.
 
@@ -907,6 +919,18 @@ dds
           | **type**: str
 
 
+        raw
+          Create a new data set and let the MVS program assign its own default DCB attributes.
+
+          When ``raw=true``, all supplied DCB attributes like disposition, space, volumes, SMS, keys, record settings, etc. are ignored.
+
+          Using ``raw`` option is not possible for all programs, use this for cases where the MVS program that is called is able to assign its own default dataset attributes.
+
+          | **required**: False
+          | **type**: bool
+          | **default**: False
+
+
         type
           The data set type. Only required when *disposition=new*.
 
@@ -1562,6 +1586,26 @@ Examples
          - dd_input:
              dd_name: sysin
              content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+   - name: Run ADRDSSU to dump a dataset without having to specify the DCB attributes for dd_data_set by using raw option.
+     zos_mvs_raw:
+       program_name: ADRDSSU
+       auth: true
+       verbose: true
+       dds:
+         - dd_data_set:
+             dd_name: OUTDD
+             data_set_name: "USER.TEST.DUMP"
+             raw: true
+         - dd_input:
+             dd_name: SYSIN
+             content: |
+               DUMP DATASET(INCLUDE(USER.TEST.SOURCE)) -
+               OUTDDNAME(OUTDD)
+         - dd_output:
+             dd_name: SYSPRINT
+             return_content:
+               type: text
 
    - name: Full volume dump using ADDRDSU.
      zos_mvs_raw:

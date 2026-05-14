@@ -1,0 +1,9 @@
+breaking_changes:
+  - zos_tso_command - Return value ``content`` is replaced by ``stdout_lines``.
+    Return value ``lines`` is replaced by ``line_count``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2245).
+
+minor_changes:
+  - zos_tso_command - New return value ``stdout`` contains the command stdout in raw format.
+    New return value ``stderr_lines`` that returns any outstanding stdout message split in lines.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2245).

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
-        - This option doesn't accept the use of wilcards (? and *).
+        - This option doesn't accept the use of wildcards (\? and \*).
     type: str
     required: true
     aliases:
@@ -161,9 +161,8 @@ notes:
     the query operation.
 
 seealso:
-  - module: ansible.builtin.stat
-  - module: zos_find
-  - module: zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_find
+  - module: ibm.ibm_zos_core.zos_gather_facts
 """
 
 EXAMPLES = r"""
@@ -1016,6 +1015,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
     DatasetCreateError,
     GDSNameResolveError
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 
 try:
@@ -2232,7 +2234,7 @@ class GenerationDataGroupHandler(DataSetHandler):
             'order': self.gdg_view.order,
             'purge': self.gdg_view.purge,
             'extended': self.gdg_view.extended,
-            'active_gens': [generation.name for generation in self.gdg_view.generations()]
+            'active_gens': [generation.name for generation in self.gdg_view.generations]
         }
 
         # Now we call LISTCAT to get the creation time.
@@ -2566,6 +2568,7 @@ def run_module():
         },
         supports_check_mode=True
     )
+    validate_dependencies(module)
 
     args_def = {
         'name': {

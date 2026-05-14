@@ -258,7 +258,7 @@ shell_exploits.txt
 importer_result.json
 ac
 scripts/
-ansible.cfg
+collections/
 
 ################################################################################
 # Debugging .ignore, if you want to know why a particular file is being ignored

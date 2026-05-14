@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -55,9 +55,9 @@ class ActionModule(ActionBase):
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
-        is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        binary = _process_boolean(task_args.get('binary'), default=False)
         force = _process_boolean(task_args.get('force'), default=False)
-        is_executable = _process_boolean(task_args.get('is_executable'), default=False)
+        executable = _process_boolean(task_args.get('executable'), default=False)
         asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=True)
         backup_name = task_args.get("backup_name", None)
@@ -104,7 +104,7 @@ class ActionModule(ActionBase):
             msg = "'src' or 'content' is required"
             return self._exit_action(result, msg, failed=True)
 
-        if encoding and is_binary:
+        if encoding and binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
@@ -112,12 +112,12 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
-        if is_binary and asa_text:
-            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+        if binary and asa_text:
+            msg = "Both 'binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
-        if is_executable and asa_text:
-            msg = "Both 'is_executable' and 'asa_text' are True. Unable to copy an is_executable as an ASA text file."
+        if executable and asa_text:
+            msg = "Both 'executable' and 'asa_text' are True. Unable to copy an executable as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
         use_template = _process_boolean(task_args.get("use_template"), default=False)
@@ -291,7 +291,7 @@ class ActionModule(ActionBase):
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            rm_res = self._connection.exec_command(f"rm -rf {path}*")
+            self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not replace:
             result["note"] = copy_res.get("note")

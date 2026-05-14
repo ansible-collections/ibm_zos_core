@@ -1,8 +1,10 @@
 {# ------------------------------------------------------------------------ #}
-{# © Copyright IBM Corporation 2020, 2021                                   #}
+{# Copyright (c) IBM Corporation 2021, 2025                                 #}
 {# ------------------------------------------------------------------------ #}
 
-.. _{{ module }}_role:
+:github_url: https://github.com/IBM/ibm_zosmf/tree/master/plugins/roles/{{ module }}
+
+.. _{{ module }}_module:
 
 {# ------------------------------------------------------------------------ #}
 {# Generate the title based on the role name and doc description            #}
@@ -11,13 +13,6 @@
 {% set title = module + ' -- ' + short_description | rst_ify %}
 {{ title }}
 {{ '=' * title | length }}
-
-{# Disble this syle formatting in leu of list style #}
-{#    {%   for desc in description %}
-    {{ desc | rst_ify }}
-
-    {%   endfor %}
-#}
 
 {# ------------------------------------------------------------------------ #}
 {# Generate top level links                                                 #}
@@ -33,19 +28,17 @@
 
 Synopsis
 --------
-{% if description -%}
-
+{% if description %}
 {%   for desc in description %}
 - {{ desc | rst_ify }}
 {%   endfor %}
-
 {% endif %}
 
 {# ------------------------------------------------------------------------ #}
 {# Generate the dependencies based on the doc description                   #}
 {# ------------------------------------------------------------------------ #}
 
-{% if dependencies -%}
+{% if dependencies %}
 Dependencies
 ------------
 
@@ -57,7 +50,6 @@ The below requirements are needed on the host that executes this role.
 
 {% endif %}
 
-
 {# ------------------------------------------------------------------------ #}
 {# Parse options and format function                                        #}
 {# ------------------------------------------------------------------------ #}
@@ -66,27 +58,26 @@ The below requirements are needed on the host that executes this role.
 {# Control the order of options: true: ordered by name; false: keep source order #}
 {%   set sorted = false %}
 {%   for name, spec in (opts | dictsort if sorted else opts.items()) if not name.startswith('_') %}
-{%     set req = "required" if spec.required else "optional" %}
 
-{# if its a boolean we need to convert to a string for html #}
-{% if spec.type == 'bool' %}
-     {% set default_str = (spec.default | string | lower ) %}
-{% elif spec.type == 'int' %}
-     {% set default_str = (spec.default | string ) %}
-{% else %}
-     {% set default = ", default: " + spec.default if spec.default else "" %}
-{% endif %}
+{# Need to convert defalut value from bool or int to string for html display #} 
+{%     if spec.type == 'bool' or spec.type == 'int' %}
+{%       set default_str = (spec.default | string ) %}
+{%     else %}
+{%       set default_str = spec.default if spec.default else "" %}
+{%     endif %}
 
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}
   {{ "  " * level }}{{ para | rst_ify }}
 
 {%     endfor %}
-
-  {{ "  " * level }}| **required**: {{ spec.required | default("False") }}
+  {{ "  " * level }}| **required**: {{ spec.required | string | default("False") }}
   {{ "  " * level }}| **type**: {{ spec.type | default("str") }}
-{%     if spec.default %}
-  {{ "  " * level }}| **default**: {{ spec.default }}
+{%     if spec.elements %}
+  {{ "  " * level }}| **elements**: {{ spec.elements }}
+{%     endif %}
+{%     if default_str != "" and default_str != "None" %}
+  {{ "  " * level }}| **default**: {{ default_str }}
 {%     endif %}
 {%     if spec.choices %}
   {{ "  " * level }}| **choices**: {{ ", ".join(spec.choices) }}
@@ -102,9 +93,9 @@ The below requirements are needed on the host that executes this role.
 {# Generate the options doc                                      #}
 {# ------------------------------------------------------------- #}
 
-{% if options -%}
-Parameters
-----------
+{% if options %}
+Variables
+---------
 
 {{ option_generation(options, 0) }}
 {% endif %}
@@ -120,35 +111,36 @@ Examples
 
 {{ examples | indent(3, True) }}
 
-
 {# ------------------------------------------------------------- #}
 {# Generate the notes doc                                        #}
 {# ------------------------------------------------------------- #}
 
-{% if notes -%}
+{% if notes %}
 Notes
 -----
 
 .. note::
 {%   for note in notes %}
-   {{ note | rst_ify }}
+   - {{ note | rst_ify }}
 
 {%   endfor %}
+
 {% endif %}
 
 {# ------------------------------------------------------------- #}
-{# Generate the see also doc                                     #}
+{# Generate the set also doc                                     #}
 {# ------------------------------------------------------------- #}
 
-{% if seealso -%}
+{% if seealso %}
 See Also
 --------
 
 .. seealso::
-
-{% for item in seealso %}
+{%   for item in seealso %}
    - :ref:`{{ item.module }}_module`
-{% endfor %}
+
+{%   endfor %}
+
 {% endif %}
 
 {# ------------------------------------------------------------- #}
@@ -156,56 +148,72 @@ See Also
 {# ------------------------------------------------------------- #}
 
 {% macro result_generation(results, level) %}
+{%   for entry in results %}   
+{%     set _description  = results[entry].description %}
+{%     set _returned     = results[entry].returned %}
+{%     set _type         = results[entry].type %}
+{%     set _elements     = results[entry].elements %}
+{%     set _contains     = results[entry].contains %}
+{%     set _sample       = results[entry].sample %}
 
-   {% for entry in results %}
+{{ "  " * level }}{{ entry }}
+{%     if _description is iterable and _description is not string %}
+{%       for _para in _description %}
+  {{ "  " * level }}{{ _para | rst_ify }}
 
-      {%  set _description  = results[entry].description %}
-      {%  set _returned     = results[entry].returned %}
-      {%  set _type         = results[entry].type %}
-      {%  set _contains     = results[entry].contains %}
-      {%  set _sample       = results[entry].sample %}
+{%       endfor %}
+{%     else %}
+  {{ "  " * level }}{{ _description | rst_ify }}
 
-      {{ entry | indent(level, True) }}
-      {% if _description is iterable and _description is not string %}
-{{ "  " * (level) }}| {{ _description[0] }}
-      {% else %}
-{{ "  " * (level) }}| {{ _description }}
-      {% endif %}
+{%     endif %}
+{%     if _returned %}
+  {{ "  " * level }}| **returned**: {{ _returned }}
+{%     endif %}
+{%     if _type %}
+  {{ "  " * level }}| **type**: {{ _type | default("str") }}
+{%     endif %}
+{%     if _elements %}
+  {{ "  " * level }}| **elements**: {{ _elements }}
+{%     endif %}
+{%     if _sample %}
+{%       if _sample.sample1 %}
+{%         if _type != 'str' and _type != 'int' %}
+  {{ "  " * level }}| **sample**:
 
-      {% if _returned %}
-{{ "  " * level }}| **returned**: {{ _returned }}
-      {% endif %}
-{{ "  " * level }}| **type**: {{ _type  }}
+{%           for _samplex in _sample %}
+  {{ "  " * level }}   .. code-block:: json
 
-      {%- if _sample -%}
-      {% if _type != 'str' and _type != 'int' %}
-      
-      {{ "  " * level }}| **sample**:
+  {{ "  " * level }}      {{ _sample[_samplex] | tojson(4) | indent(2*level+8) }}
 
-              .. code-block::
+{%           endfor %}
+{%         else %}
+  {{ "  " * level }}| **sample**:
 
-                       {{ _sample | tojson }}
-      {% else %}
+{%           for _samplex in _sample %}
+  {{ "  " * level }}  {{ _sample[_samplex] }}
 
-      {{ "  " * level }}| **sample**: {{ _sample }}
+{%           endfor %}
+{%         endif %}
+{%       else %}
+{%         if _type != 'str' and _type != 'int' %}
+  {{ "  " * level }}| **sample**:
 
-      {% endif %}
-      {% endif %}
+  {{ "  " * level }}   .. code-block:: json
 
-      {% if _contains %}
-        {{ result_generation(_contains, level + 1) }}
-      {% endif %}
+  {{ "  " * level }}      {{ _sample | tojson(4) | indent(2*level+8) }}
 
-      {% endfor  %}
-  {% endmacro %}
+{%         else %}
+  {{ "  " * level }}| **sample**: {{ _sample }}
+
+{%         endif %}
+{%       endif %}
+{%     endif %}
+{%     if _contains %}
+{{ result_generation(_contains, level + 1) }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
 {# ------------------------------------------------------------- #}
 {# Generate the return values doc                                #}
 {# ------------------------------------------------------------- #}
-
-{% if returndocs -%}
-Return Values
--------------
-
-{{ result_generation(returndocs,1) }}
-{% endif %}
-

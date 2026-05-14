@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2023, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -144,8 +144,8 @@ notes:
     remote machine.
 
 seealso:
-  - module: zos_copy
-  - module: zos_tso_command
+  - module: ibm.ibm_zos_core.zos_copy
+  - module: ibm.ibm_zos_core.zos_tso_command
 """
 
 EXAMPLES = r"""
@@ -241,12 +241,14 @@ stderr_lines:
 import os
 import stat
 import shlex
-import os
 from ansible.module_utils._text import to_text
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
 )
 
 
@@ -306,6 +308,7 @@ def run_module():
         ),
         supports_check_mode=False
     )
+    validate_dependencies(module)
 
     args_def = dict(
         chdir=dict(arg_type='path', required=False),

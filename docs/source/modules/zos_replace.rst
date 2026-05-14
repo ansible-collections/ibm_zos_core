@@ -27,9 +27,17 @@ Parameters
 
 
 after
-  If specified, only content after this match will be replaced/removed.
+  A regular expression that, if specified, determines which content will be replaced or removed **after** the match.
 
-  Can be used in combination with *before*.
+  Option *after* is the start position from where the module will seek to match the *regexp* pattern. When a pattern is matched, occurrences are substituted with the value set for *replace*.
+
+  If option *after* is not set, the module will search from the beginning of the *target*.
+
+  Option *after* is a regular expression as described in the `Python library <https://docs.python.org/3/library/re.html>`_.
+
+  Option *after* can be used in combination with *before*. When combined with *before*, patterns are replaced or removed from *after* until the value set for *before*.
+
+  Option *after* can be interpreted as a literal string instead of a regular expression by setting option *literal=after*.
 
   | **required**: False
   | **type**: str
@@ -69,9 +77,17 @@ backup_name
 
 
 before
-  If specified, only content before this match will be replaced/removed.
+  A regular expression that if, specified, determines which content will be replaced or removed **before** the match.
 
-  Can be used in combination with *after*.
+  Option *before* is the end position from where the module will seek to match the *regexp* pattern. When a pattern is matched, occurrences are substituted with the value set for *replace*.
+
+  If option *before* is not set, the module will search to the end of the *target*.
+
+  Option *before* is a regular expression as described in the `Python library <https://docs.python.org/3/library/re.html>`_.
+
+  Option *before* can be used in combination with *after*. When combined with *after*, patterns are replaced or removed from *after* until the value set for *before*.
+
+  Option *before* can be interpreted as a literal string instead of a regular expression by setting option *literal=before*.
 
   | **required**: False
   | **type**: str
@@ -88,10 +104,17 @@ encoding
 
 
 literal
-  A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
+  If specified, it enables the module to interpret options *after*, *before* and *regexp* as a literal rather than a regular expression.
+
+  Option *literal* uses any combination of V(after), V(before) and V(regexp).
+
+  To interpret one option as a literal, use *literal=regexp*, *literal=after* or *literal=before*.
+
+  To interpret multiple options as a literal, use a list such as ``['after', 'before']`` or ``['regex', 'after', 'before']``
 
   | **required**: False
   | **type**: raw
+  | **default**: []
 
 
 target
@@ -140,18 +163,19 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Replace with blank space on a USS file any occurrences of the regex
+   - name: Replace 'profile/' pattern in USS file via blank substitution.
      zos_replace:
        target: /tmp/src/somefile
        regexp: 'profile\/'
 
-   - name: Replace using after on USS file
+   - name: Replace regexp match with blank after line match in USS file.
      zos_replace:
        target: "/tmp/source"
        regexp: '^MOUNTPOINT*'
        after: export ZOAU_ROOT
 
-   - name: Replace a specific line with special character on a dataset after a line
+   - name: Replace a specific line with special character on a dataset after a line, treating the text specified
+       for regexp as a literal string and after as regular expression.
      zos_replace:
        target: SAMPLE.SOURCE
        regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
@@ -159,7 +183,16 @@ Examples
        after: '^\$source base \([^\s]+\)'
        literal: regexp
 
-   - name: Replace a specific line before a specific sentence with backup
+   - name: Replace a specific line with special character on a dataset after a line, treating the text specified
+       for regexp and after as regular expression.
+     zos_replace:
+       target: SAMPLE.SOURCE
+       regexp: '\ \*\*LIB\ \ DD\ UNIT=SYS,SPACE=\(TRK,\(1,1\)\),VOL=SER=vvvvvv'
+       replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
+       after: '^\$source base \([^\s]+\)'
+       literal: regexp
+
+   - name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as literal strings.
      zos_replace:
        target: SAMPLE.SOURCE
        backup: true
@@ -169,7 +202,14 @@ Examples
          - regexp
          - before
 
-   - name: Replace some words between two lines with a backup with tmp_hlq
+   - name: Replace a specific line before a specific sentence with backup, treating the text specified for regexp and before as regular expression.
+     zos_replace:
+       target: SAMPLE.SOURCE
+       backup: true
+       regexp: '\ //SYSPRINT\ DD\ SYSOUT=\*'
+       before: '\ SAMPLES OUTPUT SYSIN\ \*\=\$DSN'
+
+   - name: Replace 'var' with 'vars' between matched lines after and before with backup.
      zos_replace:
        target: SAMPLE.DATASET
        tmp_hlq: ANSIBLE
@@ -180,7 +220,7 @@ Examples
        after: ^/tmp/source*
        before: ^   if*
 
-   - name: Replace lines on a GDS and generate a backup on the same GDG
+   - name: Replace lines on a GDS and generate a backup on the same GDG.
      zos_replace:
        target: SOURCE.GDG(0)
        regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
@@ -189,7 +229,7 @@ Examples
        backup: true
        backup_name: "SOURCE.GDG(+1)"
 
-   - name: Delete some calls to SYSTEM on a member using a backref
+   - name: Delete 'SYSTEM' calls via backref between matched lines in a PDS member.
      zos_replace:
        target: PDS.SOURCE(MEM)
        regexp: '^(.*?SYSTEM.*?)SYSTEM(.*)'
@@ -232,7 +272,7 @@ changed
 
     .. code-block:: json
 
-        1
+        true
 
 found
   Number of matches found

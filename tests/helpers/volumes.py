@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2024
+# Copyright (c) IBM Corporation 2024, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -72,6 +72,16 @@ class Volume_Handler:
         print("Not more volumes in disposal return volume USER02")
         return "USER02","01A2"
 
+    def get_available_vol_with_sms(self):
+        """ Check in the list of volumes one on use or not, also send a default
+        volume USER02 as is the one with less data sets included."""
+        for volume in self.volumes:
+            if not (volume.in_use):
+                volume.use()
+                return volume.name, volume.unit
+        print("Not more volumes in disposal return volume 222222")
+        return "222222","DB2SMS10"
+
     def free_vol(self, vol):
         """ Check from the array the volume is already free for other test to use."""
         for volume in self.volumes:
@@ -114,7 +124,9 @@ def get_volumes(ansible_zos_module, path):
                 storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in storage_online:
-        list_volumes.append(vol)
+        valid = validate_ds_creation_on_volume(hosts, vol, 'seq')
+        if valid:
+            list_volumes.append(vol)
     if prefer_vols is not None:
         list(map(str, prefer_vols))
         prefer_vols.extend(list_volumes)
@@ -175,7 +187,7 @@ def create_vvds_on_volume( ansible_zos_module, volume):
     return False
 
 
-def get_volume_and_unit(ansible_zos_module, path):
+def get_volume_and_unit(ansible_zos_module):
     """Get an array of available volumes, and it's unit"""
     # Using the command d u,dasd,online to fill an array of available volumes with the priority
     # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed, the
@@ -184,7 +196,6 @@ def get_volume_and_unit(ansible_zos_module, path):
     hosts = ansible_zos_module
     list_volumes = []
     all_volumes_list = []
-    priv_online = []
     flag = False
     iteration = 5
     volumes_datasets = []
@@ -208,18 +219,8 @@ def get_volume_and_unit(ansible_zos_module, path):
 
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
-
                 # The next creation of dataset is to validate if the volume will work properly for the test suite
-                dataset = get_tmp_ds_name()
-                valid_creation = hosts.all.zos_data_set(name=dataset, type='pds', volumes=f'{vol_w_info[3]}')
-
-                for valid in valid_creation.contacted.values():
-                    if valid.get("changed") == "false":
-                        valid = False
-                    else:
-                        valid = True
-                        hosts.all.zos_data_set(name=dataset, state="absent")
-
+                valid = validate_ds_creation_on_volume(hosts, vol_w_info[3], "pds")
                 # When is a valid volume is required to get the datasets present on the volume
                 if valid:
                     ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
@@ -232,3 +233,63 @@ def get_volume_and_unit(ansible_zos_module, path):
     list_volumes = [[x[1], x[2]] for x in sorted_volumes]
 
     return list_volumes
+
+def get_volumes_sms_mgmt_class(ansible_zos_module, volumes_on_system):
+    """
+    From the current volumes available to write and delete dataset search for any sms group that is associate with.
+    """
+    volumes_smsclass = find_volume_with_sms_class(ansible_zos_module, volumes_on_system)
+    if len(volumes_smsclass) > 0:
+        return volumes_smsclass
+
+    volumes_smsclass = []
+    print("Warning: No sms storage volumes on system, using DB2SMS10")
+    for vol in volumes_on_system:
+        volumes_smsclass.append([vol,'DB2SMS10'])
+    return volumes_smsclass
+
+
+def find_volume_with_sms_class(ansible_zos_module, volumes_on_system):
+    """
+    Fetches all volumes in the system and returns a list of volumes for
+    which there are sms class.
+    """
+    hosts = ansible_zos_module
+    vols_sms = []
+    content = ""
+    # D SMS,STORGRP(SG1),LISTVOL
+    # D SMS,STORGRP(ALL),LISTVOL
+    # D SMS,STORGRP(<group_name>),LISTVOL
+    # D SMS,VOL(XXXXXX)
+    for vol in volumes_on_system:
+        response = hosts.all.zos_operator(cmd=f"D SMS,VOL({vol})")
+        for res in response.contacted.values():
+            content = res.get('content')
+            for line in content:
+                if 'REJECTED' in line or 'EC' in line:
+                    continue
+                else:
+                    words = line.lstrip()
+                    if words.startswith(vol):
+                        sms_grp = words.strip().split()[-1]
+                        if sms_grp != "PRIMARY":
+                            vols_sms.append([vol, sms_grp])
+                        continue
+    return vols_sms
+
+
+def validate_ds_creation_on_volume(ansible_zos_module, vol, type):
+    """
+    Utility to validate the volumes we get from the system is available to create and delete datasets
+    """
+    valid = True
+    hosts = ansible_zos_module
+    dataset = get_tmp_ds_name()
+    valid_creation = hosts.all.zos_data_set(name=dataset, type=type, volumes=vol)
+    for valid in valid_creation.contacted.values():
+        if valid.get("changed") == "false":
+            valid = False
+        else:
+            valid = True
+            hosts.all.zos_data_set(name=dataset, state="absent")
+    return valid

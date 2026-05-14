@@ -98,20 +98,18 @@ TEMP_PATH = "/tmp/"
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        jdata_set_name = get_tmp_ds_name()
+        data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
         )
-        hosts.all.zos_data_set(
-            name=jdata_set_name, state="present", type="pds", replace=True
-        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{jdata_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{jdata_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -188,27 +186,25 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
-        hosts.all.zos_data_set(name=jdata_set_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
 # test to show multi wildcard in Job_name query won't crash the search
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        ndata_set_name = get_tmp_ds_name()
+        data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
         )
-        hosts.all.zos_data_set(
-            name=ndata_set_name, state="present", type="pds", replace=True
-        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{ndata_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -283,7 +279,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
                 assert rc.get("msg_txt") == "CC"
     finally:
         hosts.all.file(path=temp_path, state="absent")
-        hosts.all.zos_data_set(name=ndata_set_name, state="absent")
+        hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
 def test_zos_job_id_query_short_ids_func(ansible_zos_module):

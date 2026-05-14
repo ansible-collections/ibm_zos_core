@@ -1,0 +1,13 @@
+trivial:
+  - test_zos_backup_restore.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2259).
+  - test_zos_blockinfile_func.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2259).
+  - test_zos_job_output_func.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2259).
+  - test_zos_job_query_func.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2259).
+  - test_zos_mount_func.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2259).
+  - test_zos_volume_init_func.py - Removed calls to zos_data_set that would increase the test case dependency between the modules.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2259).

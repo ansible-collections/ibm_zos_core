@@ -1,0 +1,4 @@
+breaking_changes:
+  - zos_find - Option value ``pds_pattern`` is deprecated. Previously, excluding members required adding pds_patterns.
+    The updated behavior now allows excluding members by placing them inside parentheses.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2261).

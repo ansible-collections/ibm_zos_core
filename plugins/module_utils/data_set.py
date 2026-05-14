@@ -365,7 +365,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None, tmphlq=None):
+    def allocate_model_data_set(ds_name, model, model_type=None, model_attributes=None, executable=False, asa_text=False, vol=None, tmphlq=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -381,6 +381,14 @@ class DataSet(object):
         model : str
             The name of the data set whose allocation parameters
             should be used to allocate the new data set 'ds_name'.
+        model_type : str
+            The type of the model data set (e.g., 'PS', 'PO', 'VSAM').
+            If not provided, it will be automatically determined from the model data set.
+        model_attributes : list
+            The attributes list from datasets.list_datasets() containing
+            model data set properties. The first element will be used to retrieve
+            properties such as block_size, record_format, etc.
+            If not provided, it will be automatically retrieved from the model data set.
         executable : bool
             Whether the new data set should support executables.
         asa_text : bool
@@ -404,7 +412,8 @@ class DataSet(object):
             raise DatasetNotFoundError(model)
 
         ds_name = extract_dsname(ds_name)
-        model_type = DataSet.data_set_type(model, tmphlq=tmphlq)
+        if model_type is None:
+            model_type = DataSet.data_set_type(model, tmphlq=tmphlq)
 
         # The break lines are absolutely necessary, a JCL code line can't
         # be longer than 72 characters. The following JCL is compatible with
@@ -416,10 +425,11 @@ class DataSet(object):
         # data sets.
         if model_type not in DataSet.MVS_VSAM:
             try:
-                data_set = datasets.list_datasets(model)[0]
+                if model_attributes is None:
+                    model_attributes = datasets.list_datasets(model)[0]
             except IndexError:
                 raise AttributeError("Could not retrieve model data set block size.")
-            block_size = data_set.block_size
+            block_size = model_attributes.block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
 
@@ -441,7 +451,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, out, err)
 
     @staticmethod
-    def allocate_gds_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None, tmphlq=None):
+    def allocate_gds_model_data_set(ds_name, model, model_attributes=None, executable=False, asa_text=False, vol=None, tmphlq=None):
         """
         Allocates a new current generation of a generation data group using a model
         data set to set its attributes.
@@ -454,6 +464,12 @@ class DataSet(object):
         model : str
             The name of the data set whose allocation parameters
             should be used to allocate the new data set.
+        model_attributes : list
+            The attributes list from datasets.list_datasets() containing
+            model data set properties. The first element will be used to retrieve
+            properties such as organization, record_format, block_size, record_length,
+            and total_space. If not provided, it will be automatically retrieved
+            from the model data set.
         executable : bool, optional
             Whether the new data set should support executables.
         asa_text : bool, optional
@@ -474,7 +490,8 @@ class DataSet(object):
         DatasetCreateError
             When the allocation fails.
         """
-        model_attributes = datasets.list_datasets(model)[0]
+        if model_attributes is None:
+            model_attributes = datasets.list_datasets(model)[0]
         dataset_type = model_attributes.organization
         record_format = model_attributes.record_format
 
@@ -787,6 +804,88 @@ class DataSet(object):
             raise DatasetVolumeError(name)
 
     @staticmethod
+    def get_attributes(name):
+        """Fetch data set attributes.
+
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+
+        Returns
+        -------
+        str or tuple
+            A tuple of (type, attributes) where attributes is the dataset
+            object from list_datasets, or None for VSAM/GDG/non-existent datasets.
+
+        """
+        data_sets_found = datasets.list_datasets(name)
+
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
+        if len(data_sets_found) > 0:
+            return data_sets_found[0]
+        return None
+
+    @staticmethod
+    def get_data_set_type(name, volume=None, tmphlq=None, attributes=None):
+        """Checks the type of a data set, data sets must be cataloged.
+
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volume : str
+            The volume the data set may reside on.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
+        attributes : tuple
+            The tuple of data set attributes.
+
+        Returns
+        -------
+        str
+            The type of the data set (one of "PS", "PO", "DA", "KSDS", "ESDS",
+            "LDS" or "RRDS"), or None if the data set does not exist.
+
+        """
+
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
+        if attributes is not None:
+            return attributes.organization
+
+        # Now trying to list GDGs through gdgs.
+        data_sets_found = gdgs.list_gdg_names(name)
+        if len(data_sets_found) > 0:
+            return "GDG"
+
+        # Next, trying to get the DATA information of a VSAM through
+        # LISTCAT.
+        output = DataSet._get_listcat_data(name, tmphlq=tmphlq)
+
+        # Filtering all the DATA information to only get the ATTRIBUTES block.
+        data_set_attributes = re.findall(
+            r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
+        if len(data_set_attributes) == 0:
+            return None
+
+        vsam_type = None
+        if re.search(r"\bINDEXED\b", data_set_attributes[0]):
+            vsam_type = "KSDS"
+        elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
+            vsam_type = "ESDS"
+        elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
+            vsam_type = "LDS"
+        elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
+            vsam_type = "RRDS"
+
+        if vsam_type:
+            return vsam_type
+
+        return None
+
+    @staticmethod
     def data_set_type(name, volume=None, tmphlq=None):
         """Checks the type of a data set, data sets must be cataloged.
 
@@ -884,13 +983,18 @@ class DataSet(object):
         return stdout
 
     @staticmethod
-    def is_empty(name, volume=None, tmphlq=None):
+    def is_empty(name, ds_type=None, dataset_exists=None, volume=None, tmphlq=None):
         """Determines whether a data set is empty.
 
         Parameters
         ----------
         name : str
             The name of the data set.
+        ds_type : str
+            The type of the data set. If not provided, it will be determined.
+        dataset_exists : bool
+            Whether the dataset exists. If None, existence will be checked.
+            Use this to avoid redundant existence checks when already known.
         volume : str
             The volume where the data set resides.
         tmphlq : str
@@ -901,10 +1005,16 @@ class DataSet(object):
         bool
             Whether the data set is empty or not.
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+
+        # Check existence only if not already known
+        if dataset_exists is None:
+            dataset_exists = DataSet.data_set_exists(name, volume, tmphlq=tmphlq)
+        if not dataset_exists:
             raise DatasetNotFoundError(name)
 
-        ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
+        # Get ds_type only if not provided
+        if ds_type is None:
+            ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
 
         if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)

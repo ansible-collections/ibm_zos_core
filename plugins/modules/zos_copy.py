@@ -2758,7 +2758,7 @@ def does_destination_allow_copy(
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
     if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
-        is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
+        is_dest_empty = data_set.DataSet.is_empty(dest, ds_type=dest_type, dataset_exists=dest_exists, volume=volume, tmphlq=tmphlq)
         if not (is_dest_empty or replace):
             return False
 
@@ -2872,7 +2872,8 @@ def get_attributes_of_any_dataset_created(
     src_name,
     binary,
     asa_text,
-    volume=None
+    volume=None,
+    src_attributes=None
 ):
     """Get the attributes of dataset created by the function allocate_destination_data_set
     except for VSAM.
@@ -2921,7 +2922,8 @@ def get_attributes_of_any_dataset_created(
                 volume=volume
             )
     else:
-        src_attributes = datasets.list_datasets(src_name)[0]
+        if src_attributes is None:
+            src_attributes = datasets.list_datasets(src_name)[0]
         size = int(src_attributes.total_space)
         params = get_data_set_attributes(
             dest,
@@ -2947,7 +2949,8 @@ def allocate_destination_data_set(
     is_active_gds,
     dest_data_set=None,
     volume=None,
-    tmphlq=None
+    tmphlq=None,
+    src_attributes=None
 ):
     """
     Allocates a new destination data set to copy into, erasing a preexistent one if
@@ -3044,22 +3047,24 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
-
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, replace, binary, asa_text, volume=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, model_attributes=src_attributes,
+                                                             asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type,
+                                                         model_attributes=src_attributes, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         else:
             temp_dump = None
             try:
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
-                src_attributes = datasets.list_datasets(src_name)[0]
+                if src_attributes is None:
+                    src_attributes = datasets.list_datasets(src_name)[0]
                 record_length = int(src_attributes.record_length)
                 temp_dump = dump_data_set_member_to_file(src, binary)
                 create_seq_dataset_from_file(
@@ -3080,11 +3085,14 @@ def allocate_destination_data_set(
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, model_attributes=src_attributes,
+                                                             asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, model_attributes=src_attributes,
+                                                         executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            src_attributes = datasets.list_datasets(src_name)[0]
+            if src_attributes is None:
+                src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
             record_format = src_attributes.record_format
@@ -3194,7 +3202,8 @@ def allocate_destination_data_set(
             src_name,
             binary,
             asa_text,
-            volume
+            volume,
+            src_attributes
         )
         dest_attributes = datasets.list_datasets(dest)[0]
         record_format = dest_attributes.record_format
@@ -3388,14 +3397,12 @@ def run_module(module, arg_def):
     # ********************************************************************
     originalsrc = module.params.get('src')
     originaldest = module.params.get('dest')
-    issrcpoundexists = False
-    isdestpoundexists = False
+    issrcpoundexists = "£" in module.params["src"]
+    isdestpoundexists = "£" in module.params["dest"]
     # Replacing pound with dollar in src and dest if exists
-    if "£" in module.params["src"]:
-        issrcpoundexists = True
+    if issrcpoundexists:
         module.params["src"] = module.params["src"].replace("£", "$")
-    if "£" in module.params["dest"]:
-        isdestpoundexists = True
+    if isdestpoundexists:
         module.params["dest"] = module.params["dest"].replace("£", "$")
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -3436,92 +3443,6 @@ def run_module(module, arg_def):
     if dest_data_set:
         if volume:
             dest_data_set["volumes"] = [volume]
-
-    copy_member = is_member(dest)
-    # This section we initialize different variables
-    # that we used to pass from the action plugin.
-    is_src_dir = os.path.isdir(src)
-    is_uss = "/" in dest
-    is_mvs_src = is_data_set(data_set.extract_dsname(src))
-    is_src_gds = data_set.DataSet.is_gds_relative_name(src)
-    is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
-    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
-    is_dest_gds_active = False
-    is_pds = is_src_dir and is_mvs_dest
-    src_member = is_member(src)
-    raw_src = src
-    raw_dest = dest
-    is_src_alias = False
-    is_dest_alias = False
-
-    if is_mvs_src and not src_member and not is_src_gds:
-        is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
-        if is_src_alias:
-            src = src_base_name
-    if is_mvs_dest and not copy_member and not is_dest_gds:
-        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
-        if is_dest_alias:
-            dest = dest_base_name
-
-    # Initialize logging module
-    module_verbosity_level = module._verbosity
-    logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
-
-    # Validation for copy from a member
-    if src_member:
-        if not (data_set.DataSet.data_set_member_exists(src)):
-            module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
-                data_set.extract_member_name(src)
-            ))
-
-    # Implementing the new MVSDataSet class by masking the values of
-    # src/raw_src and dest/raw_dest.
-    if is_mvs_src:
-        src_data_set_object = data_set.MVSDataSet(src)
-        src = src_data_set_object.name
-        raw_src = src_data_set_object.raw_name
-
-    if is_mvs_dest:
-        dest_data_set_object = data_set.MVSDataSet(dest)
-        dest = dest_data_set_object.name
-        raw_dest = dest_data_set_object.raw_name
-        is_dest_gds_active = dest_data_set_object.is_gds_active
-
-    # ********************************************************************
-    # When copying to and from a data set member, 'dest' or 'src' will be
-    # in the form DATA.SET.NAME(MEMBER). When this is the case, extract the
-    # actual name of the data set.
-    # ********************************************************************
-    dest_name = data_set.extract_dsname(dest)
-    dest_member = data_set.extract_member_name(dest) if copy_member else None
-    src_name = data_set.extract_dsname(src) if src else None
-    member_name = data_set.extract_member_name(src) if src_member else None
-
-    conv_path = src_ds_type = dest_ds_type = dest_exists = None
-    res_args = dict()
-
-    # ********************************************************************
-    # 1. When the source is a USS file or directory , verify that the file
-    #    or directory exists and has proper read permissions.
-    # 2. Capture the file or data sets mode bits when mode param is set
-    #    to 'preserve'
-    # ********************************************************************
-    if remote_src and "/" in src:
-        # Keeping the trailing slash because the CopyHandler will do
-        # different things depending on its existence.
-        if src.endswith("/"):
-            src = "{0}/".format(os.path.realpath(src))
-        else:
-            src = os.path.realpath(src)
-
-        if not os.path.exists(src):
-            module.fail_json(msg="Source {0} does not exist".format(raw_src))
-        if not os.access(src, os.R_OK):
-            module.fail_json(msg="Source {0} is not readable".format(raw_src))
-        if mode == "preserve":
-            mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
-
     # ********************************************************************
     # Use the DataSet class to gather the type and volume of the source
     # and destination datasets, if needed.
@@ -3532,13 +3453,52 @@ def run_module(module, arg_def):
     # characters. We'll only update these variables when they are
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
+    conv_path = src_ds_type = dest_ds_type = dest_exists = None
+    src_member = is_src_gds = member_name = dest_name = src_attributes = None
+    res_args = dict()
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+    logger.info("Logger initialized successfully")
+
     try:
-        if "/" in src:
+        # Source validation
+        raw_src = src
+        is_src_uss = "/" in src
+        is_src_dir = False
+        is_src_file = False
+        is_uss = "/" in dest
+        is_src_alias = False
+        # ********************************************************************
+        # 1. When the source is a USS file or directory , verify that the file
+        #    or directory exists and has proper read permissions.
+        # 2. Capture the file or data sets mode bits when mode param is set
+        #    to 'preserve'
+        # ********************************************************************
+        if is_src_uss:
             src_ds_type = "USS"
+            if remote_src:
+                # Keeping the trailing slash because the CopyHandler will do
+                # different things depending on its existence.
+                if src.endswith("/"):
+                    src = "{0}/".format(os.path.realpath(src))
+                else:
+                    src = os.path.realpath(src)
 
-            if os.path.isdir(src):
-                is_src_dir = True
-
+                if os.path.exists(src):
+                    is_src_dir = os.path.isdir(src)
+                    is_src_file = os.path.isfile(src)
+                else:
+                    module.fail_json(msg="Source {0} does not exist".format(raw_src))
+                if not os.access(src, os.R_OK):
+                    module.fail_json(msg="Source {0} is not readable".format(raw_src))
+                if mode == "preserve":
+                    mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
+            else:
+                # For non-remote USS sources, check here
+                is_src_dir = os.path.isdir(src)
+                is_src_file = os.path.isfile(src)
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
@@ -3571,18 +3531,52 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, binary=binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
-                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq)):
-                if src_member and not data_set.DataSet.data_set_member_exists(src):
-                    raise NonExistentSourceError(src)
-                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
+            is_mvs_src = is_data_set(data_set.extract_dsname(src))
+            is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+            src_member = is_member(src)
+            # Replace src with real name if src is alias
+            if is_mvs_src and not src_member and not is_src_gds:
+                is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
+                if is_src_alias:
+                    src = src_base_name
 
-                if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
-                    src_attributes = datasets.list_datasets(src_name)[0]
-                    if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
-                        src_has_asa_chars = True
-            else:
+            # Validation for copy from a member
+            if src_member:
+                if not data_set.DataSet.data_set_member_exists(src):
+                    module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
+                        data_set.extract_member_name(src)
+                    ))
+                else:
+                    member_name = data_set.extract_member_name(src) if src_member else None
+            # Validate GDS exists and resolve to absolute name
+            elif is_src_gds:
+                try:
+                    data_set.DataSet.resolve_gds_absolute_name(src)
+                except data_set.GDSNameResolveError:
+                    module.fail_json(msg=f"Unable to copy. Source generation data set {src} does not exist or cannot be resolved.")
+
+            # Implementing the new MVSDataSet class by masking the values of
+            # src/raw_src and dest/raw_dest.
+            if is_mvs_src:
+                src_data_set_object = data_set.MVSDataSet(src)
+                src = src_data_set_object.name
+                raw_src = src_data_set_object.raw_name
+
+            src_name = data_set.extract_dsname(src)
+            src_exists = data_set.DataSet.data_set_exists(src_name, volume=volume, tmphlq=tmphlq)
+            if not src_exists:
                 raise NonExistentSourceError(src)
+            src_attributes = data_set.DataSet.get_attributes(src_name)
+            src_ds_type = data_set.DataSet.get_data_set_type(src_name, attributes=src_attributes, tmphlq=tmphlq)
+            if src_ds_type is None:
+                if src_exists:
+                    module.fail_json(msg=f"Source {src} exists but type cannot be determined (uncataloged dataset)")
+                else:
+                    raise NonExistentSourceError(src)
+            else:
+                if (src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG" and
+                        src_attributes.record_format in ('FBA', 'VBA')):
+                    src_has_asa_chars = True
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
@@ -3592,14 +3586,28 @@ def run_module(module, arg_def):
                     changed=False,
                     dest=dest
                 )
-
             if encoding:
                 module.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
 
+        logger.debug("Source validation is completed: src=%s, src_ds_type=%s, is_src_dir=%s, "
+                     "is_src_file=%s, src_member=%s, is_src_alias=%s, is_src_gds=%s",
+                     src, src_ds_type, is_src_dir, is_src_file, src_member, is_src_alias, is_src_gds)
+
+        # Destination validation
+        raw_dest = dest
+        copy_member = is_member(dest)
+        is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
+        is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+        is_dest_gds_active = False
+        is_pds = is_src_dir and is_mvs_dest
+        is_dest_alias = False
+        dest_exists = False
+
         if is_uss:
             dest_ds_type = "USS"
+            dest_name = dest
             if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
                 src_basename = os.path.basename(src) if not content else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
@@ -3614,8 +3622,24 @@ def run_module(module, arg_def):
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+            if is_mvs_dest and not copy_member and not is_dest_gds:
+                is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+                if is_dest_alias:
+                    dest = dest_base_name
+                    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+            if is_mvs_dest:
+                dest_data_set_object = data_set.MVSDataSet(dest)
+                dest = dest_data_set_object.name
+                raw_dest = dest_data_set_object.raw_name
+                is_dest_gds_active = dest_data_set_object.is_gds_active
+
+            dest_name = data_set.extract_dsname(dest)
+            dest_member = data_set.extract_member_name(dest) if copy_member else None
+            dest_attributes = dest_ds_type = None
+            if data_set.DataSet.data_set_exists(dest_name, volume=volume, tmphlq=tmphlq):
+                dest_exists = True
+                dest_attributes = data_set.DataSet.get_attributes(dest_name)
+                dest_ds_type = data_set.DataSet.get_data_set_type(dest_name, volume=volume, attributes=dest_attributes, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3634,19 +3658,18 @@ def run_module(module, arg_def):
                 # and LIBRARY is not in MVS_PARTITIONED frozen set.
                 dest_ds_type = "PDSE"
 
-            if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
+            if dest_data_set and (dest_data_set.get('record_format', '') in ('fba', 'vba')):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
-                dest_attributes = datasets.list_datasets(dest_name)[0]
-                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
-                    dest_has_asa_chars = True
+            elif (dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and
+                    dest_ds_type != "GDG" and dest_attributes and dest_attributes.record_format in ('FBA', 'VBA')):
+                dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
                 # Checking if we need to copy a member when the user requests it implicitly.
                 # src is a file and dest was just the PDS/E dataset name.
-                if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
+                if not copy_member and src_ds_type == "USS" and is_src_file:
                     copy_member = True
                     dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
                     dest = f"{dest_name}({dest_member})"
@@ -3660,8 +3683,14 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+            logger.debug("Destination validation is completed: dest=%s, dest_name=%s, dest_ds_type=%s, dest_exists=%s, "
+                         "dest_member=%s, is_dest_alias=%s, is_dest_gds=%s, is_dest_gds_active=%s",
+                         dest, dest_name, dest_ds_type, dest_exists, dest_member, is_dest_alias, is_dest_gds, is_dest_gds_active)
+
     except Exception as err:
         module.fail_json(msg=str(err))
+
+    # GDG validation
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
         # Validate destination GDG doesn't exist
@@ -3755,7 +3784,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists:
         if backup or backup_name:
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
+            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name, ds_type=dest_ds_type, dataset_exists=True):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
@@ -3849,7 +3878,8 @@ def run_module(module, arg_def):
                 is_dest_gds_active,
                 dest_data_set=dest_data_set,
                 volume=volume,
-                tmphlq=tmphlq
+                tmphlq=tmphlq,
+                src_attributes=src_attributes
             )
             if res_args["changed"]:
                 res_args["dest_created"] = True
@@ -3893,6 +3923,9 @@ def run_module(module, arg_def):
 
             conv_path = copy_handler.convert_encoding(src, encoding, remote_src)
 
+        logger.debug("Copy operation is started: src=%s -> dest=%s, src_ds_type=%s, dest_ds_type=%s, "
+                     "dest_exists=%s, replace=%s, force=%s",
+                     src, dest, src_ds_type, dest_ds_type, dest_exists, replace, force)
         # ------------------------------- o -----------------------------------
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
@@ -3900,7 +3933,7 @@ def run_module(module, arg_def):
             # Removing the carriage return characters
             if src_ds_type == "USS" and not binary and not executable:
                 new_src = conv_path or src
-                if os.path.isfile(new_src):
+                if is_src_file:
                     conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,

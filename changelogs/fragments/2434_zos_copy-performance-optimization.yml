@@ -1,0 +1,13 @@
+minor_changes:
+  - zos_copy
+    - Optimized performance by implementing "fetch once, use everywhere" strategy using data_set_type() with
+    return_attributes=True parameter, eliminating redundant list_datasets() calls and reducing z/OS system I/O
+    operations by fetching dataset type and attributes in a single operation.
+    - Consolidated MVS source validation into a dedicated section with improved logical flow from alias resolution
+    through member validation to GDS validation, eliminating duplicate data_set_member_exists() and data_set_exists()
+    checks.
+    - Added explicit GDS existence validation using resolve_gds_absolute_name() to verify specific generations exist
+    before copy operations.
+    - Enhanced debugging and observability with comprehensive logging messages at source validation, destination
+    validation, and copy operation stages for improved troubleshooting visibility.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2434).

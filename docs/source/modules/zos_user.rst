@@ -43,8 +43,8 @@ profile_type
   | **choices**: user, group
 
 
-operation
-  Specifies the operation to perform on the RACF profile.
+state
+  Specifies the state to perform on the RACF profile.
 
   The available choices depend on the value of :emphasis:`profile\_type`.
 
@@ -66,22 +66,22 @@ operation
 
 
 database
-  Name of the RACF database to use for the purge operation.
+  Name of the RACF database to use for the purge state.
 
-  This option is only applicable when :emphasis:`operation=purge`.
+  This option is only applicable when :emphasis:`state=purge`.
 
   | **required**: False
   | **type**: str
 
 
 keep_dump
-  Whether to keep the database dump data sets after the purge operation completes.
+  Whether to keep the database dump data sets after the purge completes.
 
-  This option is only applicable when :emphasis:`operation=purge`.
+  This option is only applicable when :emphasis:`state=purge`.
 
   When set to :literal:`true`\ , the IRRDBU00 dump data set and IRRRID00 CLIST is retained for debugging or auditing purposes.
 
-  When set to :literal:`false`\ , these temporary data sets are deleted after the purge operation.
+  When set to :literal:`false`\ , these temporary data sets are deleted after the purge.
 
   | **required**: False
   | **type**: bool
@@ -89,9 +89,9 @@ keep_dump
 
 
 optimize_dump
-  Whether to skip locking the RACF database during the dump operation to optimize performance.
+  Whether to skip locking the RACF database during the dump state to optimize performance.
 
-  This option is only applicable when :emphasis:`operation=purge`.
+  This option is only applicable when :emphasis:`state=purge`.
 
   When set to :literal:`true`\ , the IRRDBU00 utility runs with the :literal:`NOLOCKINPUT` option. This improves system availability by allowing concurrent updates to the database. However, it may result in inconsistent data if changes occur during the process.
 
@@ -111,7 +111,7 @@ optimize_dump
 execute_clist
   Whether to execute the generated CLIST.
 
-  This option is only applicable when :emphasis:`operation=purge`.
+  This option is only applicable when :emphasis:`state=purge`.
 
   When set to :literal:`true`\ , the module generates the CLIST, removes the safety :literal:`EXIT` statement, and executes the DELUSER/DELGROUP commands.
 
@@ -127,9 +127,9 @@ execute_clist
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
-  This option is only applicable when :emphasis:`operation=purge`.
+  This option is only applicable when :emphasis:`state=purge`.
 
-  Temporary data sets are created during the purge operation for database dumps, CLIST generation, and intermediate processing.
+  Temporary data sets are created during the purge for database dumps, CLIST generation, and intermediate processing.
 
   If not specified, the system default HLQ is used.
 
@@ -142,9 +142,9 @@ base_segment
 
   The BASE segment contains core profile information applicable to both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
-  Supported attributes include :literal:`display\_name`\ , :literal:`model`\ , :literal:`owner`\ , :literal:`installation\_data`\ , and :literal:`custom\_fields`.
+  Supported attributes include :emphasis:`display\_name`\ , :emphasis:`model`\ , :emphasis:`owner`\ , :emphasis:`installation\_data`\ , and :emphasis:`custom\_fields`.
 
-  Note that :literal:`display\_name` is only valid when :emphasis:`profile\_type=user`.
+  Note that :emphasis:`display\_name` is only valid when :emphasis:`profile\_type=user`.
 
   | **required**: False
   | **type**: dict
@@ -161,7 +161,7 @@ base_segment
 
     This option is only valid for user profiles (\ :emphasis:`profile\_type=user`\ ).
 
-    This option is only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
+    This option is only applicable when :emphasis:`state=create` or :emphasis:`state=update`.
 
     If omitted, RACF will display UNKNOWN when listing the user.
 
@@ -212,13 +212,13 @@ base_segment
     add
       Custom fields to add to the profile.
 
-      Custom fields are specified as a dictionary of :literal:`key: value` pairs.
+      Custom fields are specified as a dictionary of :literal:`key=value` pairs.
 
-      This option is valid when :literal:`operation=create` or :literal:`operation=update`.
+      This option is valid when :emphasis:`state=create` or :emphasis:`state=update`.
 
-      This option is mutually exclusive with :literal:`delete` and :literal:`delete\_block`.
+      This option is mutually exclusive with :emphasis:`delete` and :emphasis:`delete\_block`.
 
-      Note: Values containing colons should be enclosed in quotes (e.g., "key: value") to ensure correct YAML parsing in playbooks.
+      Note \- Values containing colons should be enclosed in quotes to ensure correct YAML parsing in playbooks.
 
       | **required**: False
       | **type**: dict
@@ -227,9 +227,9 @@ base_segment
     delete
       List of custom fields to delete.
 
-      This option is only valid when :literal:`operation=update`\ ; it is ignored for all other values of operation.
+      This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other values of state.
 
-      This option is mutually exclusive with :literal:`add` and :literal:`delete\_block`.
+      This option is mutually exclusive with :emphasis:`add` and :emphasis:`delete\_block`.
 
       | **required**: False
       | **type**: list
@@ -241,11 +241,11 @@ base_segment
 
       This removes the entire custom fields section, not just individual fields.
 
-      Use :literal:`delete` to remove specific custom fields, or :literal:`delete\_block=true` to remove all custom fields at once.
+      Use :emphasis:`delete` to remove specific custom fields, or :emphasis:`delete\_block=true` to remove all custom fields at once.
 
-      This option is only valid when :literal:`operation=update`\ ; it is ignored for all other values of operation, including :literal:`operation=create`.
+      This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other values of state, including :emphasis:`state=create`.
 
-      This option is mutually exclusive with :literal:`add` and :literal:`delete`.
+      This option is mutually exclusive with :emphasis:`add` and :emphasis:`delete`.
 
       | **required**: False
       | **type**: bool
@@ -256,7 +256,7 @@ base_segment
 group
   Options that change group\-specific attributes in a RACF profile.
 
-  Only valid when :literal:`profile\_type=group`\ , ignored for user profiles.
+  Only valid when :emphasis:`profile\_type=group`\ , ignored for user profiles.
 
   | **required**: False
   | **type**: dict
@@ -322,9 +322,9 @@ dfp
   delete
     Setting to :literal:`true` deletes the whole DFP block from the profile.
 
-    This option is only valid when :literal:`operation=update`\ , it is ignored for all other values of operation including :literal:`operation=create`.
+    This option is only valid when :emphasis:`state=update`\ , it is ignored for all other values of state including :emphasis:`state=create`.
 
-    This option is mutually exclusive with every other option in this section.
+    This option is mutually exclusive with :emphasis:`data\_app\_id`\ , :emphasis:`data\_class`\ , :emphasis:`management\_class` and :emphasis:`storage\_class`.
 
     | **required**: False
     | **type**: bool
@@ -345,9 +345,9 @@ language
 
     Value should be either a 3 character\-long language code or an installation\-defined name of up to 24 characters.
 
-    To delete this field from the profile, set :literal:`primary=""`.
+    To delete this field from the profile, set :emphasis:`primary=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`delete`.
 
     | **required**: False
     | **type**: str
@@ -358,9 +358,9 @@ language
 
     Value should be either a 3 character\-long language code or an installation\-defined name of up to 24 characters.
 
-    To delete this field from the profile, set :literal:`secondary=""`.
+    To delete this field from the profile, set :emphasis:`secondary=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`delete`.
 
     | **required**: False
     | **type**: str
@@ -369,9 +369,9 @@ language
   delete
     Setting to :literal:`true` deletes the whole LANGUAGE block from the profile.
 
-    This option is only valid when :literal:`operation=update`\ , it is ignored for all other values of operation, including :literal:`operation=create`.
+    This option is only valid when :emphasis:`state=update`\ , it is ignored for all other values of state, including :emphasis:`state=create`.
 
-    This option is mutually exclusive with :literal:`primary` and :literal:`secondary`.
+    This option is mutually exclusive with :emphasis:`primary` and :emphasis:`secondary`.
 
     | **required**: False
     | **type**: bool
@@ -383,9 +383,9 @@ omvs
 
   Configures z/OS Unix System Services access and resource limits for the profile.
 
-  Valid for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`\ : :literal:`uid`\ , :literal:`custom\_uid`\ , :literal:`delete`.
+  Valid for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group` are :emphasis:`uid`\ , :emphasis:`custom\_uid`\ , :emphasis:`delete`.
 
-  Valid only for :emphasis:`profile\_type=user`\ : :literal:`home`\ , :literal:`program`\ , :literal:`nonshared\_size`\ , :literal:`shared\_size`\ , :literal:`addr\_space\_size`\ , :literal:`map\_size`\ , :literal:`max\_procs`\ , :literal:`max\_threads`\ , :literal:`max\_cpu\_time`\ , :literal:`max\_files`\ , and their related unit options.
+  Valid only for :emphasis:`profile\_type=user` are :emphasis:`home`\ , :emphasis:`program`\ , :emphasis:`nonshared\_size`\ , :emphasis:`shared\_size`\ , :emphasis:`addr\_space\_size`\ , :emphasis:`map\_size`\ , :emphasis:`max\_procs`\ , :emphasis:`max\_threads`\ , :emphasis:`max\_cpu\_time`\ , :emphasis:`max\_files`\ , and their related unit options.
 
   User\-only options control process and memory resource limits which do not apply to group profiles.
 
@@ -396,13 +396,13 @@ omvs
   uid
     Specifies how RACF should assign UIDs to users or GIDs to groups.
 
-    This option is valid when :literal:`operation=create` and :literal:`operation=update`
+    This option is valid when :emphasis:`state=create` and :emphasis:`state=update`
 
-    :literal:`none` deletes the user or group identifier from the OMVS segment of the profile. This is only valid when :literal:`operation=update`\ , it is ignored for all other values of operation including :literal:`operation=create`.
+    :literal:`none` deletes the user or group identifier from the OMVS segment of the profile. This is only valid when :emphasis:`state=update`\ , it is ignored for all other values of state including :emphasis:`state=create`.
 
-    :literal:`custom` and :literal:`shared` require :literal:`custom\_uid` to be defined.
+    :literal:`custom` and :literal:`shared` require :emphasis:`omvs.custom\_uid` to be defined.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: str
@@ -416,7 +416,7 @@ omvs
 
     A number between 0 and 2,147,483,647.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -427,9 +427,9 @@ omvs
 
     Maximum length of 1023 characters.
 
-    To remove the home from the profile, set :literal:`home=""`.
+    To remove the home from the profile, set :emphasis:`home=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: str
@@ -440,9 +440,9 @@ omvs
 
     Maximum length of 1023 characters.
 
-    To remove the program from the profile, set :literal:`program=""`.
+    To remove the program from the profile, set :emphasis:`program=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: str
@@ -453,11 +453,11 @@ omvs
 
     Value between 0 and 16,777,215.
 
-    Set to :literal:`\-1` to remove the limit :literal:`NOMEMLIMIT`. When set to :literal:`\-1`\ , :literal:`nonshared\_size\_unit` is ignored.
+    Set to :literal:`\-1` to remove the limit :literal:`NOMEMLIMIT`. When set to :literal:`\-1`\ , :emphasis:`nonshared\_size\_unit` is ignored.
 
-    Unit is specified separately via :literal:`nonshared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
+    Unit is specified separately via :emphasis:`nonshared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -466,11 +466,11 @@ omvs
   nonshared_size_unit
     Specifies the unit for the nonshared memory size.
 
-    Only used when :literal:`nonshared\_size` is specified and not set to \-1.
+    Only used when :emphasis:`nonshared\_size` is specified and not set to \-1.
 
-    Ignored when :literal:`nonshared\_size` is \-1.
+    Ignored when :emphasis:`nonshared\_size` is \-1.
 
-    Defaults to 'm' (megabytes) if not specified.
+    Defaults to :literal:`m` (megabytes) if not specified.
 
     | **required**: False
     | **type**: str
@@ -482,11 +482,11 @@ omvs
 
     Value between 1 and 16,777,215.
 
-    Set to :literal:`\-1` to remove the limit :literal:`NOSHMEMMAX`. When set to :literal:`\-1`\ , :literal:`shared\_size\_unit` is ignored.
+    Set to :literal:`\-1` to remove the limit :literal:`NOSHMEMMAX`. When set to :literal:`\-1`\ , :emphasis:`shared\_size\_unit` is ignored.
 
-    Unit is specified separately via :literal:`shared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
+    Unit is specified separately via :emphasis:`shared\_size\_unit`\ , defaults to 'm' (megabytes) if not specified.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -495,11 +495,11 @@ omvs
   shared_size_unit
     Specifies the unit for the shared memory size.
 
-    Only used when :literal:`shared\_size` is specified and not set to \-1.
+    Only used when :emphasis:`shared\_size` is specified and not set to \-1.
 
-    Ignored when :literal:`shared\_size` is \-1.
+    Ignored when :emphasis:`shared\_size=\-1`.
 
-    Defaults to 'm' (megabytes) if not specified.
+    Defaults to :literal:`m` (megabytes) if not specified.
 
     | **required**: False
     | **type**: str
@@ -513,7 +513,7 @@ omvs
 
     Set to :literal:`0` to remove the user\-specific limit :literal:`NOASSIZEMAX`. This allows the system default from :literal:`BPXPRMxx` to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -528,7 +528,7 @@ omvs
 
     Set this to :literal:`0` to remove the user\-specific limit (\ :literal:`NOMMAPAREAMAX`\ ). This allows the system default from :literal:`BPXPRMxx` to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -541,7 +541,7 @@ omvs
 
     Set this to :literal:`0` to remove the user\-specific limit (NOPROCUSERMAX). This allows the system default from BPXPRMxx to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -554,7 +554,7 @@ omvs
 
     Set this to :literal:`\-1` to remove the user\-specific limit (NOTHREADSMAX). This allows the system default from BPXPRMxx to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -567,7 +567,7 @@ omvs
 
     Set this to :literal:`0` to remove the user\-specific limit (NOCPUTIMEMAX). This allows the system default from BPXPRMxx to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -578,9 +578,9 @@ omvs
 
     Value between 3 and 524,287.
 
-    Set this to :literal:`0` to remove the user\-specific limit (NOFILEPROCMAX). This allows the system default from BPXPRMxx to apply.
+    Set this to :literal:`0` to remove the user\-specific limit :literal:`NOFILEPROCMAX`. This allows the system default from BPXPRMxx to apply.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`omvs.delete`.
 
     | **required**: False
     | **type**: int
@@ -589,9 +589,9 @@ omvs
   delete
     Setting to :literal:`true` deletes the whole OMVS block from the profile.
 
-    This option is only valid when :literal:`operation=update`\ ; it is ignored for all other operation values, including :literal:`operation=create`.
+    This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other state values, including :emphasis:`state=create`.
 
-    This option is mutually exclusive with :literal:`uid`\ , :literal:`custom\_uid`\ , :literal:`home`\ , :literal:`program`\ , :literal:`nonshared\_size`\ , :literal:`nonshared\_size\_unit`\ , :literal:`shared\_size`\ , :literal:`shared\_size\_unit`\ , :literal:`addr\_space\_size`\ , :literal:`map\_size`\ , :literal:`max\_procs`\ , :literal:`max\_threads`\ , :literal:`max\_cpu\_time`\ , and :literal:`max\_files`.
+    This option is mutually exclusive with :emphasis:`uid`\ , :emphasis:`custom\_uid`\ , :emphasis:`home`\ , :emphasis:`program`\ , :emphasis:`nonshared\_size`\ , :emphasis:`nonshared\_size\_unit`\ , :emphasis:`shared\_size`\ , :emphasis:`shared\_size\_unit`\ , :emphasis:`addr\_space\_size`\ , :emphasis:`map\_size`\ , :emphasis:`max\_procs`\ , :emphasis:`max\_threads`\ , :emphasis:`max\_cpu\_time`\ , and :emphasis:`max\_files`.
 
     | **required**: False
     | **type**: bool
@@ -603,7 +603,7 @@ tso
 
   Configures TSO settings for the user profile.
 
-  Only valid for :emphasis:`profile\_type=user`\ , :emphasis:`operation=create` and :emphasis:`operation=update`.
+  Only valid for :emphasis:`profile\_type=user`\ , :emphasis:`state=create` and :emphasis:`state=update`.
 
   | **required**: False
   | **type**: dict
@@ -614,9 +614,9 @@ tso
 
     Maximum length of 39 characters.
 
-    To delete this field from the profile, set :literal:`account\_num=""`.
+    To delete this field from the profile, set :emphasis:`account\_num=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -629,9 +629,9 @@ tso
 
     This option is case\-sensitive.
 
-    To delete this field from the profile, set :literal:`logon\_cmd=""`.
+    To delete this field from the profile, set :emphasis:`logon\_cmd=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -642,9 +642,9 @@ tso
 
     The value for this field is 1 to 8 alphanumeric characters.
 
-    To delete this field from the profile, set :literal:`logon\_proc=""`.
+    To delete this field from the profile, set :emphasis:`logon\_proc=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -655,9 +655,9 @@ tso
 
     The value for this field is 1 to 7 alphanumeric characters.
 
-    To delete this field from the profile, set :literal:`dest\_id=""`.
+    To delete this field from the profile, set :emphasis:`dest\_id=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -668,9 +668,9 @@ tso
 
     This option consists of 1 alphanumeric character.
 
-    To delete this field from the profile, set :literal:`hold\_class=""`.
+    To delete this field from the profile, set :emphasis:`hold\_class=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -681,9 +681,9 @@ tso
 
     This option consists of 1 alphanumeric character.
 
-    To delete this field from the profile, set :literal:`job\_class=""`.
+    To delete this field from the profile, set :emphasis:`job\_class=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -694,9 +694,9 @@ tso
 
     This option consists of 1 alphanumeric character.
 
-    To delete this field from the profile, set :literal:`msg\_class=""`.
+    To delete this field from the profile, set :emphasis:`msg\_class=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -707,9 +707,9 @@ tso
 
     This option consists of 1 alphanumeric character.
 
-    To delete this field from the profile, set :literal:`sysout\_class=""`.
+    To delete this field from the profile, set :emphasis:`sysout\_class=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -720,9 +720,9 @@ tso
 
     A value between 0 and 2,096,128.
 
-    When :literal:`region\_size=\-1` is set, this field is set to :literal:`00000000`.
+    When :emphasis:`region\_size=\-1` is set, this field is set to :literal:`00000000`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: int
@@ -733,9 +733,9 @@ tso
 
     A value between 0 and 2,096,128.
 
-    When :literal:`max\_region\_size=\-1` is set, this field is set to :literal:`00000000`.
+    When :emphasis:`max\_region\_size=\-1` is set, this field is set to :literal:`00000000`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: int
@@ -744,9 +744,9 @@ tso
   security_label
     Specifies the user's security label on the TSO logon panel.
 
-    To delete this field from the profile, set :literal:`security\_label=""`.
+    To delete this field from the profile, set :emphasis:`security\_label=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -757,9 +757,9 @@ tso
 
     The value for this field is 1 to 8 alphanumeric characters.
 
-    To delete this field from the profile, set :literal:`unit\_name=""`.
+    To delete this field from the profile, set :emphasis:`unit\_name=""`.
 
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -768,13 +768,11 @@ tso
   user_data
     Specifies optional installation data for the user profile.
 
-    Must be 4 EBCDIC characters.
+    Must be exactly 4 characters (0–9, A–F only).
 
-    Valid characters are 0 \- 9 and A \- F.
+    When :emphasis:`user\_data=""`\ , this field is set to :literal:`0000`.
 
-    When :literal:`user\_data=""` is set, this field is set to :literal:`0000`.
-
-    This option is mutually exclusive with :literal:`delete`.
+    This option is mutually exclusive with :emphasis:`tso.delete`.
 
     | **required**: False
     | **type**: str
@@ -783,9 +781,9 @@ tso
   delete
     Setting to :literal:`true` deletes the whole TSO block from the profile.
 
-    This option is only valid when :literal:`operation=update`\ ; it is ignored for all other values, including :literal:`operation=create`.
+    This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other values, including :emphasis:`state=create`.
 
-    This option is mutually exclusive with :literal:`account\_num`\ , :literal:`logon\_cmd`\ , :literal:`logon\_proc`\ , :literal:`dest\_id`\ , :literal:`hold\_class`\ , :literal:`job\_class`\ , :literal:`msg\_class`\ , :literal:`sysout\_class`\ , :literal:`region\_size`\ , :literal:`max\_region\_size`\ , :literal:`security\_label`\ , :literal:`unit\_name`\ , and :literal:`user\_data`.
+    This option is mutually exclusive with :emphasis:`account\_num`\ , :emphasis:`logon\_cmd`\ , :emphasis:`logon\_proc`\ , :emphasis:`dest\_id`\ , :emphasis:`hold\_class`\ , :emphasis:`job\_class`\ , :emphasis:`msg\_class`\ , :emphasis:`sysout\_class`\ , :emphasis:`region\_size`\ , :emphasis:`max\_region\_size`\ , :emphasis:`security\_label`\ , :emphasis:`unit\_name`\ , and :emphasis:`user\_data`.
 
     | **required**: False
     | **type**: bool
@@ -795,7 +793,7 @@ tso
 connect
   Options that configure a user's connection to a group.
 
-  Only valid when :literal:`operation=connect`\ ; ignored for all other operation values.
+  Only valid when :emphasis:`state=connect`\ ; ignored for all other state values.
 
   | **required**: False
   | **type**: dict
@@ -850,7 +848,7 @@ connect
     | **default**: False
 
 
-  adsp_attribute
+  auto_protect_datasets
     Whether to assign the ADSP attribute for the connection.
 
     Specifies whether RACF automatically protects data sets created by the user with discrete profiles.
@@ -980,7 +978,7 @@ access
   security_label
     Specifies the security label applied to the profile.
 
-    To delete this field from the profile, set :literal:`security\_label=""`.
+    To delete this field from the profile, set :emphasis:`security\_label=""`.
 
     | **required**: False
     | **type**: str
@@ -1003,7 +1001,7 @@ operator
 
   Only valid when :emphasis:`profile\_type=user`.
 
-  Supported for :emphasis:`operation=create` and :emphasis:`operation=update`.
+  Supported for :emphasis:`state=create` and :emphasis:`state=update`.
 
   | **required**: False
   | **type**: dict
@@ -1014,9 +1012,9 @@ operator
 
     Must be between 1 and 8 characters in length.
 
-    To delete this field from the profile, set :literal:`alt\_group=""`.
+    To delete this field from the profile, set :emphasis:`alt\_group=""`.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1039,7 +1037,7 @@ operator
 
     :literal:`delete` \- Removes this field from the profile.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1051,9 +1049,9 @@ operator
 
     Specify 1 to 8 characters.
 
-    To remove this field from the profile, set :emphasis:`cmd\_system=""`..
+    To remove this field from the profile, set :emphasis:`cmd\_system=""`.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1068,7 +1066,7 @@ operator
 
     To remove this field from the profile, set :emphasis:`search\_key=""`.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1083,7 +1081,7 @@ operator
 
     :literal:`delete` \- Removes the migration ID parameter from the profile (NOMIGID).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1107,7 +1105,7 @@ operator
 
     Multiple values can be specified.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: list
@@ -1136,7 +1134,7 @@ operator
 
     :literal:`delete` \- Removes the message level field from the user's profile.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1158,7 +1156,7 @@ operator
 
     :literal:`delete` \- Removes this field from the profile.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1172,7 +1170,7 @@ operator
 
     Set to :literal:`0` to reset this field to :literal:`00000`.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: int
@@ -1189,7 +1187,7 @@ operator
 
     :literal:`system\_names` \- A list of one or more specific system names (e.g., SYS1, SYS2) to define the scope.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: dict
@@ -1198,9 +1196,9 @@ operator
     add
       List of new systems to add to the message scope list.
 
-      When :emphasis:`operation=create`\ , this sets the initial message scope (MSCOPE).
+      When :emphasis:`state=create`\ , this sets the initial message scope (MSCOPE).
 
-      When :emphasis:`operation=update`\ , this adds systems to the existing list (ADDMSCOPE).
+      When :emphasis:`state=update`\ , this adds systems to the existing list (ADDMSCOPE).
 
       This option is mutually exclusive with :emphasis:`msg\_scope.remove` and :emphasis:`msg\_scope.delete`.
 
@@ -1240,7 +1238,7 @@ operator
 
     :literal:`delete` \- Removes the automated messages parameter from the profile (NOAUTO).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1260,7 +1258,7 @@ operator
 
     Note that when this field is deleted or omitted :literal:`NODOM`\ , the DOM information will not appear in profile listings (e.g., :literal:`LU` command), and the EMCS console will default to :literal:`normal` behavior when a session is established.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1276,7 +1274,7 @@ operator
 
     :literal:`delete` \- Removes the hardcopy messages parameter from the profile (NOHC).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1292,7 +1290,7 @@ operator
 
     :literal:`delete` \- Removes the internal messages parameter from the profile (NOINTIDS).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1312,9 +1310,9 @@ operator
 
     List of routing codes \- One or more routing codes (integers 1\-128) or sequences (ranges).
 
-    Examples: :literal:`["1"]`\ , :literal:`["1", "2", "11"]`\ , :literal:`["1:5"]`\ , :literal:`["1:5", "10", "20:25"]`.
+    Examples \- :literal:`["1"]`\ , :literal:`["1", "2", "11"]`\ , :literal:`["1\-5"]`\ , :literal:`["1\-5", "10", "20\-25"]`.
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: list
@@ -1330,7 +1328,7 @@ operator
 
     :literal:`delete` \- Removes the undelivered messages parameter from the profile (NOUD).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1346,7 +1344,7 @@ operator
 
     :literal:`delete` \- Removes the unknown messages parameter from the profile (NOUNKNIDS).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1362,7 +1360,7 @@ operator
 
     :literal:`delete` \- Removes the command response logging parameter from the profile (NOLOGCMDRESP).
 
-    This option is mutually exclusive with :literal:`operator.delete`.
+    This option is mutually exclusive with :emphasis:`operator.delete`.
 
     | **required**: False
     | **type**: str
@@ -1372,9 +1370,9 @@ operator
   delete
     When set to :literal:`true`\ , deletes the entire OPERPARM segment from the profile.
 
-    This option is only valid when :emphasis:`operation=update`\ ; it is ignored for all other operation values.
+    This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other state values.
 
-    This option is mutually exclusive with :literal:`alt\_group`\ , :literal:`authority`\ , :literal:`cmd\_system`\ , :literal:`search\_key`\ , :literal:`migration\_id`\ , :literal:`display`\ , :literal:`msg\_level`\ , :literal:`msg\_format`\ , :literal:`msg\_storage`\ , :literal:`msg\_scope`\ , :literal:`automated\_msgs`\ , :literal:`delete\_operator\_msgs`\ , :literal:`hardcopy\_msgs`\ , :literal:`internal\_msgs`\ , :literal:`routing\_msgs`\ , :literal:`undelivered\_msgs`\ , :literal:`unknown\_msgs`\ , and :literal:`responses`.
+    This option is mutually exclusive with :emphasis:`alt\_group`\ , :emphasis:`authority`\ , :emphasis:`cmd\_system`\ , :emphasis:`search\_key`\ , :emphasis:`migration\_id`\ , :emphasis:`display`\ , :emphasis:`msg\_level`\ , :emphasis:`msg\_format`\ , :emphasis:`msg\_storage`\ , :emphasis:`msg\_scope`\ , :emphasis:`automated\_msgs`\ , :emphasis:`delete\_operator\_msgs`\ , :emphasis:`hardcopy\_msgs`\ , :emphasis:`internal\_msgs`\ , :emphasis:`routing\_msgs`\ , :emphasis:`undelivered\_msgs`\ , :emphasis:`unknown\_msgs`\ , and :emphasis:`responses`.
 
     | **required**: False
     | **type**: bool
@@ -1405,9 +1403,9 @@ restrictions
   time
     Daily time period when the user is allowed to login.
 
-    The value for this option must be in the format HHMM:HHMM.
+    The value for this option must be in the format "HHMM:HHMM".
 
-    Note: Enclose the time value in quotes (e.g., "0900:1700") to avoid YAML parsing issues with colons.
+    Enclose the time value in quotes (for example, "0900:1700") to avoid YAML parsing issues.
 
     This field uses a 24\-hour format.
 
@@ -1421,7 +1419,7 @@ restrictions
   resume
     Date when the user is allowed access to a system again.
 
-    The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+    The value for this option must be in the format :literal:`MM/DD/YY`\ , where :literal:`YY` are the last two digits of the year.
 
     | **required**: False
     | **type**: str
@@ -1441,7 +1439,7 @@ restrictions
   revoke
     Date when the user is forbidden access to a system.
 
-    The value for this option must be in the format MM/DD/YY, where :literal:`YY` are the last two digits of the year.
+    The value for this option must be in the format :literal:`MM/DD/YY`\ , where :literal:`YY` are the last two digits of the year.
 
     | **required**: False
     | **type**: str
@@ -1464,7 +1462,7 @@ password_mgmt
 
   These options are only valid for user profiles (\ :emphasis:`profile\_type=user`\ ).
 
-  These options are only applicable when :emphasis:`operation=create` or :emphasis:`operation=update`.
+  These options are only applicable when :emphasis:`state=create` or :emphasis:`state=update`.
 
   | **required**: False
   | **type**: dict
@@ -1515,11 +1513,11 @@ password_mgmt
 
     When :literal:`false`\ , the password/passphrase will be marked as NOEXPIRED.
 
-    This option is only applicable when :emphasis:`operation=update`.
+    This option is only applicable when :emphasis:`state=update`.
 
-    This option :strong:`must` be used together with :emphasis:`password` or :emphasis:`passphrase` in the same task. RACF requires a password/passphrase to be specified when using EXPIRED/NOEXPIRED.
+    This option :strong:`must` be used together with :emphasis:`password` or :emphasis:`passphrase` in the same task. RACF requires a password/passphrase to be specified when using :literal:`EXPIRED/NOEXPIRED`.
 
-    When a password/passphrase is set for the first time during user creation, RACF automatically marks it as EXPIRED. To change it to NOEXPIRED, you must update the user and specify the same password/passphrase again with :literal:`expired=false`.
+    When a password/passphrase is set for the first time during user creation, RACF automatically marks it as :literal:`EXPIRED`. To change it to :literal:`NOEXPIRED`\ , you must update the user and specify the same password/passphrase again with :emphasis:`expired=false`.
 
     | **required**: False
     | **type**: bool
@@ -1551,13 +1549,13 @@ Examples
    - name: Create a new group profile using RACF defaults.
      zos_user:
        name: newgrp
-       operation: create
+       state: create
        profile_type: group
 
    - name: Create a user with full name and owner.
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        base_segment:
          display_name: John Doe
@@ -1566,7 +1564,7 @@ Examples
    - name: Update a user's full name.
      zos_user:
        name: existusr
-       operation: update
+       state: update
        profile_type: user
        base_segment:
          display_name: Jane Smith
@@ -1574,7 +1572,7 @@ Examples
    - name: Remove a user's full name (sets to UNKNOWN).
      zos_user:
        name: existusr
-       operation: update
+       state: update
        profile_type: user
        base_segment:
          display_name: ""
@@ -1582,7 +1580,7 @@ Examples
    - name: Create a new group profile using another group as a model and setting its owner.
      zos_user:
        name: newgrp
-       operation: create
+       state: create
        profile_type: group
        base_segment:
          model: oldgrp
@@ -1591,7 +1589,7 @@ Examples
    - name: Create a new group profile and set group attributes.
      zos_user:
        name: newgrp
-       operation: create
+       state: create
        profile_type: group
        group:
          superior_group: sys1
@@ -1601,7 +1599,7 @@ Examples
    - name: Update a group profile to change its installation data and remove custom fields.
      zos_user:
        name: usergrp
-       operation: update
+       state: update
        profile_type: group
        base_segment:
          installation_data: New installation data
@@ -1611,13 +1609,13 @@ Examples
    - name: Create a user using RACF defaults.
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
 
    - name: Create a user using another profile as a model.
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        base_segment:
          model: olduser
@@ -1625,7 +1623,7 @@ Examples
    - name: Create a user and set how Unix System Services should behave when it logs in.
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        omvs:
          uid: auto
@@ -1645,7 +1643,7 @@ Examples
    - name: Create a user and set access permissions to it.
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        access:
          default_group: usergrp
@@ -1663,7 +1661,7 @@ Examples
    - name: Update a user profile to change its TSO attributes and owner.
      zos_user:
        name: user
-       operation: update
+       state: update
        profile_type: user
        base_segment:
          owner: admin
@@ -1678,7 +1676,7 @@ Examples
    - name: Connect a user to a group using RACF defaults.
      zos_user:
        name: user
-       operation: connect
+       state: connect
        profile_type: user
        connect:
          group_name: usergrp
@@ -1686,7 +1684,7 @@ Examples
    - name: Connect a user to a group and give it special permissions.
      zos_user:
        name: user
-       operation: connect
+       state: connect
        profile_type: user
        connect:
          group_name: usergrp
@@ -1695,13 +1693,13 @@ Examples
          group_account: true
          group_operations: true
          auditor: true
-         adsp_attribute: true
+         auto_protect_datasets: true
          special: true
 
    - name: Remove a user from a group.
      zos_user:
        name: user
-       operation: remove
+       state: remove
        profile_type: user
        connect:
          group_name: usergrp
@@ -1709,49 +1707,49 @@ Examples
    - name: Delete a user from the RACF database.
      zos_user:
        name: user
-       operation: delete
+       state: delete
        profile_type: user
 
    - name: Delete group from the RACF database.
      zos_user:
        name: usergrp
-       operation: delete
+       state: delete
        profile_type: group
 
    - name: Purge user from RACF database
      zos_user:
        name: user
-       operation: purge
+       state: purge
        profile_type: user
        database: racf_db
 
    - name: Purge group from RACF database
      zos_user:
        name: newgrp
-       operation: purge
+       state: purge
        profile_type: group
        database: racf_db
 
-   - name: Create a user with password (will be marked as EXPIRED by default)
+   - name: Create user with password
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        password_mgmt:
          password: "{{ user_password }}"
 
-   - name: Create a user with passphrase (will be marked as EXPIRED by default)
+   - name: Create user with passphrase
      zos_user:
        name: newuser
-       operation: create
+       state: create
        profile_type: user
        password_mgmt:
          passphrase: "{{ user_passphrase }}"
 
-   - name: Update user password to NOEXPIRED
+   - name: Update user password and set attribute to NOEXPIRED
      zos_user:
        name: newuser
-       operation: update
+       state: update
        profile_type: user
        password_mgmt:
          password: "{{ user_password }}"
@@ -1762,16 +1760,15 @@ Examples
 
 
 
-
 Notes
 -----
 
 .. note::
    This module requires appropriate RACF authority to execute commands.
 
-   For standard operations (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested operation (typically :literal:`SPECIAL` or :literal:`group\-SPECIAL` attribute).
+   For standard states (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested state (typically :literal:`SPECIAL` or :literal:`group\-SPECIAL` attribute).
 
-   For purge operations using the \ `IRRDBU00 utility <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with :literal:`PARM=NOLOCKINPUT` requiring :literal:`READ` authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with :literal:`PARM=LOCKINPUT` requiring :literal:`UPDATE` authority to lock the database during the unload.
+   For purge state using the \ `IRRDBU00 utility <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with :literal:`PARM=NOLOCKINPUT` requiring :literal:`READ` authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with :literal:`PARM=LOCKINPUT` requiring :literal:`UPDATE` authority to lock the database during the unload.
 
    The \ `IRRRID00 <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility>`__ utility is used during purge operations to identify residual references and generate a :literal:`CLIST` of removal commands. The user must have :literal:`READ` authority to the input data set (the unloaded RACF database produced by IRRDBU00).
 
@@ -1829,7 +1826,7 @@ rc
 stdout
   Standard output from the RACF command execution.
 In check mode, may contain informational messages about the entity state.
-For :emphasis:`operation=purge`\ , this includes technical details such as dump data set names and CLIST processing messages.
+For :emphasis:`state=purge`\ , this includes technical details such as dump data set names and CLIST processing messages.
 
   | **returned**: always
   | **type**: str
@@ -1873,20 +1870,20 @@ stderr_lines
         ]
 
 num_entities_modified
-  Returns the number of profiles and references modified by the operation.
-Set to :literal:`0` if no changes were made (e.g., the entity is already in the desired state).
-Set to :literal:`1` for successful single\-entity operations (create, update, or delete).
-For :emphasis:`operations=purge`\ , this reflects the total number of user and group entities deleted.
+  Returns the number of profiles and references modified by the state.
+Set to :literal:`0` if no changes were made (e.g., :literal:`the entity is already in the desired state`\ ).
+Set to :literal:`1` for successful single\-entity states :literal:`create, update, or delete`.
+For :emphasis:`state=purge`\ , this reflects the total number of user and group entities deleted.
 
   | **returned**: always
   | **type**: int
   | **sample**: 1
 
 entities_modified
-  A list of profiles and references modified by the operation.
-For :emphasis:`profile\_type=user`\ , operations (\ :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ , :literal:`connect`\ , :literal:`remove`\ ): Contains the user profile name upon success.
-For :emphasis:`profile\_type=group`\ , operations :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ ): Contains the group profile name upon success.
-For :emphasis:`operations=purge`\ , contains all users/groups IDs deleted by the CLIST.
+  A list of profiles and references modified by the state.
+For :emphasis:`profile\_type=user`\ , state (\ :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ , :literal:`connect`\ , :literal:`remove`\ ): Contains the user profile name upon success.
+For :emphasis:`profile\_type=group`\ , state :literal:`create`\ , :literal:`update`\ , :literal:`delete`\ ): Contains the group profile name upon success.
+For :emphasis:`state=purge`\ , contains all users/groups IDs deleted by the CLIST.
 Returns an empty list if no changes were necessary (e.g., entity is already in the desired state).
 
   | **returned**: always
@@ -1902,8 +1899,8 @@ Returns an empty list if no changes were necessary (e.g., entity is already in t
 
 database_dumped
   Whether the module used IRRDBU00 utility to dump the RACF database.
-Set to :literal:`true` only when the purge operation successfully executes the :literal:`IRRDBU00` utility.
-Only relevant when :emphasis:`operation=purge`.
+Set to :literal:`true` only when the purge state successfully executes the :literal:`IRRDBU00` utility.
+Only relevant when :emphasis:`state=purge`.
 
   | **returned**: always
   | **type**: bool

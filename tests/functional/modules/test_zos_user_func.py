@@ -75,7 +75,7 @@ def test_group_create_basic(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
     
@@ -100,7 +100,7 @@ def test_group_create_with_model(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name_model,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"model":"SYS1"}
         )
@@ -113,7 +113,7 @@ def test_group_create_with_model(ansible_zos_module):
 
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"model": group_name_model}
         )
@@ -141,7 +141,7 @@ def test_group_create_with_all_attributes_comprehensive(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={
                 "owner": "SYS1",
@@ -194,7 +194,7 @@ def test_group_create_omvs_auto_gid_validation(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             omvs={
                 "uid": "auto"
@@ -224,7 +224,7 @@ def test_group_create_omvs_custom_gid_specific(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             omvs={
                 "uid": "custom",
@@ -253,7 +253,7 @@ def test_group_create_omvs_shared_gid(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             omvs={
                 "uid": "shared",
@@ -283,7 +283,7 @@ def test_group_create_terminal_access_variations(ansible_zos_module):
         # Test with terminal access enabled
         results_enabled = hosts.all.zos_user(
             name=group_enabled,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"terminal_access": True}
         )
@@ -296,7 +296,7 @@ def test_group_create_terminal_access_variations(ansible_zos_module):
         # Test with terminal access disabled
         results_disabled = hosts.all.zos_user(
             name=group_disabled,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"terminal_access": False}
         )
@@ -322,7 +322,7 @@ def test_group_create_universal_group_variations(ansible_zos_module):
         # Test universal group
         results_universal = hosts.all.zos_user(
             name=group_universal,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"universal_group": True}
         )
@@ -335,7 +335,7 @@ def test_group_create_universal_group_variations(ansible_zos_module):
         # Test non-universal group (default behavior)
         results_non_universal = hosts.all.zos_user(
             name=group_non_universal,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"universal_group": False}
         )
@@ -362,7 +362,7 @@ def test_group_create_dfp_combinations(ansible_zos_module):
         # Test data class and management class only
         results1 = hosts.all.zos_user(
             name=group_name_1,
-            operation="create",
+            state="create",
             profile_type="group",
             dfp={
                 "data_class": "DCPART",
@@ -379,7 +379,7 @@ def test_group_create_dfp_combinations(ansible_zos_module):
         # Test storage class and data app ID only
         results2 = hosts.all.zos_user(
             name=group_name_2,
-            operation="create",
+            state="create",
             profile_type="group",
             dfp={
                 "storage_class": "SCPART",
@@ -409,14 +409,14 @@ def test_group_create_error_already_exists(ansible_zos_module):
         # Create the group first
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
         # Attempt to create again (should fail)
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
@@ -440,7 +440,7 @@ def test_group_create_error_invalid_name(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=invalid_group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
@@ -464,7 +464,7 @@ def test_group_create_error_custom_uid_missing(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             omvs={
                 "uid": "custom"
@@ -500,7 +500,7 @@ def test_group_update_base_segment_attributes(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"installation_data": "Initial data"}
         )
@@ -508,7 +508,7 @@ def test_group_update_base_segment_attributes(ansible_zos_module):
         # Update owner and installation data
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             base_segment={
                 "owner": "SYS1",
@@ -537,7 +537,7 @@ def test_group_update_clear_base_segment_attributes(ansible_zos_module):
         # Create group with data
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"installation_data": "Data to clear"}
         )
@@ -545,7 +545,7 @@ def test_group_update_clear_base_segment_attributes(ansible_zos_module):
         # Clear installation data
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             base_segment={"installation_data": ""}
         )
@@ -569,7 +569,7 @@ def test_group_update_terminal_access(ansible_zos_module):
         # Create group with terminal access disabled
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"terminal_access": False}
         )
@@ -577,7 +577,7 @@ def test_group_update_terminal_access(ansible_zos_module):
         # Enable terminal access
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             group={"terminal_access": True}
         )
@@ -591,7 +591,7 @@ def test_group_update_terminal_access(ansible_zos_module):
         # Disable terminal access
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             group={"terminal_access": False}
         )
@@ -615,7 +615,7 @@ def test_group_update_dfp_individual_attributes(ansible_zos_module):
         # Create group with initial DFP
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             dfp={
                 "data_app_id": "OLDAPP",
@@ -626,7 +626,7 @@ def test_group_update_dfp_individual_attributes(ansible_zos_module):
         # Update data app ID
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             dfp={"data_app_id": "NEWAPP"}
         )
@@ -639,7 +639,7 @@ def test_group_update_dfp_individual_attributes(ansible_zos_module):
         # Update data class
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             dfp={"data_class": "DCNEW"}
         )
@@ -663,7 +663,7 @@ def test_group_update_all_dfp_attributes(ansible_zos_module):
         # Create group with initial DFP
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             dfp={
                 "data_app_id": "OLDAPP",
@@ -676,7 +676,7 @@ def test_group_update_all_dfp_attributes(ansible_zos_module):
         # Update all DFP attributes
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             dfp={
                 "data_app_id": "NEWAPP",
@@ -709,7 +709,7 @@ def test_group_update_delete_dfp_block(ansible_zos_module):
         # Create group with DFP
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             dfp={
                 "data_class": "DCTEST",
@@ -720,7 +720,7 @@ def test_group_update_delete_dfp_block(ansible_zos_module):
         # Delete DFP block
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             dfp={"delete": True}
         )
@@ -744,14 +744,14 @@ def test_group_update_combined_attributes(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
         # Update multiple attribute types
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             base_segment={
                 "owner": "SYS1",
@@ -791,7 +791,7 @@ def test_group_update_omvs_and_delete(ansible_zos_module):
         # Update non-existent group
         results = hosts.all.zos_user(
             name=nonexistent_group,
-            operation="update",
+            state="update",
             profile_type="group",
             base_segment={"owner": "SYS1"}
         )
@@ -803,7 +803,7 @@ def test_group_update_omvs_and_delete(ansible_zos_module):
         # Create group with auto gid
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             omvs={"uid": "auto"}
         )
@@ -811,7 +811,7 @@ def test_group_update_omvs_and_delete(ansible_zos_module):
         # Delete OMVS segment
         results = hosts.all.zos_user(
             name=group_name,
-            operation="update",
+            state="update",
             profile_type="group",
             omvs={"delete": True}
         )
@@ -842,7 +842,7 @@ def test_group_delete_standard(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
@@ -852,7 +852,7 @@ def test_group_delete_standard(ansible_zos_module):
         # Delete group
         results = hosts.all.zos_user(
             name=group_name,
-            operation="delete",
+            state="delete",
             profile_type="group"
         )
         
@@ -881,14 +881,14 @@ def test_group_delete_with_subgroups_error(ansible_zos_module):
         # Create superior group
         hosts.all.zos_user(
             name=superior_group,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
         # Create subgroup
         hosts.all.zos_user(
             name=sub_group,
-            operation="create",
+            state="create",
             profile_type="group",
             group={"superior_group": superior_group}
         )
@@ -896,7 +896,7 @@ def test_group_delete_with_subgroups_error(ansible_zos_module):
         # Attempt to delete superior group (should fail)
         results = hosts.all.zos_user(
             name=superior_group,
-            operation="delete",
+            state="delete",
             profile_type="group"
         )
         
@@ -923,7 +923,7 @@ def test_group_delete_nonexistent_error(ansible_zos_module):
     # Attempt to delete non-existent group
     results = hosts.all.zos_user(
         name=nonexistent_group,
-        operation="delete",
+        state="delete",
         profile_type="group"
     )
     
@@ -946,7 +946,7 @@ def test_group_purge_default_options(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"owner": "SYS1"}
         )
@@ -957,7 +957,7 @@ def test_group_purge_default_options(ansible_zos_module):
         # Purge group with default options
         results = hosts.all.zos_user(
             name=group_name,
-            operation="purge",
+            state="purge",
             profile_type="group",
             database=racf_database,
             keep_dump=False,
@@ -992,7 +992,7 @@ def test_group_purge_keep_dump(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"owner": "SYS1"}
         )
@@ -1000,7 +1000,7 @@ def test_group_purge_keep_dump(ansible_zos_module):
         # Purge group with keep_dump=true
         results = hosts.all.zos_user(
             name=group_name,
-            operation="purge",
+            state="purge",
             profile_type="group",
             database=racf_database,
             keep_dump=True,
@@ -1039,7 +1039,7 @@ def test_group_purge_lockinput_mode(ansible_zos_module):
         # Create group
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={"owner": "SYS1"}
         )
@@ -1047,7 +1047,7 @@ def test_group_purge_lockinput_mode(ansible_zos_module):
         # Purge group with optimize_dump=false (LOCKINPUT)
         results = hosts.all.zos_user(
             name=group_name,
-            operation="purge",
+            state="purge",
             profile_type="group",
             database=racf_database,
             keep_dump=False,
@@ -1082,7 +1082,7 @@ def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
         # Create group with multiple attributes
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group",
             base_segment={
                 "owner": "SYS1",
@@ -1106,7 +1106,7 @@ def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
         # Purge group completely
         results = hosts.all.zos_user(
             name=group_name,
-            operation="purge",
+            state="purge",
             profile_type="group",
             database=racf_database,
             keep_dump=False,
@@ -1145,7 +1145,7 @@ def test_user_create_basic_racf_defaults(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user"
         )
         
@@ -1173,7 +1173,7 @@ def test_user_create_with_owner(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": owner}
         )
@@ -1203,14 +1203,14 @@ def test_user_create_with_model(ansible_zos_module):
         # Create model user first
         hosts.all.zos_user(
             name=model_user,
-            operation="create",
+            state="create",
             profile_type="user"
         )
         
         # Create user with model
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"model": model_user}
         )
@@ -1240,7 +1240,7 @@ def test_user_create_with_installation_data(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"installation_data": install_data}
         )
@@ -1270,7 +1270,7 @@ def test_user_create_with_dfp_attributes(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             dfp={
                 "data_app_id": "APPID001",
@@ -1307,7 +1307,7 @@ def test_user_create_with_language_settings(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             language={
                 "primary": "ENU",
@@ -1340,7 +1340,7 @@ def test_user_create_with_tso_basic_settings(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={
                 "account_num": 30000,
@@ -1380,7 +1380,7 @@ def test_user_create_with_tso_region_sizes(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={
                 "account_num": 32000,
@@ -1415,7 +1415,7 @@ def test_user_create_with_tso_multiple_parameters(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={
                 "account_num": 33000,
@@ -1456,7 +1456,7 @@ def test_user_create_with_omvs_auto_uid(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={
                 "uid": "auto",
@@ -1494,7 +1494,7 @@ def test_user_create_with_omvs_custom_uid(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={
                 "uid": "custom",
@@ -1530,7 +1530,7 @@ def test_user_create_with_omvs_memory_limits(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={
                 "uid": "auto",
@@ -1574,7 +1574,7 @@ def test_user_create_with_omvs_process_limits(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={
                 "uid": "auto",
@@ -1617,14 +1617,14 @@ def test_user_create_with_default_group_and_clauth(ansible_zos_module):
         # Create group first
         hosts.all.zos_user(
             name=group_name,
-            operation="create",
+            state="create",
             profile_type="group"
         )
         
         # Create user with default group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             access={
                 "default_group": group_name,
@@ -1658,7 +1658,7 @@ def test_user_create_with_access_attributes(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             access={
                 "roaudit": False,
@@ -1693,7 +1693,7 @@ def test_user_create_with_login_restrictions(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             restrictions={
                 "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
@@ -1725,7 +1725,7 @@ def test_user_create_with_operator_authority(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -1754,7 +1754,7 @@ def test_user_create_error_already_exists(ansible_zos_module):
         # Create user first time
         results1 = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user"
         )
         
@@ -1765,7 +1765,7 @@ def test_user_create_error_already_exists(ansible_zos_module):
         # Attempt to create same user again (should fail)
         results2 = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user"
         )
         
@@ -1787,7 +1787,7 @@ def test_user_create_with_operator_cmd_and_search_settings(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1823,7 +1823,7 @@ def test_user_create_with_operator_migration_and_display(ansible_zos_module):
         # Test with migration ID enabled and display settings
         results_enabled = hosts.all.zos_user(
             name=user_enabled,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1843,7 +1843,7 @@ def test_user_create_with_operator_migration_and_display(ansible_zos_module):
         # Test with migration ID disabled
         results_disabled = hosts.all.zos_user(
             name=user_disabled,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1878,7 +1878,7 @@ def test_user_create_with_operator_message_settings(ansible_zos_module):
         # Test with msg_level=all
         results_all = hosts.all.zos_user(
             name=user_all,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1900,7 +1900,7 @@ def test_user_create_with_operator_message_settings(ansible_zos_module):
         # Test with msg_level=i (info)
         results_info = hosts.all.zos_user(
             name=user_info,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1939,7 +1939,7 @@ def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_modul
         # Test with automated and hardcopy enabled
         results_enabled = hosts.all.zos_user(
             name=user_auto_hc,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1959,7 +1959,7 @@ def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_modul
         # Test with automated and hardcopy disabled
         results_disabled = hosts.all.zos_user(
             name=user_no_auto_no_hc,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -1996,7 +1996,7 @@ def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_modu
         # Test with unknown and undelivered messages enabled
         results_enabled = hosts.all.zos_user(
             name=user_enabled,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -2016,7 +2016,7 @@ def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_modu
         # Test with unknown and undelivered messages disabled
         results_disabled = hosts.all.zos_user(
             name=user_disabled,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -2054,7 +2054,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
         # Test with internal messages enabled and single routing code
         results_single = hosts.all.zos_user(
             name=user_internal_single,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -2074,7 +2074,7 @@ def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_mod
         # Test with internal messages disabled and multiple routing codes
         results_multi = hosts.all.zos_user(
             name=user_no_internal_multi,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -2116,15 +2116,15 @@ def test_user_update_basic_attributes(ansible_zos_module):
     
     try:
         # Create group for owner
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
         
         # Create user
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Update owner
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             base_segment={"owner": group_name}
         )
@@ -2138,7 +2138,7 @@ def test_user_update_basic_attributes(ansible_zos_module):
         # Update installation data
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             base_segment={"installation_data": "Updated Installation Data"}
         )
@@ -2167,12 +2167,12 @@ def test_user_update_model_dataset(ansible_zos_module):
     
     try:
         # Create user
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Update with model (dataset name does not exists)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             base_segment={"model": model_dsname}
         )
@@ -2201,7 +2201,7 @@ def test_user_update_dfp_attributes(ansible_zos_module):
         # Create user with DFP attributes
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             dfp={
                 "data_app_id": "APPID001",
@@ -2212,7 +2212,7 @@ def test_user_update_dfp_attributes(ansible_zos_module):
         # Update individual DFP attributes
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             dfp={
                 "data_app_id": "APPID999",
@@ -2234,7 +2234,7 @@ def test_user_update_dfp_attributes(ansible_zos_module):
         # Delete DFP block
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             dfp={"delete": True}
         )
@@ -2259,7 +2259,7 @@ def test_user_update_language_settings(ansible_zos_module):
         # Create user with language
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             language={"primary": "ENU"}
         )
@@ -2267,7 +2267,7 @@ def test_user_update_language_settings(ansible_zos_module):
         # Update primary language
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             language={"primary": "JPN"}
         )
@@ -2281,7 +2281,7 @@ def test_user_update_language_settings(ansible_zos_module):
         # Add secondary language
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             language={"secondary": "DEU"}
         )
@@ -2296,7 +2296,7 @@ def test_user_update_language_settings(ansible_zos_module):
         # Update both languages
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             language={"primary": "FRA", "secondary": "ENU"}
         )
@@ -2312,7 +2312,7 @@ def test_user_update_language_settings(ansible_zos_module):
         # Delete language block
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             language={"delete": True}
         )
@@ -2338,7 +2338,7 @@ def test_user_update_tso_basic_settings(ansible_zos_module):
         # Create user with TSO
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={"account_num": 30000, "job_class": "A"}
         )
@@ -2346,7 +2346,7 @@ def test_user_update_tso_basic_settings(ansible_zos_module):
         # Update account number
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={"account_num": 30999}
         )
@@ -2359,7 +2359,7 @@ def test_user_update_tso_basic_settings(ansible_zos_module):
         # Update class settings
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={
                 "job_class": "B",
@@ -2381,7 +2381,7 @@ def test_user_update_tso_basic_settings(ansible_zos_module):
         # Update logon procedure
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={"logon_proc": "ISPFPROC"}
         )
@@ -2407,7 +2407,7 @@ def test_user_update_tso_advanced_settings(ansible_zos_module):
         # Create user with TSO
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={"account_num": 32000, "region_size": 8192}
         )
@@ -2415,7 +2415,7 @@ def test_user_update_tso_advanced_settings(ansible_zos_module):
         # Update region sizes
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={"region_size": 16384, "max_region_size": 32768}
         )
@@ -2430,7 +2430,7 @@ def test_user_update_tso_advanced_settings(ansible_zos_module):
         # Update multiple TSO attributes
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={
                 "dest_id": "DEST999",
@@ -2450,7 +2450,7 @@ def test_user_update_tso_advanced_settings(ansible_zos_module):
         # Delete TSO segment
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={"delete": True}
         )
@@ -2477,7 +2477,7 @@ def test_user_update_omvs_basic_settings(ansible_zos_module):
         # Create user with OMVS
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={"uid": "auto", "home": home_dir, "program": "/bin/sh"}
         )
@@ -2486,7 +2486,7 @@ def test_user_update_omvs_basic_settings(ansible_zos_module):
         new_home = f"/home/{user_name.lower()}"
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={"home": new_home}
         )
@@ -2500,7 +2500,7 @@ def test_user_update_omvs_basic_settings(ansible_zos_module):
         # Update program
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={"program": "/bin/bash"}
         )
@@ -2514,7 +2514,7 @@ def test_user_update_omvs_basic_settings(ansible_zos_module):
         # Update UID to custom
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={"uid": "custom", "custom_uid": 5999}
         )
@@ -2541,7 +2541,7 @@ def test_user_update_omvs_limits_and_delete(ansible_zos_module):
         # Create user with OMVS
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={"uid": "auto", "home": home_dir, "program": "/bin/sh"}
         )
@@ -2549,7 +2549,7 @@ def test_user_update_omvs_limits_and_delete(ansible_zos_module):
         # Update memory limits
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={
                 "addr_space_size": 10485760,
@@ -2574,7 +2574,7 @@ def test_user_update_omvs_limits_and_delete(ansible_zos_module):
         # Update process limits
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={
                 "max_cpu_time": 3600,
@@ -2597,7 +2597,7 @@ def test_user_update_omvs_limits_and_delete(ansible_zos_module):
         # Delete OMVS segment
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={"delete": True}
         )
@@ -2623,14 +2623,14 @@ def test_user_update_access_clauth(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
         )
         
         # Add CLAUTH
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             access={"clauth": {"add": ["TERMINAL", "CONSOLE"]}}
         )
@@ -2644,7 +2644,7 @@ def test_user_update_access_clauth(ansible_zos_module):
         # Remove CLAUTH
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             access={"clauth": {"delete": ["TERMINAL"]}}
         )
@@ -2668,12 +2668,12 @@ def test_user_update_access_security_attributes(ansible_zos_module):
     
     try:
         # Create user
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Enable ROAUDIT
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             access={"roaudit": True}
         )
@@ -2686,7 +2686,7 @@ def test_user_update_access_security_attributes(ansible_zos_module):
         # Disable ROAUDIT
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             access={"roaudit": False}
         )
@@ -2699,7 +2699,7 @@ def test_user_update_access_security_attributes(ansible_zos_module):
         # Update operator card, maintenance access, restricted
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             access={
                 "operator_card": False,
@@ -2735,12 +2735,12 @@ def test_user_update_login_restrictions(ansible_zos_module):
     
     try:
         # Create user
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Update login days to weekdays
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             restrictions={"days": ["weekdays"]}
         )
@@ -2754,7 +2754,7 @@ def test_user_update_login_restrictions(ansible_zos_module):
         # Update login time
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             restrictions={"time": "0900:1700"}
         )
@@ -2768,7 +2768,7 @@ def test_user_update_login_restrictions(ansible_zos_module):
         # Update both days and time
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             restrictions={
                 "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
@@ -2786,7 +2786,7 @@ def test_user_update_login_restrictions(ansible_zos_module):
         # Revoke restrictions
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             restrictions={"revoke": revoke_date_str}
         )
@@ -2800,7 +2800,7 @@ def test_user_update_login_restrictions(ansible_zos_module):
         # Resume restrictions
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             restrictions={"resume": resume_date_str}
         )
@@ -2827,7 +2827,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -2835,7 +2835,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
         # Update authority to MASTER
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"authority": "master"}
         )
@@ -2850,7 +2850,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
         # Update authority to SYS
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"authority": "sys"}
         )
@@ -2865,7 +2865,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
         # Update command system and search key
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "cmd_system": "JES2",
@@ -2883,7 +2883,7 @@ def test_user_update_operator_authority_and_settings(ansible_zos_module):
         # Update migration ID and display
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "migration_id": "yes",
@@ -2913,7 +2913,7 @@ def test_user_update_operator_message_settings(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -2921,7 +2921,7 @@ def test_user_update_operator_message_settings(ansible_zos_module):
         # Update message level
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"msg_level": "all"}
         )
@@ -2936,7 +2936,7 @@ def test_user_update_operator_message_settings(ansible_zos_module):
         # Update message format
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"msg_format": "m"}
         )
@@ -2951,7 +2951,7 @@ def test_user_update_operator_message_settings(ansible_zos_module):
         # Update message storage
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"msg_storage": 2000}
         )
@@ -2977,7 +2977,7 @@ def test_user_update_operator_message_scope(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -2985,7 +2985,7 @@ def test_user_update_operator_message_scope(ansible_zos_module):
         # Update operator message scope - add ALL
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"msg_scope": {"add": ["ALL"]}}
         )
@@ -3000,7 +3000,7 @@ def test_user_update_operator_message_scope(ansible_zos_module):
         # Update operator message scope - delete ALL
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"msg_scope": {"delete": ["ALL"]}}
         )
@@ -3029,7 +3029,7 @@ def test_user_update_operator_message_flags(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -3037,7 +3037,7 @@ def test_user_update_operator_message_flags(ansible_zos_module):
         # Enable all message types
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "automated_msgs": "yes",
@@ -3061,7 +3061,7 @@ def test_user_update_operator_message_flags(ansible_zos_module):
         # Disable all message types
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "automated_msgs": "no",
@@ -3098,7 +3098,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -3106,7 +3106,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Update routing messages - single code
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["1"]}
         )
@@ -3119,7 +3119,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Update routing messages - multiple codes
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["1", "2", "11"]}
         )
@@ -3132,7 +3132,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Update routing messages - ALL
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["ALL"]}
         )
@@ -3145,7 +3145,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Update routing messages - NONE
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["NONE"]}
         )
@@ -3158,7 +3158,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Update with multiple operator attributes
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "authority": "all",
@@ -3178,7 +3178,7 @@ def test_user_update_operator_routing_and_delete(ansible_zos_module):
         # Delete operator segment
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"delete": True}
         )
@@ -3206,7 +3206,7 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
         # Create user with full operator segment
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={
                 "authority": "info",
@@ -3235,7 +3235,7 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
         # Update to delete all operator fields
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={
                 "authority": "delete",
@@ -3300,7 +3300,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Create user with operator
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             operator={"authority": "info"}
         )
@@ -3308,7 +3308,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Test 1: ALL mixed with routing codes should fail
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["ALL", "1", "2"]}
         )
@@ -3320,7 +3320,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Test 2: NONE mixed with routing codes should fail
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["NONE", "1"]}
         )
@@ -3332,7 +3332,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Test 3: delete mixed with routing codes should fail
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["delete", "1"]}
         )
@@ -3344,7 +3344,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Test 4: ALL and NONE together should fail
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             operator={"routing_msgs": ["ALL", "NONE"]}
         )
@@ -3357,7 +3357,7 @@ def test_user_operator_routing_msgs_validation(ansible_zos_module):
         # Cleanup
         hosts.all.zos_user(
             name=user_name,
-            operation="delete",
+            state="delete",
             profile_type="user"
         )
 
@@ -3375,7 +3375,7 @@ def test_user_update_tso_delete_all_fields(ansible_zos_module):
         # Create user with full TSO segment
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             tso={
                 "account_num": "33000",
@@ -3396,7 +3396,7 @@ def test_user_update_tso_delete_all_fields(ansible_zos_module):
         # Update to delete all TSO fields
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             tso={
                 "account_num": "",
@@ -3456,7 +3456,7 @@ def test_user_update_omvs_delete_all_fields(ansible_zos_module):
         # Create user with full OMVS segment
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             omvs={
                 "uid": "auto",
@@ -3478,7 +3478,7 @@ def test_user_update_omvs_delete_all_fields(ansible_zos_module):
         # Update to delete all OMVS fields (except required home/program)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             omvs={
                 "home": f"/u/{user_name.lower()}",
@@ -3534,13 +3534,13 @@ def test_user_connect_basic_authorities(ansible_zos_module):
     
     try:
         # Create group and user
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect with defaults (no authority specified)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -3558,11 +3558,11 @@ def test_user_connect_basic_authorities(ansible_zos_module):
         authorities = ["use", "create", "connect", "join"]
         for auth in authorities:
             test_user = generate_random_name("TSTU")
-            hosts.all.zos_user(name=test_user, operation="create", profile_type="user")
+            hosts.all.zos_user(name=test_user, state="create", profile_type="user")
             
             results = hosts.all.zos_user(
                 name=test_user,
-                operation="connect",
+                state="connect",
                 profile_type="user",
                 connect={"group_name": group_name, "authority": auth}
             )
@@ -3590,18 +3590,18 @@ def test_user_connect_universal_access(ansible_zos_module):
     
     try:
         # Create group
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
         
         # Test all UACC levels
         uacc_levels = ["none", "read", "update", "control", "alter"]
         
         for uacc in uacc_levels:
             user_name = generate_random_name("TSTU")
-            hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+            hosts.all.zos_user(name=user_name, state="create", profile_type="user")
             
             results = hosts.all.zos_user(
                 name=user_name,
-                operation="connect",
+                state="connect",
                 profile_type="user",
                 connect={"group_name": group_name, "universal_access": uacc}
             )
@@ -3628,14 +3628,14 @@ def test_user_connect_group_attributes(ansible_zos_module):
     
     try:
         # Create group
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
         
         # Test group_account enabled
         user1 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user1, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user1,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "group_account": True}
         )
@@ -3650,10 +3650,10 @@ def test_user_connect_group_attributes(ansible_zos_module):
         
         # Test group_account disabled
         user2 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user2, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "group_account": False}
         )
@@ -3667,10 +3667,10 @@ def test_user_connect_group_attributes(ansible_zos_module):
         
         # Test group_operations enabled
         user3 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user3, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user3,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "group_operations": True}
         )
@@ -3685,10 +3685,10 @@ def test_user_connect_group_attributes(ansible_zos_module):
         
         # Test group_operations disabled
         user4 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user4, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user4, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user4,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "group_operations": False}
         )
@@ -3711,21 +3711,21 @@ def test_user_connect_group_attributes(ansible_zos_module):
 
 def test_user_connect_special_attributes(ansible_zos_module):
     """
-    Test: Connect user with auditor, ADSP, and special attributes.
+    Test: Connect user with auditor, auto_protect_datasets, and special attributes.
     """
     hosts = ansible_zos_module
     group_name = generate_random_name("TSTG")
     
     try:
         # Create group
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
         
         # Test auditor enabled
         user1 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user1, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user1,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "auditor": True}
         )
@@ -3739,12 +3739,12 @@ def test_user_connect_special_attributes(ansible_zos_module):
             assert "AUDITOR" in cmd
             assert "NOAUDITOR" not in cmd
         
-        # Test ADSP enabled
+        # Test auto_protect_datasets enabled
         user2 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user2, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "adsp_attribute": True}
         )
@@ -3760,10 +3760,10 @@ def test_user_connect_special_attributes(ansible_zos_module):
         
         # Test special enabled
         user3 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user3, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user3,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name, "special": True}
         )
@@ -3796,14 +3796,14 @@ def test_user_connect_with_owner(ansible_zos_module):
     
     try:
         # Create groups and user
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=owner_group, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=owner_group, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect with specific owner
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             base_segment={"owner": owner_group}
@@ -3839,13 +3839,13 @@ def test_user_connect_with_restrictions(ansible_zos_module):
     
     try:
         # Create group and user
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect with revoke date
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             restrictions={"revoke": revoke_date1}
@@ -3861,7 +3861,7 @@ def test_user_connect_with_restrictions(ansible_zos_module):
         # Connect with resume date
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             restrictions={"resume": resume_date1}
@@ -3876,10 +3876,10 @@ def test_user_connect_with_restrictions(ansible_zos_module):
         
         # Connect with both revoke and resume
         user2 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user2, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             restrictions={"revoke": revoke_date2, "resume": resume_date2}
@@ -3897,7 +3897,7 @@ def test_user_connect_with_restrictions(ansible_zos_module):
         # Delete resume date
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             restrictions={"delete_resume": True}
@@ -3913,7 +3913,7 @@ def test_user_connect_with_restrictions(ansible_zos_module):
         # Delete revoke date
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name},
             restrictions={"delete_revoke": True}
@@ -3943,15 +3943,15 @@ def test_user_connect_combined_attributes(ansible_zos_module):
     
     try:
         # Create groups
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=owner_group, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=owner_group, state="create", profile_type="group")
         
         # Test authority and UACC
         user1 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user1, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user1,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group_name,
@@ -3971,10 +3971,10 @@ def test_user_connect_combined_attributes(ansible_zos_module):
         
         # Test all group attributes
         user2 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user2, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user2,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group_name,
@@ -3994,10 +3994,10 @@ def test_user_connect_combined_attributes(ansible_zos_module):
         
         # Test comprehensive attributes
         user3 = generate_random_name("TSTU")
-        hosts.all.zos_user(name=user3, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user3,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group_name,
@@ -4006,7 +4006,7 @@ def test_user_connect_combined_attributes(ansible_zos_module):
                 "group_account": True,
                 "group_operations": True,
                 "auditor": False,
-                "adsp_attribute": False,
+                "auto_protect_datasets": False,
                 "special": False
             },
             base_segment={"owner": owner_group}
@@ -4023,6 +4023,7 @@ def test_user_connect_combined_attributes(ansible_zos_module):
             assert "GRPACC" in cmd
             assert "OPERATIONS" in cmd
             assert f"OWNER({owner_group})" in cmd
+            assert f"NOADSP" in cmd
         
         cleanup_user(hosts, user1)
         cleanup_user(hosts, user2)
@@ -4045,15 +4046,15 @@ def test_user_connect_multiple_groups(ansible_zos_module):
     
     try:
         # Create groups and user
-        hosts.all.zos_user(name=group1, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group2, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group3, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect to first group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group1,
@@ -4072,7 +4073,7 @@ def test_user_connect_multiple_groups(ansible_zos_module):
         # Connect to second group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group2,
@@ -4091,7 +4092,7 @@ def test_user_connect_multiple_groups(ansible_zos_module):
         # Connect to third group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={
                 "group_name": group3,
@@ -4127,13 +4128,13 @@ def test_user_remove_from_group(ansible_zos_module):
     
     try:
         # Create group and user
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect user to group
         hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -4141,7 +4142,7 @@ def test_user_remove_from_group(ansible_zos_module):
         # Remove user from group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -4169,13 +4170,13 @@ def test_user_remove_error_scenarios(ansible_zos_module):
     
     try:
         # Create group and user
-        hosts.all.zos_user(name=group_name, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
         
         # Connect user to group
         hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -4183,7 +4184,7 @@ def test_user_remove_error_scenarios(ansible_zos_module):
         # Try to remove from non-existing group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": nonexist_group}
         )
@@ -4197,7 +4198,7 @@ def test_user_remove_error_scenarios(ansible_zos_module):
         # Remove user from group (first time - should succeed)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -4209,7 +4210,7 @@ def test_user_remove_error_scenarios(ansible_zos_module):
         # Try to remove again (already removed)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group_name}
         )
@@ -4237,10 +4238,10 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
     
     try:
         # Create groups and user
-        hosts.all.zos_user(name=group1, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group2, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group3, operation="create", profile_type="group")
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
 
         print(user_name) 
         
@@ -4248,7 +4249,7 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
         for group in [group1, group2, group3]:
             hosts.all.zos_user(
                 name=user_name,
-                operation="connect",
+                state="connect",
                 profile_type="user",
                 connect={"group_name": group}
             )
@@ -4257,7 +4258,7 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
         # Remove from first group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group1}
         )
@@ -4270,7 +4271,7 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
         # Remove from second group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group2}
         )
@@ -4283,7 +4284,7 @@ def test_user_remove_from_multiple_groups(ansible_zos_module):
         # Remove from third group
         results = hosts.all.zos_user(
             name=user_name,
-            operation="remove",
+            state="remove",
             profile_type="user",
             connect={"group_name": group3}
         )
@@ -4321,29 +4322,29 @@ def test_user_delete_with_multiple_group_connections(ansible_zos_module):
 
     try:
         # Create groups
-        hosts.all.zos_user(name=group1, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group2, operation="create", profile_type="group")
-        hosts.all.zos_user(name=group3, operation="create", profile_type="group")
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
 
         # Create user
-        hosts.all.zos_user(name=user_name, operation="create", profile_type="user")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
 
         # Connect user to all three groups with different authorities
         hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group1, "authority": "create", "universal_access": "read"}
         )
         hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group2, "authority": "use", "universal_access": "none"}
         )
         hosts.all.zos_user(
             name=user_name,
-            operation="connect",
+            state="connect",
             profile_type="user",
             connect={"group_name": group3, "authority": "join", "universal_access": "none"}
         )
@@ -4354,7 +4355,7 @@ def test_user_delete_with_multiple_group_connections(ansible_zos_module):
         # Delete user
         results = hosts.all.zos_user(
             name=user_name,
-            operation="delete",
+            state="delete",
             profile_type="user"
         )
 
@@ -4391,7 +4392,7 @@ def test_user_delete_nonexistent_error(ansible_zos_module):
 
     results = hosts.all.zos_user(
         name=nonexistent_user,
-        operation="delete",
+        state="delete",
         profile_type="user"
     )
 
@@ -4420,13 +4421,13 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
         # Create users
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
         hosts.all.zos_user(
             name=user_no_db,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4434,7 +4435,7 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
         # Purge without 'database' should fail with arg validation error
         results_no_db = hosts.all.zos_user(
             name=user_no_db,
-            operation="purge",
+            state="purge",
             profile_type="user"
         )
 
@@ -4442,14 +4443,14 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
             assert result.get("failed") is True
             assert result.get("changed") is False
             msg = result.get("msg", "")
-            assert "operation is purge but all of the following are missing: database" in msg.lower(), (
+            assert "state is purge but all of the following are missing: database" in msg.lower(), (
                 f"Expected 'database' in error message, got: {msg}"
             )
 
         # Purge with default options (keep_dump=false, optimize_dump=true)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             keep_dump=False,
@@ -4487,7 +4488,7 @@ def test_user_purge_keep_dump(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4498,7 +4499,7 @@ def test_user_purge_keep_dump(ansible_zos_module):
         # Purge with keep_dump=true, optimize_dump=true
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             keep_dump=True,
@@ -4539,7 +4540,7 @@ def test_user_purge_lockinput_mode(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4547,7 +4548,7 @@ def test_user_purge_lockinput_mode(ansible_zos_module):
         # Purge with optimize_dump=false (LOCKINPUT mode)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             keep_dump=False,
@@ -4587,7 +4588,7 @@ def test_user_purge_execute_clist_true(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4598,7 +4599,7 @@ def test_user_purge_execute_clist_true(ansible_zos_module):
         # Purge with execute_clist=true
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             execute_clist=True
@@ -4631,7 +4632,7 @@ def test_user_purge_execute_clist_true(ansible_zos_module):
 def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module):
     """
     Test: Purge user with execute_clist=true but database is invalid.
-    Verifies that when an invalid database is provided, the purge operation
+    Verifies that when an invalid database is provided, the purge state
     fails gracefully with an appropriate error message indicating the database
     does not exist.
     """
@@ -4643,7 +4644,7 @@ def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module)
         # Create user with valid database
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4654,7 +4655,7 @@ def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module)
         # Attempt to purge with invalid database and execute_clist=true
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=invalid_database,
             execute_clist=True
@@ -4702,7 +4703,7 @@ def test_user_purge_execute_clist_false(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4713,7 +4714,7 @@ def test_user_purge_execute_clist_false(ansible_zos_module):
         # Purge with execute_clist=false (dry-run)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             execute_clist=False
@@ -4758,7 +4759,7 @@ def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
         # Create user
         hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={"owner": "SYS1"}
         )
@@ -4769,7 +4770,7 @@ def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
         # Purge with custom tmp_hlq and keep_dump=true to verify dataset names
         results = hosts.all.zos_user(
             name=user_name,
-            operation="purge",
+            state="purge",
             profile_type="user",
             database=racf_database,
             keep_dump=True,
@@ -4822,7 +4823,7 @@ def test_user_create_with_display_name(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={
                 "display_name": display_name
@@ -4867,7 +4868,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
         # Step 1: Create user with initial display name "Joe Doe"
         results = hosts.all.zos_user(
             name=user_name,
-            operation="create",
+            state="create",
             profile_type="user",
             base_segment={
                 "display_name": initial_name
@@ -4885,7 +4886,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
         # Step 2: Update display name from "Joe Doe" to "Joe Smith"
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             base_segment={
                 "display_name": updated_name
@@ -4903,7 +4904,7 @@ def test_user_update_remove_user_name(ansible_zos_module):
         # Step 3: Update to remove the display name (reset to UNKNOWN)
         results = hosts.all.zos_user(
             name=user_name,
-            operation="update",
+            state="update",
             profile_type="user",
             base_segment={
                 "display_name": ""
@@ -4941,7 +4942,7 @@ def test_create_user_with_password(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'password': 'Tst@12B'},
             omvs={'uid': 'auto'}
@@ -4966,7 +4967,7 @@ def test_create_user_with_passphrase(ansible_zos_module):
     try:
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'passphrase': 'MySecurePassphrase123'},
             omvs={'uid': 'auto'}
@@ -4993,7 +4994,7 @@ def test_update_password_to_noexpired(ansible_zos_module):
         # Create user with password
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'password': password},
             omvs={'uid': 'auto'}
@@ -5002,7 +5003,7 @@ def test_update_password_to_noexpired(ansible_zos_module):
         # Update password to NOEXPIRED
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'password': password,
@@ -5030,7 +5031,7 @@ def test_update_passphrase_to_noexpired(ansible_zos_module):
         # Create user with passphrase
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'passphrase': passphrase},
             omvs={'uid': 'auto'}
@@ -5039,7 +5040,7 @@ def test_update_passphrase_to_noexpired(ansible_zos_module):
         # Update passphrase to NOEXPIRED
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'passphrase': passphrase,
@@ -5068,7 +5069,7 @@ def test_remove_password(ansible_zos_module):
         # Create user with password
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'password': 'Test@123'},
             omvs={'uid': 'auto'}
@@ -5077,7 +5078,7 @@ def test_remove_password(ansible_zos_module):
         # Remove password
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={'password': ''}
         )
@@ -5102,7 +5103,7 @@ def test_remove_passphrase(ansible_zos_module):
         # Create user with passphrase
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'passphrase': 'MySecurePassphrase123'},
             omvs={'uid': 'auto'}
@@ -5111,7 +5112,7 @@ def test_remove_passphrase(ansible_zos_module):
         # Remove passphrase
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={'passphrase': ''}
         )
@@ -5136,7 +5137,7 @@ def test_switch_password_to_passphrase(ansible_zos_module):
         # Create user with password
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'password': 'Test@123'},
             omvs={'uid': 'auto'}
@@ -5152,7 +5153,7 @@ def test_switch_password_to_passphrase(ansible_zos_module):
         # Step 1: Remove password
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={'password': ''}
         )
@@ -5166,7 +5167,7 @@ def test_switch_password_to_passphrase(ansible_zos_module):
         # Step 2: Set passphrase
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'passphrase': 'MySecurePassphrase123',
@@ -5195,7 +5196,7 @@ def test_switch_passphrase_to_password(ansible_zos_module):
         # Create user with passphrase
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'passphrase': 'MySecurePassphrase123'},
             omvs={'uid': 'auto'}
@@ -5211,7 +5212,7 @@ def test_switch_passphrase_to_password(ansible_zos_module):
         # Step 1: Remove passphrase
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={'passphrase': ''}
         )
@@ -5225,7 +5226,7 @@ def test_switch_passphrase_to_password(ansible_zos_module):
         # Step 2: Set password
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'password': 'Test@12B',
@@ -5253,7 +5254,7 @@ def test_password_change_rejection(ansible_zos_module):
         # Create user with password
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'password': 'Test@123'},
             omvs={'uid': 'auto'}
@@ -5262,7 +5263,7 @@ def test_password_change_rejection(ansible_zos_module):
         # Update Password to  violation of Syntax Rules but still within max length
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'password': 'Test@123',
@@ -5281,7 +5282,7 @@ def test_password_change_rejection(ansible_zos_module):
         # Update Password to  violation of Syntax Rules exceeding max length
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={
                 'password': 'Test@12B1234567',
@@ -5308,7 +5309,7 @@ def test_validation_expired_without_password_fails(ansible_zos_module):
         # Create user without password
         hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             omvs={'uid': 'auto'}
         )
@@ -5316,7 +5317,7 @@ def test_validation_expired_without_password_fails(ansible_zos_module):
         # Try to set expired without password (should fail)
         results = hosts.all.zos_user(
             name=username,
-            operation='update',
+            state='update',
             profile_type='user',
             password_mgmt={'expired': False}
         )
@@ -5338,7 +5339,7 @@ def test_validation_short_passphrase_fails(ansible_zos_module):
         # Try to create user with short passphrase (should fail)
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={'passphrase': 'Short12'},  # Only 7 chars
             omvs={'uid': 'auto'}
@@ -5361,7 +5362,7 @@ def test_validation_password_and_passphrase_mutually_exclusive(ansible_zos_modul
         # Try to create user with both password and passphrase (should fail)
         results = hosts.all.zos_user(
             name=username,
-            operation='create',
+            state='create',
             profile_type='user',
             password_mgmt={
                 'password': 'Test@123',
@@ -5385,7 +5386,7 @@ def test_validation_password_and_passphrase_mutually_exclusive(ansible_zos_modul
 # ============================================================================
 
 def test_connect_with_group_profile_type(ansible_zos_module):
-    """Test: Attempt CONNECT operation with profile_type=group (should fail)."""
+    """Test: Attempt CONNECT state with profile_type=group (should fail)."""
     hosts = ansible_zos_module
     test_user = generate_random_name("TU")
     test_group = generate_random_name("TG")
@@ -5394,14 +5395,14 @@ def test_connect_with_group_profile_type(ansible_zos_module):
         # Create test group first
         hosts.all.zos_user(
             name=test_group,
-            operation='create',
+            state='create',
             profile_type='group'
         )
         
         # Try to connect with group profile_type (should fail)
         results = hosts.all.zos_user(
             name=test_user,
-            operation='connect',
+            state='connect',
             profile_type='group',
             connect={'group_name': test_group}
         )
@@ -5416,7 +5417,7 @@ def test_connect_with_group_profile_type(ansible_zos_module):
 
 
 def test_remove_with_group_profile_type(ansible_zos_module):
-    """Test: Attempt REMOVE operation with profile_type=group (should fail)."""
+    """Test: Attempt REMOVE state with profile_type=group (should fail)."""
     hosts = ansible_zos_module
     test_user = generate_random_name("TU")
     test_group = generate_random_name("TG")
@@ -5425,14 +5426,14 @@ def test_remove_with_group_profile_type(ansible_zos_module):
         # Create test group first
         hosts.all.zos_user(
             name=test_group,
-            operation='create',
+            state='create',
             profile_type='group'
         )
         
         # Try to remove with group profile_type (should fail)
         results = hosts.all.zos_user(
             name=test_user,
-            operation='remove',
+            state='remove',
             profile_type='group',
             connect={'group_name': test_group}
         )
@@ -5455,7 +5456,7 @@ def test_update_without_blocks(ansible_zos_module):
         # Create user first
         hosts.all.zos_user(
             name=test_user,
-            operation='create',
+            state='create',
             profile_type='user',
             omvs={'uid': 'auto'}
         )
@@ -5463,14 +5464,14 @@ def test_update_without_blocks(ansible_zos_module):
         # Try to update without any blocks (should exit gracefully)
         results = hosts.all.zos_user(
             name=test_user,
-            operation='update',
+            state='update',
             profile_type='user'
             # No parameter blocks provided
         )
         
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert 'no parameter blocks were provided for update operation' in result.get('msg', '').lower()
+            assert 'no parameter blocks were provided for update state' in result.get('msg', '').lower()
             
     finally:
         cleanup_user(hosts, test_user)
@@ -5486,28 +5487,28 @@ def test_connect_without_connect_block(ansible_zos_module):
         # Create user and group first
         hosts.all.zos_user(
             name=test_user,
-            operation='create',
+            state='create',
             profile_type='user',
             omvs={'uid': 'auto'}
         )
         
         hosts.all.zos_user(
             name=test_group,
-            operation='create',
+            state='create',
             profile_type='group'
         )
         
         # Try to connect without connect block (should exit gracefully)
         results = hosts.all.zos_user(
             name=test_user,
-            operation='connect',
+            state='connect',
             profile_type='user',
             base_segment={'owner': 'ADMIN'}  # Wrong block
         )
         
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert 'required parameter block connect was not provided for connect operation' in result.get('msg', '').lower()
+            assert 'required parameter block connect was not provided for connect state' in result.get('msg', '').lower()
             
     finally:
         cleanup_user(hosts, test_user)
@@ -5523,7 +5524,7 @@ def test_connect_without_group_name(ansible_zos_module):
         # Create user first
         hosts.all.zos_user(
             name=test_user,
-            operation='create',
+            state='create',
             profile_type='user',
             omvs={'uid': 'auto'}
         )
@@ -5531,7 +5532,7 @@ def test_connect_without_group_name(ansible_zos_module):
         # Try to connect without group_name (should fail)
         results = hosts.all.zos_user(
             name=test_user,
-            operation='connect',
+            state='connect',
             profile_type='user',
             connect={'authority': 'use'}  # Missing group_name
         )
@@ -5555,7 +5556,7 @@ def test_invalid_profile_type_value(ansible_zos_module):
         # Try to create with invalid profile_type
         results = hosts.all.zos_user(
             name=test_user,
-            operation='create',
+            state='create',
             profile_type='invalid_scope'  # Invalid value
         )
         
@@ -5567,22 +5568,22 @@ def test_invalid_profile_type_value(ansible_zos_module):
         cleanup_user(hosts, test_user)
 
 
-def test_invalid_operation_value(ansible_zos_module):
-    """Test: Invalid operation value (should fail)."""
+def test_invalid_state_value(ansible_zos_module):
+    """Test: Invalid state value (should fail)."""
     hosts = ansible_zos_module
     test_user = generate_random_name("TU")
     
     try:
-        # Try to use invalid operation
+        # Try to use invalid state
         results = hosts.all.zos_user(
             name=test_user,
-            operation='invalid_op',  # Invalid value
+            state='invalid_op',  # Invalid value
             profile_type='user'
         )
         
         for result in results.contacted.values():
             assert result.get('failed') is True
-            assert 'value of operation must be one of: create, update, delete, purge, connect, remove, got: invalid_op' in result.get('msg', '').lower()
+            assert 'value of state must be one of: create, update, delete, purge, connect, remove, got: invalid_op' in result.get('msg', '').lower()
             
     finally:
         cleanup_user(hosts, test_user)

@@ -279,6 +279,10 @@ group
   universal_group
     Whether the group should be allowed to have an unlimited number of users.
 
+    Valid only for :emphasis:`profile\_type=group`.
+
+    This option is valid for :emphasis:`state=create` only.
+
     | **required**: False
     | **type**: bool
 
@@ -286,6 +290,10 @@ group
 
 dfp
   Options that set DFP attributes from the Storage Management Subsystem (SMS).
+
+  Supported for both :emphasis:`profile\_name=user` and :emphasis:`profile\_name=group`.
+
+  This option is applicable for :emphasis:`state=create` and :emphasis:`state=update`.
 
   | **required**: False
   | **type**: dict
@@ -332,7 +340,9 @@ dfp
 
 
 language
-  Options that set the preferred national languages for a user profile.
+  Options that set the preferred national languages for a :emphasis:`profile\_type=user`.
+
+  Valid when :emphasis:`state=create` and :emphasis:`state=update`.
 
   These options override the system\-wide defaults.
 
@@ -1130,7 +1140,7 @@ operator
 
     :literal:`nb` \- The console receives no broadcast messages.
 
-    :literal:`all` \- The console receives all message levels (R, I, CE, E, and IN).
+    :literal:`all` \- The console receives all message levels :literal:`(R, I, CE, E, and IN`\ ).
 
     :literal:`delete` \- Removes the message level field from the user's profile.
 
@@ -1196,9 +1206,9 @@ operator
     add
       List of new systems to add to the message scope list.
 
-      When :emphasis:`state=create`\ , this sets the initial message scope (MSCOPE).
+      When :emphasis:`state=create`\ , this sets the initial message scope :literal:`(MSCOPE`\ ).
 
-      When :emphasis:`state=update`\ , this adds systems to the existing list (ADDMSCOPE).
+      When :emphasis:`state=update`\ , this adds systems to the existing list :literal:`(ADDMSCOPE`\ ).
 
       This option is mutually exclusive with :emphasis:`msg\_scope.remove` and :emphasis:`msg\_scope.delete`.
 
@@ -1208,7 +1218,7 @@ operator
 
 
     remove
-      Set to :literal:`true` to remove all message scope systems from the profile (NOMSCOPE).
+      Set to :literal:`true` to remove all message scope systems from the profile :literal:`(NOMSCOPE`\ ).
 
       This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.delete`.
 
@@ -1217,7 +1227,7 @@ operator
 
 
     delete
-      List of specific systems to delete from the message scope list (DELMSCOPE).
+      List of specific systems to delete from the message scope list :literal:`(DELMSCOPE`\ ).
 
       This does not clear the entire list unless all listed systems are specified.
 
@@ -1232,11 +1242,11 @@ operator
   automated_msgs
     Whether the extended console can receive messages automated by the Message Flood Automation (MFA).
 
-    :literal:`yes` \- Enables the console to receive automated messages (AUTO).
+    :literal:`yes` \- Enables the console to receive automated messages :literal:`(AUTO`\ ).
 
     :literal:`no` \- Explicitly disables automated messages for the console.
 
-    :literal:`delete` \- Removes the automated messages parameter from the profile (NOAUTO).
+    :literal:`delete` \- Removes the automated messages parameter from the profile :literal:`(NOAUTO`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1268,11 +1278,11 @@ operator
   hardcopy_msgs
     Whether the console receives all messages directed to hardcopy.
 
-    :literal:`yes` \- Enables the console to receive hardcopy messages (HC).
+    :literal:`yes` \- Enables the console to receive hardcopy messages :literal:`(HC`\ ).
 
     :literal:`no` \- Explicitly disables hardcopy messages for the console.
 
-    :literal:`delete` \- Removes the hardcopy messages parameter from the profile (NOHC).
+    :literal:`delete` \- Removes the hardcopy messages parameter from the profile :literal:`(NOHC`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1284,11 +1294,11 @@ operator
   internal_msgs
     Whether the console receives messages directed to console ID zero.
 
-    :literal:`yes` \- Enables the console to receive internal messages (INTIDS).
+    :literal:`yes` \- Enables the console to receive internal messages :literal:`(INTIDS`\ ).
 
     :literal:`no` \- Explicitly disables internal messages for the console.
 
-    :literal:`delete` \- Removes the internal messages parameter from the profile (NOINTIDS).
+    :literal:`delete` \- Removes the internal messages parameter from the profile :literal:`(NOINTIDS`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1322,11 +1332,11 @@ operator
   undelivered_msgs
     Whether the console receives undelivered messages.
 
-    :literal:`yes` \- Enables the console to receive undelivered messages (UD).
+    :literal:`yes` \- Enables the console to receive undelivered messages :literal:`(UD`\ ).
 
     :literal:`no` \- Explicitly disables undelivered messages for the console.
 
-    :literal:`delete` \- Removes the undelivered messages parameter from the profile (NOUD).
+    :literal:`delete` \- Removes the undelivered messages parameter from the profile :literal:`(NOUD`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1338,11 +1348,11 @@ operator
   unknown_msgs
     Whether the console receives messages directed to unknown console IDs.
 
-    :literal:`yes` \- Enables the console to receive unknown messages (UNKNIDS).
+    :literal:`yes` \- Enables the console to receive unknown messages :literal:`(UNKNIDS`\ ).
 
     :literal:`no` \- Explicitly disables unknown messages for the console.
 
-    :literal:`delete` \- Removes the unknown messages parameter from the profile (NOUNKNIDS).
+    :literal:`delete` \- Removes the unknown messages parameter from the profile :literal:`(NOUNKNIDS`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1354,11 +1364,11 @@ operator
   log_responses
     Whether command responses should be logged.
 
-    :literal:`yes` \- Enables logging of command responses (LOGCMDRESP(SYSTEM)).
+    :literal:`yes` \- Enables logging of command responses :literal:`(LOGCMDRESP(SYSTEM`\ )).
 
-    :literal:`no` \- Explicitly disables logging of command responses (LOGCMDRESP(NO)).
+    :literal:`no` \- Explicitly disables logging of command responses :literal:`(LOGCMDRESP(NO`\ )).
 
-    :literal:`delete` \- Removes the command response logging parameter from the profile (NOLOGCMDRESP).
+    :literal:`delete` \- Removes the command response logging parameter from the profile :literal:`(NOLOGCMDRESP`\ ).
 
     This option is mutually exclusive with :emphasis:`operator.delete`.
 
@@ -1382,6 +1392,8 @@ operator
 restrictions
   Attributes that determine the days and times a user is allowed to login.
 
+  This option is valid for :emphasis:`profile\_name=user`.
+
   | **required**: False
   | **type**: dict
 
@@ -1393,6 +1405,8 @@ restrictions
 
     Valid values are :literal:`anyday`\ , :literal:`weekdays`\ , :literal:`monday`\ , :literal:`tuesday`\ , :literal:`wednesday`\ , :literal:`thursday`\ , :literal:`friday`\ , :literal:`saturday` and :literal:`sunday`.
 
+    This option is valid for :emphasis:`state=create` and :emphasis:`state=update`.
+
     | **required**: False
     | **type**: list
     | **elements**: str
@@ -1403,13 +1417,15 @@ restrictions
   time
     Daily time period when the user is allowed to login.
 
-    The value for this option must be in the format "HHMM:HHMM".
+    The value for this option must be in the format :literal:`"HHMM:HHMM"`.
 
     Enclose the time value in quotes (for example, "0900:1700") to avoid YAML parsing issues.
 
     This field uses a 24\-hour format.
 
     This field also accepts the value :literal:`anytime` to indicate a user is free to login at any time of the day.
+
+    This option is valid for :emphasis:`state=create` and :emphasis:`state=update`.
 
     | **required**: False
     | **type**: str
@@ -1421,6 +1437,8 @@ restrictions
 
     The value for this option must be in the format :literal:`MM/DD/YY`\ , where :literal:`YY` are the last two digits of the year.
 
+    This option is valid for :emphasis:`state=connect` and :emphasis:`state=update`.
+
     | **required**: False
     | **type**: str
 
@@ -1428,7 +1446,7 @@ restrictions
   delete_resume
     Delete the resume field from the profile.
 
-    This option is only valid when connecting a user to a group.
+    This option is valid for :emphasis:`state=connect` and :emphasis:`state=update`.
 
     This option is mutually exclusive with :emphasis:`restrictions.resume`.
 
@@ -1441,6 +1459,8 @@ restrictions
 
     The value for this option must be in the format :literal:`MM/DD/YY`\ , where :literal:`YY` are the last two digits of the year.
 
+    This option is valid for :emphasis:`state=connect` and :emphasis:`state=update`.
+
     | **required**: False
     | **type**: str
 
@@ -1448,7 +1468,7 @@ restrictions
   delete_revoke
     Delete the revoke field from the profile.
 
-    This option is only valid when connecting a user to a group.
+    This option is valid for :emphasis:`state=connect` and :emphasis:`state=update`.
 
     This option is mutually exclusive with :emphasis:`restrictions.revoke`.
 

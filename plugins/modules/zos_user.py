@@ -211,11 +211,15 @@ options:
         description:
           - Whether the group should be allowed to have an unlimited number of
             users.
+          - Valid only for I(profile_type=group).
+          - This option is valid for I(state=create) only.
         type: bool
         required: false
   dfp:
     description:
       - Options that set DFP attributes from the Storage Management Subsystem (SMS).
+      - Supported for both I(profile_name=user) and I(profile_name=group).
+      - This option is applicable for I(state=create) and I(state=update).
     required: false
     type: dict
     suboptions:
@@ -244,7 +248,8 @@ options:
         required: false
   language:
     description:
-      - Options that set the preferred national languages for a user profile.
+      - Options that set the preferred national languages for a I(profile_type=user).
+      - Valid when I(state=create) and I(state=update).
       - These options override the system-wide defaults.
     required: false
     type: dict
@@ -813,7 +818,7 @@ options:
           - C(e) - The console receives eventual action messages.
           - C(in) - The console receives informational messages.
           - C(nb) - The console receives no broadcast messages.
-          - C(all) - The console receives all message levels (R, I, CE, E, and IN).
+          - C(all) - The console receives all message levels C((R, I, CE, E, and IN)).
           - C(delete) - Removes the message level field from the user's profile.
           - This option is mutually exclusive with I(operator.delete).
         type: str
@@ -869,21 +874,21 @@ options:
           add:
             description:
               - List of new systems to add to the message scope list.
-              - When I(state=create), this sets the initial message scope (MSCOPE).
-              - When I(state=update), this adds systems to the existing list (ADDMSCOPE).
+              - When I(state=create), this sets the initial message scope C((MSCOPE)).
+              - When I(state=update), this adds systems to the existing list C((ADDMSCOPE)).
               - This option is mutually exclusive with I(msg_scope.remove) and I(msg_scope.delete).
             type: list
             elements: str
             required: false
           remove:
             description:
-              - Set to C(true) to remove all message scope systems from the profile (NOMSCOPE).
+              - Set to C(true) to remove all message scope systems from the profile C((NOMSCOPE)).
               - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.delete).
             type: bool
             required: false
           delete:
             description:
-              - List of specific systems to delete from the message scope list (DELMSCOPE).
+              - List of specific systems to delete from the message scope list C((DELMSCOPE)).
               - This does not clear the entire list unless all listed systems are specified.
               - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.remove).
             type: list
@@ -892,9 +897,9 @@ options:
       automated_msgs:
         description:
           - Whether the extended console can receive messages automated by the Message Flood Automation (MFA).
-          - C(yes) - Enables the console to receive automated messages (AUTO).
+          - C(yes) - Enables the console to receive automated messages C((AUTO)).
           - C(no) - Explicitly disables automated messages for the console.
-          - C(delete) - Removes the automated messages parameter from the profile (NOAUTO).
+          - C(delete) - Removes the automated messages parameter from the profile C((NOAUTO)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -922,9 +927,9 @@ options:
       hardcopy_msgs:
         description:
           - Whether the console receives all messages directed to hardcopy.
-          - C(yes) - Enables the console to receive hardcopy messages (HC).
+          - C(yes) - Enables the console to receive hardcopy messages C((HC)).
           - C(no) - Explicitly disables hardcopy messages for the console.
-          - C(delete) - Removes the hardcopy messages parameter from the profile (NOHC).
+          - C(delete) - Removes the hardcopy messages parameter from the profile C((NOHC)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -935,9 +940,9 @@ options:
       internal_msgs:
         description:
           - Whether the console receives messages directed to console ID zero.
-          - C(yes) - Enables the console to receive internal messages (INTIDS).
+          - C(yes) - Enables the console to receive internal messages C((INTIDS)).
           - C(no) - Explicitly disables internal messages for the console.
-          - C(delete) - Removes the internal messages parameter from the profile (NOINTIDS).
+          - C(delete) - Removes the internal messages parameter from the profile C((NOINTIDS)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -961,9 +966,9 @@ options:
       undelivered_msgs:
         description:
           - Whether the console receives undelivered messages.
-          - C(yes) - Enables the console to receive undelivered messages (UD).
+          - C(yes) - Enables the console to receive undelivered messages C((UD)).
           - C(no) - Explicitly disables undelivered messages for the console.
-          - C(delete) - Removes the undelivered messages parameter from the profile (NOUD).
+          - C(delete) - Removes the undelivered messages parameter from the profile C((NOUD)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -974,9 +979,9 @@ options:
       unknown_msgs:
         description:
           - Whether the console receives messages directed to unknown console IDs.
-          - C(yes) - Enables the console to receive unknown messages (UNKNIDS).
+          - C(yes) - Enables the console to receive unknown messages C((UNKNIDS)).
           - C(no) - Explicitly disables unknown messages for the console.
-          - C(delete) - Removes the unknown messages parameter from the profile (NOUNKNIDS).
+          - C(delete) - Removes the unknown messages parameter from the profile C((NOUNKNIDS)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -987,9 +992,9 @@ options:
       log_responses:
         description:
           - Whether command responses should be logged.
-          - C(yes) - Enables logging of command responses (LOGCMDRESP(SYSTEM)).
-          - C(no) - Explicitly disables logging of command responses (LOGCMDRESP(NO)).
-          - C(delete) - Removes the command response logging parameter from the profile (NOLOGCMDRESP).
+          - C(yes) - Enables logging of command responses C((LOGCMDRESP(SYSTEM))).
+          - C(no) - Explicitly disables logging of command responses C((LOGCMDRESP(NO))).
+          - C(delete) - Removes the command response logging parameter from the profile C((NOLOGCMDRESP)).
           - This option is mutually exclusive with I(operator.delete).
         type: str
         required: false
@@ -1012,6 +1017,7 @@ options:
     description:
       - Attributes that determine the days and times a user is
         allowed to login.
+      - This option is valid for I(profile_name=user).
     required: false
     type: dict
     suboptions:
@@ -1021,6 +1027,7 @@ options:
           - Multiple choices are allowed.
           - Valid values are C(anyday), C(weekdays), C(monday), C(tuesday),
             C(wednesday), C(thursday), C(friday), C(saturday) and C(sunday).
+          - This option is valid for I(state=create) and I(state=update).
         type: list
         elements: str
         choices:
@@ -1039,11 +1046,12 @@ options:
       time:
         description:
           - Daily time period when the user is allowed to login.
-          - The value for this option must be in the format "HHMM:HHMM".
+          - The value for this option must be in the format C("HHMM:HHMM").
           - Enclose the time value in quotes (for example, "0900:1700") to avoid YAML parsing issues.
           - This field uses a 24-hour format.
           - This field also accepts the value C(anytime) to indicate a
             user is free to login at any time of the day.
+          - This option is valid for I(state=create) and I(state=update).
         type: str
         required: false
         default: anytime
@@ -1052,12 +1060,13 @@ options:
           - Date when the user is allowed access to a system again.
           - The value for this option must be in the format C(MM/DD/YY),
             where C(YY) are the last two digits of the year.
+          - This option is valid for I(state=connect) and I(state=update).
         type: str
         required: false
       delete_resume:
         description:
           - Delete the resume field from the profile.
-          - This option is only valid when connecting a user to a group.
+          - This option is valid for I(state=connect) and I(state=update).
           - This option is mutually exclusive with I(restrictions.resume).
         type: bool
         required: false
@@ -1066,12 +1075,13 @@ options:
           - Date when the user is forbidden access to a system.
           - The value for this option must be in the format C(MM/DD/YY),
             where C(YY) are the last two digits of the year.
+          - This option is valid for I(state=connect) and I(state=update).
         type: str
         required: false
       delete_revoke:
         description:
           - Delete the revoke field from the profile.
-          - This option is only valid when connecting a user to a group.
+          - This option is valid for I(state=connect) and I(state=update).
           - This option is mutually exclusive with I(restrictions.revoke).
         type: bool
         required: false
@@ -2500,6 +2510,7 @@ class GroupHandler(RACFHandler):
         """
         cmd = ""
         group = self.params.get('group')
+        state = self.params.get('state')
 
         if group is not None:
             if group.get('superior_group') is not None:
@@ -2507,6 +2518,7 @@ class GroupHandler(RACFHandler):
             if group.get('terminal_access') is not None:
                 terminal_access = 'TERMUACC' if group['terminal_access'] else 'NOTERMUACC'
                 cmd = f"{cmd}{terminal_access} "
+            # universal_group is only valid for create
             if group.get('universal_group', False):
                 cmd = f"{cmd}UNIVERSAL "
 
@@ -3139,31 +3151,37 @@ class UserHandler(RACFHandler):
 
             parts.append("OPERPARM(")
 
+            # alternate-console-group
             if operator.get('alt_group') is not None:
                 if operator.get('alt_group') != "":
                     parts.append(f" ALTGRP({operator['alt_group']})")
                 else:
                     parts.append(" NOALTGRP")
+            # Operator Authority
             if operator.get('authority') is not None:
                 if operator.get('authority') != "delete":
                     parts.append(f" AUTH({operator['authority']})")
                 else:
                     parts.append(" NOAUTH")
+            # Command System
             if operator.get('cmd_system') is not None:
                 if operator.get('cmd_system') != "":
                     parts.append(f" CMDSYS({operator['cmd_system']})")
                 else:
                     parts.append(" NOCMDSYS")
+            # Searching Key
             if operator.get('search_key') is not None:
                 if operator.get('search_key') != "":
                     parts.append(f" KEY({operator['search_key']})")
                 else:
                     parts.append(" NOKEY")
+            # Migration ID
             if operator.get('migration_id') is not None:
                 if operator.get('migration_id') == 'delete':
                     parts.append(" NOMIGID")
                 else:
                     parts.append(f" MIGID({operator['migration_id'].upper()})")
+            # Monitor Events
             if operator.get('display') is not None:
                 if "delete" not in operator['display']:
                     options = operator['display']
@@ -3173,21 +3191,25 @@ class UserHandler(RACFHandler):
                     parts.append(') ')
                 else:
                     parts.append(" NOMONITOR")
+            # Message Level
             if operator.get('msg_level') is not None:
                 if operator.get('msg_level') != "delete":
                     parts.append(f" LEVEL({operator['msg_level']})")
                 else:
                     parts.append(" NOLEVEL")
+            # Message Format
             if operator.get('msg_format') is not None:
                 if operator.get('msg_format') != 'delete':
                     parts.append(f" MFORM({operator['msg_format']})")
                 else:
                     parts.append(" NOMFORM")
+            # Message Storage
             if operator.get('msg_storage') is not None:
                 if operator.get('msg_storage') != 0:
                     parts.append(f" STORAGE({operator['msg_storage']})")
                 else:
                     parts.append(" NOSTORAGE")
+            # Message Scope
             if operator.get('msg_scope') is not None:
                 if operator['msg_scope'].get('add') is not None:
                     scopes = operator['msg_scope']['add']
@@ -3207,26 +3229,31 @@ class UserHandler(RACFHandler):
                     parts.append(') ')
                 elif operator['msg_scope'].get('remove'):
                     parts.append(' NOMSCOPE')
+            # Automated Message
             if operator.get('automated_msgs') is not None:
                 if operator.get('automated_msgs') == 'delete':
                     parts.append(" NOAUTO")
                 else:
                     parts.append(f" AUTO({operator['automated_msgs'].upper()})")
+            # DOM
             if operator.get('delete_operator_msgs') is not None:
                 if operator.get('delete_operator_msgs') != 'delete':
                     parts.append(f" DOM({operator['delete_operator_msgs']})")
                 else:
                     parts.append(" NODOM")
+            # Hardcopy Messages
             if operator.get('hardcopy_msgs') is not None:
                 if operator.get('hardcopy_msgs') == 'delete':
                     parts.append(" NOHC")
                 else:
                     parts.append(f" HC({operator['hardcopy_msgs'].upper()})")
+            # Internal Messages
             if operator.get('internal_msgs') is not None:
                 if operator.get('internal_msgs') == 'delete':
                     parts.append(" NOINTIDS")
                 else:
                     parts.append(f" INTIDS({operator['internal_msgs'].upper()})")
+            # Routing Code of Messages
             if operator.get('routing_msgs') is not None:
                 routes = operator['routing_msgs']
                 # Check if 'delete' is specified to remove all routing codes
@@ -3240,16 +3267,19 @@ class UserHandler(RACFHandler):
                     parts.append(' ROUTCODE(')
                     parts.append(' '.join(routes))
                     parts.append(')')
+            # Undelivered Messages
             if operator.get('undelivered_msgs') is not None:
                 if operator.get('undelivered_msgs') == 'delete':
                     parts.append(" NOUD")
                 else:
                     parts.append(f" UD({operator['undelivered_msgs'].upper()})")
+            # Unknown Messages
             if operator.get('unknown_msgs') is not None:
                 if operator.get('unknown_msgs') == 'delete':
                     parts.append(" NOUNKNIDS")
                 else:
                     parts.append(f" UNKNIDS({operator['unknown_msgs'].upper()})")
+            # Log Command Responsed
             if operator.get('log_responses') is not None:
                 if operator.get('log_responses') == 'delete':
                     parts.append(" NOLOGCMDRESP")
@@ -3273,8 +3303,10 @@ class UserHandler(RACFHandler):
         access = self.params.get('access')
 
         if access is not None:
+            # Default Group
             if access.get('default_group') is not None:
                 parts.append(f"DFLTGRP({access['default_group']}) ")
+            # Class Authority
             if access.get('clauth') is not None:
                 if access['clauth'].get('add') is not None:
                     clauth = access['clauth']['add']
@@ -3288,9 +3320,11 @@ class UserHandler(RACFHandler):
                     for auth_class in clauth:
                         parts.append(f'{auth_class} ')
                     parts.append(') ')
+            # Read-Only Audit
             if access.get('roaudit') is not None:
                 roaudit = "ROAUDIT" if access['roaudit'] else "NOROAUDIT"
                 parts.append(f'{roaudit} ')
+            # Security Category
             if access.get('category') is not None:
                 if access['category'].get('add') is not None:
                     categories = access['category']['add']
@@ -3304,20 +3338,25 @@ class UserHandler(RACFHandler):
                     for category in categories:
                         parts.append(f'{category} ')
                     parts.append(') ')
+            # OID CARD
             if access.get('operator_card') is not None:
                 op_card = "OIDCARD" if access['operator_card'] else "NOOIDCARD"
                 parts.append(f'{op_card} ')
+            # Operations - Maintainance Access
             if access.get('maintenance_access') is not None:
                 operations = "OPERATIONS" if access['maintenance_access'] else "NOOPERATIONS"
                 parts.append(f'{operations} ')
+            # Restricted
             if access.get('restricted') is not None:
                 restricted = "RESTRICTED" if access['restricted'] else "NORESTRICTED"
                 parts.append(f'{restricted} ')
+            # Security Label
             if access.get('security_label') is not None:
                 if access.get('security_label') != "":
                     parts.append(f"SECLABEL({access['security_label']}) ")
                 else:
                     parts.append("NOSECLABEL ")
+            # Security Level
             if access.get('security_level') is not None:
                 if access.get('security_level') != "":
                     parts.append(f"SECLEVEL({access['security_level']}) ")

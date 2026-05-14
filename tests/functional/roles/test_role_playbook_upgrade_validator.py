@@ -140,6 +140,60 @@ test_playbook3 = """---
   register: find_result
 """
 
+test_playbook4 = """---
+- name: Exercise remaining migration mappings
+  hosts: zos_host
+  gather_facts: false
+  environment: "{{ environment_vars }}"
+  collections:
+    - ibm.ibm_zos_core
+  tasks:
+    - name: Backup restore with old nested option names
+      zos_backup_restore:
+        operation: backup
+        data_sets:
+          include:
+            - USER.TEST.DATA
+        backup_name: USER.TEST.BACKUP
+        sms_storage_class: TESTSC
+        sms_management_class: TESTMC
+        hlq: USERHLQ
+
+    - name: Fetch with old binary option
+      zos_fetch:
+        src: USER.DATA.SET
+        dest: /tmp/
+        is_binary: true
+        flat: true
+
+    - name: Query job output with old ddname option
+      zos_job_output:
+        job_id: "JOB12345"
+        ddname: "JESMSGLG"
+
+    - name: Run operator command with old wait_time_s
+      zos_operator:
+        cmd: "D A,L"
+        wait_time_s: 5
+
+    - name: Query operator actions with old option names
+      zos_operator_action_query:
+        job_name: "MYJOB*"
+        message_id: "IEE*"
+        message_filter:
+          filter: ".*ERROR.*"
+          use_regex: true
+
+    - name: Unarchive with old nested format options
+      zos_unarchive:
+        src: USER.ARCHIVE.TRS
+        dest: USER.RESTORED.DATA
+        format:
+          name: terse
+          format_options:
+            use_adrdssu: true
+"""
+
 
 def test_validator_role_with_vars(ansible_zos_module):
     hosts = ansible_zos_module
@@ -306,6 +360,98 @@ def test_validator_role_with_taskfile(ansible_zos_module):
         print(f"   zos_copy issues: {len(zos_copy_issues)}")
         print(f"   zos_mount issues: {len(zos_mount_issues)}")
         print(f"   zos_find issues: {len(zos_find_issues)}")
+
+    finally:
+        shutil.rmtree(playbooks_path)
+
+
+def test_validator_role_with_other_modules_playbook(ansible_zos_module):
+    """Test validator with another playbook covering other configured modules."""
+    hosts = ansible_zos_module
+    playbooks_path = "/tmp/" + datetime.now().strftime("%S%f") + "_pb_other"
+    report_file = playbooks_path + "/other_modules_report.json"
+
+    try:
+        os.mkdir(playbooks_path)
+        playbook_file = os.path.join(playbooks_path, "other_modules_playbook.yml")
+
+        with open(playbook_file, "w") as f:
+            f.write(test_playbook4)
+
+        hosts.all.set_fact(playbook_path=playbook_file)
+        hosts.all.set_fact(output_path=report_file)
+        hosts.all.set_fact(ignore_response_params=False)
+        results = hosts.all.include_role(name="playbook_upgrade_validator", apply=dict(delegate_to="localhost"))
+
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is False
+            assert result.get("msg") is not None
+
+        assert os.path.exists(report_file), f"Report file {report_file} was not created"
+
+        with open(report_file, "r") as f:
+            report_data = json.load(f)
+
+        assert isinstance(report_data, list), "Report should be a list of issues"
+        assert len(report_data) > 0, "Report should contain migration issues from other modules playbook"
+
+        modules_found = set(issue["module"] for issue in report_data)
+        expected_modules = {
+            "zos_backup_restore",
+            "zos_fetch",
+            "zos_job_output",
+            "zos_operator",
+            "zos_operator_action_query",
+            "zos_unarchive",
+        }
+        assert expected_modules.issubset(modules_found), (
+            "Should detect all expected other-module coverage: "
+            f"{sorted(expected_modules - modules_found)}"
+        )
+
+        backup_restore_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_backup_restore":
+                backup_restore_actions.extend(issue["migration_actions"])
+        assert any("hlq" in action for action in backup_restore_actions), "Should detect 'hlq' parameter"
+        assert any("sms_storage_class" in action for action in backup_restore_actions), "Should detect 'sms_storage_class' parameter"
+        assert any("sms_management_class" in action for action in backup_restore_actions), "Should detect 'sms_management_class' parameter"
+
+        fetch_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_fetch":
+                fetch_actions.extend(issue["migration_actions"])
+        assert any("is_binary" in action for action in fetch_actions), "Should detect 'is_binary' parameter"
+
+        job_output_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_job_output":
+                job_output_actions.extend(issue["migration_actions"])
+        assert any("ddname" in action for action in job_output_actions), "Should detect 'ddname' parameter"
+
+        operator_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_operator":
+                operator_actions.extend(issue["migration_actions"])
+        assert any("wait_time_s" in action for action in operator_actions), "Should detect 'wait_time_s' parameter"
+
+        operator_action_query_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_operator_action_query":
+                operator_action_query_actions.extend(issue["migration_actions"])
+        assert any("message_id" in action for action in operator_action_query_actions), "Should detect 'message_id' parameter"
+        assert any("message_filter" in action for action in operator_action_query_actions), "Should detect 'message_filter' parameter"
+        assert any("use_regex" in action for action in operator_action_query_actions), "Should detect 'use_regex' parameter"
+
+        unarchive_actions = []
+        for issue in report_data:
+            if issue["module"] == "zos_unarchive":
+                unarchive_actions.extend(issue["migration_actions"])
+        assert any("format.name" in action for action in unarchive_actions), "Should detect 'format.name' parameter"
+        assert any("format.format_options" in action for action in unarchive_actions), "Should detect 'format.format_options' parameter"
+        assert any("use_adrdssu" in action for action in unarchive_actions), "Should detect 'use_adrdssu' parameter"
+
 
     finally:
         shutil.rmtree(playbooks_path)

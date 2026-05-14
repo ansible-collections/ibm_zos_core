@@ -1682,6 +1682,226 @@ def test_user_create_with_access_attributes(ansible_zos_module):
     finally:
         cleanup_user(hosts, user_name)
 
+def test_user_create_with_new_access_attributes(ansible_zos_module):
+    """
+    Test: Create user with new access attributes (auto_protect_datasets, auditor,
+    authority, special, universal_access).
+    
+    Validates that all new access attributes are properly included in the ADDUSER command.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # First create a test group
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Create user with full access configuration including new attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "default_group": group_name,
+                "clauth": {
+                    "add": ["TERMINAL", "FACILITY"]
+                },
+                "roaudit": True,
+                "operator_card": False,
+                "maintenance_access": True,
+                "restricted": True,
+                "auto_protect_datasets": True,
+                "auditor": True,
+                "authority": "create",
+                "special": True,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            
+            # Validate command contains all new parameters
+            cmd = result.get("cmd", "")
+            assert f"DFLTGRP({group_name})" in cmd
+            assert "CLAUTH( TERMINAL FACILITY )" in cmd
+            assert "ROAUDIT" in cmd
+            assert "NOOIDCARD" in cmd
+            assert "OPERATIONS" in cmd
+            assert "RESTRICTED" in cmd
+            # Validate new attributes
+            assert "ADSP" in cmd
+            assert "NOADSP" not in cmd
+            assert "AUDITOR" in cmd
+            assert "NOAUDITOR" not in cmd
+            assert "AUTHORITY(CREATE)" in cmd
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+            assert "UACC(READ)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_update_with_new_access_attributes(ansible_zos_module):
+    """
+    Test: Update user with new access attributes to verify they can be modified.
+    
+    Validates that new access attributes can be changed using ALTUSER command.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with initial attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "auto_protect_datasets": True,
+                "auditor": True,
+                "authority": "create",
+                "special": True,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Update user with modified access configuration
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={
+                "roaudit": False,
+                "maintenance_access": True,
+                "restricted": True,
+                # Modified new attributes
+                "auto_protect_datasets": False,
+                "auditor": False,
+                "authority": "join",
+                "special": True,
+                "universal_access": "alter"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Validate update command
+            cmd = result.get("cmd", "")
+            assert "NOROAUDIT" in cmd
+            assert "OPERATIONS" in cmd
+            assert "RESTRICTED" in cmd
+            # Validate modified new attributes
+            assert "NOADSP" in cmd
+            assert "NOAUDITOR" in cmd
+            assert "AUTHORITY(JOIN)" in cmd
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+            assert "UACC(ALTER)" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_connect_with_group_level_attributes(ansible_zos_module):
+    """
+    Test: Connect user to group with group-level attributes (authority, universal_access,
+    adsp, special, auditor).
+    
+    Validates that group-level attributes are independent from system-wide attributes
+    and can be set per-group connection.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # Create test group
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Create user with system-wide attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "auto_protect_datasets": False,
+                "auditor": False,
+                "authority": "use",
+                "special": False,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Connect user to group with different group-level attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group_name,
+                "group_account": True,
+                "group_operations": True,
+                "universal_access": "control",
+                "authority": "connect",
+                "adsp": True,  # Using alias - different from system-wide
+                "special": True,  # Different from system-wide
+                "auditor": True  # Different from system-wide
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Validate connect command with group-level attributes
+            cmd = result.get("cmd", "")
+            assert f"GROUP({group_name})" in cmd
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+            assert "UACC(CONTROL)" in cmd or "UACC(control)" in cmd
+            assert "AUTHORITY(CONNECT)" in cmd or "AUTHORITY(connect)" in cmd
+            assert "ADSP" in cmd
+            assert "SPECIAL" in cmd
+            assert "AUDITOR" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
 
 def test_user_create_with_login_restrictions(ansible_zos_module):
     """
@@ -3746,7 +3966,7 @@ def test_user_connect_special_attributes(ansible_zos_module):
             name=user2,
             state="connect",
             profile_type="user",
-            connect={"group_name": group_name, "adsp_attribute": True}
+            connect={"group_name": group_name, "adsp": True}
         )
         
         for result in results.contacted.values():

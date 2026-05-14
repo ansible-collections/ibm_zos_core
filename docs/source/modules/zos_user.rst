@@ -291,7 +291,7 @@ group
 dfp
   Options that set DFP attributes from the Storage Management Subsystem (SMS).
 
-  Supported for both :emphasis:`profile\_name=user` and :emphasis:`profile\_name=group`.
+  Supported for both :emphasis:`profile\_type=user` and :emphasis:`profile\_type=group`.
 
   This option is applicable for :emphasis:`state=create` and :emphasis:`state=update`.
 
@@ -810,7 +810,21 @@ connect
 
 
   authority
-    Specifies the level of group authority assigned to the user.
+    Specifies the level of group authority assigned to the user for the connection.
+
+    This determines what actions the user can perform within the group.
+
+    If not specified when creating a connection, the default authority is :literal:`use`.
+
+    :literal:`use` \- Allows access to resources authorized to the group.
+
+    :literal:`create` \- Allows creation of RACF data set profiles for the group.
+
+    :literal:`connect` \- Allows connecting other users to the group.
+
+    :literal:`join` \- Allows adding users or subgroups to the group and assigning group authorities.
+
+    See \ `Group Authorities <https://www.ibm.com/docs/en/zos/latest?topic=summary-group-authorities>`__.
 
     | **required**: False
     | **type**: str
@@ -819,6 +833,22 @@ connect
 
   universal_access
     Specifies the level of universal access authority assigned for the connection.
+
+    Specifies the level of universal access authority :literal:`(UACC`\ ) for resources associated with the connection.
+
+    This value applies to new resource profiles created while the user is connected to the group.
+
+    If not specified when creating a connection, the default value is :literal:`none`.
+
+    :literal:`alter` \- Allows full access, including read, update, and delete.
+
+    :literal:`control` \- Allows read and update access, and modification of the resource profile.
+
+    :literal:`update` \- Allows read and update access.
+
+    :literal:`read` \- Allows read\-only access.
+
+    :literal:`none` \- Allows no access.
 
     | **required**: False
     | **type**: str
@@ -835,7 +865,9 @@ connect
 
 
   group_account
-    Whether the user's protected data sets are accessible to other users in the group.
+    Whether data sets defined by the user are accessible to other users in the group.
+
+    When enabled, the group is given UPDATE access to data sets created by the user with the group as the high\-level qualifier.
 
     | **required**: False
     | **type**: bool
@@ -843,7 +875,9 @@ connect
 
 
   group_operations
-    Whether the user should have the group\-OPERATIONS attribute for the connection.
+    Whether the user should has the group\-OPERATIONS attribute for the connection.
+
+    Allows the user to perform maintenance operations on RACF\-protected data sets and resources within the scope of the group
 
     | **required**: False
     | **type**: bool
@@ -851,7 +885,13 @@ connect
 
 
   auditor
-    Whether the user should have auditor privileges for the connected group.
+    Whether the user has group\-AUDITOR attribute for the connection.
+
+    Allows the user to list profiles connected to the group and review audit information for the group.
+
+    This is independent of the system\-wide AUDITOR attribute (\ :emphasis:`access.auditor`\ ).
+
+    A user can have group\-AUDITOR in one group but not in another.
 
     | **required**: False
     | **type**: bool
@@ -859,9 +899,13 @@ connect
 
 
   auto_protect_datasets
-    Whether to assign the ADSP attribute for the connection.
+    Whether the user has the group\-ADSP attribute for the specific group connection.
 
-    Specifies whether RACF automatically protects data sets created by the user with discrete profiles.
+    Causes RACF to automatically create discrete profiles for permanent data sets created while the user is connected to the group.
+
+    This is independent of the system\-wide ADSP attribute (\ :emphasis:`access.auto\_protect\_datasets`\ ).
+
+    A user can have ADSP in one group but not in another.
 
     | **required**: False
     | **type**: bool
@@ -869,9 +913,13 @@ connect
 
 
   special
-    Whether to assign the SPECIAL attribute for the connection.
+    Whether the user has group\-SPECIAL attribute for the connection.
 
-    This attribute allows the user to change attributes of other profiles.
+    Allows the user to manage profiles owned by the group and user connections to the group.
+
+    This is independent of the system\-wide SPECIAL attribute (\ :emphasis:`access.special`\ ).
+
+    A user can have group\-SPECIAL in one group but not in another.
 
     | **required**: False
     | **type**: bool
@@ -883,6 +931,8 @@ access
   Options that configure security attributes for a user profile.
 
   Only valid for :emphasis:`profile\_type=user`
+
+  This option is valid for :emphasis:`state=create` and :emphasis:`state=update`.
 
   | **required**: False
   | **type**: dict
@@ -920,13 +970,13 @@ access
 
 
   roaudit
-    Specifies whether to assign the ROAUDIT attribute to the user.
+    Specifies whether to assign the :literal:`ROAUDIT` attribute to the user.
 
     When enabled, the user has responsibility for auditing system resources with read\-only access to audit records and settings.
 
     In RACF output, this appears under the user's ATTRIBUTES list.
 
-    Requires the SPECIAL attribute to modify.
+    Requires the :literal:`SPECIAL` attribute to modify.
 
     | **required**: False
     | **type**: bool
@@ -1001,6 +1051,102 @@ access
 
     | **required**: False
     | **type**: str
+
+
+  auto_protect_datasets
+    Whether the user has the system\-wide ADSP (Automatic Data Set Protection) attribute.
+
+    When enabled, RACF automatically defines a discrete profile for any new data set created by the user.
+
+    This is a user profile attribute that applies globally across all groups.
+
+    Different from :emphasis:`connect.auto\_protect\_datasets` which applies only to a specific group connection.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  auditor
+    Whether the user has the system\-wide AUDITOR attribute.
+
+    Provides responsibility for auditing the use of system resources.
+
+    Allows the user to review audit records and control logging of accesses to RACF\-protected resource
+
+    This is a user profile attribute that applies globally across all groups.
+
+    Different from :emphasis:`connect.auditor` which provides group\-AUDITOR authority for a specific group only.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  authority
+    Specifies the user's default group authority level.
+
+    This is used as the default when connecting the user to groups if :emphasis:`connect.authority` is not specified.
+
+    Also applies to the user's default group (DFLTGRP) connection.
+
+    :literal:`use` \- Allows the user to access resources to which the group is authorized.
+
+    :literal:`create` \- Allows the user to create RACF data set profiles for the group.
+
+    :literal:`connect` \- Allows the user to connect other users to the group.
+
+    :literal:`join` \- Allows the user to add users or subgroups to the group and assign group authorities..
+
+    Can be overridden per\-group using :emphasis:`connect.authority`.
+
+    See \ `Group Authorities <https://www.ibm.com/docs/en/zos/latest?topic=summary-group-authorities>`__.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: use, create, connect, join
+
+
+  special
+    Whether the user has the system\-wide SPECIAL attribute.
+
+    Allows the user to issue most RACF commands and manage RACF profiles and user IDs system\-wide.
+
+    This is a user profile attribute that applies globally across all groups.
+
+    Different from :emphasis:`connect.special` which provides group\-SPECIAL authority for a specific group only.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: False
+
+
+  universal_access
+    Specifies the user's default universal access authority (UACC).
+
+    This value applies to new resource profiles created while the user is connected to a group.
+
+    It is used when :emphasis:`connect.universal\_access` is not specified during group connection.
+
+    Also applies to the user's default group (DFLTGRP) connection
+
+    The user can have different UACC values for each group connection.
+
+    :literal:`alter` \- Allows full access, including read, update, delete, rename, and control of the resource profile.
+
+    :literal:`control` \- Allows read and update access, and the ability to modify the resource profile.
+
+    :literal:`update` \- Allows read and update access to the resource.
+
+    :literal:`read` \- Allows read\-only access to the resource.
+
+    :literal:`none` \- Allows no access to the resource.
+
+    Can be overridden per group using :emphasis:`connect.universal\_access`.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: alter, control, update, read, none
 
 
 
@@ -1382,7 +1528,7 @@ operator
 
     This option is only valid when :emphasis:`state=update`\ ; it is ignored for all other state values.
 
-    This option is mutually exclusive with :emphasis:`alt\_group`\ , :emphasis:`authority`\ , :emphasis:`cmd\_system`\ , :emphasis:`search\_key`\ , :emphasis:`migration\_id`\ , :emphasis:`display`\ , :emphasis:`msg\_level`\ , :emphasis:`msg\_format`\ , :emphasis:`msg\_storage`\ , :emphasis:`msg\_scope`\ , :emphasis:`automated\_msgs`\ , :emphasis:`delete\_operator\_msgs`\ , :emphasis:`hardcopy\_msgs`\ , :emphasis:`internal\_msgs`\ , :emphasis:`routing\_msgs`\ , :emphasis:`undelivered\_msgs`\ , :emphasis:`unknown\_msgs`\ , and :emphasis:`responses`.
+    This option is mutually exclusive with :emphasis:`alt\_group`\ , :emphasis:`authority`\ , :emphasis:`cmd\_system`\ , :emphasis:`search\_key`\ , :emphasis:`migration\_id`\ , :emphasis:`display`\ , :emphasis:`msg\_level`\ , :emphasis:`msg\_format`\ , :emphasis:`msg\_storage`\ , :emphasis:`msg\_scope`\ , :emphasis:`automated\_msgs`\ , :emphasis:`delete\_operator\_msgs`\ , :emphasis:`hardcopy\_msgs`\ , :emphasis:`internal\_msgs`\ , :emphasis:`routing\_msgs`\ , :emphasis:`undelivered\_msgs`\ , :emphasis:`unknown\_msgs`\ , and :emphasis:`log\_responses`.
 
     | **required**: False
     | **type**: bool
@@ -1392,7 +1538,7 @@ operator
 restrictions
   Attributes that determine the days and times a user is allowed to login.
 
-  This option is valid for :emphasis:`profile\_name=user`.
+  This option is valid for :emphasis:`profile\_type=user`.
 
   | **required**: False
   | **type**: dict
@@ -1736,37 +1882,44 @@ Examples
        state: delete
        profile_type: group
 
-   - name: Purge user from RACF database
+   - name: Purge user from RACF database.
      zos_user:
        name: user
        state: purge
        profile_type: user
        database: racf_db
+       execute_clist: true
 
-   - name: Purge group from RACF database
+   - name: Dry run of purge group from RACF database (group not purged).
      zos_user:
        name: newgrp
        state: purge
        profile_type: group
        database: racf_db
+       execute_clist: false
 
-   - name: Create user with password
+   - name: Create a user with auto-assigned UID and initial password.
      zos_user:
        name: newuser
        state: create
        profile_type: user
        password_mgmt:
          password: "{{ user_password }}"
+       omvs:
+         uid: auto
 
-   - name: Create user with passphrase
+   - name: Create user with passphrase and assign a custom uid.
      zos_user:
        name: newuser
        state: create
        profile_type: user
        password_mgmt:
          passphrase: "{{ user_passphrase }}"
+       omvs:
+         uid: custom
+         custom_uid: 5189
 
-   - name: Update user password and set attribute to NOEXPIRED
+   - name: Update user password and make it active.
      zos_user:
        name: newuser
        state: update
@@ -1774,8 +1927,6 @@ Examples
        password_mgmt:
          password: "{{ user_password }}"
          expired: false
-       omvs:
-         uid: auto
 
 
 

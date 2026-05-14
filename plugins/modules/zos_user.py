@@ -218,7 +218,7 @@ options:
   dfp:
     description:
       - Options that set DFP attributes from the Storage Management Subsystem (SMS).
-      - Supported for both I(profile_name=user) and I(profile_name=group).
+      - Supported for both I(profile_type=user) and I(profile_type=group).
       - This option is applicable for I(state=create) and I(state=update).
     required: false
     type: dict
@@ -571,7 +571,14 @@ options:
     suboptions:
       authority:
         description:
-          - Specifies the level of group authority assigned to the user.
+          - Specifies the level of group authority assigned to the user for the connection.
+          - This determines what actions the user can perform within the group.
+          - If not specified when creating a connection, the default authority is C(use).
+          - C(use) - Allows access to resources authorized to the group.
+          - C(create) - Allows creation of RACF data set profiles for the group.
+          - C(connect) - Allows connecting other users to the group.
+          - C(join) - Allows adding users or subgroups to the group and assigning group authorities.
+          - See L(Group Authorities,https://www.ibm.com/docs/en/zos/latest?topic=summary-group-authorities).
         type: str
         required: false
         choices:
@@ -582,6 +589,14 @@ options:
       universal_access:
         description:
           - Specifies the level of universal access authority assigned for the connection.
+          - Specifies the level of universal access authority C((UACC)) for resources associated with the connection.
+          - This value applies to new resource profiles created while the user is connected to the group.
+          - If not specified when creating a connection, the default value is C(none).
+          - C(alter) - Allows full access, including read, update, and delete.
+          - C(control) - Allows read and update access, and modification of the resource profile.
+          - C(update) - Allows read and update access.
+          - C(read) - Allows read-only access.
+          - C(none) - Allows no access.
         type: str
         required: false
         choices:
@@ -598,34 +613,43 @@ options:
         required: false
       group_account:
         description:
-          - Whether the user's protected data sets are accessible to other users in the group.
+          - Whether data sets defined by the user are accessible to other users in the group.
+          - When enabled, the group is given UPDATE access to data sets created by the user with the group as the high-level qualifier.
         type: bool
         required: false
         default: false
       group_operations:
         description:
-          - Whether the user should have the group-OPERATIONS attribute for the connection.
+          - Whether the user should has the group-OPERATIONS attribute for the connection.
+          - Allows the user to perform maintenance operations on RACF-protected data sets and resources within the scope of the group
         type: bool
         required: false
         default: false
       auditor:
         description:
-          - Whether the user should have auditor privileges for the connected group.
+          - Whether the user has group-AUDITOR attribute for the connection.
+          - Allows the user to list profiles connected to the group and review audit information for the group.
+          - This is independent of the system-wide AUDITOR attribute (I(access.auditor)).
+          - A user can have group-AUDITOR in one group but not in another.
         type: bool
         required: false
         default: false
       auto_protect_datasets:
         description:
-          - Whether to assign the ADSP attribute for the connection.
-          - Specifies whether RACF automatically protects data sets created by the user with discrete profiles.
+          - Whether the user has the group-ADSP attribute for the specific group connection.
+          - Causes RACF to automatically create discrete profiles for permanent data sets created while the user is connected to the group.
+          - This is independent of the system-wide ADSP attribute (I(access.auto_protect_datasets)).
+          - A user can have ADSP in one group but not in another.
         type: bool
         required: false
         default: false
-        aliases: [adsp_attribute]
+        aliases: [adsp]
       special:
         description:
-          - Whether to assign the SPECIAL attribute for the connection.
-          - This attribute allows the user to change attributes of other profiles.
+          - Whether the user has group-SPECIAL attribute for the connection.
+          - Allows the user to manage profiles owned by the group and user connections to the group.
+          - This is independent of the system-wide SPECIAL attribute (I(access.special)).
+          - A user can have group-SPECIAL in one group but not in another.
         type: bool
         required: false
         default: false
@@ -633,6 +657,7 @@ options:
     description:
       - Options that configure security attributes for a user profile.
       - Only valid for I(profile_type=user)
+      - This option is valid for I(state=create) and I(state=update).
     required: false
     type: dict
     suboptions:
@@ -661,10 +686,10 @@ options:
             required: false
       roaudit:
         description:
-          - Specifies whether to assign the ROAUDIT attribute to the user.
+          - Specifies whether to assign the C(ROAUDIT) attribute to the user.
           - When enabled, the user has responsibility for auditing system resources with read-only access to audit records and settings.
           - In RACF output, this appears under the user's ATTRIBUTES list.
-          - Requires the SPECIAL attribute to modify.
+          - Requires the C(SPECIAL) attribute to modify.
         type: bool
         required: false
         default: false
@@ -718,7 +743,74 @@ options:
           - Specifies the security level applied to the profile.
           - To delete this field from the profile, set C(security_level="").
         type: str
+      auto_protect_datasets:
+        description:
+          - Whether the user has the system-wide ADSP (Automatic Data Set Protection) attribute.
+          - When enabled, RACF automatically defines a discrete profile for any new data set created by the user.
+          - This is a user profile attribute that applies globally across all groups.
+          - Different from I(connect.auto_protect_datasets) which applies only to a specific group connection.
+        type: bool
         required: false
+        default: false
+        aliases: [adsp]
+      auditor:
+        description:
+          - Whether the user has the system-wide AUDITOR attribute.
+          - Provides responsibility for auditing the use of system resources.
+          - Allows the user to review audit records and control logging of accesses to RACF-protected resource
+          - This is a user profile attribute that applies globally across all groups.
+          - Different from I(connect.auditor) which provides group-AUDITOR authority for a specific group only.
+        type: bool
+        required: false
+        default: false
+      authority:
+        description:
+          - Specifies the user's default group authority level.
+          - This is used as the default when connecting the user to groups if I(connect.authority) is not specified.
+          - Also applies to the user's default group (DFLTGRP) connection.
+          - C(use) - Allows the user to access resources to which the group is authorized.
+          - C(create) - Allows the user to create RACF data set profiles for the group.
+          - C(connect) - Allows the user to connect other users to the group.
+          - C(join) - Allows the user to add users or subgroups to the group and assign group authorities..
+          - Can be overridden per-group using I(connect.authority).
+          - See L(Group Authorities,https://www.ibm.com/docs/en/zos/latest?topic=summary-group-authorities).
+        type: str
+        required: false
+        choices:
+          - use
+          - create
+          - connect
+          - join
+      special:
+        description:
+          - Whether the user has the system-wide SPECIAL attribute.
+          - Allows the user to issue most RACF commands and manage RACF profiles and user IDs system-wide.
+          - This is a user profile attribute that applies globally across all groups.
+          - Different from I(connect.special) which provides group-SPECIAL authority for a specific group only.
+        type: bool
+        required: false
+        default: false
+      universal_access:
+        description:
+          - Specifies the user's default universal access authority (UACC).
+          - This value applies to new resource profiles created while the user is connected to a group.
+          - It is used when I(connect.universal_access) is not specified during group connection.
+          - Also applies to the user's default group (DFLTGRP) connection
+          - The user can have different UACC values for each group connection.
+          - C(alter) - Allows full access, including read, update, delete, rename, and control of the resource profile.
+          - C(control) - Allows read and update access, and the ability to modify the resource profile.
+          - C(update) - Allows read and update access to the resource.
+          - C(read) - Allows read-only access to the resource.
+          - C(none) - Allows no access to the resource.
+          - Can be overridden per group using I(connect.universal_access).
+        type: str
+        required: false
+        choices:
+          - alter
+          - control
+          - update
+          - read
+          - none
   operator:
     description:
       - Configures the RACF OPERPARM segment attributes.
@@ -1010,14 +1102,14 @@ options:
             I(cmd_system), I(search_key), I(migration_id), I(display),
             I(msg_level), I(msg_format), I(msg_storage), I(msg_scope),
             I(automated_msgs), I(delete_operator_msgs), I(hardcopy_msgs), I(internal_msgs),
-            I(routing_msgs), I(undelivered_msgs), I(unknown_msgs), and I(responses).
+            I(routing_msgs), I(undelivered_msgs), I(unknown_msgs), and I(log_responses).
         type: bool
         required: false
   restrictions:
     description:
       - Attributes that determine the days and times a user is
         allowed to login.
-      - This option is valid for I(profile_name=user).
+      - This option is valid for I(profile_type=user).
     required: false
     type: dict
     suboptions:
@@ -1335,37 +1427,44 @@ EXAMPLES = r"""
     state: delete
     profile_type: group
 
-- name: Purge user from RACF database
+- name: Purge user from RACF database.
   zos_user:
     name: user
     state: purge
     profile_type: user
     database: racf_db
+    execute_clist: true
 
-- name: Purge group from RACF database
+- name: Dry run of purge group from RACF database (group not purged).
   zos_user:
     name: newgrp
     state: purge
     profile_type: group
     database: racf_db
+    execute_clist: false
 
-- name: Create user with password
+- name: Create a user with auto-assigned UID and initial password.
   zos_user:
     name: newuser
     state: create
     profile_type: user
     password_mgmt:
       password: "{{ user_password }}"
+    omvs:
+      uid: auto
 
-- name: Create user with passphrase
+- name: Create user with passphrase and assign a custom uid.
   zos_user:
     name: newuser
     state: create
     profile_type: user
     password_mgmt:
       passphrase: "{{ user_passphrase }}"
+    omvs:
+      uid: custom
+      custom_uid: 5189
 
-- name: Update user password and set attribute to NOEXPIRED
+- name: Update user password and make it active.
   zos_user:
     name: newuser
     state: update
@@ -1373,8 +1472,6 @@ EXAMPLES = r"""
     password_mgmt:
       password: "{{ user_password }}"
       expired: false
-    omvs:
-      uid: auto
 """
 
 RETURN = r"""
@@ -2241,7 +2338,6 @@ class RACFHandler():
         Returns:
             int: Extracted RC if found, otherwise 1
         """
-        import re
         rc_match = re.search(r'RC=(\d+)', error_msg)
         if rc_match:
             return int(rc_match.group(1))
@@ -2547,7 +2643,8 @@ class UserHandler(RACFHandler):
                          'msg_class', 'sysout_class', 'region_size', 'max_region_size', 'security_label',
                          'unit_name', 'user_data')),
                 ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card',
-                            'maintenance_access', 'restricted', 'security_label', 'security_level')),
+                            'maintenance_access', 'restricted', 'security_label', 'security_level',
+                            'auto_protect_datasets', 'adsp', 'auditor', 'authority', 'special', 'universal_access')),
                 ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display',
                               'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'delete_operator_msgs',
                               'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs',
@@ -2835,7 +2932,6 @@ class UserHandler(RACFHandler):
         -------
             bool: True if user is connected to the group, False otherwise.
         """
-        import re
         check_cmd = f'LISTUSER {self.name}'
         rc, stdout, stderr = self.module.run_command(f""" tsocmd "{check_cmd}" """)
         if rc == 0:
@@ -2878,7 +2974,7 @@ class UserHandler(RACFHandler):
             cmd = f"{cmd}AUDITOR "
         else:
             cmd = f"{cmd}NOAUDITOR "
-        if connect.get('auto_protect_datasets', False) or connect.get('adsp_attribute', False):
+        if connect.get('auto_protect_datasets', False) or connect.get('adsp', False):
             cmd = f"{cmd}ADSP "
         else:
             cmd = f"{cmd}NOADSP "
@@ -3362,6 +3458,25 @@ class UserHandler(RACFHandler):
                     parts.append(f"SECLEVEL({access['security_level']}) ")
                 else:
                     parts.append("NOSECLEVEL ")
+            # ADSP Attribute
+            if access.get('auto_protect_datasets') is not None or access.get('adsp') is not None:
+                adsp_value = access.get('auto_protect_datasets', access.get('adsp'))
+                adsp = "ADSP" if adsp_value else "NOADSP"
+                parts.append(f'{adsp} ')
+            # Auditor
+            if access.get('auditor') is not None:
+                auditor = "AUDITOR" if access['auditor'] else "NOAUDITOR"
+                parts.append(f'{auditor} ')
+            # Authority
+            if access.get('authority') is not None:
+                parts.append(f"AUTHORITY({access['authority'].upper()}) ")
+            # Special
+            if access.get('special') is not None:
+                special = "SPECIAL" if access['special'] else "NOSPECIAL"
+                parts.append(f'{special} ')
+            # Universal Access
+            if access.get('universal_access') is not None:
+                parts.append(f"UACC({access['universal_access'].upper()}) ")
 
         return ''.join(parts)
 
@@ -3816,7 +3931,7 @@ def run_module():
                         'type': 'bool',
                         'required': False,
                         'default': False,
-                        'aliases': ['adsp_attribute']
+                        'aliases': ['adsp']
                     },
                     'special': {
                         'type': 'bool',
@@ -3899,6 +4014,32 @@ def run_module():
                     'security_level': {
                         'type': 'str',
                         'required': False
+                    },
+                    'auto_protect_datasets': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False,
+                        'aliases': ['adsp']
+                    },
+                    'auditor': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'authority': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['use', 'create', 'connect', 'join']
+                    },
+                    'special': {
+                        'type': 'bool',
+                        'required': False,
+                        'default': False
+                    },
+                    'universal_access': {
+                        'type': 'str',
+                        'required': False,
+                        'choices': ['alter', 'control', 'update', 'read', 'none']
                     },
                 }
             },
@@ -4219,7 +4360,7 @@ def run_module():
                 'group_operations': {'arg_type': 'bool', 'required': False},
                 'auditor': {'arg_type': 'bool', 'required': False},
                 'auto_protect_datasets': {'arg_type': 'bool', 'required': False},
-                'adsp_attribute': {'arg_type': 'bool', 'required': False},
+                'adsp': {'arg_type': 'bool', 'required': False},
                 'special': {'arg_type': 'bool', 'required': False},
             }
         },
@@ -4250,6 +4391,12 @@ def run_module():
                 'restricted': {'arg_type': 'bool', 'required': False},
                 'security_label': {'arg_type': 'str', 'required': False},
                 'security_level': {'arg_type': 'str', 'required': False},
+                'auto_protect_datasets': {'arg_type': 'bool', 'required': False},
+                'adsp': {'arg_type': 'bool', 'required': False},
+                'auditor': {'arg_type': 'bool', 'required': False},
+                'authority': {'arg_type': 'str', 'required': False},
+                'special': {'arg_type': 'bool', 'required': False},
+                'universal_access': {'arg_type': 'str', 'required': False},
             }
         },
         'operator': {

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2023, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -71,7 +71,6 @@ options:
           - Options specific to a compression format.
         type: dict
         required: false
-        aliases: [ format_options ]
         suboptions:
           spack:
             description:
@@ -105,7 +104,6 @@ options:
                 portable format before using C(xmit) or C(terse).
             type: bool
             default: false
-            aliases: [ use_adrdssu ]
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -821,7 +819,7 @@ class Archive():
             'xmit_log_data_set': self.xmit_log_data_set,
             'encoded': getattr(self, 'encoded'),
             'failed_on_encoding': getattr(self, 'failed_on_encoding'),
-            'skipped_encoding_targets' : getattr(self, 'skipped_encoding_targets'),
+            'skipped_encoding_targets': getattr(self, 'skipped_encoding_targets'),
         }
 
 
@@ -1872,25 +1870,10 @@ def run_module():
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
                         aliases=['name'],
-                        deprecated_aliases=[
-                            dict(
-                                name='name',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core'
-                            )
-                        ],
                     ),
                     options=dict(
                         type='dict',
                         required=False,
-                        aliases=['format_options'],
-                        deprecated_aliases=[
-                            dict(
-                                name='format_options',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core'
-                            )
-                        ],
                         options=dict(
                             spack=dict(
                                 type='bool',
@@ -1902,14 +1885,6 @@ def run_module():
                             adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['use_adrdssu'],
-                                deprecated_aliases=[
-                                    dict(
-                                        name='use_adrdssu',
-                                        version='3.0.0',
-                                        collection_name='ibm.ibm_zos_core'
-                                    )
-                                ],
                             )
                         ),
                     ),
@@ -2009,14 +1984,12 @@ def run_module():
                         adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['use_adrdssu'],
                         )
                     ),
                     default=dict(
                         spack=True,
                         xmit_log_data_set="",
                         adrdssu=False),
-                    aliases=['format_options'],
                 ),
             ),
             default=dict(
@@ -2057,9 +2030,9 @@ def run_module():
         encoding=dict(
             type='dict',
             options={
-                'from' : dict(type='str'),
-                'to' : dict(type='str'),
-                'skip_encoding' : dict(type='list', elements='str', required=False),
+                'from': dict(type='str'),
+                'to': dict(type='str'),
+                'skip_encoding': dict(type='list', elements='str', required=False),
             }
         )
     )

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
-        - This option doesn't accept the use of wilcards (? and *).
+        - This option doesn't accept the use of wildcards (\? and \*).
     type: str
     required: true
     aliases:
@@ -161,7 +161,6 @@ notes:
     the query operation.
 
 seealso:
-  - module: ansible.builtin.stat
   - module: ibm.ibm_zos_core.zos_find
   - module: ibm.ibm_zos_core.zos_gather_facts
 """

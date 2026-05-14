@@ -83,7 +83,6 @@ options:
     required: false
     default: "false"
     type: bool
-    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when

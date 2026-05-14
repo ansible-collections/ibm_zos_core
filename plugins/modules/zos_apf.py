@@ -455,12 +455,6 @@ def main():
                         type='str',
                         required=True,
                         aliases=["data_set_name"],
-                        deprecated_aliases=[
-                            dict(
-                                name='data_set_name',
-                                version='3.0.0',
-                                collection_name='ibm.ibm_zos_core')
-                        ],
                     ),
                     marker=dict(
                         type='str',

@@ -1,16 +1,32 @@
 ---
-- name: Check Python path
+- name: Set Python path from ansible_playbook_python when available
+  ansible.builtin.set_fact:
+    python_path: "{{ ansible_playbook_python }}"
+  when: ansible_playbook_python is defined
+
+- name: Fallback to which python3 when ansible_playbook_python is unavailable
   ansible.builtin.raw: /usr/bin/which python3
   delegate_to: localhost
-  register: python_path_result
+  register: python_path_lookup
   ignore_errors: true
   changed_when: false
+  when: python_path is not defined
 
-- name: Fallback to ansible_python_interpreter if which fails
+- name: Normalize Python path from lookup result
   ansible.builtin.set_fact:
-    python_path_result:
-      stdout: "{{ ansible_playbook_python | default('/usr/bin/python3') }}"
-  when: python_path_result.rc != 0
+    python_path: "{{ python_path | default((python_path_lookup.stdout | default('')) | trim) }}"
+  when:
+    - python_path is not defined
+    - python_path_lookup is defined
+
+- name: Fail when control node Python cannot be resolved
+  ansible.builtin.fail:
+    msg: >-
+      Unable to determine a Python interpreter for the control node for the
+      playbook_upgrade_validator role. Ensure ansible_playbook_python is
+      available or that python3 is present in PATH on localhost.
+  when:
+    - python_path is not defined or not python_path
 
 - name: Load migration changes from JSON file
   ansible.builtin.set_fact:
@@ -36,7 +52,7 @@
 - name: Run playbook upgrade validator to list migration changes
   ansible.builtin.command:
     cmd: >
-      "{{ python_path_result.stdout | trim }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
+      "{{ python_path }}" "{{ role_path }}/files/playbook_upgrade_validator.py"
       --playbook_path "{{ playbook_path }}"
       --output_path "{{ output_path }}"
       {% if ignore_response_params %}
@@ -50,3 +66,4 @@
   debug:
     msg: "Results saved to file: {{ output_path }}"
   delegate_to: localhost
+

@@ -41,30 +41,26 @@ test_playbook1 = """---
           to: IBM-1047
         is_binary: false
       register: file_content
-    - name: Taging script file 
+    - name: Tag script file
       ansible.builtin.shell: "chtag -tc iso8859-1 /tmp/local_script.sh"
       args:
         executable: /bin/sh
       register: tag_result
-    - name: List data sets matching pattern in catalog
+    - name: Run local script
       shell: "/tmp/local_script.sh"
       register: output
-    - name: debug
+    - name: print local script output.
       debug:
         var: output
-    - name: Execute started task display command
-      zos_blockinfile:
-        src: "ansible.tester.sampl(mem1)"
-        insertafter: 'EOF'
-        block: |
-          PRODUCT OWNER('IBM CORP')
-          NAME('IBM IDz')
-          ID(5724-T07)
-          VERSION(*)
-          RELEASE(*)
-          MOD(*)
-          FEATURENAME(*)
-          STATE(ENABLED)
+    - name: Mount filesystem with old persistent options
+      zos_mount:
+        src: USER.ZFS.DATASET
+        path: /mnt/myfs
+        fs_type: zfs
+        state: mounted
+        persistent:
+          data_store: USER.PARMLIB(BPXPRM00)
+          comment: "My filesystem mount"
     - name: Archive data set into a terse, specify pack algorithm and use adrdssu
       zos_archive:
         src: "USER.ARCHIVE.TEST"
@@ -91,23 +87,19 @@ test_playbook2 = """- hosts: zos_host
   gather_facts: false
   environment: "{{ environment_vars }}"
   tasks:
-      - name: Execute started task display command
-        zos_blockinfile:
-          src: "ansible.tester.sampl(mem1)"
-          insertafter: 'EOF'
-          block: |
-            PRODUCT OWNER('IBM CORP')
-            NAME('IBM IDz')
-            ID(5724-T07)
-            VERSION(*)
-            RELEASE(*)
-            MOD(*)
-            FEATURENAME(*)
-            STATE(ENABLED)
+      - name: Mount filesystem with old persistent options
+        zos_mount:
+          src: USER.ZFS.DATASET
+          path: /mnt/myfs
+          fs_type: zfs
+          state: mounted
+          persistent:
+            data_store: USER.PARMLIB(BPXPRM00)
+            comment: "My filesystem mount"
 """
 
 test_playbook3 = """---
-- name: Submit job with deprecated location parameter
+- name: Submit job with removed location parameter
   zos_job_submit:
     src: SAMPLE.SEQ.DATA.SET
     location: data_set
@@ -115,7 +107,7 @@ test_playbook3 = """---
     volume: 222222
   register: job_result
 
-- name: Copy file with deprecated parameters
+- name: Copy file with removed parameters
   zos_copy:
     src: /etc/config.txt
     dest: USER.DATA.SET
@@ -131,7 +123,7 @@ test_playbook3 = """---
     persistent:
       data_set_name: USER.SYS1.PARMLIB(IEAAPF00)
 
-- name: Mount filesystem with deprecated parameters
+- name: Mount filesystem with removed parameters
   zos_mount:
     src: USER.DATA.SET
     path: /mnt/data
@@ -140,12 +132,12 @@ test_playbook3 = """---
       comment: "Test mount"
       addDataset: present
 
-- name: Insert lines with deprecated parameter
-  zos_lineinfile:
-    src: USER.CONFIG.FILE
-    line: "NEW_CONFIG=value"
-    insertafter: "EOF"
-  register: lineinfile_result
+- name: Find data sets with removed parameter
+  zos_find:
+    patterns: "USER.*.DATA"
+    pds_pattern: "MEM*"
+    age: "2d"
+  register: find_result
 """
 
 
@@ -194,7 +186,7 @@ def test_validator_role_with_vars(ansible_zos_module):
             assert "play_name" in issue, "Each issue should have 'play_name' field"
             assert "task_name" in issue, "Each issue should have 'task_name' field"
             assert "module" in issue, "Each issue should have 'module' field"
-            assert "line" in issue, "Each issue should have 'line' field"
+            assert "task_line" in issue, "Each issue should have 'task_line' field"
             assert "migration_actions" in issue, "Each issue should have 'migration_actions' field"
             assert isinstance(issue["migration_actions"], list), "migration_actions should be a list"
             assert len(issue["migration_actions"]) > 0, "migration_actions should not be empty"
@@ -208,14 +200,14 @@ def test_validator_role_with_vars(ansible_zos_module):
         for issue in zos_copy_issues:
             zos_copy_actions.extend(issue["migration_actions"])
 
-        # Verify expected deprecated/renamed parameters are detected
+        # Verify expected removed/renamed parameters are detected
         assert any("force" in action for action in zos_copy_actions), "Should detect 'force' parameter issue"
         assert any("force_lock" in action for action in zos_copy_actions), "Should detect 'force_lock' parameter issue"
         assert any("is_binary" in action for action in zos_copy_actions), "Should detect 'is_binary' parameter issue"
 
-        # Validate zos_blockinfile issues
-        zos_blockinfile_issues = [i for i in report_data if i["module"] == "zos_blockinfile"]
-        assert len(zos_blockinfile_issues) > 0, "Should detect zos_blockinfile issues"
+        # Validate zos_mount issues
+        zos_mount_issues = [i for i in report_data if i["module"] == "zos_mount"]
+        assert len(zos_mount_issues) > 0, "Should detect zos_mount issues"
 
         # Validate zos_archive issues
         zos_archive_issues = [i for i in report_data if i["module"] == "zos_archive"]
@@ -224,7 +216,7 @@ def test_validator_role_with_vars(ansible_zos_module):
         print("\n Report validation successful!")
         print(f"   Total issues found: {len(report_data)}")
         print(f"   zos_copy issues: {len(zos_copy_issues)}")
-        print(f"   zos_blockinfile issues: {len(zos_blockinfile_issues)}")
+        print(f"   zos_mount issues: {len(zos_mount_issues)}")
         print(f"   zos_archive issues: {len(zos_archive_issues)}")
 
     finally:
@@ -274,7 +266,7 @@ def test_validator_role_with_taskfile(ansible_zos_module):
         zos_job_submit_issues = [i for i in report_data if i["module"] == "zos_job_submit"]
         assert len(zos_job_submit_issues) > 0, "Should detect zos_job_submit issues"
 
-        # Check for specific deprecated parameters in zos_job_submit
+        # Check for specific removed parameters in zos_job_submit
         job_submit_actions = []
         for issue in zos_job_submit_issues:
             job_submit_actions.extend(issue["migration_actions"])
@@ -297,15 +289,15 @@ def test_validator_role_with_taskfile(ansible_zos_module):
         zos_mount_issues = [i for i in report_data if i["module"] == "zos_mount"]
         assert len(zos_mount_issues) > 0, "Should detect zos_mount issues"
 
-        # Validate zos_lineinfile issues
-        zos_lineinfile_issues = [i for i in report_data if i["module"] == "zos_lineinfile"]
-        assert len(zos_lineinfile_issues) > 0, "Should detect zos_lineinfile issues"
+        # Validate zos_find issues
+        zos_find_issues = [i for i in report_data if i["module"] == "zos_find"]
+        assert len(zos_find_issues) > 0, "Should detect zos_find issues"
 
-        lineinfile_actions = []
-        for issue in zos_lineinfile_issues:
-            lineinfile_actions.extend(issue["migration_actions"])
+        find_actions = []
+        for issue in zos_find_issues:
+            find_actions.extend(issue["migration_actions"])
 
-        assert any("insertafter" in action for action in lineinfile_actions), "Should detect 'insertafter' parameter"
+        assert any("pds_pattern" in action for action in find_actions), "Should detect 'pds_pattern' parameter"
 
         print("\n Taskfile validation successful!")
         print(f"   File tested: {taskfile}")
@@ -313,7 +305,7 @@ def test_validator_role_with_taskfile(ansible_zos_module):
         print(f"   zos_job_submit issues: {len(zos_job_submit_issues)}")
         print(f"   zos_copy issues: {len(zos_copy_issues)}")
         print(f"   zos_mount issues: {len(zos_mount_issues)}")
-        print(f"   zos_lineinfile issues: {len(zos_lineinfile_issues)}")
+        print(f"   zos_find issues: {len(zos_find_issues)}")
 
     finally:
         shutil.rmtree(playbooks_path)
@@ -367,7 +359,7 @@ def test_validator_role_with_single_file(ansible_zos_module):
         # Validate specific modules are detected
         modules_found = set(issue["module"] for issue in report_data)
         assert "zos_copy" in modules_found, "Should detect zos_copy in single file"
-        assert "zos_blockinfile" in modules_found, "Should detect zos_blockinfile in single file"
+        assert "zos_mount" in modules_found, "Should detect zos_mount in single file"
         assert "zos_archive" in modules_found, "Should detect zos_archive in single file"
 
         print("\n Single file validation successful!")

@@ -66,4 +66,3 @@
   debug:
     msg: "Results saved to file: {{ output_path }}"
   delegate_to: localhost
-

@@ -1,0 +1,8 @@
+breaking_changes:
+  - zos_operator - Return value ``content`` is deprecated in favor of ``stdout_lines`` and ``stderr_lines``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2492)
+
+minor_changes:
+  - zos_operator - New return value ``stdout`` contains the command stdout in raw format.
+    New return value ``stderr`` contains the command stderr in raw format.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2492).

@@ -489,6 +489,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
@@ -1359,6 +1363,8 @@ def run_module():
         supports_check_mode=True
     )
 
+    validate_dependencies(module)
+
     args_def = {
         'state': {
             'arg_type': 'str',
@@ -1473,6 +1479,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    result = dict()
+    if module.check_mode:
+        module.exit_json(**result)
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
@@ -1651,9 +1661,6 @@ def run_module():
         stdout = out
         stderr = err
 
-    result = dict()
-    if module.check_mode:
-        module.exit_json(**result)
     if state == "displayed":
         changed = False
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -327,27 +327,27 @@ def run_module():
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
         result["elapsed"] = rc_message.get("elapsed")
-        
+
         # Process stdout and stderr
         stdout = rc_message.get("stdout")
         stderr = rc_message.get("stderr")
-        
+
         result["stdout"] = stdout if stdout is not None else ""
         result["stderr"] = stderr if stderr is not None else ""
-        
+
         # Build stdout_lines and stderr_lines
         result["stdout_lines"] = []
         if stdout is not None:
             for out in stdout.split("\n"):
                 if out:
                     result["stdout_lines"].append(out)
-        
+
         result["stderr_lines"] = []
         if stderr is not None:
             for err in stderr.split("\n"):
                 if err:
                     result["stderr_lines"].append(err)
-        
+
         # call is returned from run_operator_command, specifying what was run.
         result["cmd"] = rc_message.get("call")
         result["wait_time"] = new_params.get("wait_time")

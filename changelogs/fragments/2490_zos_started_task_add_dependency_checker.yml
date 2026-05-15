@@ -1,3 +1,0 @@
-trivial:
-  - zos_started_task - Added dependency checker to zos_started_task module.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2490)

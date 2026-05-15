@@ -272,6 +272,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import zoau_io, datasets
@@ -633,6 +634,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
 
     src = module.params.get("target")
 

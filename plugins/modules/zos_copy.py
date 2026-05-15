@@ -3466,7 +3466,6 @@ def run_module(module, arg_def):
     # Initialize logging module
     module_verbosity_level = module._verbosity
     logger = SingletonLogger().get_logger(module_verbosity_level)
-    logger.info("Logger initialized successfully")
 
     # Validation for copy from a member
     if src_member:

@@ -936,7 +936,7 @@ def test_group_delete_nonexistent_error(ansible_zos_module):
 
 def test_group_purge_default_options(ansible_zos_module):
     """
-    Test: Purge group with default options (keep_dump=false, optimize_dump=true).
+    Test: Purge group with default options (keep_dump=false, optimize_dump=false).
     """
     hosts = ansible_zos_module
     group_name = generate_random_name("TGP")
@@ -959,9 +959,7 @@ def test_group_purge_default_options(ansible_zos_module):
             name=group_name,
             state="purge",
             profile_type="group",
-            database=racf_database,
-            keep_dump=False,
-            optimize_dump=True
+            database=racf_database
         )
         
         for result in results.contacted.values():
@@ -972,7 +970,7 @@ def test_group_purge_default_options(ansible_zos_module):
             assert result.get("dump_name") is None
             assert result.get("num_entities_modified") == 1
             assert group_name in result.get("entities_modified", [])
-            assert result.get("invocation").get("module_args").get("optimize_dump") is True
+            assert result.get("invocation").get("module_args").get("optimize_dump") is False
         
         # Verify group no longer exists
         assert not verify_group_exists(hosts, group_name)
@@ -1874,7 +1872,7 @@ def test_user_connect_with_group_level_attributes(ansible_zos_module):
             profile_type="user",
             connect={
                 "group_name": group_name,
-                "group_account": True,
+                "group_access": True,
                 "group_operations": True,
                 "universal_access": "control",
                 "authority": "connect",
@@ -3850,14 +3848,14 @@ def test_user_connect_group_attributes(ansible_zos_module):
         # Create group
         hosts.all.zos_user(name=group_name, state="create", profile_type="group")
         
-        # Test group_account enabled
+        # Test group_access enabled
         user1 = generate_random_name("TSTU")
         hosts.all.zos_user(name=user1, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user1,
             state="connect",
             profile_type="user",
-            connect={"group_name": group_name, "group_account": True}
+            connect={"group_name": group_name, "group_access": True}
         )
         
         for result in results.contacted.values():
@@ -3868,14 +3866,14 @@ def test_user_connect_group_attributes(ansible_zos_module):
             cmd = result.get("cmd", "")
             assert "GRPACC" in cmd and not "NOGRPACC" in cmd
         
-        # Test group_account disabled
+        # Test group_access disabled
         user2 = generate_random_name("TSTU")
         hosts.all.zos_user(name=user2, state="create", profile_type="user")
         results = hosts.all.zos_user(
             name=user2,
             state="connect",
             profile_type="user",
-            connect={"group_name": group_name, "group_account": False}
+            connect={"group_name": group_name, "group_access": False}
         )
         
         for result in results.contacted.values():
@@ -4198,7 +4196,7 @@ def test_user_connect_combined_attributes(ansible_zos_module):
             profile_type="user",
             connect={
                 "group_name": group_name,
-                "group_account": True,
+                "group_access": True,
                 "group_operations": True
             }
         )
@@ -4223,7 +4221,7 @@ def test_user_connect_combined_attributes(ansible_zos_module):
                 "group_name": group_name,
                 "authority": "create",
                 "universal_access": "update",
-                "group_account": True,
+                "group_access": True,
                 "group_operations": True,
                 "auditor": False,
                 "auto_protect_datasets": False,
@@ -4629,7 +4627,7 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
     """
     Test: Two sub-scenarios covering the default purge path and parameter validation.
     - Missing mandatory 'database' parameter
-    - Purge with default params. Verifies the standard purge path: database is dumped, dump is discarded after use,
+    - Purge with default params (keep_dump=false, optimize_dump=false). Verifies the standard purge path: database is dumped, dump is discarded after use,
       user is fully removed from RACF.
     """
     hosts = ansible_zos_module
@@ -4667,14 +4665,12 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
                 f"Expected 'database' in error message, got: {msg}"
             )
 
-        # Purge with default options (keep_dump=false, optimize_dump=true)
+        # Purge with default options (keep_dump=false, optimize_dump=false)
         results = hosts.all.zos_user(
             name=user_name,
             state="purge",
             profile_type="user",
-            database=racf_database,
-            keep_dump=False,
-            optimize_dump=True
+            database=racf_database
         )
 
         for result in results.contacted.values():
@@ -4686,7 +4682,7 @@ def test_user_purge_default_options_and_missing_database_validation(ansible_zos_
             assert result.get("num_entities_modified") == 1
             assert user_name in result.get("entities_modified", [])
             assert result.get("cmd", "").startswith("EXEC")
-            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is True
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is False
 
         # Verify user no longer exists in RACF
         assert not verify_user_exists(hosts, user_name)

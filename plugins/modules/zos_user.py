@@ -95,7 +95,7 @@ options:
         for more information about C(LOCKINPUT) and C(NOLOCKINPUT).
     type: bool
     required: false
-    default: true
+    default: false
   execute_clist:
     description:
       - Whether to execute the generated CLIST.
@@ -599,6 +599,8 @@ options:
           - C(none) - Allows no access.
         type: str
         required: false
+        aliases:
+          - uacc
         choices:
           - alter
           - control
@@ -611,12 +613,14 @@ options:
           - If omitted, the user is connected to the current connect group.
         type: str
         required: false
-      group_account:
+      group_access:
         description:
           - Whether data sets defined by the user are accessible to other users in the group.
           - When enabled, the group is given UPDATE access to data sets created by the user with the group as the high-level qualifier.
         type: bool
         required: false
+        aliases:
+          - grpacc
         default: false
       group_operations:
         description:
@@ -805,6 +809,8 @@ options:
           - Can be overridden per group using I(connect.universal_access).
         type: str
         required: false
+        aliases:
+          - uacc
         choices:
           - alter
           - control
@@ -1138,8 +1144,8 @@ options:
       time:
         description:
           - Daily time period when the user is allowed to login.
-          - The value for this option must be in the format C("HHMM:HHMM").
-          - Enclose the time value in quotes (for example, "0900:1700") to avoid YAML parsing issues.
+          - 'The value for this option must be in the format C(HHMM:HHMM).'
+          - 'Enclose the time value in quotes (for example, 0900:1700) to avoid YAML parsing issues.'
           - This field uses a 24-hour format.
           - This field also accepts the value C(anytime) to indicate a
             user is free to login at any time of the day.
@@ -1244,8 +1250,8 @@ notes:
   - For standard states (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority
     to perform the requested state (typically C(SPECIAL) or C(group-SPECIAL) attribute).
   - For purge state using the L(IRRDBU00 utility, https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00),
-    When I(optimize_dump=true) (default), IRRDBU00 runs with C(PARM=NOLOCKINPUT) requiring C(READ) authority to the input RACF database data sets.
-    When I(optimize_dump=false), IRRDBU00 runs with C(PARM=LOCKINPUT) requiring C(UPDATE) authority to lock the database during the unload.
+    When I(optimize_dump=true), IRRDBU00 runs with C(PARM=NOLOCKINPUT) requiring C(READ) authority to the input RACF database data sets.
+    When I(optimize_dump=false) (default), IRRDBU00 runs with C(PARM=LOCKINPUT) requiring C(UPDATE) authority to lock the database during the unload.
   - The L(IRRRID00, https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility) utility is used during purge
     operations to identify residual references and generate a C(CLIST) of removal commands.
     The user must have C(READ) authority to the input data set (the unloaded RACF database produced by IRRDBU00).
@@ -1401,7 +1407,7 @@ EXAMPLES = r"""
       group_name: usergrp
       authority: connect
       universal_access: alter
-      group_account: true
+      group_access: true
       group_operations: true
       auditor: true
       auto_protect_datasets: true
@@ -2496,7 +2502,7 @@ class GroupHandler(RACFHandler):
         else:
             self.module.fail_json(
                 msg=f"State '{self.state}' is not supported for group profiles. "
-                    f"Supported state for groups: create, update, delete, purge"
+                    f"Supported values of state for groups: create, update, delete, purge"
             )
 
         self.cmd = cmd
@@ -2644,7 +2650,7 @@ class UserHandler(RACFHandler):
                          'unit_name', 'user_data')),
                 ('access', ('default_group', 'clauth', 'roaudit', 'category', 'operator_card',
                             'maintenance_access', 'restricted', 'security_label', 'security_level',
-                            'auto_protect_datasets', 'adsp', 'auditor', 'authority', 'special', 'universal_access')),
+                            'auto_protect_datasets', 'adsp', 'auditor', 'authority', 'special', 'universal_access', 'uacc')),
                 ('operator', ('alt_group', 'authority', 'cmd_system', 'search_key', 'migration_id', 'display',
                               'msg_level', 'msg_format', 'msg_storage', 'msg_scope', 'automated_msgs', 'delete_operator_msgs',
                               'hardcopy_msgs', 'internal_msgs', 'routing_msgs', 'undelivered_msgs', 'unknown_msgs',
@@ -2960,9 +2966,10 @@ class UserHandler(RACFHandler):
 
         if connect.get('authority') is not None:
             cmd = f"{cmd}AUTHORITY({connect['authority']}) "
-        if connect.get('universal_access') is not None:
-            cmd = f"{cmd}UACC({connect['universal_access']}) "
-        if connect.get('group_account', False):
+        if connect.get('universal_access') is not None or connect.get('uacc') is not None:
+            uacc_value = connect.get('universal_access') or connect.get('uacc')
+            cmd = f"{cmd}UACC({uacc_value}) "
+        if connect.get('group_access', False) or connect.get('grpacc', False):
             cmd = f"{cmd}GRPACC "
         else:
             cmd = f"{cmd}NOGRPACC "
@@ -3475,8 +3482,9 @@ class UserHandler(RACFHandler):
                 special = "SPECIAL" if access['special'] else "NOSPECIAL"
                 parts.append(f'{special} ')
             # Universal Access
-            if access.get('universal_access') is not None:
-                parts.append(f"UACC({access['universal_access'].upper()}) ")
+            if access.get('universal_access') is not None or access.get('uacc') is not None:
+                uacc_value = access.get('universal_access') or access.get('uacc')
+                parts.append(f"UACC({uacc_value.upper()}) ")
 
         return ''.join(parts)
 
@@ -3601,7 +3609,7 @@ def run_module():
             },
             'optimize_dump': {
                 'type': 'bool',
-                'default': True
+                'default': False
             },
             'execute_clist': {
                 'type': 'bool',
@@ -3906,14 +3914,16 @@ def run_module():
                     'universal_access': {
                         'type': 'str',
                         'required': False,
+                        'aliases': ['uacc'],
                         'choices': ['alter', 'control', 'update', 'read', 'none']
                     },
                     'group_name': {
                         'type': 'str',
                         'required': False
                     },
-                    'group_account': {
+                    'group_access': {
                         'type': 'bool',
+                        'aliases': ['grpacc'],
                         'required': False,
                         'default': False
                     },
@@ -4039,6 +4049,7 @@ def run_module():
                     'universal_access': {
                         'type': 'str',
                         'required': False,
+                        'aliases': ['uacc'],
                         'choices': ['alter', 'control', 'update', 'read', 'none']
                     },
                 }
@@ -4256,8 +4267,8 @@ def run_module():
         'state': {'arg_type': 'str', 'required': True},
         'profile_type': {'arg_type': 'str', 'required': True},
         'database': {'arg_type': 'str', 'required': False},
-        'keep_dump': {'arg_type': 'bool', 'required': True},
-        'optimize_dump': {'arg_type': 'bool', 'required': True},
+        'keep_dump': {'arg_type': 'bool', 'required': False},
+        'optimize_dump': {'arg_type': 'bool', 'required': False},
         'execute_clist': {'arg_type': 'bool', 'required': False},
         'tmp_hlq': {'arg_type': 'str', 'required': False},
         'base_segment': {
@@ -4355,8 +4366,10 @@ def run_module():
             'options': {
                 'authority': {'arg_type': 'str', 'required': False},
                 'universal_access': {'arg_type': 'str', 'required': False},
+                'uacc': {'arg_type': 'str', 'required': False},
                 'group_name': {'arg_type': 'str', 'required': False},
-                'group_account': {'arg_type': 'bool', 'required': False},
+                'group_access': {'arg_type': 'bool', 'required': False},
+                'grpacc': {'arg_type': 'bool', 'required': False},
                 'group_operations': {'arg_type': 'bool', 'required': False},
                 'auditor': {'arg_type': 'bool', 'required': False},
                 'auto_protect_datasets': {'arg_type': 'bool', 'required': False},
@@ -4397,6 +4410,7 @@ def run_module():
                 'authority': {'arg_type': 'str', 'required': False},
                 'special': {'arg_type': 'bool', 'required': False},
                 'universal_access': {'arg_type': 'str', 'required': False},
+                'uacc': {'arg_type': 'str', 'required': False},
             }
         },
         'operator': {

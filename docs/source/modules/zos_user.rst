@@ -105,7 +105,7 @@ optimize_dump
 
   | **required**: False
   | **type**: bool
-  | **default**: True
+  | **default**: False
 
 
 execute_clist
@@ -864,7 +864,7 @@ connect
     | **type**: str
 
 
-  group_account
+  group_access
     Whether data sets defined by the user are accessible to other users in the group.
 
     When enabled, the group is given UPDATE access to data sets created by the user with the group as the high\-level qualifier.
@@ -1563,9 +1563,9 @@ restrictions
   time
     Daily time period when the user is allowed to login.
 
-    The value for this option must be in the format :literal:`"HHMM:HHMM"`.
+    The value for this option must be in the format :literal:`HHMM:HHMM`.
 
-    Enclose the time value in quotes (for example, "0900:1700") to avoid YAML parsing issues.
+    Enclose the time value in quotes (for example, 0900:1700) to avoid YAML parsing issues.
 
     This field uses a 24\-hour format.
 
@@ -1856,7 +1856,7 @@ Examples
          group_name: usergrp
          authority: connect
          universal_access: alter
-         group_account: true
+         group_access: true
          group_operations: true
          auditor: true
          auto_protect_datasets: true
@@ -1939,7 +1939,7 @@ Notes
 
    For standard states (create, update, delete, connect, remove), the user executing the module must have sufficient RACF authority to perform the requested state (typically :literal:`SPECIAL` or :literal:`group\-SPECIAL` attribute).
 
-   For purge state using the \ `IRRDBU00 utility <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , When :emphasis:`optimize\_dump=true` (default), IRRDBU00 runs with :literal:`PARM=NOLOCKINPUT` requiring :literal:`READ` authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false`\ , IRRDBU00 runs with :literal:`PARM=LOCKINPUT` requiring :literal:`UPDATE` authority to lock the database during the unload.
+   For purge state using the \ `IRRDBU00 utility <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-unload-utility-irrdbu00>`__\ , When :emphasis:`optimize\_dump=true`\ , IRRDBU00 runs with :literal:`PARM=NOLOCKINPUT` requiring :literal:`READ` authority to the input RACF database data sets. When :emphasis:`optimize\_dump=false` (default), IRRDBU00 runs with :literal:`PARM=LOCKINPUT` requiring :literal:`UPDATE` authority to lock the database during the unload.
 
    The \ `IRRRID00 <https://www.ibm.com/docs/en/zos/latest?topic=database-using-racf-remove-id-irrrid00-utility>`__ utility is used during purge operations to identify residual references and generate a :literal:`CLIST` of removal commands. The user must have :literal:`READ` authority to the input data set (the unloaded RACF database produced by IRRDBU00).
 

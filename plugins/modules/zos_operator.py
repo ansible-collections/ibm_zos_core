@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -156,33 +156,52 @@ time_unit:
     returned: always
     type: str
     sample: s
-content:
+stdout:
     description:
-       The resulting text from the command submitted.
-    returned: on success
+      The standard output from the operator command execution.
+    returned: always
+    type: str
+    sample: |
+        EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED
+        EC000000   2022244  16:00:49.00            -D U,ALL
+        EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645
+                                                   UNIT TYPE STATUS        VOLSER     VOLSTATE      SS
+                                                   0000 3390 F-NRD                        /RSDNT     0
+                                                   0001 3211 OFFLINE                                 0
+stdout_lines:
+    description:
+      The standard output split into individual lines.
+    returned: always
     type: list
+    elements: str
     sample:
-        [ "EC33017A   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
-          "EC33017A   2022244  16:00:49.00            -D U,ALL ",
-          "EC33017A   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
-          "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS",
-          "                                           0000 3390 F-NRD                        /RSDNT     0",
-          "                                           0001 3211 OFFLINE                                 0",
-          "                                           0002 3211 OFFLINE                                 0",
-          "                                           0003 3211 OFFLINE                                 0",
-          "                                           0004 3211 OFFLINE                                 0",
-          "                                           0005 3211 OFFLINE                                 0",
-          "                                           0006 3211 OFFLINE                                 0",
-          "                                           0007 3211 OFFLINE                                 0",
-          "                                           0008 3211 OFFLINE                                 0",
-          "                                           0009 3277 OFFLINE                                 0",
-          "                                           000C 2540 A                                       0",
-          "                                           000D 2540 A                                       0",
-          "                                           000E 1403 A                                       0",
-          "                                           000F 1403 A                                       0",
-          "                                           0010 3211 A                                       0",
-          "                                           0011 3211 A                                       0"
-        ]
+        - "EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED"
+        - "EC000000   2022244  16:00:49.00            -D U,ALL "
+        - "EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645"
+        - "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS"
+        - "                                           0000 3390 F-NRD                        /RSDNT     0"
+        - "                                           0001 3211 OFFLINE                                 0"
+        - "                                           0002 3211 OFFLINE                                 0"
+        - "                                           0008 3211 OFFLINE                                 0"
+        - "                                           0009 3277 OFFLINE                                 0"
+        - "                                           000C 2540 A                                       0"
+        - "                                           000E 1403 A                                       0"
+        - "                                           000F 1403 A                                       0"
+        - "                                           0010 3211 A                                       0"
+        - "                                           0011 3211 A                                       0"
+stderr:
+    description:
+      The standard error from the operator command execution.
+    returned: always
+    type: str
+    sample: ""
+stderr_lines:
+    description:
+      The standard error split into individual lines.
+    returned: always
+    type: list
+    elements: str
+    sample: []
 changed:
     description:
       Indicates if any changes were made during module operation.
@@ -308,31 +327,28 @@ def run_module():
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
         result["elapsed"] = rc_message.get("elapsed")
-        # This section will build 2 lists of strings: content=>user return, and
-        # short_str, which is the first 5 lines of stdout and stderr.
-        # 5: depending on the shell, there can be 1-2 leading blank lines +
-        # the first few lines of ouput from the operator call will look like this:
-        # .....ISF031I CONSOLE OMVSADM ACTIVATED
-        # .....-actual command run
-        # .....first result of command
-        # text or other output may then follow
-        # short_str is local, and just to check for problem response values.
-        # ssctr is a limit variable so we don't pull more than 5 lines of each.
-        result["content"] = []
+
+        # Process stdout and stderr
         stdout = rc_message.get("stdout")
+        stderr = rc_message.get("stderr")
+
+        result["stdout"] = stdout if stdout is not None else ""
+        result["stderr"] = stderr if stderr is not None else ""
+
+        # Build stdout_lines and stderr_lines
+        result["stdout_lines"] = []
         if stdout is not None:
             for out in stdout.split("\n"):
                 if out:
-                    result["content"].append(out)
-        stderr = rc_message.get("stderr")
-        error = []
+                    result["stdout_lines"].append(out)
+
+        result["stderr_lines"] = []
         if stderr is not None:
             for err in stderr.split("\n"):
                 if err:
-                    error.append(err)
-                    result["content"].append(err)
+                    result["stderr_lines"].append(err)
+
         # call is returned from run_operator_command, specifying what was run.
-        # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")
         result["wait_time"] = new_params.get("wait_time")
         result["time_unit"] = new_params.get("time_unit")
@@ -340,9 +356,9 @@ def run_module():
 
         # rc=0, something succeeded (the calling script ran),
         # but it could still be a bad/invalid command.
-        # As long as there are more than 2 lines, it's worth looking through.
+        # As long as there are more than 2 lines in stdout, it's worth looking through.
         if int(result["rc"]) == 0:
-            if len(result["content"]) > 2:
+            if len(result["stdout_lines"]) > 2:
                 result["changed"] = True
             else:
                 module.fail_json(msg="Expected response to be more than 2 lines.", **result)
@@ -352,8 +368,10 @@ def run_module():
                              elapsed_time=result["elapsed"],
                              wait_time=result["wait_time"],
                              time_unit=result["time_unit"],
-                             stderr=str(error) if error is not None else result["content"],
-                             stderr_lines=str(error).splitlines() if error is not None else result["content"],
+                             stderr=result["stderr"],
+                             stderr_lines=result["stderr_lines"],
+                             stdout=result["stdout"],
+                             stdout_lines=result["stdout_lines"],
                              changed=result["changed"],)
     except Error as e:
         module.fail_json(msg=to_text(e), **result)

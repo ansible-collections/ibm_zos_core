@@ -107,7 +107,8 @@
             "wait_time_s": "wait_time"
         },
         "renamed_response_params": {
-            "wait_time_s": "wait_time"
+            "wait_time_s": "wait_time",
+            "content": "stdout_lines"
         }
     },
     "zos_operator_action_query": {

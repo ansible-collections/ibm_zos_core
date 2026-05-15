@@ -15,7 +15,9 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 name: zos_stat_by_type
-author: Alex Moreno (@rexemin)
+author:
+  - Alex Moreno (@rexemin)
+  - Sarah Miller (@hmillersarah)
 version_added: "2.0.0"
 short_description: Filter returned fields from zos_stat
 description:

@@ -14,7 +14,7 @@ from ansible.errors import AnsibleFilterError
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-name: zos_stat_attrs
+name: zos_stat_by_type
 author: Alex Moreno (@rexemin)
 version_added: "2.0.0"
 short_description: Filter returned fields from zos_stat
@@ -45,19 +45,19 @@ options:
 EXAMPLES = r"""
 - name: Get only data set specific attributes.
   set_fact:
-    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('data_set') }}"
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
 
 - name: Get only file specific attributes.
   set_fact:
-    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('file') }}"
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('file') }}"
 
 - name: Get only aggregate specific attributes.
   set_fact:
-    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('aggregate') }}"
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('aggregate') }}"
 
 - name: Get only GDG specific attributes.
   set_fact:
-    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_attrs('gdg') }}"
+    clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('gdg') }}"
 """
 
 RETURN = r"""
@@ -258,13 +258,13 @@ def filter_stat(attributes, resource):
 
 class FilterModule(object):
     """ Jinja2 filter module for processing zos_stat output.
-        Provides the zos_stat_attrs filter to extract resource-type-specific
+        Provides the zos_stat_by_type filter to extract resource-type-specific
         attributes from zos_stat module output for data set, file, aggregate,
         and GDG resource types.
     """
 
     def filters(self):
         filters = {
-            "zos_stat_attrs": filter_stat,
+            "zos_stat_by_type": filter_stat,
         }
         return filters

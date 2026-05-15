@@ -160,12 +160,12 @@ notes:
     RACF READ authority on it, the last referenced date will be updated by
     the query operation.
   - If you need to filter the output from the module by resource type, you
-    can use the zos_stat_attrs filter inside of a playbook.
+    can use the zos_stat_by_type filter inside of a playbook.
 
 seealso:
   - module: ibm.ibm_zos_core.zos_find
   - module: ibm.ibm_zos_core.zos_gather_facts
-  - module: ibm.ibm_zos_core.zos_stat_attrs
+  - module: ibm.ibm_zos_core.zos_stat_by_type
 """
 
 EXAMPLES = r"""

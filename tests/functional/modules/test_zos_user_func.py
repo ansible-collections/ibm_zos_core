@@ -3466,7 +3466,7 @@ def test_user_update_operator_delete_all_fields(ansible_zos_module):
                 "msg_format": "delete",
                 "msg_storage": 0,
                 "msg_scope": {
-                    "remove": True
+                    "remove_all": True
                 },
                 "automated_msgs": "delete",
                 "delete_operator_msgs": "delete",

@@ -974,11 +974,11 @@ options:
               - List of new systems to add to the message scope list.
               - When I(state=create), this sets the initial message scope C((MSCOPE)).
               - When I(state=update), this adds systems to the existing list C((ADDMSCOPE)).
-              - This option is mutually exclusive with I(msg_scope.remove) and I(msg_scope.delete).
+              - This option is mutually exclusive with I(msg_scope.remove_all) and I(msg_scope.delete).
             type: list
             elements: str
             required: false
-          remove:
+          remove_all:
             description:
               - Set to C(true) to remove all message scope systems from the profile C((NOMSCOPE)).
               - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.delete).
@@ -988,7 +988,7 @@ options:
             description:
               - List of specific systems to delete from the message scope list C((DELMSCOPE)).
               - This does not clear the entire list unless all listed systems are specified.
-              - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.remove).
+              - This option is mutually exclusive with I(msg_scope.add) and I(msg_scope.remove_all).
             type: list
             elements: str
             required: false
@@ -2696,8 +2696,8 @@ class UserHandler(RACFHandler):
         (('dfp', 'data_class'), 'length', ((0, 8),)),
         (('dfp', 'management_class'), 'length', ((0, 8),)),
         (('dfp', 'storage_class'), 'length', ((0, 8),)),
-        (('language', 'primary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
-        (('language', 'secondary'), 'format', ('[a-zA-Z]{3}', '[a-zA-Z]{0, 24}')),
+        (('language', 'primary'), 'format', ('^$|[a-zA-Z]{3}', '^$|[a-zA-Z]{0,24}')),
+        (('language', 'secondary'), 'format', ('^$|[a-zA-Z]{3}', '^$|[a-zA-Z]{0,24}')),
         (('omvs', 'custom_uid'), 'range', (0, 2_147_483_647, 0)),
         (('omvs', 'home'), 'length', ((0, 1023),)),
         (('omvs', 'program'), 'length', ((0, 1023),)),
@@ -2997,14 +2997,14 @@ class UserHandler(RACFHandler):
         if self.params.get('restrictions') is not None:
             restrictions = self.params['restrictions']
             if restrictions.get('resume') is not None:
-                cmd = f"{cmd}RESUME({restrictions['resume']})"
+                cmd = f"{cmd} RESUME({restrictions['resume']})"
             elif restrictions.get('delete_resume', False):
-                cmd = f"{cmd}NORESUME "
+                cmd = f"{cmd} NORESUME "
 
             if restrictions.get('revoke') is not None:
-                cmd = f"{cmd}REVOKE({restrictions['revoke']})"
+                cmd = f"{cmd} REVOKE({restrictions['revoke']})"
             elif restrictions.get('delete_revoke', False):
-                cmd = f"{cmd}NOREVOKE"
+                cmd = f"{cmd} NOREVOKE"
 
         return self._execute_racf_command(cmd)
 
@@ -3320,7 +3320,7 @@ class UserHandler(RACFHandler):
                     if self.state == 'create':
                         parts.append(' MSCOPE( ')
                     elif self.state == 'update':
-                        parts.append('ADDMSCOPE( ')
+                        parts.append(' ADDMSCOPE( ')
                     for scope in scopes:
                         parts.append(f'{scope} ')
                     parts.append(') ')
@@ -3330,7 +3330,7 @@ class UserHandler(RACFHandler):
                     for scope in scopes:
                         parts.append(f'{scope} ')
                     parts.append(') ')
-                elif operator['msg_scope'].get('remove'):
+                elif operator['msg_scope'].get('remove_all') is True:
                     parts.append(' NOMSCOPE')
             # Automated Message
             if operator.get('automated_msgs') is not None:
@@ -4125,9 +4125,9 @@ def run_module():
                         'type': 'dict',
                         'required': False,
                         'mutually_exclusive': [
-                            ('add', 'remove'),
+                            ('add', 'remove_all'),
                             ('add', 'delete'),
-                            ('remove', 'delete'),
+                            ('remove_all', 'delete'),
                         ],
                         'options': {
                             'add': {
@@ -4135,7 +4135,7 @@ def run_module():
                                 'elements': 'str',
                                 'required': False
                             },
-                            'remove': {
+                            'remove_all': {
                                 'type': 'bool',
                                 'required': False
                             },
@@ -4431,7 +4431,7 @@ def run_module():
                     'required': False,
                     'options': {
                         'add': {'arg_type': 'list', 'elements': 'str', 'required': False},
-                        'remove': {'arg_type': 'bool', 'required': False},
+                        'remove_all': {'arg_type': 'bool', 'required': False},
                         'delete': {'arg_type': 'list', 'elements': 'str', 'required': False}
                     }
                 },

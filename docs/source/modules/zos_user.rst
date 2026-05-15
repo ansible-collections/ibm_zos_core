@@ -1356,14 +1356,14 @@ operator
 
       When :emphasis:`state=update`\ , this adds systems to the existing list :literal:`(ADDMSCOPE`\ ).
 
-      This option is mutually exclusive with :emphasis:`msg\_scope.remove` and :emphasis:`msg\_scope.delete`.
+      This option is mutually exclusive with :emphasis:`msg\_scope.remove\_all` and :emphasis:`msg\_scope.delete`.
 
       | **required**: False
       | **type**: list
       | **elements**: str
 
 
-    remove
+    remove_all
       Set to :literal:`true` to remove all message scope systems from the profile :literal:`(NOMSCOPE`\ ).
 
       This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.delete`.
@@ -1377,7 +1377,7 @@ operator
 
       This does not clear the entire list unless all listed systems are specified.
 
-      This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.remove`.
+      This option is mutually exclusive with :emphasis:`msg\_scope.add` and :emphasis:`msg\_scope.remove\_all`.
 
       | **required**: False
       | **type**: list

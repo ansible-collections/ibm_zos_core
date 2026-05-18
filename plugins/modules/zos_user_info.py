@@ -802,13 +802,15 @@ def run_module():
 
     # Execute the TSO command
     rc, stdout, stderr = module.run_command(f'tsocmd "{cmd}"')
+    
+    # Set command output in result dict immediately after execution
+    result['rc'] = rc
+    result['stdout'] = stdout
+    # Only include stderr if it contains something other than the command echo
+    result['stderr'] = '' if stderr.strip() == cmd else stderr
 
     # Check if the profile was not found
     if rc != 0 or 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {profile_type.upper()} NAME' in stdout.upper():
-        result['rc'] = rc
-        result['stdout'] = stdout
-        # Only include stderr if it contains something other than the command echo
-        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Profile '{name}' not found in RACF database"
         module.fail_json(**result)
 
@@ -851,25 +853,14 @@ def run_module():
                         key, parser_func = segment_parser_map[seg]
                         final_user_profile[key] = parser_func(stdout)
 
-        result['rc'] = rc
         result['segments'] = final_user_profile
-        result['stdout'] = stdout
-        result['stderr'] = stderr
 
         module.exit_json(**result)
 
     except (KeyError, IndexError, AttributeError) as parse_err:
-        result['rc'] = rc
-        result['stdout'] = stdout
-        # Only include stderr if it contains something other than the command echo
-        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Failed to parse RACF output: {str(parse_err)}"
         module.fail_json(**result)
     except Exception as err:
-        result['rc'] = rc
-        result['stdout'] = stdout
-        # Only include stderr if it contains something other than the command echo
-        result['stderr'] = '' if stderr.strip() == cmd else stderr
         result['msg'] = f"Unexpected error during parsing: {str(err)}"
         module.fail_json(**result)
 

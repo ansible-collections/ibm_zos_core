@@ -85,8 +85,10 @@ segments:
     base_segment:
       description:
         - Base profile information that is always returned regardless of the I(segments) parameter.
-        - When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED), C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
-        - When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA), C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
+        - When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED),
+          C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
+        - When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA),
+          C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
         - The exact keys present are dynamic and depend on the profile's RACF configuration.
         - Some fields like C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are returned as lists when they contain multiple values.
       returned: always
@@ -142,7 +144,8 @@ segments:
     TSO:
       description:
         - TSO segment information for user profiles.
-        - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS), C(USERDATA), C(COMMAND), etc.
+        - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS),
+          C(USERDATA), C(COMMAND), etc.
         - The exact keys present depend on the user's TSO configuration in RACF.
         - Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
       returned: when profile_type is user and tso segment is requested
@@ -802,7 +805,7 @@ def run_module():
 
     # Execute the TSO command
     rc, stdout, stderr = module.run_command(f'tsocmd "{cmd}"')
-    
+
     # Set command output in result dict immediately after execution
     result['rc'] = rc
     result['stdout'] = stdout

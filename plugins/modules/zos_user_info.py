@@ -18,7 +18,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_user_info
-version_added: '2.0.0'
+version_added: '2.1.0'
 author:
   - "Yogesh Rana (@yrana17)"
 short_description: Retrieve user and group profile information from RACF
@@ -32,12 +32,14 @@ options:
   name:
     description:
       - Name of the RACF profile to retrieve information about.
-      - Can be a user ID or group name depending on the I(scope) parameter.
+      - Can be a user ID or group name depending on the I(profile_type) parameter.
     type: str
     required: true
-  scope:
+  profile_type:
     description:
-      - Whether to retrieve information about a user or a group profile.
+      - Specifies the type of RACF profile to retrieve information about.
+      - When I(profile_type=user), retrieves user profile information using the LISTUSER command.
+      - When I(profile_type=group), retrieves group profile information using the LISTGRP command.
     type: str
     required: true
     choices:
@@ -45,12 +47,12 @@ options:
       - group
   segments:
     description:
-      - List of segments to retrieve from the profile.
-      - If not specified, only base profile information is retrieved.
-      - For users, valid segments are C(dfp), C(tso), C(omvs), C(operparm), C(lang), C(csdata).
-      - For groups, valid segments are C(dfp), C(omvs), C(csdata).
-      - C(General) information is always retrieved.
-      - Invalid segments for the specified scope will be ignored.
+      - List of RACF segments to retrieve from the profile.
+      - If not specified, only the base profile information (C(base_segment)) is retrieved.
+      - When I(profile_type=user), valid segments are C(dfp), C(tso), C(omvs), C(operparm), C(lang), and C(csdata).
+      - When I(profile_type=group), valid segments are C(dfp), C(omvs), and C(csdata).
+      - The C(base_segment) section is always retrieved regardless of this parameter.
+      - Invalid segments for the specified I(profile_type) will be silently ignored.
     type: list
     elements: str
     required: false
@@ -68,11 +70,11 @@ cmd:
   description: The TSO command that was executed.
   returned: always
   type: str
-  sample: LU TESTU01 TSO OMVS
-profile:
+  sample: LISTUSER TESTU01 TSO OMVS
+segments:
   description:
     - Dictionary containing the RACF profile information organized by segments.
-    - Always includes base profile information (C(general) and C(group)/C(users) sections).
+    - Always includes base profile information (C(base_segment) and C(group)/C(users) sections).
     - Additional segments are only included if explicitly requested via the I(segments) parameter.
     - Each segment is a dictionary with key-value pairs extracted from RACF output.
     - The keys and values within each segment are dynamic and depend on what RACF returns.
@@ -80,13 +82,13 @@ profile:
   returned: success
   type: dict
   contains:
-    general:
+    base_segment:
       description:
-        - Base profile information that is always returned.
-        - For user profiles, contains attributes like USER-ID, NAME, DEFAULT-GROUP, OWNER, CREATED, PASSDATE, PASS-INTERVAL, ATTRIBUTES, etc.
-        - For group profiles, contains attributes like OWNER, CREATED, SUPERIOR GROUP, INSTALLATION DATA, SUBGROUP(S), TERMUACC, UNIVERSAL, etc.
-        - The exact keys present are dynamic and depend on the profile configuration.
-        - Some fields like ATTRIBUTES and CLASS AUTHORIZATIONS are returned as lists when they contain multiple values.
+        - Base profile information that is always returned regardless of the I(segments) parameter.
+        - When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED), C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
+        - When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA), C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
+        - The exact keys present are dynamic and depend on the profile's RACF configuration.
+        - Some fields like C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are returned as lists when they contain multiple values.
       returned: always
       type: dict
       sample:
@@ -102,9 +104,9 @@ profile:
       description:
         - Group connection information for user profiles.
         - Dictionary where each key is a group name and the value contains connection attributes.
-        - Contains attributes like AUTH, CONNECT-OWNER, CONNECT-DATE, LAST-CONNECT, REVOKE DATE, RESUME DATE, CONNECT ATTRIBUTES, etc.
-        - Only returned when scope is C(user).
-      returned: when scope is user
+        - Contains attributes such as C(AUTH), C(CONNECT-OWNER), C(CONNECT-DATE), C(LAST-CONNECT), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
+        - Only returned when I(profile_type=user).
+      returned: when profile_type is user
       type: dict
       sample:
         TSTGRP01:
@@ -122,9 +124,9 @@ profile:
       description:
         - Connected user information for group profiles.
         - Dictionary where each key is a username and the value contains connection attributes.
-        - Contains attributes like ACCESS, ACCESS COUNT, UNIVERSAL ACCESS, REVOKE DATE, RESUME DATE, CONNECT ATTRIBUTES, etc.
-        - Only returned when scope is C(group).
-      returned: when scope is group
+        - Contains attributes such as C(ACCESS), C(ACCESS COUNT), C(UNIVERSAL ACCESS), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
+        - Only returned when I(profile_type=group).
+      returned: when profile_type is group
       type: dict
       sample:
         TESTU01:
@@ -139,11 +141,11 @@ profile:
           UNIVERSAL ACCESS: "NONE"
     TSO:
       description:
-        - TSO segment information (user profiles only).
-        - Contains dynamic key-value pairs such as ACCTNUM, PROC, SIZE, MAXSIZE, JOBCLASS, MSGCLASS, etc.
-        - The exact keys present depend on the user's TSO configuration.
-        - Only returned when C(tso) is included in the I(segments) parameter.
-      returned: when scope is user and tso segment is requested
+        - TSO segment information for user profiles.
+        - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS), C(USERDATA), C(COMMAND), etc.
+        - The exact keys present depend on the user's TSO configuration in RACF.
+        - Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
+      returned: when profile_type is user and tso segment is requested
       type: dict
       sample:
         ACCTNUM: "33000"
@@ -158,9 +160,9 @@ profile:
         COMMAND: "ISPF PANEL(ISR@390)"
     OMVS:
       description:
-        - OMVS segment information (user and group profiles).
-        - Contains dynamic key-value pairs such as UID, HOME, PROGRAM, CPUTIMEMAX, ASSIZEMAX, etc.
-        - The exact keys present depend on the OMVS configuration.
+        - OMVS segment information for user and group profiles.
+        - Contains dynamic key-value pairs such as C(UID), C(HOME), C(PROGRAM), C(CPUTIMEMAX), C(ASSIZEMAX), C(FILEPROCMAX), C(PROCUSERMAX), etc.
+        - The exact keys present depend on the OMVS configuration in RACF.
         - Only returned when C(omvs) is included in the I(segments) parameter.
       returned: when omvs segment is requested
       type: dict
@@ -172,9 +174,9 @@ profile:
         ASSIZEMAX: "NONE"
     DFP:
       description:
-        - DFP (Data Facility Product) segment information.
-        - Contains dynamic key-value pairs related to data management such as MGMTCLAS, STORCLAS, DATACLAS, etc.
-        - The exact keys present depend on the DFP configuration.
+        - DFP (Data Facility Product) segment information for user and group profiles.
+        - Contains dynamic key-value pairs related to data management such as C(MGMTCLAS), C(STORCLAS), C(DATACLAS), etc.
+        - The exact keys present depend on the DFP configuration in RACF.
         - Only returned when C(dfp) is included in the I(segments) parameter.
       returned: when dfp segment is requested
       type: dict
@@ -184,12 +186,12 @@ profile:
         DATACLAS: "DCEXTL"
     OPERPARM:
       description:
-        - OPERPARM segment information (user profiles only).
-        - Contains operator parameters such as STORAGE, AUTH, ALTGRP, AUTO, HC, INTIDS, LEVEL, etc.
-        - Some fields like MONITOR, MSCOPE, ROUTCODE are returned as lists when they contain multiple values.
-        - The exact keys present depend on the operator configuration.
-        - Only returned when C(operparm) is included in the I(segments) parameter.
-      returned: when scope is user and operparm segment is requested
+        - OPERPARM segment information for user profiles.
+        - Contains operator parameters such as C(STORAGE), C(AUTH), C(ALTGRP), C(AUTO), C(HC), C(INTIDS), C(LEVEL), C(LOGCMDRESP), C(MIGID), etc.
+        - Some fields like C(MONITOR), C(MSCOPE), and C(ROUTCODE) are returned as lists when they contain multiple values.
+        - The exact keys present depend on the operator configuration in RACF.
+        - Only returned when I(profile_type=user) and C(operparm) is included in the I(segments) parameter.
+      returned: when profile_type is user and operparm segment is requested
       type: dict
       sample:
         STORAGE: "YES"
@@ -211,20 +213,20 @@ profile:
           - "11"
     LANGUAGE:
       description:
-        - LANGUAGE segment information (user profiles only).
-        - Contains language-related settings such as PRIMARY and SECONDARY language codes.
-        - The exact keys present depend on the language configuration.
-        - Only returned when C(lang) is included in the I(segments) parameter.
-      returned: when scope is user and lang segment is requested
+        - LANGUAGE segment information for user profiles.
+        - Contains language-related settings such as C(PRIMARY) and C(SECONDARY) language codes.
+        - The exact keys present depend on the language configuration in RACF.
+        - Only returned when I(profile_type=user) and C(lang) is included in the I(segments) parameter.
+      returned: when profile_type is user and lang segment is requested
       type: dict
       sample:
         PRIMARY: "ENU"
         SECONDARY: "JPN"
     CSDATA:
       description:
-        - CSDATA (Custom Data) segment information.
-        - Contains custom application-specific data.
-        - The exact keys present depend on what custom data has been defined.
+        - CSDATA (Custom Data) segment information for user and group profiles.
+        - Contains custom application-specific data defined in RACF.
+        - The exact keys present depend on what custom data has been configured for the profile.
         - Only returned when C(csdata) is included in the I(segments) parameter.
       returned: when csdata segment is requested
       type: dict
@@ -252,15 +254,13 @@ msg:
 stdout:
   description:
     - Standard output from the TSO command.
-    - Only present when the module fails.
-  returned: failure
+  returned: always
   type: str
   sample: "NAME NOT FOUND IN RACF DATA SET"
 stderr:
   description:
     - Standard error from the TSO command.
-    - Only present when the module fails.
-  returned: failure
+  returned: always
   type: str
   sample: ""
 """
@@ -269,12 +269,12 @@ EXAMPLES = r"""
 - name: Get basic user profile info
   ibm.ibm_zos_core.zos_user_info:
     name: TESTU01
-    scope: user
+    profile_type: user
 
 - name: Get user profile info with segments
   ibm.ibm_zos_core.zos_user_info:
     name: TESTU01
-    scope: user
+    profile_type: user
     segments:
       - dfp
       - tso
@@ -286,12 +286,12 @@ EXAMPLES = r"""
 - name: Get basic group profile info
   ibm.ibm_zos_core.zos_user_info:
     name: TSTGRP01
-    scope: group
+    profile_type: group
 
 - name: Get group profile info with DFP and OMVS segments
   ibm.ibm_zos_core.zos_user_info:
     name: TSTGRP01
-    scope: group
+    profile_type: group
     segments:
       - dfp
       - omvs
@@ -326,7 +326,7 @@ RACF_HEADER_PATTERN = r'^(NO )?([A-Z]+) INFORMATION'
 RACF_KV_PATTERN = r'^\s*([A-Z0-9\s]+?)\s*[=:]\s*(.*)'
 
 # Prefixes to skip when parsing RACF output
-SKIP_PREFIXES = ('---', 'LU ', 'LG ')
+SKIP_PREFIXES = ('---', 'LISTUSER ', 'LISTGRP ')
 
 
 def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[str, Any]:
@@ -417,7 +417,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
     """
     # Initialize the clean, split structure immediately
     base_data = {
-        "general": {},
+        "base_segment": {},
         "group": {}
     }
 
@@ -436,7 +436,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
         original_line = line
         line = line.strip()
 
-        if not line or line.startswith('---') or line.startswith('LU '):
+        if not line or line.startswith('---') or line.startswith('LISTUSER '):
             continue
 
         # ==========================================
@@ -461,7 +461,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
             continue
 
         # Target routing for non-standard lines
-        target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+        target_dict = base_data["group"][current_group] if current_group else base_data["base_segment"]
 
         if line.startswith('LOGON ALLOWED'):
             parsing_logon = True
@@ -495,8 +495,8 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
                     last_key = key
                     continue
 
-                # --- NEW: Route to specific group, OR the general dictionary ---
-                target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+                # --- NEW: Route to specific group, OR the base_segment dictionary ---
+                target_dict = base_data["group"][current_group] if current_group else base_data["base_segment"]
 
                 if key in KEYS_TO_SPLIT:
                     new_items = value.split()
@@ -516,7 +516,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
                 last_key = key
 
         elif last_key:
-            target_dict = base_data["group"][current_group] if current_group else base_data["general"]
+            target_dict = base_data["group"][current_group] if current_group else base_data["base_segment"]
             if isinstance(target_dict[last_key], list):
                 target_dict[last_key][-1] += original_line.strip()
             else:
@@ -546,7 +546,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         }
     """
     base_data = {
-        "general": {},
+        "base_segment": {},
         "users": {}  # Houses all the nested users
     }
 
@@ -565,7 +565,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         line = line.strip()
 
         # Skip headers and empty lines
-        if not line or line.startswith('---') or line.startswith('LG ') or line.startswith('INFORMATION FOR GROUP'):
+        if not line or line.startswith('---') or line.startswith('LISTGRP ') or line.startswith('INFORMATION FOR GROUP'):
             continue
 
         # ==========================================
@@ -578,22 +578,22 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         # 2. BOOLEANS & "NO " FLAGS
         # ==========================================
         if line in ['TERMUACC', 'NOTERMUACC', 'UNIVERSAL']:
-            base_data['general'][line] = True
+            base_data['base_segment'][line] = True
             last_key = None
             continue
 
         if line == 'NO INSTALLATION DATA':
-            base_data['general']['INSTALLATION DATA'] = "NONE"
+            base_data['base_segment']['INSTALLATION DATA'] = "NONE"
             last_key = None
             continue
 
         if line == 'NO MODEL DATA SET':
-            base_data['general']['MODEL DATA SET'] = "NONE"
+            base_data['base_segment']['MODEL DATA SET'] = "NONE"
             last_key = None
             continue
 
         if line == 'NO SUBGROUPS':
-            base_data['general']['SUBGROUP(S)'] = []
+            base_data['base_segment']['SUBGROUP(S)'] = []
             last_key = None
             continue
 
@@ -639,9 +639,9 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
 
                 # Auto-split SUBGROUP(S) into an array right away
                 if key == "SUBGROUP(S)":
-                    base_data['general'][key] = value.split()
+                    base_data['base_segment'][key] = value.split()
                 else:
-                    base_data['general'][key] = value
+                    base_data['base_segment'][key] = value
 
                 last_key = key
 
@@ -649,13 +649,13 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
             # Special Continuation for SUBGROUP(S)
             # Since subgroups are just space-separated words wrapping lines, we use .extend()
             if last_key == "SUBGROUP(S)":
-                base_data['general'][last_key].extend(line.split())
+                base_data['base_segment'][last_key].extend(line.split())
             else:
                 # Standard continuation gluing
-                if isinstance(base_data['general'][last_key], list):
-                    base_data['general'][last_key][-1] += original_line.strip()
+                if isinstance(base_data['base_segment'][last_key], list):
+                    base_data['base_segment'][last_key][-1] += original_line.strip()
                 else:
-                    base_data['general'][last_key] += original_line.strip()
+                    base_data['base_segment'][last_key] += original_line.strip()
 
     return base_data
 
@@ -698,7 +698,7 @@ def run_module():
             'type': 'str',
             'required': True
         },
-        'scope': {
+        'profile_type': {
             'type': 'str',
             'required': True,
             'choices': ['user', 'group']
@@ -728,7 +728,7 @@ def run_module():
                 'arg_type': 'str',
                 'required': True
             },
-            'scope': {
+            'profile_type': {
                 'arg_type': 'str',
                 'required': True
             },
@@ -750,19 +750,19 @@ def run_module():
             )
 
     name = module.params['name']
-    scope = module.params['scope'].lower()
+    profile_type = module.params['profile_type'].lower()
     segments = [s.lower() for s in (module.params.get('segments') or [])]
 
-    # Build the appropriate TSO command based on scope and segments
-    if scope == 'user':
+    # Build the appropriate TSO command based on profile_type and segments
+    if profile_type == 'user':
         # Valid segments for user: dfp, tso, omvs, operparm, lang, csdata
         valid_user_segments = ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata']
 
         # Filter segments to only valid ones for user
         filtered_segments = [s for s in segments if s in valid_user_segments]
 
-        # Build command - start with LU and user name
-        cmd = f'LU {name}'
+        # Build command - start with LISTUSER and user name
+        cmd = f'LISTUSER {name}'
 
         # Add segments if specified
         if filtered_segments:
@@ -784,8 +784,8 @@ def run_module():
         # Filter segments to only valid ones for group
         filtered_segments = [s for s in segments if s in valid_group_segments]
 
-        # Build command - start with LG and group name
-        cmd = f'LG {name}'
+        # Build command - start with LISTGRP and group name
+        cmd = f'LISTGRP {name}'
 
         # Add segments if specified
         if filtered_segments:
@@ -804,7 +804,7 @@ def run_module():
     rc, stdout, stderr = module.run_command(f'tsocmd "{cmd}"')
 
     # Check if the profile was not found
-    if rc != 0 or 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {scope.upper()} NAME' in stdout.upper():
+    if rc != 0 or 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {profile_type.upper()} NAME' in stdout.upper():
         result['rc'] = rc
         result['stdout'] = stdout
         # Only include stderr if it contains something other than the command echo
@@ -812,9 +812,9 @@ def run_module():
         result['msg'] = f"Profile '{name}' not found in RACF database"
         module.fail_json(**result)
 
-    # Parse segments based on scope
+    # Parse segments based on profile_type
     try:
-        if scope == 'user':
+        if profile_type == 'user':
             base_data = parse_base_user_info(stdout)
             final_user_profile = {**base_data}
 
@@ -834,7 +834,7 @@ def run_module():
                         key, parser_func = segment_parser_map[seg]
                         final_user_profile[key] = parser_func(stdout)
 
-        else:  # scope == 'group'
+        else:  # profile_type == 'group'
             base_data = parse_base_group_info(stdout)
             final_user_profile = {**base_data}
 
@@ -852,7 +852,9 @@ def run_module():
                         final_user_profile[key] = parser_func(stdout)
 
         result['rc'] = rc
-        result['profile'] = final_user_profile
+        result['segments'] = final_user_profile
+        result['stdout'] = stdout
+        result['stderr'] = stderr
 
         module.exit_json(**result)
 

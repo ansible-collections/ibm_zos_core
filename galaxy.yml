@@ -22,6 +22,8 @@ authors:
   - "Surendra Ravella @surendrababuravella"
   - "Rohitash Goyal @Rohitcodes28"
   - "Mayank Mani @mayankmani-sde"
+  - "Yogesh Rana @yrana17"
+  - "Sarah Miller @hmillersarah"
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.

@@ -945,7 +945,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 import re
 
@@ -2100,6 +2100,10 @@ def run_module():
             module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
+
+            # Initialize logging module
+            module_verbosity_level = module._verbosity
+            logger = SingletonLogger().get_logger(module_verbosity_level)
 
             for data_set_params in data_set_param_list:
                 data_set_params["scratch"] = determine_scratch(data_set_params)

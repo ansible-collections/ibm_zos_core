@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -291,7 +291,7 @@ class ActionModule(ActionBase):
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            rm_res = self._connection.exec_command(f"rm -rf {path}*")
+            self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not replace:
             result["note"] = copy_res.get("note")

@@ -70,39 +70,65 @@ output:
                 The executed TSO command.
             returned: always
             type: str
+            sample: "LU TESTUSER"
         rc:
             description:
                 The return code from the executed TSO command.
             returned: always
             type: int
             sample: 0
-        max_rc:
+        stdout:
             description:
-                - Specifies the maximum return code allowed for a TSO command.
-                - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
+                The standard output from the TSO command execution.
             returned: always
-            type: int
-            sample: 0
-        content:
+            type: str
+            sample: "NO MODEL DATA SET                                                OMVSADM"
+        stdout_lines:
             description:
-                The response resulting from the execution of the TSO command.
+                The standard output split into individual lines.
             returned: always
             type: list
+            elements: str
             sample:
-                [
-                "NO MODEL DATA SET                                                OMVSADM",
-                "TERMUACC                                                                ",
-                "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
-                "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ",
-                "             J91      J09      J97      J93      M82      D67           ",
-                "             D52      M12      CCG      D17      M32      IMSVS         ",
-                "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           ",
-                ]
-        lines:
+                - "NO MODEL DATA SET                                                OMVSADM"
+                - "TERMUACC                                                                "
+                - "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       "
+                - "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           "
+                - "             J91      J09      J97      J93      M82      D67           "
+                - "             D52      M12      CCG      D17      M32      IMSVS         "
+                - "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           "
+        line_count:
             description:
-                The line number of the content.
+                The number of lines in the standard output.
             returned: always
             type: int
+            sample: 7
+        stderr:
+            description:
+                The standard error from the TSO command execution.
+            returned: always
+            type: str
+            sample: ""
+        stderr_lines:
+            description:
+                The standard error split into individual lines.
+            returned: always
+            type: list
+            elements: str
+            sample: [""]
+        failed:
+            description:
+                Whether the command failed based on the return code exceeding max_rc.
+            returned: always
+            type: bool
+            sample: false
+max_rc:
+    description:
+        - The maximum return code that was allowed for the TSO commands.
+        - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
+    returned: always
+    type: int
+    sample: 0
 """
 
 EXAMPLES = r"""
@@ -153,6 +179,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
 def run_tso_command(commands, module, max_rc):
@@ -333,6 +360,10 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as e:
         module.fail_json(msg=repr(e), **result)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
 
     commands = parsed_args.get("commands")
     commands = list(map(preprocess_data_set_names, commands))

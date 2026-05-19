@@ -157,7 +157,9 @@ class BetterArgHandler(object):
             "str": self._str_type,
             "bool": self._bool_type,
             "int": self._int_type,
+            "signed_int": self._signed_int_type,
             "path": self._path_type,
+            "path_or_empty": self._path_or_empty_type,
             "data_set": self._data_set_type,
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
@@ -330,6 +332,32 @@ class BetterArgHandler(object):
             raise ValueError('Invalid argument "{0}" for type "int".'.format(contents))
         return int(contents)
 
+    def _signed_int_type(self, contents, resolve_dependencies):
+        """Resolver for signed int type arguments.
+
+        Parameters
+        ----------
+        contents : Union[int, str]
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        int
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not fullmatch(r"[-+]?[0-9]+", str(contents)):
+            raise ValueError('Invalid argument "{0}" for type "signed_int".'.format(contents))
+        return int(contents)
+
     def _bool_type(self, contents, resolve_dependencies):
         """Resolver for bool type arguments.
 
@@ -440,6 +468,35 @@ class BetterArgHandler(object):
         contents = BetterArgHandler.fix_local_path(contents)
         if not path.isabs(str(contents)):
             raise ValueError('Invalid argument "{0}" for type "path".'.format(contents))
+        return str(contents)
+
+    def _path_or_empty_type(self, contents, resolve_dependencies):
+        """Resolver for path or empty string type arguments.
+
+        Parameters
+        ----------
+        contents : str
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type
+        """
+        contents = BetterArgHandler.fix_local_path(contents)
+        if contents == "":
+            return contents
+        if not path.isabs(str(contents)):
+            raise ValueError('Invalid argument "{0}" for type "path_or_empty".'.format(contents))
         return str(contents)
 
     # ---------------------------------------------------------------------------- #

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2023, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -241,7 +241,6 @@ stderr_lines:
 import os
 import stat
 import shlex
-import os
 from ansible.module_utils._text import to_text
 
 from ansible.module_utils.basic import AnsibleModule
@@ -251,6 +250,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
 def run_module():
@@ -350,6 +350,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
 
     cmd_str = module.params.get('cmd')
     cmd_parts = shlex.split(cmd_str)

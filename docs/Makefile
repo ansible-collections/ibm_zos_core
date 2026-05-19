@@ -96,7 +96,7 @@ clean:
 	mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
 	fi
 
-	@echo "Completed cleanup, run 'make module-doc', 'male filter-doc' or 'make role-doc'."
+	@echo "Completed cleanup, run 'make module-doc', 'make filter-doc' or 'make role-doc'."
 
 filter-doc:
 	@echo $(line_header)

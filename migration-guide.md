@@ -27,6 +27,8 @@ This guide covers breaking and recommended changes for upgrading playbooks and r
 * [zos_tso_command](#zos_tso_command)
 * [zos_unarchive](#zos_unarchive)
 
+3. [Using the Playbook Upgrade Validator Role](#-using-the-playbook-upgrade-validator-role)
+
 ---
 
 ## 🧭 Overview
@@ -1124,3 +1126,121 @@ Non-breaking changes are all the module options that have been renamed for consi
         xmit_log_data_set: USER.XMIT.LOG
     dest: USER.RESTORED.DATA
 ```
+
+
+---
+
+## 🔧 Using the Playbook Upgrade Validator Role
+
+The `playbook_upgrade_validator` role helps automate the process of identifying migration changes needed in your playbooks when upgrading from ibm_zos_core v1.x to v2.0.0. This role analyzes your playbooks and generates a detailed report of all breaking and non-breaking changes that need attention.
+
+### What the Role Does
+
+The role validates one or more Ansible playbooks against IBM z/OS Core migration rules and generates a detailed report of required changes. For each task using an ibm_zos_core module, it identifies:
+
+- **Renamed parameters** - Module options that have new names (reported as `[MUST_FIX]`)
+- **Type-changed parameters** - Module options with modified data types (reported as `[MUST_FIX]`)
+- **Response parameter changes** - Return values that have been renamed or restructured (reported as `[WARNING]`)
+
+The report includes the exact playbook path, play name, task name, line number, and specific migration actions needed for each affected task.
+
+### Role Variables
+
+The following variables can be configured:
+
+- **`playbook_path`** (required): Path to a single Ansible playbook file or a directory containing playbooks to validate.
+- **`output_path`** (optional): Path to the output JSON file where validation results are saved. When not provided, defaults to `{{ playbook_dir }}/logs/migration_report.json`.
+- **`ignore_response_params`** (optional): Boolean flag to omit response parameter changes from the report. Defaults to `false`.
+
+### Usage Example
+
+Create a playbook (e.g., `validate_migration.yml`) to run the validator role:
+
+```yaml
+---
+- name: Validate playbooks for migration to ibm_zos_core v2.0.0
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: ibm.ibm_zos_core.playbook_upgrade_validator
+      vars:
+        playbook_path: "/path/to/your/playbooks"
+        output_path: "/path/to/migration_report.json"
+        ignore_response_params: false
+```
+
+### Running the Validator
+
+Execute the playbook from above:
+
+```bash
+ansible-playbook validate_migration.yml
+```
+
+### Understanding the Output
+
+The role generates a JSON report containing detailed information about required changes. The report includes:
+
+- **File path and line numbers** - Exact locations of tasks that need updates
+- **Module name** - Which z/OS Core module is affected
+- **Parameter details** - Old and new parameter names, types, and descriptions
+- **Migration actions** - Specific steps needed to update your playbooks
+
+### Example Output Structure
+
+The validator generates a JSON array where each element represents a task that requires migration changes:
+
+```json
+[
+  {
+    "playbook": "/path/to/playbook.yml",
+    "play_name": "My Play Name",
+    "task_name": "Submit batch job",
+    "module": "ibm.ibm_zos_core.zos_job_submit",
+    "task_line": 110,
+    "migration_actions": [
+      "[MUST_FIX] Param 'location' is renamed to 'remote_src' in ibm.ibm_zos_core.zos_job_submit",
+      "[MUST_FIX] Param 'wait_time_s' is renamed to 'wait_time' in ibm.ibm_zos_core.zos_job_submit",
+      "[MUST_FIX] Param 'location' type changed from 'string' to 'boolean' in ibm.ibm_zos_core.zos_job_submit",
+      "[WARNING] Response param 'ddnames' is renamed to 'dds' in ibm.ibm_zos_core.zos_job_submit",
+      "[WARNING] Response param 'ddnames.ddname' is renamed to 'dds.dd_name' in ibm.ibm_zos_core.zos_job_submit",
+      "[WARNING] Response param 'ret_code.steps' is renamed to 'jobs.steps' in ibm.ibm_zos_core.zos_job_submit"
+    ]
+  },
+  {
+    "playbook": "/path/to/playbook.yml",
+    "play_name": "My Play Name",
+    "task_name": "Execute operator command",
+    "module": "ibm.ibm_zos_core.zos_operator",
+    "task_line": 136,
+    "migration_actions": [
+      "[MUST_FIX] Param 'wait_time_s' is renamed to 'wait_time' in ibm.ibm_zos_core.zos_operator",
+      "[WARNING] Response param 'wait_time_s' is renamed to 'wait_time' in ibm.ibm_zos_core.zos_operator"
+    ]
+  }
+]
+```
+
+Each entry includes:
+- **playbook**: Full path to the playbook file
+- **play_name**: Name of the play containing the task
+- **task_name**: Name of the task that needs changes
+- **module**: Fully qualified module name
+- **task_line**: Line number where the task appears in the playbook
+- **migration_actions**: Array of required changes, prefixed with:
+  - `[MUST_FIX]` - Breaking changes that must be addressed
+  - `[WARNING]` - Response parameter changes (if `ignore_response_params` is false)
+
+### Best Practices
+
+1. **Run early** - Execute the validator before starting your migration to understand the scope of changes
+2. **Review thoroughly** - Examine the generated report to prioritize breaking changes
+3. **Test incrementally** - Update and test playbooks in small batches
+4. **Keep reports** - Save validation reports for documentation and audit purposes
+5. **Re-validate** - Run the validator again after making changes to ensure all issues are addressed
+
+### Notes
+
+- Task line numbers in the report rely on task names and may be ambiguous when duplicate task names exist within a playbook
+- The role runs on the control node (localhost) and does not require connection to z/OS systems
+- Python 3 must be available on the control node for the validator to run

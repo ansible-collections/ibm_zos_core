@@ -1,13 +1,7 @@
 .. ...........................................................................
-<<<<<<< HEAD
 .. © Copyright IBM Corporation 2025, 2026                                    .
 .. File needs to be contributed by a collection, likely the ref's won't work .
 .. since the source will be in another, so need to create an external link.  .
-=======
-.. © Copyright IBM Corporation 2026                                          .
-.. File needs to be contributed by a collection, likely the ref's won't work
-.. since the source will be in another, so need to create an external link.
->>>>>>> 00543d0e (Updates for v2.0)
 .. ...........................................................................
 
 ==========

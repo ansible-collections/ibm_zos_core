@@ -1,7 +1,13 @@
 .. ...........................................................................
+<<<<<<< HEAD
 .. © Copyright IBM Corporation 2025, 2026                                    .
 .. File needs to be contributed by a collection, likely the ref's won't work .
 .. since the source will be in another, so need to create an external link.  .
+=======
+.. © Copyright IBM Corporation 2026                                          .
+.. File needs to be contributed by a collection, likely the ref's won't work
+.. since the source will be in another, so need to create an external link.
+>>>>>>> 00543d0e (Updates for v2.0)
 .. ...........................................................................
 
 ==========
@@ -27,7 +33,9 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
-| 2.0.x      | In preview     | `2.0.x changelogs`_   | May 2026         | May 2028          | `Full support`          |
+| 2.0.x      | In preview     | `2.0.x changelogs`_   | May 2026         | May 2028          | `Full support`_          |
++------------+----------------+-----------------------+------------------+-------------------+-------------------------+
+| 1.16.x     | Released       | `1.16.x changelogs`_  | TBD              | TBD               | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.16.x     | Released       | `1.16.x changelogs`_  | February 2026    | February 2028     | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+

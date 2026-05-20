@@ -1,19 +1,19 @@
 =======================================================
-🚀 Ansible z/OS Core collection migration v1.x → v2.0.0
+Migrating Ansible z/OS Core collection from v1.x to v2.0.0
 =======================================================
 
 This guide covers breaking and recommended changes for upgrading
 playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to
 module options and return values.
 
-🧭 Overview
+Overview
 ==========================================
 
 The changes introduced in version 2.0 improve consistency and automation
 reliability by using standardized naming conventions and predictable
 return structures.
 
-**Key Improvements:**
+**Key improvements:**
 -------
 
 - **Consistent naming** - Module option names and return values are
@@ -21,23 +21,23 @@ return structures.
 - **Predictable returns** - Return values are standardized for automation workflows,
   rather than dynamically based on module operation results.
 
-**Impact on Existing Playbooks:**
+**Impact on existing playbooks:**
 -------
 
-To achieve consistent naming across the collection, some module options
+To standardize naming across the collection, some module options
 and return values are renamed:
 
-- **Breaking changes** - Some module options and return values have new
-  names with no backward compatibility.
+- **Breaking changes** - Some module options and return values were renamed and are not
+   backward compatible.
 - **Aliased changes** - Other module options have new primary names,
   with old names still supported as aliases.
 
-🚨 Modules: Breaking and Non-Breaking Changes
+Modules: Breaking and non-breaking changes
 =============================================
 
 Breaking changes are all the module options that are renamed where
 the old names are no longer supported. It also includes any return values
-which are renamed. Any automation which relies on these values should be updated.
+which are renamed. Ensure that any automation which relies on these values are updated.
 
 Non-breaking changes are all the module options that are renamed
 for consistency across the collection, but still have the old module
@@ -1283,7 +1283,7 @@ Examples
        dest: USER.RESTORED.DATA
 
 
-🔧 Using the playbook upgrade validator role
+ Using the playbook upgrade validator role
 =============================================
 
 The ``playbook_upgrade_validator`` role helps automate the process of

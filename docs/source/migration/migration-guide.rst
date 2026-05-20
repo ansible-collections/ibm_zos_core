@@ -1,39 +1,13 @@
-🚀 Ansible z/OS Core Collection Migration v1.x → v2.0.0
+.. ...........................................................................
+.. © Copyright IBM Corporation 2026                                        .
+.. ...........................................................................
+
+🚀 Ansible z/OS Core collection migration v1.x → v2.0.0
 =======================================================
 
 This guide covers breaking and recommended changes for upgrading
 playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to
 module options and return values.
-
---------------
-
-📚 Table of Contents
---------------------
-
-1. `Overview <#-overview>`__
-2. `Breaking and Non-Breaking
-   Changes <#-breaking-and-non-breaking-changes>`__
-
-- `zos_apf <#zos_apf>`__
-- `zos_archive <#zos_archive>`__
-- `zos_backup_restore <#zos_bakup_restore>`__
-- `zos_blockinfile <#zos_blockinfile>`__
-- `zos_copy <#zos_copy>`__
-- `zos_data_set <#zos_data_set>`__
-- `zos_fetch <#zos_fetch>`__
-- `zos_find <#zos_find>`__
-- `zos_job_output <#zos_job_output>`__
-- `zos_job_query <#zos_job_query>`__
-- `zos_job_submit <#zos_job_submit>`__
-- `zos_lineinfile <#zos_lineinfile>`__
-- `zos_mount <#zos_mount>`__
-- `zos_operator <#zos_operator>`__
-- `zos_operator_action_query <#zos_operator_action_query>`__
-- `zos_tso_command <#zos_tso_command>`__
-- `zos_unarchive <#zos_unarchive>`__
-
-3. `Using the Playbook Upgrade Validator
-   Role <#-using-the-playbook-upgrade-validator-role>`__
 
 --------------
 
@@ -48,8 +22,8 @@ return structures.
 
 - **Consistent naming** - Module option names and return values are
   standardized across the collection.
-- **Predictable returns** - Return values are always present and
-  tailored for automation, rather than being dynamically created based
+- **Predictable returns** - Return values are present and
+  tailored for automation, rather than dynamically based
   on module operation results.
 
 **Impact on Existing Playbooks:**
@@ -64,18 +38,17 @@ and return values have been renamed:
 
 --------------
 
-🚨 Breaking and Non-Breaking Changes
+🚨 Modules: Breaking and Non-Breaking Changes
 ------------------------------------
 
-Breaking changes are all the module options that have been renamed where
-the old names will no longer work. It also includes any return values
-which have been renamed. Any automation which relies on these value will
-need to be updated.
+Breaking changes are all the module options that are renamed where
+the old names does not work. It also includes any return values
+which are renamed. Any automation which relies on these values should be updated.
 
-Non-breaking changes are all the module options that have been renamed
+Non-breaking changes are all the module options that are renamed
 for consistency across the collection, but still have the old module
 option name available as an alias. It is recommended to switch playbook
-tasks to use the new module names. This section also includes new return
+tasks to use the new module names. This section includes new return
 values.
 
 zos_apf
@@ -1161,9 +1134,9 @@ zos_unarchive
            xmit_log_data_set: USER.XMIT.LOG
        dest: USER.RESTORED.DATA
 
---------------
 
-🔧 Using the Playbook Upgrade Validator Role
+
+🔧 Using the playbook upgrade validator role
 --------------------------------------------
 
 The ``playbook_upgrade_validator`` role helps automate the process of
@@ -1172,8 +1145,8 @@ from ibm_zos_core v1.x to v2.0.0. This role analyzes your playbooks and
 generates a detailed report of all breaking and non-breaking changes
 that need attention.
 
-What the Role Does
-~~~~~~~~~~~~~~~~~~
+Importance of role
+~~~~~~~
 
 The role validates one or more Ansible playbooks against IBM z/OS Core
 migration rules and generates a detailed report of required changes. For
@@ -1183,26 +1156,26 @@ each task using an ibm_zos_core module, it identifies:
   as ``[MUST_FIX]``)
 - **Type-changed parameters** - Module options with modified data types
   (reported as ``[MUST_FIX]``)
-- **Response parameter changes** - Return values that have been renamed
+- **Response parameter changes** - Return values that are renamed
   or restructured (reported as ``[WARNING]``)
 
 The report includes the exact playbook path, play name, task name, line
 number, and specific migration actions needed for each affected task.
 
-Role Variables
+Role variables
 ~~~~~~~~~~~~~~
 
 The following variables can be configured:
 
 - **``playbook_path``** (required): Path to a single Ansible playbook
-  file or a directory containing playbooks to validate.
+  file or a directory that has playbooks to validate.
 - **``output_path``** (optional): Path to the output JSON file where
-  validation results are saved. When not provided, defaults to
+  validation results are saved. If the path is not provided then it defaults to
   ``{{ playbook_dir }}/logs/migration_report.json``.
 - **``ignore_response_params``** (optional): Boolean flag to omit
   response parameter changes from the report. Defaults to ``false``.
 
-Usage Example
+Usage example
 ~~~~~~~~~~~~~
 
 Create a playbook (e.g., ``validate_migration.yml``) to run the
@@ -1221,7 +1194,7 @@ validator role:
            output_path: "/path/to/migration_report.json"
            ignore_response_params: false
 
-Running the Validator
+Running the validator
 ~~~~~~~~~~~~~~~~~~~~~
 
 Execute the playbook from above:
@@ -1230,7 +1203,7 @@ Execute the playbook from above:
 
    ansible-playbook validate_migration.yml
 
-Understanding the Output
+Understanding the output
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The role generates a JSON report containing detailed information about
@@ -1243,7 +1216,7 @@ required changes. The report includes:
   descriptions
 - **Migration actions** - Specific steps needed to update your playbooks
 
-Example Output Structure
+Example output structure
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The validator generates a JSON array where each element represents a
@@ -1291,22 +1264,22 @@ name - **task_line**: Line number where the task appears in the playbook
 Best Practices
 ~~~~~~~~~~~~~~
 
-1. **Run early** - Execute the validator before starting your migration
-   to understand the scope of changes
+1. **Run early** - Before you start your migration, run the validator
+   to understand the scope of changes.
 2. **Review thoroughly** - Examine the generated report to prioritize
-   breaking changes
-3. **Test incrementally** - Update and test playbooks in small batches
+   breaking changes.
+3. **Test incrementally** - Update and test playbooks in small batches.
 4. **Keep reports** - Save validation reports for documentation and
-   audit purposes
-5. **Re-validate** - Run the validator again after making changes to
-   ensure all issues are addressed
+   audit purposes.
+5. **Re-validate** - To ensure all the issues are addressed, 
+   run the validator again after making changes.
 
 Notes
 ~~~~~
 
-- Task line numbers in the report rely on task names and may be
-  ambiguous when duplicate task names exist within a playbook
+- Task line numbers in the report rely on task names and can be
+  ambiguous when duplicate task names exist within a playbook.
 - The role runs on the control node (localhost) and does not require
-  connection to z/OS systems
-- Python 3 must be available on the control node for the validator to
-  run
+  internet connection to z/OS systems.
+- Ensure that Python 3 is available on the control node for the validator to
+  run.

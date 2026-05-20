@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2025                                          .
+.. © Copyright IBM Corporation 2026                                          .
 .. File needs to be contributed by a collection, likely the ref's won't work
 .. since the source will be in another, so need to create an external link.
 .. ...........................................................................
@@ -27,7 +27,9 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
-| 1.16.x     | In preview     | `1.16.x changelogs`_  | TBD              | TBD               | `Beta phase`            |
+| 2.0.x      | In preview     | `2.0.x changelogs`_   | 28 May 2026      | TBD               | `Beta phase`            |
++------------+----------------+-----------------------+------------------+-------------------+-------------------------+
+| 1.16.x     | Released       | `1.16.x changelogs`_  | TBD              | TBD               | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.15.x     | Released       | `1.15.x changelogs`_  | 30 September 2025| 30 September 2027 | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+

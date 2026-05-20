@@ -1294,7 +1294,7 @@ generates a detailed report of all breaking and non-breaking changes
 that need attention.
 
 Importance of role
-~~~~~~~~~~~~~~~~~``
+~~~~~~~~~~~~~~~~~
 
 The role validates one or more Ansible playbooks against IBM z/OS Core
 migration rules and generates a detailed report of required changes. For

@@ -1,3 +1,4 @@
+=======================================================
 🚀 Ansible z/OS Core collection migration v1.x → v2.0.0
 =======================================================
 
@@ -5,16 +6,15 @@ This guide covers breaking and recommended changes for upgrading
 playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to
 module options and return values.
 
---------------
-
 🧭 Overview
------------
+==========================================
 
 The changes introduced in version 2.0 improve consistency and automation
 reliability by using standardized naming conventions and predictable
 return structures.
 
 **Key Improvements:**
+-------
 
 - **Consistent naming** - Module option names and return values are
   standardized across the collection.
@@ -22,6 +22,7 @@ return structures.
   rather than dynamically based on module operation results.
 
 **Impact on Existing Playbooks:**
+-------
 
 To achieve consistent naming across the collection, some module options
 and return values are renamed:
@@ -31,10 +32,8 @@ and return values are renamed:
 - **Aliased changes** - Other module options have new primary names,
   with old names still supported as aliases.
 
---------------
-
 🚨 Modules: Breaking and Non-Breaking Changes
-------------------------------------
+=============================================
 
 Breaking changes are all the module options that are renamed where
 the old names are no longer supported. It also includes any return values
@@ -1285,7 +1284,7 @@ Examples
 
 
 🔧 Using the playbook upgrade validator role
---------------------------------------------
+=============================================
 
 The ``playbook_upgrade_validator`` role helps automate the process of
 identifying migration changes needed in your playbooks when upgrading
@@ -1294,7 +1293,7 @@ generates a detailed report of all breaking and non-breaking changes
 that need attention.
 
 Importance of role
-~~~~~~~~~~~~~~~~~
+------------------
 
 The role validates one or more Ansible playbooks against IBM z/OS Core
 migration rules and generates a detailed report of required changes. For
@@ -1311,7 +1310,7 @@ The report includes the exact playbook path, play name, task name, line
 number, and specific migration actions needed for each affected task.
 
 Role variables
-~~~~~~~~~~~~~~~~~~
+--------------
 
 The following variables can be configured:
 
@@ -1324,7 +1323,7 @@ The following variables can be configured:
   response parameter changes from the report. Defaults to ``false``.
 
 Usage example
-~~~~~~~~~~~~~~
+------------
 
 Create a playbook (e.g., ``validate_migration.yml``) to run the
 validator role:
@@ -1343,7 +1342,7 @@ validator role:
            ignore_response_params: false
 
 Running the validator
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 Execute the playbook from above:
 
@@ -1352,7 +1351,7 @@ Execute the playbook from above:
    ansible-playbook validate_migration.yml
 
 Understanding the output
-~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 The role generates a JSON report containing detailed information about
 required changes. The report includes:
@@ -1365,7 +1364,7 @@ required changes. The report includes:
 - **Migration actions** - Specific steps needed to update your playbooks
 
 Example for output structure
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 The validator generates a JSON array where each element represents a
 task that requires migration changes:
@@ -1410,7 +1409,7 @@ name - **task_line**: Line number where the task appears in the playbook
 - Response parameter changes (if ``ignore_response_params`` is false)
 
 Best Practices
-~~~~~~~~~~~~~~
+-----------------------------
 
 1. **Run early** - Before you start your migration, run the validator
    to understand the scope of changes.
@@ -1423,7 +1422,7 @@ Best Practices
    run the validator again after making changes.
 
 Notes
-~~~~~
+-----------------------------
 
 - Task line numbers in the report rely on task names and can be
   ambiguous when duplicate task names exist within a playbook.

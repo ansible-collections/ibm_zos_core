@@ -1294,7 +1294,7 @@ generates a detailed report of all breaking and non-breaking changes
 that need attention.
 
 Importance of role
-~~~~~~~
+~~~~~~~~~~~~~~~~~``
 
 The role validates one or more Ansible playbooks against IBM z/OS Core
 migration rules and generates a detailed report of required changes. For
@@ -1311,7 +1311,7 @@ The report includes the exact playbook path, play name, task name, line
 number, and specific migration actions needed for each affected task.
 
 Role variables
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 The following variables can be configured:
 
@@ -1324,7 +1324,7 @@ The following variables can be configured:
   response parameter changes from the report. Defaults to ``false``.
 
 Usage example
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Create a playbook (e.g., ``validate_migration.yml``) to run the
 validator role:
@@ -1364,8 +1364,8 @@ required changes. The report includes:
   descriptions
 - **Migration actions** - Specific steps needed to update your playbooks
 
-Example output structure
-~~~~~~~~~~~~~~~~~~~~~~~~
+Example for output structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The validator generates a JSON array where each element represents a
 task that requires migration changes:

@@ -1283,6 +1283,7 @@ Examples
        dest: USER.RESTORED.DATA
 
 
+
  Using the playbook upgrade validator role
 =============================================
 
@@ -1353,15 +1354,15 @@ Execute the playbook from above:
 Understanding the output
 -------------------------
 
-The role generates a JSON report containing detailed information about
+The role generates a JSON report that has detailed information about
 required changes. The report includes:
 
 - **File path and line numbers** - Exact locations of tasks that need
-  updates
-- **Module name** - Which z/OS Core module is affected
+  updates.
+- **Module name** - The name of z/OS Core module which is affected.
 - **Parameter details** - Old and new parameter names, types, and
-  descriptions
-- **Migration actions** - Specific steps needed to update your playbooks
+  descriptions.
+- **Migration actions** - Specific steps needed to update your playbooks.
 
 Example for output structure
 -----------------------------
@@ -1400,13 +1401,15 @@ task that requires migration changes:
      }
    ]
 
-Each entry includes: - **playbook**: Full path to the playbook file -
-**play_name**: Name of the play containing the task - **task_name**:
-Name of the task that needs changes - **module**: Fully qualified module
-name - **task_line**: Line number where the task appears in the playbook
-- **migration_actions**: Array of required changes, prefixed with: -
-``[MUST_FIX]`` - Breaking changes that must be addressed - ``[WARNING]``
-- Response parameter changes (if ``ignore_response_params`` is false)
+Each entry includes:
+ - **playbook**: Full path to the playbook file.
+ - **play_name**: Name of the play containing the task. 
+ - **task_name**: Name of the task that needs changes. 
+ - **module**: Fully qualified module name. 
+ - **task_line**: Line number where the task appears in the playbook.
+ - **migration_actions**: Array of required changes, prefixed with: 
+    - ``[MUST_FIX]``- Breaking changes that must be addressed. 
+    - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
 
 Best Practices
 -----------------------------

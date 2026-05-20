@@ -1281,7 +1281,7 @@ Examples
          options:
            xmit_log_data_set: USER.XMIT.LOG
        dest: USER.RESTORED.DATA
-       
+
 
 Using the playbook upgrade validator role
 =============================================
@@ -1407,8 +1407,8 @@ Each entry includes:
  - **module**: Fully qualified module name. 
  - **task_line**: Line number where the task appears in the playbook.
  - **migration_actions**: Array of required changes, prefixed with: 
-    - ``[MUST_FIX]``- Breaking changes that must be addressed. 
-    - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
+  - ``[MUST_FIX]``- Breaking changes that must be addressed. 
+  - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
 
 Best Practices
 -----------------------------

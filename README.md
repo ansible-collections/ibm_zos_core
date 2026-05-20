@@ -1,12 +1,12 @@
 # IBM® z/OS core collection
 
-The **IBM z/OS core** collection enables Ansible to interact with z/OS Data Sets and USS files. The collection focuses on operating system fundamental operations such as managing encodings, creating data sets, and submitting jobs.
+The **IBM z/OS core** collection enables Ansible to interact with z/OS Data Sets and USS files. The collection focuses on operating fundamental system operations such as managing encodings, creating data sets, and submitting jobs.
 
 ## Description
 
 The **IBM z/OS core** collection is part of the **Red Hat Ansible Certified Content for IBM Z** offering that brings Ansible automation to IBM Z. This collection enables the management of batch jobs, program authorization, operator actions, and the execution of JES and MVS commands, as well as shell, Python, and REXX scripts. It offers comprehensive data set operations such as creation, search, copy, fetch, encoding, archiving, unarchiving, and backup, and provides Jinja templating support.
 
-It also supports other z/OS core operations, including volume initialization, aggregate resizing, and started task management operations such as start, modification, stop, and cancellation.
+It also supports other z/OS core operations, including RACF user management, volume initialization, aggregate resizing, and started task management operations such as start, modification, stop, and cancellation.
 
 <br/>System programmers can enable pipelines to setup, tear down and deploy applications while system administrators can automate time consuming repetitive tasks inevitably freeing up their time. New z/OS users can find comfort in Ansible's familiarity and expedite their proficiency in record time.
 
@@ -121,7 +121,7 @@ If you would like to communicate with this community, you can do so through the 
 
 ## Support
 
-As Red Hat Ansible [Certified Content](https://catalog.redhat.com/software/search?target_platforms=Red%20Hat%20Ansible%20Automation%20Platform), this collection is entitled to [support](https://access.redhat.com/support/) through [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible) (AAP). After creating a Red Hat support case, if it is determined the issue belongs to IBM, Red Hat will instruct you to create an [IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) and share the case number with Red Hat so that a collaboration can begin between Red Hat and IBM.
+As Red Hat Ansible [Certified Content](https://catalog.redhat.com/en/search?q=Red+Hat+Ansible+Automation+Platform&searchType=Software), this collection is entitled to [support](https://access.redhat.com/support/) through [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible) (AAP). After creating a Red Hat support case, if it is determined the issue belongs to IBM, Red Hat will instruct you to create an [IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) and share the case number with Red Hat so that a collaboration can begin between Red Hat and IBM.
 
 <br/>If a support case cannot be opened with Red Hat and the collection has been obtained either from [Galaxy](https://galaxy.ansible.com/ui/) or [GitHub](https://github.com/ansible-collections/ibm_zos_core), there is community support available at no charge. Community support is limited to the collection; community support does not include any of the Ansible Automation Platform components, [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau), [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) or [ansible-core](https://github.com/ansible/ansible).
 

@@ -1281,10 +1281,9 @@ Examples
          options:
            xmit_log_data_set: USER.XMIT.LOG
        dest: USER.RESTORED.DATA
+       
 
-
-
- Using the playbook upgrade validator role
+Using the playbook upgrade validator role
 =============================================
 
 The ``playbook_upgrade_validator`` role helps automate the process of

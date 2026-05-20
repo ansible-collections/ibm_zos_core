@@ -1,0 +1,4 @@
+trivial:
+  - Enabled ZOAU debug level logging in all modules.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2470 and
+    https://github.com/ansible-collections/ibm_zos_core/issues/2471)

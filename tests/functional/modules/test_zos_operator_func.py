@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -112,7 +112,6 @@ def test_zos_operator_various_command(ansible_zos_module):
         hosts = ansible_zos_module
         results = hosts.all.zos_operator(cmd=command)
         for result in results.contacted.values():
-            print(result)
             assert result.get("rc") == expected_rc
             assert result.get("changed") is changed
             assert result.get("msg", False) is False
@@ -120,21 +119,24 @@ def test_zos_operator_various_command(ansible_zos_module):
             assert result.get("elapsed") is not None
             assert result.get("wait_time") is not None
             assert result.get("time_unit") == "s"
-            assert result.get("content") is not None
+            assert result.get("stderr") == ""
+            assert result.get("stdout") is not None
+            assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
     for result in results.contacted.values():
-        print(result)
         assert result.get("changed") is True
         assert result.get("rc") == 0
         assert result.get("cmd") is not None
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module):
@@ -147,9 +149,11 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
         transparency = False
-        if any('DUMP COMMAND' in str for str in result.get("content")):
+        if any('DUMP COMMAND' in str for str in result.get("stdout_lines")):
             transparency = True
         assert transparency
 
@@ -166,7 +170,9 @@ def test_zos_operator_positive_path(ansible_zos_module):
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_path_verbose(ansible_zos_module):
@@ -180,10 +186,12 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
-        # Traverse the content list for a known verbose keyword and track state
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
+        assert result.get("stderr_lines") is not None
+        # Traverse the stdout_lines list for a known verbose keyword and track state
         is_verbose = False
-        if any('BGYSC0804I' in str for str in result.get("content")):
+        if any('BGYSC0804I' in str for str in result.get("stderr_lines")):
             is_verbose = True
         assert is_verbose
 
@@ -204,7 +212,8 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
         assert result.get("elapsed") > wait_time
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
@@ -222,7 +231,8 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
         assert result.get("elapsed") <= (2 * wait_time)
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
@@ -241,7 +251,8 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
             assert result.get("elapsed") >= wait_time
             assert result.get("wait_time") is not None
             assert result.get("time_unit") == "s"
-            assert result.get("content") is not None
+            assert result.get("stdout") is not None
+            assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
@@ -261,11 +272,12 @@ def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
         assert result.get("wait_time") is not None
         assert result.get("elapsed") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
         # Making sure the output from opercmd logged the command
         # exactly as it was written.
-        assert len(result.get("content")) > 1
-        assert command in result.get("content")[1]
+        assert len(result.get("stdout_lines")) > 1
+        assert command in result.get("stdout_lines")[1]
 
 
 def test_response_come_back_complete(ansible_zos_module):
@@ -281,11 +293,12 @@ def test_response_come_back_complete(ansible_zos_module):
         assert result.get("wait_time") is not None
         assert result.get("elapsed") is not None
         assert result.get("time_unit") == "s"
-        assert result.get("content") is not None
-        stdout = result.get('content')
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
+        stdout_lines = result.get('stdout_lines')
         # HASP646 Only appears in the last line that before did not appears
-        last_line = len(stdout)
-        assert "HASP646" in stdout[last_line - 1]
+        last_line = len(stdout_lines)
+        assert "HASP646" in stdout_lines[last_line - 1]
 
 
 def test_operator_sentiseconds(ansible_zos_module):
@@ -299,7 +312,8 @@ def test_operator_sentiseconds(ansible_zos_module):
         assert result.get("elapsed") is not None
         assert result.get("wait_time") is not None
         assert result.get("time_unit") == "cs"
-        assert result.get("content") is not None
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_parallel_terminal(get_config):

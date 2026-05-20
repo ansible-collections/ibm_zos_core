@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -138,7 +138,7 @@ options:
 #     type: bool
   reusable_asid:
     description:
-        - When I(reusable_asid) is C(True) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
+        - When I(reusable_asid) is C(true) and REUSASID(YES) is specified in the DIAGxx parmlib member, a reusable ASID is assigned
           to the address space created by the START command. If I(reusable_asid) is not specified or REUSASID(NO) is specified in
           DIAGxx, an ordinary ASID is assigned.
         - Only applicable when I(state) is C(started), otherwise ignored.
@@ -237,46 +237,46 @@ EXAMPLES = r"""
 - name: Start a started task using a member in a partitioned data set.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
+    member_name: "PROCAPP"
 
 - name: Start a started task using a member name and giving it an identifier.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
-    identifier: "SAMPLE"
+    member_name: "PROCAPP"
+    identifier_name: "SAMPLE"
 
 - name: Start a started task using both a member and a job name.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
+    member_name: "PROCAPP"
     job_name: "SAMPLE"
 
 - name: Start a started task and enable verbose output.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
+    member_name: "PROCAPP"
     job_name: "SAMPLE"
-    verbose: True
+    verbose: true
 
 - name: Start a started task and wait for 30 seconds before fetching task details.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
+    member_name: "PROCAPP"
     verbose: True
     wait_time: 30
-    wait_full_time: True
+    wait_full_time: true
 
 - name: Start a started task specifying the subsystem and enabling a reusable ASID.
   zos_started_task:
     state: "started"
-    member: "PROCAPP"
+    member_name: "PROCAPP"
     subsystem: "MSTR"
     reusable_asid: "YES"
 
 - name: Display a started task using a started task name.
   zos_started_task:
     state: "displayed"
-    task_name: "PROCAPP"
+    job_name: "PROCAPP"
 
 - name: Display a started task using a started task id.
   zos_started_task:
@@ -286,17 +286,17 @@ EXAMPLES = r"""
 - name: Display all started tasks that begin with an s using a wildcard.
   zos_started_task:
     state: "displayed"
-    task_name: "s*"
+    job_name: "s*"
 
 - name: Display all started tasks.
   zos_started_task:
     state: "displayed"
-    task_name: "all"
+    job_name: "all"
 
 - name: Cancel a started task using task name.
   zos_started_task:
     state: "cancelled"
-    task_name: "SAMPLE"
+    job_name: "SAMPLE"
 
 - name: Cancel a started task using a started task id.
   zos_started_task:
@@ -306,13 +306,13 @@ EXAMPLES = r"""
 - name: Cancel a started task using it's task name and ASID.
   zos_started_task:
     state: "cancelled"
-    task_name: "SAMPLE"
+    job_name: "SAMPLE"
     asidx: 0014
 
 - name: Modify a started task's parameters.
   zos_started_task:
     state: "modified"
-    task_name: "SAMPLE"
+    job_name: "SAMPLE"
     parameters: ["XX=12"]
 
 - name: Modify a started task's parameters using a started task id.
@@ -324,7 +324,7 @@ EXAMPLES = r"""
 - name: Stop a started task using it's task name.
   zos_started_task:
     state: "stopped"
-    task_name: "SAMPLE"
+    job_name: "SAMPLE"
 
 - name: Stop a started task using a started task id.
   zos_started_task:
@@ -334,14 +334,14 @@ EXAMPLES = r"""
 - name: Stop a started task using it's task name, identifier and ASID.
   zos_started_task:
     state: "stopped"
-    task_name: "SAMPLE"
-    identifier: "SAMPLE"
+    job_name: "SAMPLE"
+    identifier_name: "SAMPLE"
     asidx: 00A5
 
 - name: Force a started task using it's task name.
   zos_started_task:
     state: "forced"
-    task_name: "SAMPLE"
+    job_name: "SAMPLE"
 
 - name: Force a started task using it's task id.
   zos_started_task:
@@ -483,13 +483,17 @@ import re
 import math
 import time
 from datetime import datetime, timedelta, timezone
-import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import opercmd, zsystem, jobs
@@ -1220,7 +1224,7 @@ def fetch_logs(command, before_time):
 def get_task_logs(task_id):
     try:
         task_logs = jobs.read_output(task_id)
-    except Exception as err:
+    except Exception:
         return ""
 
     return task_logs
@@ -1359,6 +1363,8 @@ def run_module():
         supports_check_mode=True
     )
 
+    validate_dependencies(module)
+
     args_def = {
         'state': {
             'arg_type': 'str',
@@ -1473,6 +1479,15 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    result = dict()
+    if module.check_mode:
+        module.exit_json(**result)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    logger = SingletonLogger().get_logger(module_verbosity_level)
+
     before_time = ""
     state = module.params.get('state')
     wait_time_s = module.params.get('wait_time')
@@ -1487,7 +1502,7 @@ def run_module():
     asidx = module.params.get('asidx')
     duplicate_tasks = False
     started_task_name_from_id = ""
-    system_logs = module.params.get('system_logs')
+    get_system_logs = module.params.get('system_logs')
     task_params_before = []
     task_params_after = []
     if task_id and state != "displayed":
@@ -1572,7 +1587,7 @@ def run_module():
         err_msg = modify_errmsg
         started_task_name, cmd = prepare_modify_command(module, started_task_name_from_id)
     # Note the timestamp before operation execution to fetch system logs within that time frame.
-    if system_logs:
+    if get_system_logs:
         before_time = fetch_current_time()
     changed = False
     stdout = ""
@@ -1621,9 +1636,9 @@ def run_module():
                 is_failed = True
             elif verbose:
                 task_output_logs = get_task_logs(task_params_after[0].get('task_id'))
-        # Fetch system logs as per the recorded timestamp before operation execution
-        if system_logs:
-            system_logs = fetch_logs(cmd.upper(), before_time)
+    # Fetch system logs as per the recorded timestamp after operation execution
+    if get_system_logs:
+        system_logs = fetch_logs(cmd.upper(), before_time)
     # Create response to return
     current_state = ""
     if is_failed:
@@ -1646,11 +1661,8 @@ def run_module():
         stdout = out
         stderr = err
 
-    result = dict()
     if state == "displayed":
         changed = False
-    if module.check_mode:
-        module.exit_json(**result)
 
     result = dict(
         changed=changed,

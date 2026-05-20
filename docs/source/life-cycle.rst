@@ -47,6 +47,8 @@ its critical dates, and which type of support it's currently eligible for.
 .. .............................................................................
 .. Global Links
 .. .............................................................................
+.. _2.0.x changelogs:
+    https://github.com/ansible-collections/ibm_zos_core/blob/v2.0.0-beta.1/CHANGELOG.rst
 .. _1.16.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.16.0-beta.1/CHANGELOG.rst
 .. _1.15.x changelogs:

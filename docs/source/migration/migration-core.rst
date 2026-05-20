@@ -28,7 +28,7 @@ To standardize naming across the collection, some module options
 and return values are renamed:
 
 - **Breaking changes** - Some module options and return values were renamed and are not
-   backward compatible.
+  backward compatible.
 - **Aliased changes** - Other module options have new primary names,
   with old names still supported as aliases.
 

@@ -10,22 +10,21 @@ module options and return values.
 🧭 Overview
 -----------
 
-The changes introduced in version 2.0 enhance consistency and automation
-reliability through standardized naming conventions and predictable
+The changes introduced in version 2.0 improve consistency and automation
+reliability by using standardized naming conventions and predictable
 return structures.
 
 **Key Improvements:**
 
 - **Consistent naming** - Module option names and return values are
   standardized across the collection.
-- **Predictable returns** - Return values are present and
-  tailored for automation, rather than dynamically based
-  on module operation results.
+- **Predictable returns** - Return values are standardized for automation workflows,
+  rather than dynamically based on module operation results.
 
 **Impact on Existing Playbooks:**
 
 To achieve consistent naming across the collection, some module options
-and return values have been renamed:
+and return values are renamed:
 
 - **Breaking changes** - Some module options and return values have new
   names with no backward compatibility.
@@ -38,7 +37,7 @@ and return values have been renamed:
 ------------------------------------
 
 Breaking changes are all the module options that are renamed where
-the old names does not work. It also includes any return values
+the old names are no longer supported. It also includes any return values
 which are renamed. Any automation which relies on these values should be updated.
 
 Non-breaking changes are all the module options that are renamed
@@ -48,16 +47,23 @@ tasks to use the new module names. This section includes new return
 values.
 
 zos_apf
-^^^^^^^
+-------
 
-\*\* Non-breaking changes \*\* \* Sub-option renamed: \*
-``persistent.data_set_name`` → ``persistent.target`` (old name still
-accepted) \* Recommendation: Use ``target`` in new playbooks \* New
-return value: ``stdout_lines`` \* New return value: ``stderr_lines``
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Sub-option renamed:
 
-.. code:: yaml
+  * ``persistent.data_set_name`` → ``persistent.target`` (old name still accepted)
+  * Recommendation: Use ``target`` in new playbooks
+
+* New return value: ``stdout_lines``
+* New return value: ``stderr_lines``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Add a library (cataloged) to a persistent APF list
@@ -75,7 +81,7 @@ return value: ``stdout_lines`` \* New return value: ``stderr_lines``
        persistent:
          target: SOME.PARTITIONED.DATASET(MEM)
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -95,24 +101,36 @@ return value: ``stdout_lines`` \* New return value: ``stderr_lines``
      "rc": 0
    }
 
+.. _zos_archive:
+
 zos_archive
-^^^^^^^^^^^
+-----------
 
-\*\* Breaking changes \*\* \* Sub-options renamed: \*
-``format.format_options`` → ``format.options`` \*
-``format.format_options.use_adrdssu`` → ``format.options.adrdssu`` \*
-``format.format_options.terse_pack`` → ``format.options.spack`` \* the
-type has changed from ``string`` to ``bool`` \* ``spack=true`` uses
-‘spack’ as the compression algorithm, while ``spack=false`` uses the
-pack algorithm.
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* Sub-option renamed: ``format.name`` →
-``format.type`` (old name still accepted) \* Recommendation: Use
-``name`` in new playbooks \* New return value: ``dest``
+* Sub-options renamed:
 
-\*\* Examples \*\*
+  * ``format.format_options`` → ``format.options``
+  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``
+  * ``format.format_options.terse_pack`` → ``format.options.spack``
 
-.. code:: yaml
+    * the type has changed from ``string`` to ``bool``
+    * ``spack=true`` uses 'spack' as the compression algorithm, while ``spack=false`` uses the pack algorithm.
+
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
+
+* Sub-option renamed: ``format.name`` → ``format.type`` (old name still accepted)
+
+  * Recommendation: Use ``name`` in new playbooks
+
+* New return value: ``dest``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Archive data set into a terse, specify spack algorithm and use adrdssu.
@@ -152,7 +170,7 @@ pack algorithm.
        format:
          type: terse
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -173,16 +191,24 @@ pack algorithm.
      "archived": ["USER.ARCHIVE.TEST"]
    }
 
+.. _zos_backup_restore:
+
 zos_backup_restore
-^^^^^^^^^^^^^^^^^^
+------------------
 
-\*\* Breaking changes \*\* \* Module options renamed: \* ``hlq`` →
-``output.hlq`` \* ``sms_storage_class`` → ``sms.storage_class`` \*
-``sms_management_class`` → ``sms.management_class``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Module options renamed:
 
-.. code:: yaml
+  * ``hlq`` → ``output.hlq``
+  * ``sms_storage_class`` → ``sms.storage_class``
+  * ``sms_management_class`` → ``sms.management_class``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Restore data sets with new HLQ
@@ -208,15 +234,17 @@ zos_backup_restore
          storage_class: SCLAS1
          management_class: MCLAS1
 
-\*\* Non-breaking changes \*\* \* New module option: ``access`` (with
-suboptions: ``share``, ``auth``) \* New module option: ``index`` \* New
-SMS suboptions: ``disable_automatic_class``,
-``disable_automatic_storage_class``,
-``disable_automatic_management_class``
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* New module option: ``access`` (with suboptions: ``share``, ``auth``)
+* New module option: ``index``
+* New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``
 
-.. code:: yaml
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # New access option allows control over data set sharing
    - name: Backup with shared access
@@ -249,17 +277,26 @@ SMS suboptions: ``disable_automatic_class``,
            - "USER.TEST.**"
            - "USER.PROD.**"
 
+.. _zos_blockinfile:
+
 zos_blockinfile
-^^^^^^^^^^^^^^^
+---------------
 
-\*\* Non-breaking changes \*\* \* Module option aliases: \*
-``insertafter`` can be referenced as ``after`` \* ``insertbefore`` can
-be referenced as ``before`` \* New return value: ``stdout_lines`` \* New
-return value: ``stderr_lines``
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Module option aliases:
 
-.. code:: yaml
+  * ``insertafter`` can be referenced as ``after``
+  * ``insertbefore`` can be referenced as ``before``
+
+* New return value: ``stdout_lines``
+* New return value: ``stderr_lines``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Insert block after specific line
@@ -279,7 +316,7 @@ return value: ``stderr_lines``
          ZOAU=/path/to/zoau
          export ZOAU
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -301,61 +338,76 @@ return value: ``stderr_lines``
      "backup_name": ""
    }
 
+.. _zos_copy:
+
 zos_copy
+--------
+
+Breaking changes
+^^^^^^^^^^^^^^^^
+
+* Module options renamed:
+
+  * ``is_binary`` → ``binary``
+  * ``force`` → ``replace``
+
+    * **NOTE**: option ``force`` remains a *valid* module option with **different** functionality.
+
+  * ``force_lock`` → ``force``
+
+Examples
 ^^^^^^^^
 
-\*\* Breaking changes **\* Module options renamed: \* ``is_binary`` →
-``binary`` \* ``force`` → ``replace`` \*** NOTE\ **: option ``force``
-remains a valid module option with** different*\* functionality. \*
-``force_lock`` → ``force``
+.. code-block:: yaml
 
-\*\* Examples \*\*
+   # Before
+   - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
+     ibm.ibm_zos_core.zos_copy:
+       src: /path/to/uss/src
+       dest: SAMPLE.SEQ.DATA.SET
+       force: true
+       remote_src: true
 
-.. code:: yaml
+   # After
+   - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
+     ibm.ibm_zos_core.zos_copy:
+       src: /path/to/uss/src
+       dest: SAMPLE.SEQ.DATA.SET
+       replace: true
+       remote_src: true
 
-     # Before
-     - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
-       ibm.ibm_zos_core.zos_copy:
-         src: /path/to/uss/src
-         dest: SAMPLE.SEQ.DATA.SET
-         force: true
-         remote_src: true
+   # Before
+   - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
+     ibm.ibm_zos_core.zos_copy:
+       src: SAMPLE.PDS.DATA.SET(MEM)
+       dest: SAMPLE.PDSE.DATA.SET(MEM)
+       is_binary: true
+       force_lock: true
+       remote_src: true
 
-     # After
-     - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
-       ibm.ibm_zos_core.zos_copy:
-         src: /path/to/uss/src
-         dest: SAMPLE.SEQ.DATA.SET
-         replace: true
-         remote_src: true
+   # After
+   - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
+     ibm.ibm_zos_core.zos_copy:
+       src: SAMPLE.PDS.DATA.SET(MEM)
+       dest: SAMPLE.PDSE.DATA.SET(MEM)
+       binary: true
+       force: true
+       remote_src: true
 
-     # Before
-     - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
-       ibm.ibm_zos_core.zos_copy:
-         src: SAMPLE.PDS.DATA.SET(MEM)
-         dest: SAMPLE.PDSE.DATA.SET(MEM)
-         is_binary: true
-         force_lock: true
-         remote_src: true
-
-     # After
-     - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
-       ibm.ibm_zos_core.zos_copy:
-         src: SAMPLE.PDS.DATA.SET(MEM)
-         dest: SAMPLE.PDSE.DATA.SET(MEM)
-         binary: true
-         force: true
-         remote_src: true
+.. _zos_data_set:
 
 zos_data_set
-^^^^^^^^^^^^
+------------
 
-\*\* Breaking changes \*\* \* Return value renamed: ``names`` →
-``data_sets``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Return value renamed: ``names`` → ``data_sets``
 
-.. code:: json
+Examples
+^^^^^^^^
+
+.. code-block:: json
 
    // Before
    {
@@ -375,20 +427,31 @@ zos_data_set
      ]
    }
 
+.. _zos_fetch:
+
 zos_fetch
-^^^^^^^^^
+---------
 
-\*\* Breaking changes \*\* \* Module option renamed: ``is_binary`` →
-``binary`` \* Return values renamed: \* ``file`` → ``src`` \*
-``is_binary`` → ``binary`` \* ``note`` → ``msg``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* New return value: ``encoding`` (with
-``from``/``to`` suboptions) \* New return values: ``stdout``,
-``stderr``, ``stdout_lines``, ``stderr_lines``
+* Module option renamed: ``is_binary`` → ``binary``
+* Return values renamed:
 
-\*\* Examples \*\*
+  * ``file`` → ``src``
+  * ``is_binary`` → ``binary``
+  * ``note`` → ``msg``
 
-.. code:: yaml
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
+
+* New return value: ``encoding`` (with ``from``/``to`` suboptions)
+* New return values: ``stdout``, ``stderr``, ``stdout_lines``, ``stderr_lines``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Fetch a PDS as binary
@@ -406,7 +469,7 @@ zos_fetch
        flat: true
        binary: true
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -440,18 +503,23 @@ zos_fetch
      }
    }
 
+.. _zos_find:
+
 zos_find
+--------
+
+Breaking changes
+^^^^^^^^^^^^^^^^
+
+* Module option removed: ``pds_patterns`` (and its aliases: ``pds_paths``, ``pds_pattern``)
+
+  * In v1.x, this option was used to specify PDS/PDSE data sets to search for members
+  * In v2.0.0, use the ``patterns`` option with PDS member syntax: ``DATASET.NAME(MEMBER*)``
+
+Examples
 ^^^^^^^^
 
-\*\* Breaking changes \*\* \* Module option removed: ``pds_patterns``
-(and its aliases: ``pds_paths``, ``pds_pattern``) \* In v1.x, this
-option was used to specify PDS/PDSE data sets to search for members \*
-In v2.0.0, use the ``patterns`` option with PDS member syntax:
-``DATASET.NAME(MEMBER*)``
-
-\*\* Examples \*\*
-
-.. code:: yaml
+.. code-block:: yaml
 
    # Before (v1.x)
    - name: Find members in specific PDS data sets
@@ -472,17 +540,25 @@ In v2.0.0, use the ``patterns`` option with PDS member syntax:
          - "SYS1.PROCLIB(MEM*)"
          - "SYS1.PROCLIB(TEST*)"
 
+.. _zos_job_output:
+
 zos_job_output
-^^^^^^^^^^^^^^
+--------------
 
-\*\* Breaking changes \*\* \* Return values renamed: \* ``ddnames`` →
-``dds`` \* ``ddnames[].ddname`` → ``dds[].dd_name`` \* Return value
-moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job
-level)
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Return values renamed:
 
-.. code:: json
+  * ``ddnames`` → ``dds``
+  * ``ddnames[].ddname`` → ``dds[].dd_name``
+
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
+
+Examples
+^^^^^^^^
+
+.. code-block:: json
 
    // Before (v1.x)
    {
@@ -544,13 +620,17 @@ level)
      ]
    }
 
-\*\* Non-breaking changes \*\* \* Module option renamed: ``ddname`` →
-``dd_name`` (old name still accepted) \* Recommendation: Use ``dd_name``
-in new playbooks
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Module option renamed: ``ddname`` → ``dd_name`` (old name still accepted)
 
-.. code:: yaml
+  * Recommendation: Use ``dd_name`` in new playbooks
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Job output with ddname
@@ -564,16 +644,21 @@ in new playbooks
        job_id: "STC02560"
        dd_name: "JESMSGLG"
 
+.. _zos_job_query:
+
 zos_job_query
-^^^^^^^^^^^^^
+-------------
 
-\*\* Breaking changes \*\* \* Return value moved: ``ret_code.steps`` →
-``steps`` (moved from inside ret_code to job level) \* Return value
-removed: ``message`` (top-level return value removed)
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
+* Return value removed: ``message`` (top-level return value removed)
 
-.. code:: json
+Examples
+^^^^^^^^
+
+.. code-block:: json
 
    // Before (v1.x)
    {
@@ -624,21 +709,32 @@ removed: ``message`` (top-level return value removed)
      ]
    }
 
+.. _zos_job_submit:
+
 zos_job_submit
-^^^^^^^^^^^^^^
+--------------
 
-\*\* Breaking changes \*\* \* Module option removed: ``location``
-(choices: data_set, uss, local) \* Use new module option ``remote_src``
-(boolean) \* ``location=data_set`` or ``location=uss`` →
-``remote_src=true`` \* ``location=local`` → ``remote_src=false`` \*
-Module option renamed: ``wait_time_s`` → ``wait_time`` \* Return values
-renamed: \* ``ddnames`` → ``dds`` \* ``ddnames[].ddname`` →
-``dds[].dd_name`` \* Return value moved: ``ret_code.steps`` → ``steps``
-(moved from inside ret_code to job level)
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Module option removed: ``location`` (choices: data_set, uss, local)
 
-.. code:: yaml
+  * Use new module option ``remote_src`` (boolean)
+  * ``location=data_set`` or ``location=uss`` → ``remote_src=true``
+  * ``location=local`` → ``remote_src=false``
+
+* Module option renamed: ``wait_time_s`` → ``wait_time``
+* Return values renamed:
+
+  * ``ddnames`` → ``dds``
+  * ``ddnames[].ddname`` → ``dds[].dd_name``
+
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before (v1.x) - Submit from data set
    - name: Submit a job from JCL stored in a PDS member and wait up to 30 seconds for completion.
@@ -668,7 +764,7 @@ renamed: \* ``ddnames`` → ``dds`` \* ``ddnames[].ddname`` →
        remote_src: false
        wait_time: 60
 
-.. code:: json
+.. code-block:: json
 
    // Before (v1.x)
    {
@@ -730,20 +826,30 @@ renamed: \* ``ddnames`` → ``dds`` \* ``ddnames[].ddname`` →
      ]
    }
 
+.. _zos_lineinfile:
+
 zos_lineinfile
-^^^^^^^^^^^^^^
+--------------
 
-\*\* Breaking changes \*\* \* Return value renamed: ``return_content`` →
-``stdout``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* Module option aliases: \*
-``insertafter`` can be referenced as ``after`` \* ``insertbefore`` can
-be referenced as ``before`` \* New return values: ``stderr``,
-``stdout_lines``, ``stderr_lines``
+* Return value renamed: ``return_content`` → ``stdout``
 
-\*\* Examples \*\*
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-.. code:: yaml
+* Module option aliases:
+
+  * ``insertafter`` can be referenced as ``after``
+  * ``insertbefore`` can be referenced as ``before``
+
+* New return values: ``stderr``, ``stdout_lines``, ``stderr_lines``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before (v1.x)
    - name: Insert a line in a data set
@@ -767,7 +873,7 @@ be referenced as ``before`` \* New return values: ``stderr``,
    - debug:
        msg: "{{ result.stdout }}"
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -805,17 +911,24 @@ be referenced as ``before`` \* New return values: ``stderr``,
    "backup_name": ""
    }
 
+.. _zos_mount:
+
 zos_mount
-^^^^^^^^^
+---------
 
-\*\* Non-breaking changes \*\* \* Sub-options renamed: \*
-``persistent.data_store`` → ``persistent.name`` (old name still
-accepted) \* ``persistent.comment`` → ``persistent.marker`` (old name
-still accepted) \* Recommendation: Use new names in new playbooks
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Sub-options renamed:
 
-.. code:: yaml
+  * ``persistent.data_store`` → ``persistent.name`` (old name still accepted)
+  * ``persistent.comment`` → ``persistent.marker`` (old name still accepted)
+  * Recommendation: Use new names in new playbooks
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before (v1.x)
    - name: Mount a filesystem with persistent configuration
@@ -843,23 +956,31 @@ still accepted) \* Recommendation: Use new names in new playbooks
            - "# Managed by Ansible"
            - "# Do not modify manually"
 
+.. _zos_operator:
+
 zos_operator
-^^^^^^^^^^^^
+------------
 
-\*\* Breaking changes \*\* \* Module option renamed: ``wait_time_s`` →
-``wait_time`` \* Use in conjunction with new option ``time_unit`` to
-indicate seconds/centiseconds \* Return value removed: ``content``
-(replaced by ``stdout``, ``stderr``, ``stdout_lines`` and
-``stderr_lines``) \* Return value renamed: ``wait_time_s`` →
-``wait_time``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* New module option: ``time_unit``
-(choices: ``s``, ``cs``) \* New return values: ``stdout``,
-``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``
+* Module option renamed: ``wait_time_s`` → ``wait_time``
 
-\*\* Examples \*\*
+  * Use in conjunction with new option ``time_unit`` to indicate seconds/centiseconds
 
-.. code:: yaml
+* Return value removed: ``content`` (replaced by ``stdout``, ``stderr``, ``stdout_lines`` and ``stderr_lines``)
+* Return value renamed: ``wait_time_s`` → ``wait_time``
+
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
+
+* New module option: ``time_unit`` (choices: ``s``, ``cs``)
+* New return values: ``stdout``, ``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before (v1.x)
    - name: Execute operator command with 5 second wait
@@ -890,7 +1011,7 @@ indicate seconds/centiseconds \* Return value removed: ``content``
        time_unit: cs
      register: result
 
-.. code:: json
+.. code-block:: json
 
    // Before (v1.x)
    {
@@ -924,22 +1045,36 @@ indicate seconds/centiseconds \* Return value removed: ``content``
      "stderr_lines": []
    }
 
+.. _zos_operator_action_query:
+
 zos_operator_action_query
-^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------
 
-\*\* Breaking changes **\* Module option renamed: ``use_regex`` →
-``literal`` \*** Note:\*\* ``literal`` is the inverse of ``use_regex``
-(behavior is reversed) \* Return values renamed: \* ``message_text`` →
-``msg_text`` \* ``message_id`` → ``msg_id``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* Module options renamed: \*
-``message_filter`` → ``msg_filter`` (old name still accepted) \*
-``message_id`` → ``msg_id`` (old name still accepted) \* Recommendation:
-Use new names in new playbooks
+* Module option renamed: ``use_regex`` → ``literal``
 
-\*\* Examples \*\*
+  * **Note:** ``literal`` is the inverse of ``use_regex`` (behavior is reversed)
 
-.. code:: yaml
+* Return values renamed:
+
+  * ``message_text`` → ``msg_text``
+  * ``message_id`` → ``msg_id``
+
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
+
+* Module options renamed:
+
+  * ``message_filter`` → ``msg_filter`` (old name still accepted)
+  * ``message_id`` → ``msg_id`` (old name still accepted)
+  * Recommendation: Use new names in new playbooks
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before
    - name: Display all outstanding messages where the job name begins with 'mq',
@@ -964,7 +1099,7 @@ Use new names in new playbooks
            filter: ^.*IMS.*$
            literal: false
 
-.. code:: json
+.. code-block:: json
 
    // Before
    {
@@ -1009,18 +1144,28 @@ Use new names in new playbooks
      ]
    }
 
+.. _zos_tso_command:
+
 zos_tso_command
-^^^^^^^^^^^^^^^
+---------------
 
-\*\* Breaking changes \*\* \* Return values renamed: \* ``content`` →
-``stdout`` \* ``lines`` → ``line_count``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Non-breaking changes \*\* \* New return values: ``stdout`` (string
-version), ``stdout_lines`` (replaces ``content`` list), ``stderr_lines``
+* Return values renamed:
 
-\*\* Examples \*\*
+  * ``content`` → ``stdout``
+  * ``lines`` → ``line_count``
 
-.. code:: json
+Non-breaking changes
+^^^^^^^^^^^^^^^^^^^^
+
+* New return values: ``stdout`` (string version), ``stdout_lines`` (replaces ``content`` list), ``stderr_lines``
+
+Examples
+^^^^^^^^
+
+.. code-block:: json
 
    // Before
    {
@@ -1075,16 +1220,24 @@ version), ``stdout_lines`` (replaces ``content`` list), ``stderr_lines``
        "max_rc": 0
    }
 
+.. _zos_unarchive:
+
 zos_unarchive
-^^^^^^^^^^^^^
+-------------
 
-\*\* Breaking changes \*\* \* Sub-options renamed: \* ``format.name`` →
-``format.type`` \* ``format.format_options`` → ``format.options`` \*
-``format.format_options.use_adrdssu`` → ``format.options.adrdssu``
+Breaking changes
+^^^^^^^^^^^^^^^^
 
-\*\* Examples \*\*
+* Sub-options renamed:
 
-.. code:: yaml
+  * ``format.name`` → ``format.type``
+  * ``format.format_options`` → ``format.options``
+  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``
+
+Examples
+^^^^^^^^
+
+.. code-block:: yaml
 
    # Before (v1.x)
    - name: Unarchive a terse data set with ADRDSSU
@@ -1129,7 +1282,6 @@ zos_unarchive
          options:
            xmit_log_data_set: USER.XMIT.LOG
        dest: USER.RESTORED.DATA
-
 
 
 🔧 Using the playbook upgrade validator role

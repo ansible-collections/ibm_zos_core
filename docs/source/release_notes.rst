@@ -6,6 +6,141 @@
 Releases
 ========
 
+Version 2.0.0
+=============
+
+Minor Changes
+-------------
+
+* ``zos_apf``
+
+  * Sub-option ``persistent.data_set_name`` renamed to ``persistent.target`` (old name still accepted).
+  * New return value: ``stdout_lines``.
+  * New return value: ``stderr_lines``.
+
+* ``zos_archive``
+
+  * Sub-option ``format.name`` renamed to ``format.type`` (old name still accepted).
+  * Sub-option ``format.format_options`` renamed to ``format.options``.
+  * Sub-option ``format.format_options.use_adrdssu`` renamed to ``format.options.adrdssu``.
+  * Sub-option ``format.format_options.terse_pack`` renamed to ``format.options.spack`` (type changed from ``string`` to ``bool``).
+  * New return value: ``dest``.
+
+* ``zos_backup_restore``
+
+  * Module option ``hlq`` renamed to ``output.hlq``.
+  * Module option ``sms_storage_class`` renamed to ``sms.storage_class``.
+  * Module option ``sms_management_class`` renamed to ``sms.management_class``.
+  * New module option: ``access`` (with suboptions: ``share``, ``auth``).
+  * New module option: ``index``.
+  * New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``.
+
+* ``zos_blockinfile``
+
+  * Module option ``insertafter`` can be referenced as ``after``.
+  * Module option ``insertbefore`` can be referenced as ``before``.
+  * New return value: ``stdout_lines``.
+  * New return value: ``stderr_lines``.
+
+* ``zos_copy``
+
+  * Module option ``is_binary`` renamed to ``binary``.
+  * Module option ``force`` renamed to ``replace`` (note: ``force`` remains valid with different functionality).
+  * Module option ``force_lock`` renamed to ``force``.
+
+* ``zos_data_set``
+
+  * Return value ``names`` renamed to ``data_sets``.
+
+* ``zos_fetch``
+
+  * Module option ``is_binary`` renamed to ``binary``.
+  * Return value ``file`` renamed to ``src``.
+  * Return value ``is_binary`` renamed to ``binary``.
+  * Return value ``note`` renamed to ``msg``.
+  * New return value: ``encoding`` (with ``from``/``to`` suboptions).
+  * New return values: ``stdout``, ``stderr``, ``stdout_lines``, ``stderr_lines``.
+
+* ``zos_find``
+
+  * Module option ``pds_patterns`` removed (and aliases ``pds_paths``, ``pds_pattern``). In v1.x, this option was used to specify PDS/PDSE data sets to search for members. In v2.0.0, use the ``patterns`` option with PDS member syntax: ``DATASET.NAME(MEMBER*)``.
+
+* ``zos_job_output``
+
+  * Module option ``ddname`` renamed to ``dd_name`` (old name still accepted).
+  * Return value ``ddnames`` renamed to ``dds``.
+  * Return value ``ddnames[].ddname`` renamed to ``dds[].dd_name``.
+  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
+
+* ``zos_job_query``
+
+  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
+  * Return value ``message`` removed (top-level return value).
+
+* ``zos_job_submit``
+
+  * Module option ``location`` removed (choices: data_set, uss, local). Use new module option ``remote_src`` (boolean): ``location=data_set`` or ``location=uss`` → ``remote_src=true``, ``location=local`` → ``remote_src=false``.
+  * Module option ``wait_time_s`` renamed to ``wait_time``.
+  * Return value ``ddnames`` renamed to ``dds``.
+  * Return value ``ddnames[].ddname`` renamed to ``dds[].dd_name``.
+  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
+
+* ``zos_lineinfile``
+
+  * Module option ``insertafter`` can be referenced as ``after``.
+  * Module option ``insertbefore`` can be referenced as ``before``.
+  * Return value ``return_content`` renamed to ``stdout``.
+  * New return values: ``stderr``, ``stdout_lines``, ``stderr_lines``.
+
+* ``zos_mount``
+
+  * Sub-option ``persistent.data_store`` renamed to ``persistent.name`` (old name still accepted).
+  * Sub-option ``persistent.comment`` renamed to ``persistent.marker`` (old name still accepted).
+
+* ``zos_operator``
+
+  * Module option ``wait_time_s`` renamed to ``wait_time`` (use in conjunction with new option ``time_unit``).
+  * Return value ``content`` removed (replaced by ``stdout``, ``stderr``, ``stdout_lines`` and ``stderr_lines``).
+  * Return value ``wait_time_s`` renamed to ``wait_time``.
+  * New module option: ``time_unit`` (choices: ``s``, ``cs``).
+  * New return values: ``stdout``, ``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``.
+
+* ``zos_operator_action_query``
+
+  * Module option ``use_regex`` renamed to ``literal`` (note: ``literal`` is the inverse of ``use_regex``).
+  * Module option ``message_filter`` renamed to ``msg_filter`` (old name still accepted).
+  * Module option ``message_id`` renamed to ``msg_id`` (old name still accepted).
+  * Return value ``message_text`` renamed to ``msg_text``.
+  * Return value ``message_id`` renamed to ``msg_id``.
+
+* ``zos_tso_command``
+
+  * Return value ``content`` renamed to ``stdout``.
+  * Return value ``lines`` renamed to ``line_count``.
+  * New return values: ``stdout`` (string version), ``stdout_lines``, ``stderr_lines``.
+
+* ``zos_unarchive``
+
+  * Sub-option ``format.name`` renamed to ``format.type``.
+  * Sub-option ``format.format_options`` renamed to ``format.options``.
+  * Sub-option ``format.format_options.use_adrdssu`` renamed to ``format.options.adrdssu``.
+
+* ``playbook_upgrade_validator`` role - Added role to automate identification of migration changes needed in playbooks when upgrading from ibm_zos_core v1.x to v2.0.0. Analyzes playbooks and generates detailed reports of breaking and non-breaking changes.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+
+* Task line numbers in the playbook upgrade validator report rely on task names and may be ambiguous when duplicate task names exist within a playbook.
+* The playbook upgrade validator role runs on the control node (localhost) and does not require connection to z/OS systems.
+* Python 3 must be available on the control node for the validator to run.
+
 Version 1.16.0
 ==============
 

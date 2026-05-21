@@ -4,8 +4,8 @@
 .. _job_status_module:
 
 
-job_status -- Role that query, extract job status and if is running.
-====================================================================
+job_status -- Role that queries a job to extract its current status and determine its execution state.
+======================================================================================================
 
 
 .. contents::
@@ -15,7 +15,7 @@ job_status -- Role that query, extract job status and if is running.
 
 Synopsis
 --------
-- The **IBM z/ibm_zos_core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_id and parse the response to return as a msg the job status and if the job is currently running or not.
+- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_id and parse the response to return as a msg the job status and if the job is currently running or not.
 
 
 
@@ -57,7 +57,7 @@ Examples
        - include_role:
            name: job_status
          vars:
-           job_oid: STC00001
+           job_id: STC00001
 
 
 

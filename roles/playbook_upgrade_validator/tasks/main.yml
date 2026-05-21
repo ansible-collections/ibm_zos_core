@@ -37,6 +37,7 @@
   ansible.builtin.file:
     path: "{{ playbook_dir }}/logs"
     state: directory
+    mode: '0755'
   when: output_path is not defined
 
 - name: Set output_path variable if it was not defined
@@ -46,7 +47,7 @@
 
 - name: Set ignore_response_params variable if it was not defined
   ansible.builtin.set_fact:
-    ignore_response_params: False
+    ignore_response_params: false
   when: ignore_response_params is not defined
 
 - name: Run playbook upgrade validator to list migration changes
@@ -61,8 +62,9 @@
       --migration_map '{{ data | to_json }}'
   register: result
   delegate_to: localhost
+  changed_when: false
 
 - name: Print path where validation results are stored
-  debug:
+  ansible.builtin.debug:
     msg: "Results saved to file: {{ output_path }}"
   delegate_to: localhost

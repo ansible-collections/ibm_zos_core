@@ -1980,9 +1980,7 @@ cmd
   | **sample**: ADDUSER (DUSR1001)
 
 msg
-  Message returned by the module. Contains error messages on failure,
-informational messages when no changes are needed (e.g., entity already exists),
-or validation error messages.
+  Message returned by the module. Contains error messages on failure, informational messages when no changes are needed (e.g., entity already exists), or validation error messages.
 
 
   | **returned**: always
@@ -1996,9 +1994,7 @@ rc
   | **type**: int
 
 stdout
-  Standard output from the RACF command execution.
-In check mode, may contain informational messages about the entity state.
-For *state=purge*, this includes technical details such as dump data set names and CLIST processing messages.
+  Standard output from the RACF command execution. In check mode, may contain informational messages about the entity state. For *state=purge*, this includes technical details such as dump data set names and CLIST processing messages.
 
 
   | **returned**: always
@@ -2022,8 +2018,7 @@ stdout_lines
         ]
 
 stderr
-  Standard error from the RACF command execution.
-TSO command output is automatically filtered out.
+  Standard error from the RACF command execution. TSO command output is automatically filtered out.
 
 
   | **returned**: always
@@ -2044,10 +2039,7 @@ stderr_lines
         ]
 
 num_entities_modified
-  Returns the number of profiles and references modified by the state.
-Set to ``0`` if no changes were made (e.g., ``the entity is already in the desired state``).
-Set to ``1`` for successful single-entity states ``create, update, or delete``.
-For *state=purge*, this reflects the total number of user and group entities deleted.
+  Returns the number of profiles and references modified by the state. Set to ``0`` if no changes were made (e.g., ``the entity is already in the desired state``). Set to ``1`` for successful single-entity states ``create, update, or delete``. For *state=purge*, this reflects the total number of user and group entities deleted.
 
 
   | **returned**: always
@@ -2055,11 +2047,7 @@ For *state=purge*, this reflects the total number of user and group entities del
   | **sample**: 1
 
 entities_modified
-  A list of profiles and references modified by the state.
-For *profile_type=user*, state (``create``, ``update``, ``delete``, ``connect``, ``remove``): Contains the user profile name upon success.
-For *profile_type=group*, state ``create``, ``update``, ``delete``): Contains the group profile name upon success.
-For *state=purge*, contains all users/groups IDs deleted by the CLIST.
-Returns an empty list if no changes were necessary (e.g., entity is already in the desired state).
+  A list of profiles and references modified by the state. For *profile_type=user*, state (``create``, ``update``, ``delete``, ``connect``, ``remove``): Contains the user profile name upon success. For *profile_type=group*, state ``create``, ``update``, ``delete``): Contains the group profile name upon success. For *state=purge*, contains all users/groups IDs deleted by the CLIST. Returns an empty list if no changes were necessary (e.g., entity is already in the desired state).
 
 
   | **returned**: always
@@ -2074,27 +2062,21 @@ Returns an empty list if no changes were necessary (e.g., entity is already in t
         ]
 
 database_dumped
-  Whether the module used IRRDBU00 utility to dump the RACF database.
-Set to ``true`` only when the purge state successfully executes the ``IRRDBU00`` utility.
-Only relevant when *state=purge*.
+  Whether the module used IRRDBU00 utility to dump the RACF database. Set to ``true`` only when the purge state successfully executes the ``IRRDBU00`` utility. Only relevant when *state=purge*.
 
 
   | **returned**: always
   | **type**: bool
 
 dump_kept
-  Indicates whether the RACF database dump was retained on the managed node.
-This behavior is controlled by the *keep_dump* input parameter.
-Only relevant when *database_dumped=true*.
+  Indicates whether the RACF database dump was retained on the managed node. This behavior is controlled by the *keep_dump* input parameter. Only relevant when *database_dumped=true*.
 
 
   | **returned**: always
   | **type**: bool
 
 dump_name
-  The name of the data set containing the output from the ``IRRDBU00`` utility.
-This field is only populated when both *database_dumped* and *keep_dump* are ``true``.
-Otherwise, this value returns ``null``.
+  The name of the data set containing the output from the ``IRRDBU00`` utility. This field is only populated when both *database_dumped* and *keep_dump* are ``true``. Otherwise, this value returns ``null``.
 
 
   | **returned**: always

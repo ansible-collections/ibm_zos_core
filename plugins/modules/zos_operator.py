@@ -161,7 +161,7 @@ stdout:
       The standard output from the operator command execution.
     returned: always
     type: str
-    sample: |
+    sample: >
         EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED
         EC000000   2022244  16:00:49.00            -D U,ALL
         EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645

@@ -194,9 +194,7 @@ stdout
 
   | **returned**: always
   | **type**: str
-  | **sample**: EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED
-EC000000   2022244  16:00:49.00            -D U,ALL
-EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645
+  | **sample**: EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED EC000000   2022244  16:00:49.00            -D U,ALL EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645
                                            UNIT TYPE STATUS        VOLSER     VOLSTATE      SS
                                            0000 3390 F-NRD                        /RSDNT     0
                                            0001 3211 OFFLINE                                 0

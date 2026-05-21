@@ -1,20 +1,20 @@
-=======================================================
+==========================================================
 Migrating Ansible z/OS Core collection from v1.x to v2.0.0
-=======================================================
+==========================================================
 
 This guide covers breaking and recommended changes for upgrading
 playbooks and roles to ibm.ibm_zos_core **v2.0.0**, including updates to
 module options and return values.
 
 Overview
-==========================================
+========
 
 The changes introduced in version 2.0 improve consistency and automation
 reliability by using standardized naming conventions and predictable
 return structures.
 
 **Key improvements:**
--------
+---------------------
 
 - **Consistent naming** - Module option names and return values are
   standardized across the collection.
@@ -22,7 +22,7 @@ return structures.
   rather than dynamically based on module operation results.
 
 **Impact on existing playbooks:**
--------
+---------------------------------
 
 To standardize naming across the collection, some module options
 and return values are renamed:
@@ -33,7 +33,7 @@ and return values are renamed:
   with old names still supported as aliases.
 
 Modules: Breaking and non-breaking changes
-=============================================
+==========================================
 
 Breaking changes are all the module options that are renamed where
 the old names are no longer supported. It also includes any return values
@@ -876,34 +876,21 @@ Examples
 
    // Before
    {
-   "changed": True,
+   "changed": true,
    "cmd": "",
    "found": 1,
-   "return_content": '{
-       "cmd": "dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q ",
-       "found": 1,
-       "changed": true
-   }',
+   "return_content": "{ \"cmd\": \"dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q \", \"found\": 1, \"changed\": true }",
    "stderr": "",
    "rc": 0,
    "backup_name": ""
    }
    // After
    {
-   "changed": True,
+   "changed": true,
    "cmd": "",
    "found": 1,
-   "stdout": '{
-       "cmd": "dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q ",
-       "found": 1,
-       "changed": true
-   }',
-   "stdout_lines": ['{
-       "cmd": "dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q ",
-       "found": 1,
-       "changed": true
-       }'
-   ],
+   "stdout": "{ \"cmd\": \"dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q \", \"found\": 1, \"changed\": true }",
+   "stdout_lines": ["{ \"cmd\": \"dsedhelper -d -c IBM-1047 -s -e /ZOAU_ROOT=/a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed/$ -e $ a\\\\\\\\ZOAU_ROOT=/mvsutil-develop_dsed ANSIBLE.PQWQE2RW.T4619709.CUEB9A5Q \", \"found\": 1, \"changed\": true }"],
    "stderr": "",
    "stderr_lines": [],
    "rc": 0,
@@ -1323,7 +1310,7 @@ The following variables can be configured:
   response parameter changes from the report. Defaults to ``false``.
 
 Usage example
-------------
+-------------
 
 Create a playbook (e.g., ``validate_migration.yml``) to run the
 validator role:
@@ -1406,9 +1393,10 @@ Each entry includes:
  - **task_name**: Name of the task that needs changes. 
  - **module**: Fully qualified module name. 
  - **task_line**: Line number where the task appears in the playbook.
- - **migration_actions**: Array of required changes, prefixed with: 
-  - ``[MUST_FIX]``- Breaking changes that must be addressed. 
-  - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
+ - **migration_actions**: Array of required changes, prefixed with:
+
+   - ``[MUST_FIX]``- Breaking changes that must be addressed.
+   - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
 
 Best Practices
 -----------------------------

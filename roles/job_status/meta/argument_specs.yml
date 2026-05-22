@@ -15,7 +15,7 @@ argument_specs:
     short_description: Query a job to extract its current status and determine its execution state.
     description:
       - >-
-        The B(job_status) role queries a particular job with a given job_id and parses the response
+        The B(job_status) role queries a particular job with a given job_status_id and parses the response
         to return the job status and whether the job is currently running.
       - >-
         The role tolerates the asterisk (C(*)) as wildcard but only retrieves information from
@@ -23,7 +23,7 @@ argument_specs:
     author:
       - Marcel Gutierrez (@AndreMarcel99)
     options:
-      job_id:
+      job_status_id:
         description:
           - The job id that has been assigned to the job.
           - A job id must begin with C(STC), C(JOB), C(TSU) and are followed by up to 5 digits.

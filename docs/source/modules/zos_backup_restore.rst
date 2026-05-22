@@ -331,9 +331,9 @@ tmp_hlq
 
 
 index
-  When ``operation=backup`` specifies that for any VSAM cluster backup, the backup must also contain all the associated alternate index (AIX®) clusters and paths.
+  When ``operation=backup`` specifies that for any VSAM cluster backup, the backup must also contain all the associated alternate index (AIX) clusters and paths.
 
-  When ``operation=restore`` specifies that for any VSAM cluster dumped with the SPHERE keyword, the module must also restore all associated AIX® clusters and paths.
+  When ``operation=restore`` specifies that for any VSAM cluster dumped with the SPHERE keyword, the module must also restore all associated AIX clusters and paths.
 
   The alternate index is a VSAM function that allows logical records of a KSDS or ESDS to be accessed sequentially and directly by more than one key field. The cluster that has the data is called the base cluster. An alternate index cluster is then built from the base cluster.
 

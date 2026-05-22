@@ -12,6 +12,29 @@ Version 2.0.0
 Minor Changes
 -------------
 
+- ``zos_backup_restore``
+
+   - Adds option ``access`` to specify how the module will access data sets and z/OS UNIX files when performing a backup or restore operation. 
+   - Adds option ``share`` to specify the module allow data set read access to other programs while backing up or restoring.
+   - Adds option ``auth`` allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and catalogs.
+   - Adds option ``compress`` option to enable compression of partitioned data sets using hardware compression if available.
+   - Adds option ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
+   - Adds option ``disable_automatic_class`` to specify that automatic class selection routines will not be used to determine classes for provide list.
+   - Adds option ``disable_automatic_storage_class`` to specify the automatic class selection routines will not be used to determine the source data set storage class.
+   - Adds option ``disable_automatic_management_class`` to specify the automatic class selection routines will not be used to determine the source data set management class.
+   - Adds option ``index`` that allows for the backup and restore of all the associated alternate index (AIX) clusters and paths of a VSAM.
+   - Adds option ``output`` to specify how backup will be restored to the filesystem when ``operation=restore``.
+
+- ``zos_data_set``
+
+   - Adds option `noscratch` to allow uncataloging a data set without deleting it from the volume's VTOC.
+   - Adds return value ``data_sets`` which contains the attributes of all data sets created.
+
+- ``zos_encode`` - Adds new return value ``encoding`` that contains the ``from`` and ``to`` encoding values used in the operation.
+
+Breaking Changes / Porting Guide
+--------------------------------
+
 * ``zos_apf``
 
   * Sub-option ``persistent.data_set_name`` renamed to ``persistent.target`` (old name still accepted).
@@ -35,6 +58,7 @@ Minor Changes
   * New module option: ``index``.
   * New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``.
 
+
 * ``zos_blockinfile``
 
   * Module option ``insertafter`` can be referenced as ``after``.
@@ -51,6 +75,7 @@ Minor Changes
 * ``zos_data_set``
 
   * Return value ``names`` renamed to ``data_sets``.
+
 
 * ``zos_fetch``
 
@@ -125,7 +150,28 @@ Minor Changes
   * Sub-option ``format.format_options`` renamed to ``format.options``.
   * Sub-option ``format.format_options.use_adrdssu`` renamed to ``format.options.adrdssu``.
 
-* ``playbook_upgrade_validator`` role - Added role to automate identification of migration changes needed in playbooks when upgrading from ibm_zos_core v1.x to v2.0.0. Analyzes playbooks and generates detailed reports of breaking and non-breaking changes.
+Bugfixes
+--------
+- ``zos_backup_restore`` - Clarified documentation for `temp_volume`, including a known issue where operations fail if `temp_volume` matches source volume or is not specified.
+- ``zos_fetch`` - Fixed an ``UnboundLocalError`` that could occur when source was missing. Fix  initializes the ``is_member`` prior to data set existence checks, allowing the module to fail gracefully.
+- ``zos_mount`` - Fixed an issue where using the ``persistent`` option could delete the entire member or data set even without a pattern match. Fix now only deletes content when a pattern match is found, preserving existing configuration.
+- ``zos_started_task`` - System logs could not be fetched due to an internal variable name conflict. Fix renames the internal variable to distinguish the boolean control flag from the system_logs output variable.
+
+New Filter Plugins
+------------------
+
+- ``ibm.ibm_zos_core.generate_data_set_name`` - Filter HLQs to generate a new random valid data set name.
+- ``ibm.ibm_zos_core.zos_stat_by_type`` - Filter down zos_stat output based on the type of resource that queried.
+
+New Modules
+-----------
+
+- ``zos_user`` - Manage z/OS user and group profiles in RACF.
+
+New Roles
+---------
+- ``gather_diagnostics`` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios. (https://github.com/ansible-collections/ibm_zos_core/issues/2168).
+- ``playbook_upgrade_validator`` - adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0. (https://github.com/ansible-collections/ibm_zos_core/issues/2167)
 
 Availability
 ------------

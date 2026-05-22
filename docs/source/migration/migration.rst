@@ -110,21 +110,21 @@ Breaking changes
 
 * Sub-options renamed:
 
-  * ``format.format_options`` → ``format.options``
-  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``
-  * ``format.format_options.terse_pack`` → ``format.options.spack``
+  * ``format.format_options`` → ``format.options``.
+  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``.
+  * ``format.format_options.terse_pack`` → ``format.options.spack``.
 
-    * the type has changed from ``string`` to ``bool``
+    * the type has changed from ``string`` to ``bool``.
     * ``spack=true`` uses 'spack' as the compression algorithm, while ``spack=false`` uses the pack algorithm.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* Sub-option renamed: ``format.name`` → ``format.type`` (old name still accepted)
+* Sub-option renamed: ``format.name`` → ``format.type`` (old name still accepted).
 
-  * Recommendation: Use ``name`` in new playbooks
+  * Recommendation: Use ``name`` in new playbooks.
 
-* New return value: ``dest``
+* New return value: ``dest``.
 
 Examples
 ^^^^^^^^
@@ -200,9 +200,9 @@ Breaking changes
 
 * Module options renamed:
 
-  * ``hlq`` → ``output.hlq``
-  * ``sms_storage_class`` → ``sms.storage_class``
-  * ``sms_management_class`` → ``sms.management_class``
+  * ``hlq`` → ``output.hlq``.
+  * ``sms_storage_class`` → ``sms.storage_class``.
+  * ``sms_management_class`` → ``sms.management_class``.
 
 Examples
 ^^^^^^^^
@@ -236,9 +236,9 @@ Examples
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* New module option: ``access`` (with suboptions: ``share``, ``auth``)
-* New module option: ``index``
-* New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``
+* New module option: ``access`` (with suboptions: ``share``, ``auth``).
+* New module option: ``index``.
+* New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``.
 
 Examples
 ^^^^^^^^
@@ -286,11 +286,11 @@ Non-breaking changes
 
 * Module option aliases:
 
-  * ``insertafter`` can be referenced as ``after``
-  * ``insertbefore`` can be referenced as ``before``
+  * ``insertafter`` can be referenced as ``after``.
+  * ``insertbefore`` can be referenced as ``before``.
 
-* New return value: ``stdout_lines``
-* New return value: ``stderr_lines``
+* New return value: ``stdout_lines``.
+* New return value: ``stderr_lines``.
 
 Examples
 ^^^^^^^^
@@ -347,12 +347,12 @@ Breaking changes
 
 * Module options renamed:
 
-  * ``is_binary`` → ``binary``
-  * ``force`` → ``replace``
+  * ``is_binary`` → ``binary``.
+  * ``force`` → ``replace``.
 
     * **NOTE**: option ``force`` remains a *valid* module option with **different** functionality.
 
-  * ``force_lock`` → ``force``
+  * ``force_lock`` → ``force``.
 
 Examples
 ^^^^^^^^
@@ -401,7 +401,7 @@ zos_data_set
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Return value renamed: ``names`` → ``data_sets``
+* Return value renamed: ``names`` → ``data_sets``.
 
 Examples
 ^^^^^^^^
@@ -434,18 +434,18 @@ zos_fetch
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Module option renamed: ``is_binary`` → ``binary``
+* Module option renamed: ``is_binary`` → ``binary``.
 * Return values renamed:
 
-  * ``file`` → ``src``
-  * ``is_binary`` → ``binary``
-  * ``note`` → ``msg``
+  * ``file`` → ``src``.
+  * ``is_binary`` → ``binary``.
+  * ``note`` → ``msg``.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* New return value: ``encoding`` (with ``from``/``to`` suboptions)
-* New return values: ``stdout``, ``stderr``, ``stdout_lines``, ``stderr_lines``
+* New return value: ``encoding`` (with ``from``/``to`` suboptions).
+* New return values: ``stdout``, ``stderr``, ``stdout_lines``, ``stderr_lines``.
 
 Examples
 ^^^^^^^^
@@ -510,10 +510,10 @@ zos_find
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Module option removed: ``pds_patterns`` (and its aliases: ``pds_paths``, ``pds_pattern``)
+* Module option removed: ``pds_patterns`` (and its aliases: ``pds_paths``, ``pds_pattern``).
 
-  * In v1.x, this option was used to specify PDS/PDSE data sets to search for members
-  * In v2.0.0, use the ``patterns`` option with PDS member syntax: ``DATASET.NAME(MEMBER*)``
+  * In v1.x, this option was used to specify PDS/PDSE data sets to search for members.
+  * In v2.0.0, use the ``patterns`` option with PDS member syntax: ``DATASET.NAME(MEMBER*)``.
 
 Examples
 ^^^^^^^^
@@ -549,10 +549,10 @@ Breaking changes
 
 * Return values renamed:
 
-  * ``ddnames`` → ``dds``
-  * ``ddnames[].ddname`` → ``dds[].dd_name``
+  * ``ddnames`` → ``dds``.
+  * ``ddnames[].ddname`` → ``dds[].dd_name``.
 
-* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level).
 
 Examples
 ^^^^^^^^
@@ -622,9 +622,9 @@ Examples
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* Module option renamed: ``ddname`` → ``dd_name`` (old name still accepted)
+* Module option renamed: ``ddname`` → ``dd_name`` (old name still accepted).
 
-  * Recommendation: Use ``dd_name`` in new playbooks
+  * Recommendation: Use ``dd_name`` in new playbooks.
 
 Examples
 ^^^^^^^^
@@ -651,8 +651,8 @@ zos_job_query
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
-* Return value removed: ``message`` (top-level return value removed)
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level).
+* Return value removed: ``message`` (top-level return value removed).
 
 Examples
 ^^^^^^^^
@@ -716,19 +716,19 @@ zos_job_submit
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Module option removed: ``location`` (choices: data_set, uss, local)
+* Module option removed: ``location`` (choices: data_set, uss, local).
 
-  * Use new module option ``remote_src`` (boolean)
-  * ``location=data_set`` or ``location=uss`` → ``remote_src=true``
-  * ``location=local`` → ``remote_src=false``
+  * Use new module option ``remote_src`` (boolean).
+  * ``location=data_set`` or ``location=uss`` → ``remote_src=true``.
+  * ``location=local`` → ``remote_src=false``.
 
-* Module option renamed: ``wait_time_s`` → ``wait_time``
+* Module option renamed: ``wait_time_s`` → ``wait_time``.
 * Return values renamed:
 
-  * ``ddnames`` → ``dds``
-  * ``ddnames[].ddname`` → ``dds[].dd_name``
+  * ``ddnames`` → ``dds``.
+  * ``ddnames[].ddname`` → ``dds[].dd_name``.
 
-* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level)
+* Return value moved: ``ret_code.steps`` → ``steps`` (moved from inside ret_code to job level).
 
 Examples
 ^^^^^^^^
@@ -833,17 +833,17 @@ zos_lineinfile
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Return value renamed: ``return_content`` → ``stdout``
+* Return value renamed: ``return_content`` → ``stdout``.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
 * Module option aliases:
 
-  * ``insertafter`` can be referenced as ``after``
-  * ``insertbefore`` can be referenced as ``before``
+  * ``insertafter`` can be referenced as ``after``.
+  * ``insertbefore`` can be referenced as ``before``.
 
-* New return values: ``stderr``, ``stdout_lines``, ``stderr_lines``
+* New return values: ``stderr``, ``stdout_lines``, ``stderr_lines``.
 
 Examples
 ^^^^^^^^
@@ -907,9 +907,9 @@ Non-breaking changes
 
 * Sub-options renamed:
 
-  * ``persistent.data_store`` → ``persistent.name`` (old name still accepted)
-  * ``persistent.comment`` → ``persistent.marker`` (old name still accepted)
-  * Recommendation: Use new names in new playbooks
+  * ``persistent.data_store`` → ``persistent.name`` (old name still accepted).
+  * ``persistent.comment`` → ``persistent.marker`` (old name still accepted).
+  * Recommendation: Use new names in new playbooks.
 
 Examples
 ^^^^^^^^
@@ -950,18 +950,18 @@ zos_operator
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Module option renamed: ``wait_time_s`` → ``wait_time``
+* Module option renamed: ``wait_time_s`` → ``wait_time``.
 
-  * Use in conjunction with new option ``time_unit`` to indicate seconds/centiseconds
+  * Use in conjunction with new option ``time_unit`` to indicate seconds/centiseconds.
 
-* Return value removed: ``content`` (replaced by ``stdout``, ``stderr``, ``stdout_lines`` and ``stderr_lines``)
-* Return value renamed: ``wait_time_s`` → ``wait_time``
+* Return value removed: ``content`` (replaced by ``stdout``, ``stderr``, ``stdout_lines`` and ``stderr_lines``).
+* Return value renamed: ``wait_time_s`` → ``wait_time``.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* New module option: ``time_unit`` (choices: ``s``, ``cs``)
-* New return values: ``stdout``, ``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``
+* New module option: ``time_unit`` (choices: ``s``, ``cs``).
+* New return values: ``stdout``, ``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``.
 
 Examples
 ^^^^^^^^
@@ -1039,23 +1039,23 @@ zos_operator_action_query
 Breaking changes
 ^^^^^^^^^^^^^^^^
 
-* Module option renamed: ``use_regex`` → ``literal``
+* Module option renamed: ``use_regex`` → ``literal``.
 
-  * **Note:** ``literal`` is the inverse of ``use_regex`` (behavior is reversed)
+  * **Note:** ``literal`` is the inverse of ``use_regex`` (behavior is reversed).
 
 * Return values renamed:
 
-  * ``message_text`` → ``msg_text``
-  * ``message_id`` → ``msg_id``
+  * ``message_text`` → ``msg_text``.
+  * ``message_id`` → ``msg_id``.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
 * Module options renamed:
 
-  * ``message_filter`` → ``msg_filter`` (old name still accepted)
-  * ``message_id`` → ``msg_id`` (old name still accepted)
-  * Recommendation: Use new names in new playbooks
+  * ``message_filter`` → ``msg_filter`` (old name still accepted).
+  * ``message_id`` → ``msg_id`` (old name still accepted).
+  * Recommendation: Use new names in new playbooks.
 
 Examples
 ^^^^^^^^
@@ -1140,13 +1140,13 @@ Breaking changes
 
 * Return values renamed:
 
-  * ``content`` → ``stdout``
-  * ``lines`` → ``line_count``
+  * ``content`` → ``stdout``.
+  * ``lines`` → ``line_count``.
 
 Non-breaking changes
 ^^^^^^^^^^^^^^^^^^^^
 
-* New return values: ``stdout`` (string version), ``stdout_lines`` (replaces ``content`` list), ``stderr_lines``
+* New return values: ``stdout`` (string version), ``stdout_lines`` (replaces ``content`` list), ``stderr_lines``.
 
 Examples
 ^^^^^^^^
@@ -1216,9 +1216,9 @@ Breaking changes
 
 * Sub-options renamed:
 
-  * ``format.name`` → ``format.type``
-  * ``format.format_options`` → ``format.options``
-  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``
+  * ``format.name`` → ``format.type``.
+  * ``format.format_options`` → ``format.options``.
+  * ``format.format_options.use_adrdssu`` → ``format.options.adrdssu``.
 
 Examples
 ^^^^^^^^
@@ -1287,11 +1287,11 @@ migration rules and generates a detailed report of required changes. For
 each task using an ibm_zos_core module, it identifies:
 
 - **Renamed parameters** - Module options that have new names (reported
-  as ``[MUST_FIX]``)
+  as ``[MUST_FIX]``).
 - **Type-changed parameters** - Module options with modified data types
-  (reported as ``[MUST_FIX]``)
+  (reported as ``[MUST_FIX]``).
 - **Response parameter changes** - Return values that are renamed
-  or restructured (reported as ``[WARNING]``)
+  or restructured (reported as ``[WARNING]``).
 
 The report includes the exact playbook path, play name, task name, line
 number, and specific migration actions needed for each affected task.

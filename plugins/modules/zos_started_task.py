@@ -262,7 +262,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "started"
     member_name: "PROCAPP"
-    verbose: True
+    verbose: true
     wait_time: 30
     wait_full_time: true
 
@@ -307,7 +307,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "cancelled"
     job_name: "SAMPLE"
-    asidx: 0014
+    asidx: '0014'
 
 - name: Modify a started task's parameters.
   zos_started_task:

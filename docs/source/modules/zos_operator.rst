@@ -129,8 +129,8 @@ Examples
    - name: Execute an operator command to show device status and allocation wait 10 centiseconds.
      zos_operator:
        cmd: 'd u'
-       wait_time : 10
-       time_unit : 'cs'
+       wait_time: 10
+       time_unit: 'cs'
 
 
 

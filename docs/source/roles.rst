@@ -28,7 +28,7 @@ Reference material for each role contains documentation on how to use certain
 roles in your playbook. To use certain roles in your playbook, each role contain documentation see the following material:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 
    : glob:
 
    roles/*  

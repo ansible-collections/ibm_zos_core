@@ -4,7 +4,7 @@
 .. _job_status_module:
 
 
-job_status -- Role that queries a job to extract its current status and determine its execution state.
+job_status
 ======================================================================================================
 
 

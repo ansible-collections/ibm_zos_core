@@ -4,8 +4,8 @@
 .. _playbook_upgrade_validator_module:
 
 
-playbook_upgrade_validator -- Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
-============================================================================================================
+playbook_upgrade_validator -- Build report to migrate playbooks to v2.0.0.
+==========================================================================
 
 
 .. contents::

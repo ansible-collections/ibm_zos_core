@@ -1,6 +1,6 @@
 # ibm.ibm_zos_core.playbook_upgrade_validator
 
-This role validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
+This role builds a report to migrate playbooks to v2.0.0..
 
 ## Role Variables
 

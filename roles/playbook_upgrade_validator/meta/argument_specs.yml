@@ -1,6 +1,6 @@
 argument_specs:
   main:
-    short_description: Validate playbooks for IBM z/OS Core migration changes.
+    short_description: Build report to migrate playbooks to v2.0.0.
     description:
       - Validates one or more Ansible playbooks against IBM z/OS Core migration rules.
       - Reports removed, renamed, and type-changed parameters and response fields.

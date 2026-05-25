@@ -12,7 +12,7 @@
 ---
 galaxy_info:
   author: "Marcel Gutierrez (@AndreMarcel99)"
-  description: Query a job to extract its current status and determine its execution state
+  description: Query a job for status and execution state
   company: IBM
   license: Apache-2.0
   min_ansible_version: "2.15"

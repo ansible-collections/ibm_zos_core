@@ -12,7 +12,7 @@
 ---
 argument_specs:
   main:
-    short_description: Query a job to extract its current status and determine its execution state.
+    short_description: Query a job for status and execution state.
     description:
       - >-
         The B(job_status) role queries a particular job with a given job_status_id and parses the response

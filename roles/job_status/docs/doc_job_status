@@ -11,7 +11,7 @@
 
 DOCUMENTATION = r"""
 role: job_status
-short_description: Role that queries a job to extract its current status and determine its execution state.
+short_description: Query a job for status and execution state.
 description:
     - >
       The B(IBM z/OS core collection) provides an Ansible role, referred to as

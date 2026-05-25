@@ -23,7 +23,7 @@ Minor Changes
    - Adds option `disable_automatic_storage_class` to specify the automatic class selection routines will not be used to determine the source data set storage class.
    - Adds option `disable_automatic_management_class` to specify the automatic class selection routines will not be used to determine the source data set management class.
    - Adds option `index` that allows for the backup and restore of all the associated alternate index (AIX) clusters and paths of a VSAM.
-   - Adds option `output` to specify how backup will be restored to the filesystem when ``operation=restore``.
+   - Adds option `output` to specify how backup will be restored to the filesystem when `operation=restore`.
 
 - ``zos_data_set``
 

@@ -14,154 +14,154 @@ Minor Changes
 
 - ``zos_backup_restore``
 
-   - Adds option ``access`` to specify how the module will access data sets and z/OS UNIX files when performing a backup or restore operation. 
-   - Adds option ``share`` to specify the module allow data set read access to other programs while backing up or restoring.
-   - Adds option ``auth`` allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and catalogs.
-   - Adds option ``compress`` option to enable compression of partitioned data sets using hardware compression if available.
-   - Adds option ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
-   - Adds option ``disable_automatic_class`` to specify that automatic class selection routines will not be used to determine classes for provide list.
-   - Adds option ``disable_automatic_storage_class`` to specify the automatic class selection routines will not be used to determine the source data set storage class.
-   - Adds option ``disable_automatic_management_class`` to specify the automatic class selection routines will not be used to determine the source data set management class.
-   - Adds option ``index`` that allows for the backup and restore of all the associated alternate index (AIX) clusters and paths of a VSAM.
-   - Adds option ``output`` to specify how backup will be restored to the filesystem when ``operation=restore``.
+   - Adds option `access` to specify how the module will access data sets and z/OS UNIX files when performing a backup or restore operation. 
+   - Adds option `share` to specify the module allow data set read access to other programs while backing up or restoring.
+   - Adds option `auth` allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and catalogs.
+   - Adds option `compress` option to enable compression of partitioned data sets using hardware compression if available.
+   - Adds option `terse` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
+   - Adds option `disable_automatic_class` to specify that automatic class selection routines will not be used to determine classes for provide list.
+   - Adds option `disable_automatic_storage_class` to specify the automatic class selection routines will not be used to determine the source data set storage class.
+   - Adds option `disable_automatic_management_class` to specify the automatic class selection routines will not be used to determine the source data set management class.
+   - Adds option `index` that allows for the backup and restore of all the associated alternate index (AIX) clusters and paths of a VSAM.
+   - Adds option `output` to specify how backup will be restored to the filesystem when ``operation=restore``.
 
 - ``zos_data_set``
 
    - Adds option `noscratch` to allow uncataloging a data set without deleting it from the volume's VTOC.
-   - Adds return value ``data_sets`` which contains the attributes of all data sets created.
+   - Adds return value `data_sets` which contains the attributes of all data sets created.
 
-- ``zos_encode`` - Adds new return value ``encoding`` that contains the ``from`` and ``to`` encoding values used in the operation.
+- ``zos_encode`` - Adds new return value `encoding` that contains the `from` and `to` encoding values used in the operation.
 
 Breaking Changes / Porting Guide
 --------------------------------
 
 * ``zos_apf``
 
-  * Sub-option ``persistent.data_set_name`` renamed to ``persistent.target`` (old name still accepted).
-  * New return value: ``stdout_lines``.
-  * New return value: ``stderr_lines``.
+  * Sub-option `persistent.data_set_name` renamed to `persistent.target` (old name still accepted).
+  * New return value: `stdout_lines`.
+  * New return value: `stderr_lines`.
 
 * ``zos_archive``
 
-  * Sub-option ``format.name`` renamed to ``format.type`` (old name still accepted).
-  * Sub-option ``format.format_options`` renamed to ``format.options``.
-  * Sub-option ``format.format_options.use_adrdssu`` renamed to ``format.options.adrdssu``.
-  * Sub-option ``format.format_options.terse_pack`` renamed to ``format.options.spack`` (type changed from ``string`` to ``bool``).
-  * New return value: ``dest``.
+  * Sub-option `format.name` renamed to `format.type` (old name still accepted).
+  * Sub-option `format.format_options` renamed to `format.options`.
+  * Sub-option `format.format_options.use_adrdssu` renamed to `format.options.adrdssu`.
+  * Sub-option `format.format_options.terse_pack` renamed to `format.options.spack` (type changed from `string` to `bool`).
+  * New return value: `dest`.
 
 * ``zos_backup_restore``
 
-  * Module option ``hlq`` renamed to ``output.hlq``.
-  * Module option ``sms_storage_class`` renamed to ``sms.storage_class``.
-  * Module option ``sms_management_class`` renamed to ``sms.management_class``.
-  * New module option: ``access`` (with suboptions: ``share``, ``auth``).
-  * New module option: ``index``.
-  * New SMS suboptions: ``disable_automatic_class``, ``disable_automatic_storage_class``, ``disable_automatic_management_class``.
+  * Module option `hlq` renamed to `output.hlq`.
+  * Module option `sms_storage_class` renamed to `sms.storage_class`.
+  * Module option `sms_management_class` renamed to `sms.management_class`.
+  * New module option: `access` (with suboptions: `share`, `auth`).
+  * New module option: `index`.
+  * New SMS suboptions: `disable_automatic_class`, `disable_automatic_storage_class`, `disable_automatic_management_class`.
 
 
 * ``zos_blockinfile``
 
-  * Module option ``insertafter`` can be referenced as ``after``.
-  * Module option ``insertbefore`` can be referenced as ``before``.
-  * New return value: ``stdout_lines``.
-  * New return value: ``stderr_lines``.
+  * Module option `insertafter` can be referenced as `after`.
+  * Module option `insertbefore` can be referenced as `before`.
+  * New return value: `stdout_lines`.
+  * New return value: `stderr_lines`.
 
 * ``zos_copy``
 
-  * Module option ``is_binary`` renamed to ``binary``.
-  * Module option ``force`` renamed to ``replace`` (note: ``force`` remains valid with different functionality).
-  * Module option ``force_lock`` renamed to ``force``.
+  * Module option `is_binary` renamed to `binary`.
+  * Module option `force` renamed to `replace` (note: `force` remains valid with different functionality).
+  * Module option `force_lock` renamed to `force`.
 
 * ``zos_data_set``
 
-  * Return value ``names`` renamed to ``data_sets``.
+  * Return value `names` renamed to `data_sets`.
 
 
 * ``zos_fetch``
 
-  * Module option ``is_binary`` renamed to ``binary``.
-  * Return value ``file`` renamed to ``src``.
-  * Return value ``is_binary`` renamed to ``binary``.
-  * Return value ``note`` renamed to ``msg``.
-  * New return value: ``encoding`` (with ``from``/``to`` suboptions).
-  * New return values: ``stdout``, ``stderr``, ``stdout_lines``, ``stderr_lines``.
+  * Module option `is_binary` renamed to `binary`.
+  * Return value `file` renamed to `src`.
+  * Return value `is_binary` renamed to `binary`.
+  * Return value `note` renamed to `msg`.
+  * New return value: `encoding` (with `from`/ `to` suboptions).
+  * New return values: `stdout`, `stderr`, `stdout_lines`, `stderr_lines`.
 
 * ``zos_find``
 
-  * Module option ``pds_patterns`` removed (and aliases ``pds_paths``, ``pds_pattern``). In v1.x, this option was used to specify PDS/PDSE data sets to search for members. In v2.0.0, use the ``patterns`` option with PDS member syntax: ``DATASET.NAME(MEMBER*)``.
+  * Module option `pds_patterns` removed (and aliases `pds_path`, `pds_pattern`). In v1.x, this option was used to specify PDS/PDSE data sets to search for members. In v2.0.0, use the `patterns` option with PDS member syntax: `DATASET.NAME(MEMBER*)`.
 
 * ``zos_job_output``
 
-  * Module option ``ddname`` renamed to ``dd_name`` (old name still accepted).
-  * Return value ``ddnames`` renamed to ``dds``.
-  * Return value ``ddnames[].ddname`` renamed to ``dds[].dd_name``.
-  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
+  * Module option `ddname` renamed to `dd_name` (old name still accepted).
+  * Return value `ddnames` renamed to `dds`.
+  * Return value `ddnames[].ddname` renamed to `dds[].dd_name`.
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
 
 * ``zos_job_query``
 
-  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
-  * Return value ``message`` removed (top-level return value).
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
+  * Return value `message` removed (top-level return value).
 
 * ``zos_job_submit``
 
-  * Module option ``location`` removed (choices: data_set, uss, local). Use new module option ``remote_src`` (boolean): ``location=data_set`` or ``location=uss`` → ``remote_src=true``, ``location=local`` → ``remote_src=false``.
-  * Module option ``wait_time_s`` renamed to ``wait_time``.
-  * Return value ``ddnames`` renamed to ``dds``.
-  * Return value ``ddnames[].ddname`` renamed to ``dds[].dd_name``.
-  * Return value ``ret_code.steps`` moved to ``steps`` (moved from inside ret_code to job level).
+  * Module option `location` removed (choices: data_set, uss, local). Use new module option `remote_src` (boolean): `location=data_set` or `location=uss` → `remote_src=true`, `location=local`` → `remote_src=false`.
+  * Module option `wait_time_s` renamed to `wait_time`.
+  * Return value `ddnames` renamed to `dds`.
+  * Return value `ddnames[].ddname`` renamed to `dds[].dd_name`.
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
 
 * ``zos_lineinfile``
 
-  * Module option ``insertafter`` can be referenced as ``after``.
-  * Module option ``insertbefore`` can be referenced as ``before``.
-  * Return value ``return_content`` renamed to ``stdout``.
-  * New return values: ``stderr``, ``stdout_lines``, ``stderr_lines``.
+  * Module option `insertafter` can be referenced as `after`.
+  * Module option `insertbefore` can be referenced as `before`.
+  * Return value `return_content` renamed to `stdout`.
+  * New return values: `stderr`, `stdout_lines`, `stderr_lines`.
 
 * ``zos_mount``
 
-  * Sub-option ``persistent.data_store`` renamed to ``persistent.name`` (old name still accepted).
-  * Sub-option ``persistent.comment`` renamed to ``persistent.marker`` (old name still accepted).
+  * Sub-option `persistent.data_store` renamed to `persistent.name` (old name still accepted).
+  * Sub-option `persistent.comment` renamed to `persistent.marker` (old name still accepted).
 
 * ``zos_operator``
 
-  * Module option ``wait_time_s`` renamed to ``wait_time`` (use in conjunction with new option ``time_unit``).
-  * Return value ``content`` removed (replaced by ``stdout``, ``stderr``, ``stdout_lines`` and ``stderr_lines``).
-  * Return value ``wait_time_s`` renamed to ``wait_time``.
-  * New module option: ``time_unit`` (choices: ``s``, ``cs``).
-  * New return values: ``stdout``, ``stdout_lines``, ``stderr``, ``stderr_lines``, ``time_unit``.
+  * Module option `wait_time_s` renamed to `wait_time` (use in conjunction with new option `time_unit`).
+  * Return value `content` removed (replaced by `stdout`, `stderr`, `stdout_lines` and `stderr_lines`).
+  * Return value `wait_time_s` renamed to `wait_time`.
+  * New module option: `time_unit` (choices: `s`, `cs`).
+  * New return values: `stdout`, `stdout_lines`, `stderr`, `stderr_lines`, `time_unit`.
 
 * ``zos_operator_action_query``
 
-  * Module option ``use_regex`` renamed to ``literal`` (note: ``literal`` is the inverse of ``use_regex``).
-  * Module option ``message_filter`` renamed to ``msg_filter`` (old name still accepted).
-  * Module option ``message_id`` renamed to ``msg_id`` (old name still accepted).
-  * Return value ``message_text`` renamed to ``msg_text``.
-  * Return value ``message_id`` renamed to ``msg_id``.
+  * Module option `use_regex` renamed to `literal` (note: `literal` is the inverse of `use_regex`).
+  * Module option `message_filter` renamed to `msg_filter`` (old name still accepted).
+  * Module option `message_id` renamed to `msg_id` (old name still accepted).
+  * Return value `message_text` renamed to `msg_text`.
+  * Return value `message_id` renamed to `msg_id`.
 
 * ``zos_tso_command``
 
-  * Return value ``content`` renamed to ``stdout``.
-  * Return value ``lines`` renamed to ``line_count``.
-  * New return values: ``stdout`` (string version), ``stdout_lines``, ``stderr_lines``.
+  * Return value `content` renamed to `stdout`.
+  * Return value `lines` renamed to `line_count`.
+  * New return values: `stdout` (string version), `stdout_lines`, `stderr_lines`.
 
 * ``zos_unarchive``
 
-  * Sub-option ``format.name`` renamed to ``format.type``.
-  * Sub-option ``format.format_options`` renamed to ``format.options``.
-  * Sub-option ``format.format_options.use_adrdssu`` renamed to ``format.options.adrdssu``.
+  * Sub-option `format.name` renamed to `format.type`.
+  * Sub-option `format.format_options` renamed to `format.options`.
+  * Sub-option `format.format_options.use_adrdssu` renamed to `format.options.adrdssu`.
 
 Bugfixes
 --------
-- ``zos_backup_restore`` - Clarified documentation for `temp_volume`, including a known issue where operations fail if `temp_volume` matches source volume or is not specified.
-- ``zos_fetch`` - Fixed an ``UnboundLocalError`` that could occur when source was missing. Fix  initializes the ``is_member`` prior to data set existence checks, allowing the module to fail gracefully.
-- ``zos_mount`` - Fixed an issue where using the ``persistent`` option could delete the entire member or data set even without a pattern match. Fix now only deletes content when a pattern match is found, preserving existing configuration.
-- ``zos_started_task`` - System logs could not be fetched due to an internal variable name conflict. Fix renames the internal variable to distinguish the boolean control flag from the system_logs output variable.
+- `zos_backup_restore` - Clarified documentation for `temp_volume`, including a known issue where operations fail if `temp_volume` matches source volume or is not specified.
+- `zos_fetch` - Fixed an `UnboundLocalError` that could occur when source was missing. Fix  initializes the `is_member` prior to data set existence checks, allowing the module to fail gracefully.
+- `zos_mount` - Fixed an issue where using the `persistent` option could delete the entire member or data set even without a pattern match. Fix now only deletes content when a pattern match is found, preserving existing configuration.
+- `zos_started_task` - System logs could not be fetched due to an internal variable name conflict. Fix renames the internal variable to distinguish the boolean control flag from the system_logs output variable.
 
 New Filter Plugins
 ------------------
 
-- ``ibm.ibm_zos_core.generate_data_set_name`` - Filter HLQs to generate a new random valid data set name.
-- ``ibm.ibm_zos_core.zos_stat_by_type`` - Filter down zos_stat output based on the type of resource that queried.
+- `ibm.ibm_zos_core.generate_data_set_name` - Filter HLQs to generate a new random valid data set name.
+- `ibm.ibm_zos_core.zos_stat_by_type` - Filter down zos_stat output based on the type of resource that queried.
 
 New Modules
 -----------
@@ -170,8 +170,8 @@ New Modules
 
 New Roles
 ---------
-- ``gather_diagnostics`` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios. (https://github.com/ansible-collections/ibm_zos_core/issues/2168).
-- ``playbook_upgrade_validator`` - adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0. (https://github.com/ansible-collections/ibm_zos_core/issues/2167)
+- `gather_diagnostics` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios. (https://github.com/ansible-collections/ibm_zos_core/issues/2168).
+- `playbook_upgrade_validator` - adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0. (https://github.com/ansible-collections/ibm_zos_core/issues/2167)
 
 Availability
 ------------

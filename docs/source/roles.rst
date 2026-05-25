@@ -25,11 +25,10 @@ The **IBM z/OS core** collection provides many roles. Roles are as follows:
 * playbook_upgrade_validator
 
 Reference material for each role contains documentation on how to use certain
-roles in your playbook. To use certain roles in your playbook, each role contain documentation see the follwowing material:
+roles in your playbook. To use certain roles in your playbook, each role contain documentation see the following material:
 
 .. toctree::
    :maxdepth: 3
-   
-   gather-diagnostics
-   job_status
-   playbook_upgrade_validator
+   : glob:
+
+   roles/*  

@@ -2069,7 +2069,7 @@ def run_module():
 
             # Initialize logging module
             module_verbosity_level = module._verbosity
-            logger = SingletonLogger().get_logger(module_verbosity_level)
+            SingletonLogger().get_logger(module_verbosity_level)
 
             tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)

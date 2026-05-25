@@ -1241,7 +1241,6 @@ def run_module(module):
     SingletonLogger().get_logger(module_verbosity_level)
 
     # Parameter initialization
-    pds_paths = None
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
     contains = module.params.get('contains')

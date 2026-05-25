@@ -2206,7 +2206,7 @@ class RACFHandler():
 
         try:
             # Create SYSIN data set with profile name
-            sysin_data_set = datasets.create(
+            datasets.create(
                 name=sysin_name,
                 dataset_type='SEQ',
                 record_format='FB',
@@ -2612,7 +2612,6 @@ class GroupHandler(RACFHandler):
         """
         cmd = ""
         group = self.params.get('group')
-        state = self.params.get('state')
 
         if group is not None:
             if group.get('superior_group') is not None:
@@ -4503,7 +4502,6 @@ def run_module():
         # In check_mode, determine if changes would be made
         # changed=true if state would execute, changed=false if already in desired state
         stdout = result.get('stdout', '')
-        cmd = result.get('cmd', '')
 
         # Check if entity already in desired state (no changes needed)
         pattern = r'already exists|does not exist|not connected to group'

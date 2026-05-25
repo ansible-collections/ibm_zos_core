@@ -263,9 +263,9 @@ Version 1.15.1
 Bugfixes
 --------
 
-- zos_backup_restore - Module documentation stated that default `space_type` for a backup was `m` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
-- zos_copy - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
-- zos_replace - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided `encoding` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
+- ``zos_backup_restore`` - Module documentation stated that default `space_type` for a backup was `m` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
+- ``zos_copy`` - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
+- ``zos_replace`` - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided `encoding` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
 
 Availability
 ------------
@@ -480,8 +480,8 @@ Bugfixes
 
    - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
    - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
-   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
-   - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+   - Previously, if the dataset name included special characters such as `$` and `asa_text` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - When `asa_text` was set to true at the same time as `force_lock`, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
 
 - ``zos_fetch`` - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter.
 - ``zos_find``
@@ -496,7 +496,7 @@ Bugfixes
    - Module would not populate stderr return value. Fix now populates stderr in return values.
    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
    - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
-   - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses `tmp_hlq` as HLQ for backup data sets.
+   - Option `tmp_hlq` was not being used as HLQ when creating backup data sets. Fix now uses `tmp_hlq` as HLQ for backup data sets.
 
 - ``zos_script`` - When the user trying to run a remote script had execute permissions but wasn't owner of the file, the module would fail while trying to change permissions on it. Fix now ensures the module first checks if the user can execute the script and only try to change permissions when necessary.
 
@@ -617,9 +617,9 @@ Bugfixes
    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
    - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code.
 
-- ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
+- ``zos_script`` - Module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
 
-- ``zos_unarchive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+- ``zos_unarchive`` - Module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
 Availability
 ------------
@@ -630,8 +630,8 @@ Availability
 
 Known Issues
 ------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_job_submit`` - When setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - When submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 - ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
 
@@ -657,8 +657,8 @@ Availability
 
 Known Issues
 ------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_job_submit`` - When setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - When submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
 
 Version 1.11.0
@@ -757,8 +757,8 @@ Availability
 
 Known Issues
 ------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_job_submit`` - When setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - When submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 
 .. .............................................................................

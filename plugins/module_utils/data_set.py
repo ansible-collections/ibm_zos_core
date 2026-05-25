@@ -37,6 +37,11 @@ except ImportError:
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
     from zoautil_py.exceptions import GenerationDataGroupCreateException
+    from zoautil_py.members import fetch_members
+    from zoautil_py.exceptions import (
+        SmdeExtendedAttributesUnavailable,
+        IspfMemberStatisticsUnavailable
+    )
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -44,6 +49,9 @@ except ImportError:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
+    fetch_members = ZOAUImportError(traceback.format_exc())
+    SmdeExtendedAttributesUnavailable = ZOAUImportError(traceback.format_exc())
+    IspfMemberStatisticsUnavailable = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -935,6 +943,102 @@ class DataSet(object):
         rc, out, err = module.run_command(ls_cmd, errors='replace')
         # RC 2 for mls means that there aren't any members.
         return rc == 2
+
+    @staticmethod
+    def get_member_details(dataset_name):
+        """Get extended attributes and ISPF statistics for all members in a PDS/PDSE.
+        
+        Uses the zoautil_py.members.fetch_members() function which returns Member objects
+        with SmdeExtendedAttributes and IspfMemberStatistics.
+        
+        Parameters
+        ----------
+        dataset_name : str
+            The name of the PDS/PDSE data set.
+        
+        Returns
+        -------
+        list
+            List of dictionaries containing:
+            - name: Member name
+            - extended_attributes: Dict with SMDE extended attributes (or defaults if unavailable)
+                - user: Last user who modified
+                - codeset: CCSID as string
+                - modified_time: Last modification timestamp
+            - ispf_statistics: Dict with ISPF member statistics (or defaults if unavailable)
+                - prompt: Prompt flag
+                - lib: Library indicator
+                - version: Version.Modification level (VV.MM format)
+                - created: Creation date
+                - changed: Last change date and time
+                - size: Current number of lines
+                - init: Initial number of lines
+                - mod: Modification level
+                - id: User ID who modified
+                
+        Raises
+        ------
+        Exception
+            If ZOAU API is not available or member fetch fails.
+        """
+        # Call ZOAU API to get all members with their attributes
+        members_list = fetch_members(dataset_name)
+        
+        # Transform Member objects to structured format
+        result = []
+        for member in members_list:
+            member_info = {
+                'name': member.name,
+                'extended_attributes': None,
+                'ispf_statistics': None
+            }
+            
+            # Try to get SMDE Extended Attributes
+            try:
+                member_info['extended_attributes'] = {
+                    'user': member.user_modified if member.user_modified else '',
+                    'codeset': str(member.ccsid) if member.ccsid else '',
+                    'modified_time': member.time_modified.strftime('%Y/%m/%d %H:%M:%S') if member.time_modified else ''
+                }
+            except SmdeExtendedAttributesUnavailable:
+                # Member doesn't have SMDE extended attributes
+                member_info['extended_attributes'] = {
+                    'user': '',
+                    'codeset': '',
+                    'modified_time': ''
+                }
+            
+            # Try to get ISPF Statistics
+            try:
+                ispf_stats = member.ispf_statistics
+                member_info['ispf_statistics'] = {
+                    'prompt': '',
+                    'lib': '',
+                    'version': f"{ispf_stats.version:02d}.{ispf_stats.modification_level:02d}",
+                    'created': ispf_stats.date_created.strftime('%Y/%m/%d'),
+                    'changed': ispf_stats.time_changed.strftime('%Y/%m/%d %H:%M:%S'),
+                    'size': ispf_stats.current_lines,
+                    'init': ispf_stats.initial_lines,
+                    'mod': ispf_stats.modification_level,
+                    'id': ispf_stats.modified_user if ispf_stats.modified_user else ''
+                }
+            except IspfMemberStatisticsUnavailable:
+                # Member doesn't have ISPF statistics
+                member_info['ispf_statistics'] = {
+                    'prompt': '',
+                    'lib': '',
+                    'version': '',
+                    'created': '',
+                    'changed': '',
+                    'size': 0,
+                    'init': 0,
+                    'mod': 0,
+                    'id': ''
+                }
+            
+            result.append(member_info)
+        
+        return result
 
     @staticmethod
     def _vsam_empty(name, tmphlq=None):

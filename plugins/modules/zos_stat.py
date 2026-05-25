@@ -516,6 +516,72 @@ stat:
           returned: success
           type: int
           sample: 3
+        member_details:
+          description: Details for each member in a partitioned data set including extended attributes and ISPF statistics.
+          returned: when querying PDS/PDSE
+          type: list
+          elements: dict
+          contains:
+            name:
+              description: Member name
+              type: str
+              sample: MEMBER1
+            extended_attributes:
+              description: SMDE extended attributes for the member
+              type: dict
+              contains:
+                user:
+                  description: Last user that modified the member
+                  type: str
+                  sample: USER01
+                codeset:
+                  description: Coded character set identifier.
+                  type: str
+                  sample: IBM-1047
+                modified_time:
+                  description: Last time the member was modified (YYYY/MM/DD HH:MM:SS).
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+            ispf_statistics:
+              description: ISPF member statistics
+              type: dict
+              contains:
+                prompt:
+                  description: Prompt flag indicator
+                  type: str
+                  sample: "ON"
+                lib:
+                  description: Library indicator
+                  type: str
+                  sample: MYLIB
+                version:
+                  description: Version and modification level (VV.MM format)
+                  type: str
+                  sample: "01.05"
+                created:
+                  description: Creation date (YYYY/MM/DD)
+                  type: str
+                  sample: "2024/01/15"
+                changed:
+                  description: Last change date and time (YYYY/MM/DD HH:MM:SS)
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+                size:
+                  description: Current size (number of lines)
+                  type: int
+                  sample: 100
+                init:
+                  description: Initial size (number of lines)
+                  type: int
+                  sample: 95
+                mod:
+                  description: Number of modifications
+                  type: int
+                  sample: 3
+                id:
+                  description: User ID who last modified the member
+                  type: str
+                  sample: USER01
         pages_allocated:
           description: Number of pages allocated to a PDSE.
           returned: success
@@ -1865,6 +1931,16 @@ return 0"""
             self.expected_attrs
         )
 
+        # Add member details for PDS/PDSE datasets
+        if self.data_set_type in DataSet.MVS_PARTITIONED and not self.module.check_mode:
+            try:
+                member_details = DataSet.get_member_details(self.name)
+                if member_details:
+                    data['attributes']['member_details'] = member_details
+            except Exception as e:
+                # Log warning but don't fail - member details are optional
+                self.extra_data = f'{self.extra_data}Could not retrieve member details: {str(e)}\n'
+
         return data
 
     def _run_listdsi_command(self, temp_script_location):
@@ -2678,13 +2754,13 @@ def run_module():
     except QueryException as err:
         module.fail_json(**err.json_args)
     except zoau_exceptions.ZOAUException as err:
-        result['msg'] = 'An error ocurred during removal of a temp data set.'
+        result['msg'] = 'An error occurred during removal of a temp data set.'
         result['rc'] = err.rc
         result['stdout'] = err.stdout_response
         result['stderr'] = err.stderr_response
         module.fail_json(**result)
     except Exception as err:
-        result['msg'] = f'An unexpected error ocurred while querying a resource: {str(err)}.'
+        result['msg'] = f'An unexpected error occurred while querying a resource: {str(err)}.'
         module.fail_json(**result)
 
     result['stat'] = fill_return_json(data)

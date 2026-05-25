@@ -4,8 +4,10 @@
 .. _gather_diagnostics_module:
 
 
-gather_diagnostics -- Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
-====================================================================================================
+gather_diagnostics
+==================
+
+ Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
 
 
 .. contents::
@@ -26,16 +28,8 @@ Synopsis
 - Facts are also set on the respective hosts: ``gather_diagnostics_managed_results`` on the z/OS host and ``gather_diagnostics_control_results`` on localhost.
 
 
-
-
-
-
-
 Variables
 ---------
-
-
- 
 
 gather_diagnostics_gather_control
   Controls whether the role will gather diagnostic facts from the Ansible control node.
@@ -119,8 +113,6 @@ gather_diagnostics_environment_vars
 
   | **required**: False
   | **type**: dict
-
-
 
 
 Examples
@@ -211,6 +203,7 @@ Notes
 -----
 
 .. note::
+  
    - When ``gather_diagnostics_gather_syslog`` is ``True``, the user must have operator authority to execute MVS operator commands. If the user lacks authority, these tasks will fail but the role will continue with other diagnostic gathering.
 
 

@@ -29,7 +29,7 @@ Variables
 
  
 
-ignore_response_params
+playbook_upgrade_validator_ignore_response_params
   Indicates whether information about response parameter changes should be included.
 
   | **required**: False
@@ -39,7 +39,7 @@ ignore_response_params
 
  
 
-migration_map
+playbook_upgrade_validator_migration_map
   A structured set of migration rules that specifies removed, renamed, and modified parameters to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
 
   | **required**: True
@@ -48,7 +48,7 @@ migration_map
 
  
 
-output_path
+playbook_upgrade_validator_output_path
   Path to the output JSON file where results should be saved.
 
   Default path is <<playbook_dir>>/logs/migration_report.json
@@ -59,7 +59,7 @@ output_path
 
  
 
-playbook_path
+playbook_upgrade_validator_playbook_path
   Path to an Ansible playbook or a directory containing playbooks to validate.
 
   | **required**: True
@@ -78,17 +78,17 @@ Examples
      include_role:
        name: ibm.ibm_zos_core.playbook_upgrade_validator
      vars:
-       playbook_path: "/path/to/playbooks/dataset.yml"
-       output_path: "/path/to/reports/validation_report.json"
-       ignore_response_params: false
+       playbook_upgrade_validator_playbook_path: "/path/to/playbooks/dataset.yml"
+       playbook_upgrade_validator_output_path: "/path/to/reports/validation_report.json"
+       playbook_upgrade_validator_ignore_response_params: false
 
    - name: Run playbook_upgrade_validator role to generate a migration changes report for playbooks within a directory
      include_role:
        name: ibm.ibm_zos_core.playbook_upgrade_validator
      vars:
-       playbook_path: "/path/to/playbooks/"
-       output_path: "/path/to/reports/validation_report.json"
-       ignore_response_params: false
+       playbook_upgrade_validator_playbook_path: "/path/to/playbooks/"
+       playbook_upgrade_validator_output_path: "/path/to/reports/validation_report.json"
+       playbook_upgrade_validator_ignore_response_params: false
 
 
 

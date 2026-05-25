@@ -1,4 +1,0 @@
-minor_changes:
-  - playbook_upgrade_validator - adds a role that scans playbooks in a directory
-    and reports required actions to migrate from v1.x.x to v2.0.0.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2167)

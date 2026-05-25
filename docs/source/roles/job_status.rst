@@ -15,7 +15,7 @@ job_status -- Role that queries a job to extract its current status and determin
 
 Synopsis
 --------
-- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_id and parse the response to return as a msg the job status and if the job is currently running or not.
+- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_status_id and parse the response to return as a msg the job status and if the job is currently running or not.
 
 
 
@@ -29,7 +29,7 @@ Variables
 
  
 
-job_id
+job_status_id
   The job id that has been assigned to the job.
 
   A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
@@ -57,7 +57,7 @@ Examples
        - include_role:
            name: job_status
          vars:
-           job_id: STC00001
+           job_status_id: STC00001
 
 
 

@@ -15,12 +15,12 @@ short_description: Role that queries a job to extract its current status and det
 description:
     - >
       The B(IBM z/OS core collection) provides an Ansible role, referred to as
-      B(job_status), to query a particular job with a given job_id and parse the response
+      B(job_status), to query a particular job with a given job_status_id and parse the response
       to return as a msg the job status and if the job is currently running or not.
 author:
     - Marcel Gutierrez (@AndreMarcel99)
 options:
-    job_id:
+    job_status_id:
         description:
             - The job id that has been assigned to the job.
             - A job id must begin with `STC`, `JOB`, `TSU` and are
@@ -45,7 +45,7 @@ EXAMPLES = r"""
     - include_role:
         name: job_status
       vars:
-        job_id: STC00001
+        job_status_id: STC00001
 
 """
 
@@ -62,11 +62,11 @@ msg:
     returned: always
     type: dict
     contains:
-        job_active:
+        job_status_is_active:
             description: Boolean value that return if the job is running.
             returned: always
             type: bool
-        job_status:
+        job_status_code:
             description: Value of the current status of the job.
             returned:
             type: str

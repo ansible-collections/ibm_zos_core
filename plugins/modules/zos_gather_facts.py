@@ -274,7 +274,7 @@ def run_module():
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
-    logger = SingletonLogger().get_logger(module_verbosity_level)
+    SingletonLogger().get_logger(module_verbosity_level)
 
     if not zoau_version_checker.is_zoau_version_higher_than("1.3.0"):
         module.fail_json(

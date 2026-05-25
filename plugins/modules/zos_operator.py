@@ -121,8 +121,8 @@ EXAMPLES = r"""
 - name: Execute an operator command to show device status and allocation wait 10 centiseconds.
   zos_operator:
     cmd: 'd u'
-    wait_time : 10
-    time_unit : 'cs'
+    wait_time: 10
+    time_unit: 'cs'
 """
 
 RETURN = r"""
@@ -322,7 +322,7 @@ def run_module():
 
         # Initialize logging module
         module_verbosity_level = module._verbosity
-        logger = SingletonLogger().get_logger(module_verbosity_level)
+        SingletonLogger().get_logger(module_verbosity_level)
 
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")

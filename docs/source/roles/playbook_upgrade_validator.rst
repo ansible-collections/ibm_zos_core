@@ -4,10 +4,9 @@
 .. _playbook_upgrade_validator_module:
 
 
-playbook_upgrade_validator
-==========================
+playbook_upgrade_validator -- Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
+============================================================================================================
 
-Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
 
 .. contents::
    :local:
@@ -21,8 +20,14 @@ Synopsis
 
 
 
+
+
+
 Variables
 ---------
+
+
+ 
 
 playbook_upgrade_validator_ignore_response_params
   Indicates whether information about response parameter changes should be included.

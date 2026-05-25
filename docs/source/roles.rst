@@ -18,12 +18,7 @@ recommend migration actions between version 1 and version 2, collect
 diagnostic facts for support and debugging, and easily determine whether a job
 is currently running.
 
-The **IBM z/OS core** collection provides many roles. Roles are as follows:
-
-* gather_diagnostics
-* job_status
-* playbook_upgrade_validator
-
+The **IBM z/OS core** collection provides many roles.
 Reference material for each role contains documentation on how to use certain
 roles in your playbook.
 
@@ -31,6 +26,4 @@ roles in your playbook.
    :maxdepth: 1
    :glob:
 
-   job_status
-   playbook_upgrade_validator
-   gather-diagnostics
+   roles/*

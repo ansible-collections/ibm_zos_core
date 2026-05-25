@@ -4,7 +4,7 @@
 .. _gather_diagnostics_module:
 
 
-gather_diagnostics
+gather_diagnostics -- Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
 ====================================================================================================
 
 

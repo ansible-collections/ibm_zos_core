@@ -31,6 +31,6 @@ roles in your playbook. To use certain roles in your playbook, each role contain
    :maxdepth: 1
    : glob:
 
-   roles/gather_diagnostics
-   roles/job_status
-   roles/playbook_upgrade_validator 
+   roles/_gather_diagnostics_module
+   roles/_job_status_module
+   roles/_playbook_upgrade_validator_module

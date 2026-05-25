@@ -3270,22 +3270,142 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def remote_cleanup(module):
+def remote_cleanup(module, dest_exists=None, dest_ds_type=None, dest_member_exists=None):
     """Remove all files or data sets pointed to by 'dest' on the remote
     z/OS system. The idea behind this cleanup step is that if, for some
     reason, the module fails after copying the data, we want to return the
     remote system to its original state. Which means deleting any newly
     created files or data sets.
+    
+    Cleanup logic:
+    - SEQ Dataset: Delete only if it didn't exist before (dest_exists=False)
+    - PDS:
+        * If PDS and member both existed: Delete nothing
+        * If PDS existed but member didn't: Delete only the member
+        * If neither existed: Delete both PDS and member
+    - GDG:
+        * If GDG and GDS both existed: Delete nothing
+        * If GDG existed but GDS didn't: Delete only the GDS
+        * If neither existed: Delete both GDG and GDS
+    
+    Parameters
+    ----------
+    module : AnsibleModule
+        The module object
+    dest_exists : bool, optional
+        Whether the destination existed before the copy operation
+    dest_ds_type : str, optional
+        The type of the destination dataset
+    dest_member_exists : bool, optional
+        Whether the PDS member existed before the copy operation
     """
     dest = module.params.get('dest')
+    
+    # If we don't have tracking info, fall back to conservative cleanup
+    # (only clean up what we're certain was newly created)
+    if dest_exists is None:
+        dest_exists = True  # Assume it existed to be safe
+    
+    # USS file/directory cleanup
     if "/" in dest:
-        if os.path.isfile(dest):
-            os.remove(dest)
+        # Only delete if it didn't exist before
+        if not dest_exists:
+            if os.path.isfile(dest):
+                os.remove(dest)
+            elif os.path.isdir(dest):
+                shutil.rmtree(dest)
+    
+    # PDS member or GDS cleanup
+    elif "(" in dest and ")" in dest:
+        dest_name = data_set.extract_dsname(dest)
+        
+        # GDG handling
+        if "(+1)" in dest or "(-" in dest or "(0)" in dest:
+            # This is a GDS (generation data set)
+            if "(+1)" in dest:
+                # Convert (+1) to (0) to get the actual created generation
+                actual_dest = dest_name + "(0)"
+            else:
+                actual_dest = dest
+            
+            # Cleanup logic for GDS:
+            # - If dest_exists=False: Neither GDG nor GDS existed, delete both
+            # - If dest_exists=True and dest was (+1): GDG existed but GDS didn't, delete only GDS
+            # - If dest_exists=True and dest was (0) or (-N): GDS existed, delete nothing
+            
+            if not dest_exists:
+                # Neither GDG nor GDS existed - delete the GDS first, then try GDG base
+                data_set.DataSet.ensure_absent(name=actual_dest)
+                # Try to delete the GDG base (will only succeed if empty)
+                try:
+                    data_set.DataSet.ensure_absent(name=dest_name)
+                except Exception:
+                    # GDG base might have other generations or be in use, ignore
+                    pass
+            elif "(+1)" in dest:
+                # GDG existed but this GDS didn't - delete only the GDS
+                data_set.DataSet.ensure_absent(name=actual_dest)
+            # else: GDS already existed, don't delete anything
+        
+        # PDS member handling
         else:
-            shutil.rmtree(dest)
+            # Cleanup logic for PDS member:
+            # - If dest_exists=False: Neither PDS nor member existed, delete both
+            # - If dest_exists=True and dest_member_exists=False: PDS existed but member didn't, delete only member
+            # - If dest_exists=True and dest_member_exists=True: Both existed, delete nothing
+            
+            if dest_member_exists is None:
+                dest_member_exists = True  # Assume it existed to be safe
+            
+            if not dest_exists:
+                # Neither PDS nor member existed - delete the member first, then try PDS
+                data_set.DataSet.ensure_member_absent(name=dest)
+                # Try to delete the PDS (will only succeed if empty)
+                try:
+                    data_set.DataSet.ensure_absent(name=dest_name)
+                except Exception:
+                    # PDS might have other members or be in use, ignore
+                    pass
+            elif not dest_member_exists:
+                # PDS existed but member didn't - delete only the member
+                data_set.DataSet.ensure_member_absent(name=dest)
+            # else: Both PDS and member existed, don't delete anything
+    
+    # Sequential dataset cleanup
     else:
-        dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+        dest_name = data_set.extract_dsname(dest)
+        # Only delete if it didn't exist before
+        if not dest_exists:
+            data_set.DataSet.ensure_absent(name=dest_name)
+
+# def remote_cleanup(module):
+#     """Remove all files or data sets pointed to by 'dest' on the remote
+#     z/OS system. The idea behind this cleanup step is that if, for some
+#     reason, the module fails after copying the data, we want to return the
+#     remote system to its original state. Which means deleting any newly
+#     created files or data sets.
+#     """
+#     dest = module.params.get('dest')
+#     if "/" in dest:
+#         if os.path.isfile(dest):
+#             os.remove(dest)
+#         else:
+#             shutil.rmtree(dest)
+#     elif "(" in dest and ")" in dest:
+#         # handle newly created gdg version
+#         if "(+1)" in dest:
+#             dest = data_set.extract_dsname(dest)
+#             dest= dest + "(0)"
+#             data_set.DataSet.ensure_absent(name=dest)
+#         # handle existing gdg version
+#         elif "(-" in dest or "(0)" in dest:
+#             data_set.DataSet.ensure_absent(name=dest)
+#         else:        
+#         # handle pds member cleanup
+#             data_set.DataSet.ensure_member_absent(name=dest)        
+#     else:
+#         dest = data_set.extract_dsname(dest)
+#         data_set.DataSet.ensure_absent(name=dest)        
 
 
 def update_result(res_args, original_args):
@@ -4022,7 +4142,7 @@ def run_module(module, arg_def):
         )
     )
 
-    return res_args, conv_path
+    return res_args, conv_path, dest_exists, dest_ds_type, dest_member_exists
 
 
 def main():
@@ -4236,8 +4356,14 @@ def main():
         )
 
     res_args = conv_path = None
+    # Initialize tracking variables for cleanup
+    dest_exists = None
+    dest_ds_type = None
+    dest_member_exists = None
+    conv_path = None
+    
     try:
-        res_args, conv_path = run_module(module, arg_def)
+        res_args, conv_path, dest_exists, dest_ds_type, dest_member_exists = run_module(module, arg_def)
 
         # Verification of default tmpdir use by the collection to remove
         path = str(module.tmpdir)
@@ -4254,7 +4380,12 @@ def main():
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
-        remote_cleanup(module=module)
+        remote_cleanup(
+            module=module,
+            dest_exists=dest_exists,
+            dest_ds_type=dest_ds_type,
+            dest_member_exists=dest_member_exists
+        )
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])

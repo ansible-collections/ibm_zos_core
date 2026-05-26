@@ -70,6 +70,7 @@ issues: https://github.com/ansible-collections/ibm_zos_core/issues
 build_ignore:
   - '*.tar.gz'
   - __pycache__
+  - .ansible-lint
   - .cache
   - .DS_Store
   - .git
@@ -77,6 +78,7 @@ build_ignore:
   - .gitignore
   - .python-version
   - .pytest_cache
+  - .secrets.baseline
   - .vscode
   - Jenkinsfile
   - ansible.cfg

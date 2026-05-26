@@ -4,8 +4,8 @@
 .. _gather_diagnostics_module:
 
 
-gather_diagnostics -- Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
-====================================================================================================
+gather_diagnostics -- Roles gathers diagnostic facts
+====================================================
 
 
 .. contents::
@@ -23,22 +23,15 @@ Synopsis
 
 - This role can create separate YAML report files for the z/OS node (``gather_diagnostics_report_managed_node_<hostname>.yml``) and the control node (``gather_diagnostics_report_control.yml``) in the specified output directory.
 
-- Facts are also set on the respective hosts: ``gather_diagnostics_managed_results`` on the z/OS host and ``gather_diagnostics_control_results`` on localhost.
-
-
-
-
+- Facts are set on the respective hosts: ``gather_diagnostics_managed_results`` on the z/OS host and ``gather_diagnostics_control_results`` on localhost.
 
 
 
 Variables
 ---------
 
-
- 
-
 gather_diagnostics_gather_control
-  Controls whether the role will gather diagnostic facts from the Ansible control node.
+  Controls whether the role gathers diagnostic facts from the Ansible control node.
 
 
   | **required**: False
@@ -49,7 +42,7 @@ gather_diagnostics_gather_control
  
 
 gather_diagnostics_gather_managed_node
-  Controls whether the role will gather diagnostic facts from the z/OS managed node.
+  Controls whether the role gathers diagnostic facts from the z/OS managed node.
 
 
   | **required**: False
@@ -104,7 +97,7 @@ gather_diagnostics_gather_ssh_config
  
 
 gather_diagnostics_output_dir
-  Directory where diagnostic report files will be created. In AAP, defaults to the artifacts directory. In standalone mode, defaults to the control node's home directory.
+  Directory where diagnostic report files are created. In AAP, defaults to the artifacts directory. In standalone mode, defaults to the home directory of the control node.
 
 
   | **required**: False
@@ -211,18 +204,12 @@ Notes
 -----
 
 .. note::
-   - When ``gather_diagnostics_gather_syslog`` is ``True``, the user must have operator authority to execute MVS operator commands. If the user lacks authority, these tasks will fail but the role will continue with other diagnostic gathering.
+
+   - When ``gather_diagnostics_gather_syslog`` is ``True``, the user must have operator authority to execute MVS operator commands. If the user lacks authority, these tasks fail but the role continueS with other diagnostic gathering.
 
 
    - SSH configuration file gathering (``gather_diagnostics_gather_ssh_config``) is disabled by default to avoid exposing sensitive security configurations. Enable only when needed for troubleshooting SSH connectivity issues.
 
 
    - Diagnostic files are written to the control node. By default, files are saved to the home directory or AAP artifacts directory. Use ``gather_diagnostics_output_dir`` to specify an alternate location with sufficient disk space.
-
-
-
-
-
-
-
 

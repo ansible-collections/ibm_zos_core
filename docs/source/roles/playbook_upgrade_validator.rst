@@ -4,8 +4,8 @@
 .. _playbook_upgrade_validator_module:
 
 
-playbook_upgrade_validator -- Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
-============================================================================================================
+playbook_upgrade_validator -- Role validates playbooks
+=====================================================
 
 
 .. contents::
@@ -19,16 +19,9 @@ Synopsis
 - Provides line numbers, affected modules, and suggested corrective actions.
 
 
-
-
-
-
 Variables
 ---------
-
-
  
-
 playbook_upgrade_validator_ignore_response_params
   Indicates whether information about response parameter changes should be included.
 
@@ -47,7 +40,6 @@ playbook_upgrade_validator_migration_map
 
 
  
-
 playbook_upgrade_validator_output_path
   Path to the output JSON file where results should be saved.
 
@@ -74,7 +66,7 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Run playbook_upgrade_validator role to generate migration changes report for a playbook
+   - name: Run playbook_upgrade_validator role to generate migration changes report for a playbook.
      include_role:
        name: ibm.ibm_zos_core.playbook_upgrade_validator
      vars:
@@ -82,7 +74,7 @@ Examples
        playbook_upgrade_validator_output_path: "/path/to/reports/validation_report.json"
        playbook_upgrade_validator_ignore_response_params: false
 
-   - name: Run playbook_upgrade_validator role to generate a migration changes report for playbooks within a directory
+   - name: Run playbook_upgrade_validator role to generate a migration changes report for playbooks within a directory.
      include_role:
        name: ibm.ibm_zos_core.playbook_upgrade_validator
      vars:
@@ -96,15 +88,10 @@ Notes
 -----
 
 .. note::
+  
    - Designed to assist migration of playbooks from older IBM z/OS core collection versions to 2.0.0.
 
    - Supports reading tasks, blocks, and nested includes.
 
    - Reported task line numbers rely on task names and may be ambiguous when duplicate task names are used within a playbook.
-
-
-
-
-
-
 

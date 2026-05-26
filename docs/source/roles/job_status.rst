@@ -4,7 +4,7 @@
 .. _job_status_module:
 
 
-job_status -- Role that queries a job to extract its current status and determine its execution state.
+job_status -- Roles that query a job to extract its current status and determine its execution state.
 ======================================================================================================
 
 
@@ -15,38 +15,29 @@ job_status -- Role that queries a job to extract its current status and determin
 
 Synopsis
 --------
-- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_status_id and parse the response to return as a msg the job status and if the job is currently running or not.
-
-
-
-
-
+- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_status_id 
+  and parse the response to return the job status and indicate if the job is currently running.
 
 
 Variables
 ---------
 
-
- 
-
 job_status_id
-  The job id that has been assigned to the job.
 
-  A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
+  The job ID that is assigned to the job.
 
-  When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
+  Ensure that a job ID begins with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
+
+  When a job ID is greater than 99,999, the job id format begins with `S`, `J`, `T` and followed by 7 digits.
 
   | **required**: True
   | **type**: str
-
-
 
 
 Examples
 --------
 
 .. code-block:: yaml+jinja
-
    
    - name: Query the job status and if is running of the job STC00001
      hosts: sampleHost
@@ -61,12 +52,11 @@ Examples
 
 
 
-
 Notes
 -----
 
 .. note::
-   - The role tolerate the asterisk (`*`) as wildcard but only retrieve information from the first job returned that math the patter.
+   - The role tolerates the asterisk (`*`) as wildcard but retrieves information from the first job that returned to match the pattern.
 
 
 

@@ -4,8 +4,8 @@
 .. _playbook_upgrade_validator_module:
 
 
-playbook_upgrade_validator -- Build report to migrate playbooks to v2.0.0.
-==========================================================================
+playbook_upgrade_validator -- Build a report to migrate playbooks to v2.0.0
+===========================================================================
 
 
 .. contents::

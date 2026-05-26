@@ -12,7 +12,7 @@
 ---
 galaxy_info:
   author: "Surendra Ravella (@surendrababuravella)"
-  description: Build report to migrate playbooks to v2.0.0.
+  description: Build a report to migrate playbooks to v2.0.0
   company: IBM
   license: Apache-2.0
   min_ansible_version: "2.15"

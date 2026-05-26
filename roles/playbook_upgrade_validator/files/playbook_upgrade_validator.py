@@ -19,7 +19,7 @@ module: playbook_upgrade_validator
 version_added: "2.0.0"
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Build report to migrate playbooks to v2.0.0.
+short_description: Build a report to migrate playbooks to v2.0.0
 description:
   - Scans one or more Ansible playbooks to identify removed or renamed parameters
     based on migration rules for IBM z/OS Core collection version 2.0.0.

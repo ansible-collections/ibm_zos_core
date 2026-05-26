@@ -4,8 +4,8 @@
 .. _job_status_module:
 
 
-job_status -- Query a job for status and execution state.
-=========================================================
+job_status -- Query a job for status and execution state
+========================================================
 
 
 .. contents::

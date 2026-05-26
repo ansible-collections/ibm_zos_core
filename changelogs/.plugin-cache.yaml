@@ -1,17 +1,15 @@
 objects:
   role:
     gather_diagnostics:
-      description: Gathers diagnostic facts from z/OS managed nodes and the Ansible
-        control node
+      description: Gathers diagnostic data from z/OS managed nodes and the control node
       name: gather_diagnostics
       version_added: 2.0.0
     job_status:
-      description: Query a job to extract its current status and determine its execution
-        state.
+      description: Query a job for status and execution state
       name: job_status
       version_added: 2.0.0
     playbook_upgrade_validator:
-      description: Validate playbooks for IBM z/OS Core migration changes.
+      description: Validate playbooks for IBM z/OS Core migration changes
       name: playbook_upgrade_validator
       version_added: 2.0.0
 plugins:

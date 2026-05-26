@@ -4,8 +4,8 @@
 .. _gather_diagnostics_module:
 
 
-gather_diagnostics -- Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
-====================================================================================================
+gather_diagnostics -- Gathers diagnostic data from z/OS managed nodes and the control node
+==========================================================================================
 
 
 .. contents::
@@ -38,7 +38,7 @@ Variables
  
 
 gather_diagnostics_gather_control
-  Controls whether the role will gather diagnostic facts from the Ansible control node.
+  Controls whether the role gathers diagnostic facts from the Ansible control node.
 
 
   | **required**: False
@@ -49,7 +49,7 @@ gather_diagnostics_gather_control
  
 
 gather_diagnostics_gather_managed_node
-  Controls whether the role will gather diagnostic facts from the z/OS managed node.
+  Controls whether the role gathers diagnostic facts from the z/OS managed node.
 
 
   | **required**: False
@@ -104,7 +104,7 @@ gather_diagnostics_gather_ssh_config
  
 
 gather_diagnostics_output_dir
-  Directory where diagnostic report files will be created. In AAP, defaults to the artifacts directory. In standalone mode, defaults to the control node's home directory.
+  Directory where diagnostic report files are created. In AAP, defaults to the artifacts directory. In standalone mode, defaults to the control node's home directory.
 
 
   | **required**: False

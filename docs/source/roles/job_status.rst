@@ -15,8 +15,7 @@ job_status -- Query a job for status and execution state
 
 Synopsis
 --------
-- The **IBM z/OS core collection** provides an Ansible role, referred to as **job_status**, to query a particular job with a given job_status_id and parse the response to return as a msg the job status and if the job is currently running or not.
-
+- The **job_status** role queries a particular job with a given ``job_status_id`` and parses the response to return the job status and whether the job is currently running.
 
 
 
@@ -30,11 +29,11 @@ Variables
  
 
 job_status_id
-  The job id that has been assigned to the job.
+  The job ID assigned to the target job.
 
-  A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
+  Expected format is `STC`, `JOB`, or `TSU` followed by up to 5 digits, or `S`, `J`, or `T` followed by 7 digits for IDs over 99,999.
 
-  When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
+  Value can include the asterisk (`*`) as a wildcard, but only job information from the first match is returned.
 
   | **required**: True
   | **type**: str
@@ -48,7 +47,7 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Query the job status and if is running of the job STC00001
+   - name: Query job status of job with ID 'STC00001'
      hosts: sampleHost
      gather_facts: no
      collections:
@@ -58,15 +57,6 @@ Examples
            name: job_status
          vars:
            job_status_id: STC00001
-
-
-
-
-Notes
------
-
-.. note::
-   - The role tolerate the asterisk (`*`) as wildcard but only retrieve information from the first job returned that math the patter.
 
 
 

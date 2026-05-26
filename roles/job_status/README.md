@@ -6,4 +6,4 @@ This role gathers job status information and checks if a job is active, given a 
 
 The only variable required is:
 
-- `job_status_id`: ID of the job used to query its status and determine whether it is active or not.
+- `job_status_id`: The job ID assigned to the job. Format is `STC`, `JOB`, or `TSU` followed by up to 5 digits, or `S`, `J`, or `T` followed by 7 digits for IDs over 99,999. Accepts the asterisk (`*`) as a wildcard, but only retrieves job information from the first match.

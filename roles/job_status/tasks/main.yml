@@ -12,7 +12,7 @@
     job_status_jobs_list: "{{ job_status_query_result.jobs }}"
   when: job_status_query_result is defined and job_status_query_result.jobs is defined and (job_status_query_result.jobs | length > 0)
 
-- name: "Extract ret_code.msg from job with id {{ job_status_id }}"
+- name: "Extract ret_code.msg from job with ID {{ job_status_id }}"
   ansible.builtin.set_fact:
     job_status_code: >-
       {% set rc = job_status_jobs_list[0].ret_code | default({}) %}

@@ -12,21 +12,18 @@
 ---
 argument_specs:
   main:
-    short_description: Query a job for status and execution state.
+    short_description: Query a job for status and execution state
     description:
-      - >-
-        The B(job_status) role queries a particular job with a given job_status_id and parses the response
+    - >-
+        The B(job_status) role queries a particular job with a given C(job_status_id) and parses the response
         to return the job status and whether the job is currently running.
-      - >-
-        The role tolerates the asterisk (C(*)) as wildcard but only retrieves information from
-        the first job returned that matches the pattern.
     author:
       - Marcel Gutierrez (@AndreMarcel99)
     options:
       job_status_id:
         description:
-          - The job id that has been assigned to the job.
-          - A job id must begin with C(STC), C(JOB), C(TSU) and are followed by up to 5 digits.
-          - When a job id is greater than 99,999, the job id format will begin with C(S), C(J), C(T) and are followed by 7 digits.
+          - The job ID assigned to the target job.
+          - Format is C(STC), C(JOB), or C(TSU) followed by up to 5 digits, or C(S), C(J), or C(T) followed by 7 digits for IDs over 99,999.
+          - Accepts the asterisk (C(*)) as a wildcard, but only retrieves job information from the first match.
         required: true
         type: str

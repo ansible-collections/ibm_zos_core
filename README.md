@@ -175,7 +175,8 @@ As Red Hat Ansible
 this collection is entitled to [support](https://access.redhat.com/support/)
 through
 [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible)
-(AAP). After creating a Red Hat support case, if it is determined the issue
+(AAP) using the **Create issue** button on the top right corner. After creating a 
+Red Hat support case, if it is determined the issue
 belongs to IBM, Red Hat will instruct you to create an
 [IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) and
 share the case number with Red Hat so that a collaboration can begin between

@@ -29,7 +29,7 @@ description:
       (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the control node
       (C(gather_diagnostics_report_control.yml)) in the specified output directory.
     - >
-      Facts are also set on the respective hosts: C(gather_diagnostics_managed_results)
+      Facts are set on the respective hosts: C(gather_diagnostics_managed_results)
       on the z/OS host and C(gather_diagnostics_control_results) on localhost.
 author:
     - Rohitash Goyal (@Rohitcodes28)

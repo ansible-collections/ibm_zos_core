@@ -12,7 +12,7 @@
 ---
 galaxy_info:
   author: "Rohitash Goyal (@Rohitcodes28), Ketan Kelkar (@ketankelkar)"
-  description: Gathers diagnostic facts from z/OS managed nodes and the Ansible control node
+  description: Gathers diagnostic data from z/OS managed nodes and the control node
   company: IBM
   license: Apache-2.0
   min_ansible_version: "2.15"

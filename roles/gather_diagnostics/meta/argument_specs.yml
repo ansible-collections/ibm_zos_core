@@ -12,7 +12,7 @@
 ---
 argument_specs:
   main:
-    short_description: Gathers diagnostic data from z/OS managed nodes and the control node.
+    short_description: Gathers diagnostic data from z/OS managed nodes and the control node
     description:
       - >-
         The B(gather_diagnostics) role gathers a comprehensive set of diagnostic facts from both the z/OS managed node
@@ -29,7 +29,7 @@ argument_specs:
         (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the control node
         (C(gather_diagnostics_report_control.yml)) in the specified output directory.
       - >-
-        Facts are also set on the respective hosts: C(gather_diagnostics_managed_results) on the z/OS host and
+        Facts are set on the respective hosts: C(gather_diagnostics_managed_results) on the z/OS host and
         C(gather_diagnostics_control_results) on localhost.
 
     author:

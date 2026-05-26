@@ -23,7 +23,7 @@ Synopsis
 
 - This role can create separate YAML report files for the z/OS node (``gather_diagnostics_report_managed_node_<hostname>.yml``) and the control node (``gather_diagnostics_report_control.yml``) in the specified output directory.
 
-- Facts are also set on the respective hosts: ``gather_diagnostics_managed_results`` on the z/OS host and ``gather_diagnostics_control_results`` on localhost.
+- Facts are set on the respective hosts: ``gather_diagnostics_managed_results`` on the z/OS host and ``gather_diagnostics_control_results`` on localhost.
 
 
 

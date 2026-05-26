@@ -15,7 +15,7 @@ galaxy_info:
   description: Gathers diagnostic data from z/OS managed nodes and the control node
   company: IBM
   license: Apache-2.0
-  min_ansible_version: "2.15"
+  min_ansible_version: "2.16"
   platforms:
     - name: GenericLinux
       versions:

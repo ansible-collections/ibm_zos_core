@@ -64,7 +64,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Add a library (cataloged) to a persistent APF list
      zos_apf:
        library: SOME.SEQUENTIAL.DATASET
@@ -72,7 +72,7 @@ Examples
        persistent:
          data_set_name: SOME.PARTITIONED.DATASET(MEM)
 
-   # After
+   # After (v2.0.0)
    - name: Add a library (cataloged) to a persistent APF list
      zos_apf:
        library: SOME.SEQUENTIAL.DATASET
@@ -82,7 +82,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
      "changed": true,
      "stdout": "APF list updated",
@@ -90,7 +90,7 @@ Examples
      "rc": 0
    }
 
-   // After
+   // After (v2.0.0)
    {
      "changed": true,
      "stdout": "APF list updated",
@@ -131,7 +131,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Archive data set into a terse, specify spack algorithm and use adrdssu.
      zos_archive:
        src: "USER.ARCHIVE.TEST"
@@ -142,7 +142,7 @@ Examples
            terse_pack: "spack"
            use_adrdssu: true
 
-   # After
+   # After (v2.0.0)
    - name: Archive data set into a terse, specify spack algorithm and use adrdssu
      zos_archive:
        src: "USER.ARCHIVE.TEST"
@@ -153,7 +153,7 @@ Examples
            spack: true
            adrdssu: true
 
-   # Before
+   # Before (v1.x)
    - name: Archive data set into a terse
      zos_archive:
        src: "USER.ARCHIVE.TEST"
@@ -161,7 +161,7 @@ Examples
        format:
          name: terse
 
-   # After
+   # After (v2.0.0)
    - name: Archive data set into a terse
      zos_archive:
        src: "USER.ARCHIVE.TEST"
@@ -171,7 +171,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
      "changed": true,
      "state": "present",
@@ -180,7 +180,7 @@ Examples
      "archived": ["USER.ARCHIVE.TEST"]
    }
 
-   // After
+   // After (v2.0.0)
    {
      "changed": true,
      "dest": "USER.ARCHIVE.RESULT.TRS",
@@ -209,7 +209,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Restore data sets with new HLQ
      zos_backup_restore:
        operation: restore
@@ -220,7 +220,7 @@ Examples
        sms_storage_class: SCLAS1
        sms_management_class: MCLAS1
 
-   # After
+   # After (v2.0.0)
    - name: Restore data sets with new HLQ
      zos_backup_restore:
        operation: restore
@@ -297,7 +297,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Insert block after specific line
      zos_blockinfile:
        src: /etc/profile
@@ -306,7 +306,7 @@ Examples
          ZOAU=/path/to/zoau
          export ZOAU
 
-   # After
+   # After (v2.0.0)
    - name: Insert block after specific line
      zos_blockinfile:
        src: /etc/profile
@@ -317,7 +317,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
      "changed": true,
      "found": 1,
@@ -325,7 +325,7 @@ Examples
      "backup_name": ""
    }
 
-   // After
+   // After (v2.0.0)
    {
      "changed": true,
      "found": 1,
@@ -359,7 +359,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
      ibm.ibm_zos_core.zos_copy:
        src: /path/to/uss/src
@@ -367,7 +367,7 @@ Examples
        force: true
        remote_src: true
 
-   # After
+   # After (v2.0.0)
    - name: Copy a z/OS UNIX file to a sequential data set, overwriting content in the data set.
      ibm.ibm_zos_core.zos_copy:
        src: /path/to/uss/src
@@ -375,7 +375,7 @@ Examples
        replace: true
        remote_src: true
 
-   # Before
+   # Before (v1.x)
    - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
      ibm.ibm_zos_core.zos_copy:
        src: SAMPLE.PDS.DATA.SET(MEM)
@@ -384,7 +384,7 @@ Examples
        force_lock: true
        remote_src: true
 
-   # After
+   # After (v2.0.0)
    - name: Copy binary content from a PDS member to a PDS/E member, bypassing the disposition (DISP) on the PDS/E member.
      ibm.ibm_zos_core.zos_copy:
        src: SAMPLE.PDS.DATA.SET(MEM)
@@ -408,7 +408,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
      "changed": true,
      "names": [
@@ -417,7 +417,7 @@ Examples
      ]
    }
 
-   // After
+   // After (v2.0.0)
    {
      "changed": true,
      "data_sets": [
@@ -452,7 +452,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Fetch a PDS as binary
      zos_fetch:
        src: SOME.PDS.DATASET
@@ -460,7 +460,7 @@ Examples
        flat: true
        is_binary: true
 
-   # After
+   # After (v2.0.0)
    - name: Fetch a PDS as binary
      zos_fetch:
        src: SOME.PDS.DATASET
@@ -470,7 +470,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
      "file": "ANSIBLE.PWLZCFEB.T2417849.CICFWKBY.G0001V00",
      "dest": "/tmp/ANSIBLE.PWLZCFEB.T2417849.CICFWKBY.G0001V00",
@@ -482,7 +482,7 @@ Examples
      "msg": "",
      "rc": 0
    }
-   // After
+   // After (v2.0.0)
    {
      "src": "ANSIBLE.PWLZCFEB.T2417849.CICFWKBY.G0001V00",
      "dest": "/tmp/ANSIBLE.PWLZCFEB.T2417849.CICFWKBY.G0001V00",
@@ -631,13 +631,13 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Job output with ddname
      zos_job_output:
        job_id: "STC02560"
        ddname: "JESMSGLG"
 
-   # After
+   # After (v2.0.0)
    - name: Job output with dd_name
      zos_job_output:
        job_id: "STC02560"
@@ -874,7 +874,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
    "changed": true,
    "cmd": "",
@@ -884,7 +884,7 @@ Examples
    "rc": 0,
    "backup_name": ""
    }
-   // After
+   // After (v2.0.0)
    {
    "changed": true,
    "cmd": "",
@@ -1062,7 +1062,7 @@ Examples
 
 .. code-block:: yaml
 
-   # Before
+   # Before (v1.x)
    - name: Display all outstanding messages where the job name begins with 'mq',
          message ID begins with 'dsi', on system 'mv29' and which contain the
          pattern 'IMS'
@@ -1073,7 +1073,7 @@ Examples
        message_filter:
            filter: ^.*IMS.*$
            use_regex: true
-   # After
+   # After (v2.0.0)
    - name: Display all outstanding messages where the job name begins with 'mq',
          message ID begins with 'dsi', on system 'mv29' and which contain the
          pattern 'IMS'
@@ -1087,7 +1087,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
        "changed": false,
        "count": 2,
@@ -1108,7 +1108,7 @@ Examples
            }
        ]
    }
-   // After
+   // After (v2.0.0)
    {
      "changed": false,
      "count": 2,
@@ -1153,7 +1153,7 @@ Examples
 
 .. code-block:: json
 
-   // Before
+   // Before (v1.x)
    {
        "changed": true,
        "output":
@@ -1178,7 +1178,7 @@ Examples
            ],
        "max_rc": 0
    }
-   // After
+   // After (v2.0.0)
    {
        "changed": true,
        "output":
@@ -1271,7 +1271,7 @@ Examples
 
 
 Using the playbook upgrade validator role
-=============================================
+=========================================
 
 The ``playbook_upgrade_validator`` role helps automate the process of
 identifying migration changes needed in your playbooks when upgrading
@@ -1399,7 +1399,7 @@ Each entry includes:
    - ``[WARNING]`` - Response parameter changes (if ``ignore_response_params`` is false).
 
 Best Practices
------------------------------
+--------------
 
 1. **Run early** - Before you start your migration, run the validator
    to understand the scope of changes.
@@ -1412,7 +1412,7 @@ Best Practices
    run the validator again after making changes.
 
 Notes
------------------------------
+-----
 
 - Task line numbers in the report rely on task names and can be
   ambiguous when duplicate task names exist within a playbook.

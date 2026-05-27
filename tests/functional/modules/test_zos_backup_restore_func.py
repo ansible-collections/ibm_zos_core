@@ -1418,3 +1418,306 @@ def test_backup_and_restore_of_auth_shr_group(ansible_zos_module, volumes_sms_sy
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_backup_location)
+
+
+def test_restore_of_data_sets_with_rename_with_original_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    # Create original data set names
+    data_set_name_1 = get_tmp_ds_name()
+    data_set_name_2 = get_tmp_ds_name()
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    
+    # Generate new names for renamed data sets
+    hlq = get_random_q(4)
+    renamed_ds_1 = f"{hlq}.RENAMED.ONE"
+    renamed_ds_2 = f"{hlq}.RENAMED.TWO"
+    
+    try:
+        # Clean up any existing data sets
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, renamed_ds_1)
+        delete_data_set_or_file(hosts, renamed_ds_2)
+        delete_data_set_or_file(hosts, backup_name)
+        
+        # Create test data sets with content
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name_1, "DATA SET ONE CONTENT"
+        )
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name_2, "DATA SET TWO CONTENT"
+        )
+        
+        # Backup the data sets
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[data_set_name_1, data_set_name_2]),
+            backup_name=backup_name,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        
+        # Restore with rename using output.names parameter
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            output={
+                "write": "conditional",
+                "names": [
+                    {"old": data_set_name_1, "new": renamed_ds_1},
+                    {"old": data_set_name_2, "new": renamed_ds_2}
+                ]
+            },
+        )
+        assert_module_did_not_fail(results)
+        
+        # Verify renamed data sets exist
+        assert_data_set_exists(hosts, renamed_ds_1)
+        assert_data_set_exists(hosts, renamed_ds_2)
+        
+        # Verify original data sets also exist
+        assert_data_set_exists(hosts, data_set_name_1)
+        assert_data_set_exists(hosts, data_set_name_2)
+        
+        # Verify content of renamed data sets
+        results = hosts.all.shell(f"dcat '{renamed_ds_1}'")
+        for result in results.contacted.values():
+            assert "DATA SET ONE CONTENT" in result.get("stdout")
+        
+        results = hosts.all.shell(f"dcat '{renamed_ds_2}'")
+        for result in results.contacted.values():
+            assert "DATA SET TWO CONTENT" in result.get("stdout")
+            
+    finally:
+        # Clean up
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, renamed_ds_1)
+        delete_data_set_or_file(hosts, renamed_ds_2)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+def test_restore_of_data_sets_with_rename_without_original_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    # Create original data set names
+    data_set_name_1 = get_tmp_ds_name()
+    data_set_name_2 = get_tmp_ds_name()
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    
+    # Generate new names for renamed data sets
+    hlq = get_random_q(4)
+    renamed_ds_1 = f"{hlq}.RENAMED.ONE"
+    renamed_ds_2 = f"{hlq}.RENAMED.TWO"
+    
+    try:
+        # Clean up any existing data sets
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, renamed_ds_1)
+        delete_data_set_or_file(hosts, renamed_ds_2)
+        delete_data_set_or_file(hosts, backup_name)
+        
+        # Create test data sets with content
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name_1, "DATA SET ONE CONTENT"
+        )
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name_2, "DATA SET TWO CONTENT"
+        )
+        
+        # Backup the data sets
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[data_set_name_1, data_set_name_2]),
+            backup_name=backup_name,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        
+        # Delete original data sets to test restore with rename
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        
+        # Restore with rename using output.names parameter
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            output={
+                "write": "conditional",
+                "names": [
+                    {"old": data_set_name_1, "new": renamed_ds_1},
+                    {"old": data_set_name_2, "new": renamed_ds_2}
+                ]
+            },
+        )
+        assert_module_did_not_fail(results)
+        
+        # Verify renamed data sets exist
+        assert_data_set_does_not_exist(hosts, renamed_ds_1)
+        assert_data_set_does_not_exist(hosts, renamed_ds_2)
+        
+        # Verify original data sets also exist
+        assert_data_set_exists(hosts, data_set_name_1)
+        assert_data_set_exists(hosts, data_set_name_2)
+        
+        # Verify content of renamed data sets
+        results = hosts.all.shell(f"dcat '{data_set_name_1}'")
+        for result in results.contacted.values():
+            assert "DATA SET ONE CONTENT" in result.get("stdout")
+        
+        results = hosts.all.shell(f"dcat '{data_set_name_2}'")
+        for result in results.contacted.values():
+            assert "DATA SET TWO CONTENT" in result.get("stdout")
+            
+    finally:
+        # Clean up
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, renamed_ds_1)
+        delete_data_set_or_file(hosts, renamed_ds_2)
+
+
+def test_restore_with_hlq_and_names_mutual_exclusivity(ansible_zos_module):
+    hosts = ansible_zos_module
+    # Create test data sets
+    data_set_name_1 = get_tmp_ds_name()
+    data_set_name_2 = get_tmp_ds_name()
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    
+    try:
+        # Create and populate data sets
+        create_data_set_or_file_with_contents(hosts, data_set_name_1, "DATA SET ONE")
+        create_data_set_or_file_with_contents(hosts, data_set_name_2, "DATA SET TWO")
+        
+        # Backup the data sets
+        backup_results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            backup_name=backup_name,
+            overwrite=True
+        )
+        
+        for result in backup_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("backup_name") == backup_name
+        
+        # Delete original data sets
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        
+        # Attempt restore with both hlq and names (should fail)
+        restore_results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            output=dict(
+                hlq="NEWHLQ",
+                write="conditional",
+                names=[
+                    dict(old=data_set_name_1, new=f"RENAMED.{data_set_name_1.split('.')[-1]}"),
+                    dict(old=data_set_name_2, new=f"RENAMED.{data_set_name_2.split('.')[-1]}")
+                ]
+            )
+        )
+        
+        # Verify that the operation failed with mutual exclusivity error
+        for result in restore_results.contacted.values():
+            assert result.get("failed") is True
+            assert "mutually exclusive" in result.get("msg", "").lower()
+            
+    finally:
+        # Clean up
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+
+
+def test_restore_with_hlq_only(ansible_zos_module):
+    hosts = ansible_zos_module
+    # Create test data sets
+    data_set_name_1 = get_tmp_ds_name()
+    data_set_name_2 = get_tmp_ds_name()
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    
+    # Generate new HLQ for restored datasets
+    new_hlq = "N" + get_random_q(4)
+    expected_ds_1 = f"{new_hlq}.{'.'.join(data_set_name_1.split('.')[1:])}"
+    expected_ds_2 = f"{new_hlq}.{'.'.join(data_set_name_2.split('.')[1:])}"
+    
+    try:
+        # Create and populate data sets
+        create_data_set_or_file_with_contents(hosts, data_set_name_1, "DATA SET ONE CONTENT")
+        create_data_set_or_file_with_contents(hosts, data_set_name_2, "DATA SET TWO CONTENT")
+        
+        # Backup the data sets
+        backup_results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            backup_name=backup_name,
+            overwrite=True
+        )
+        
+        for result in backup_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("backup_name") == backup_name
+        
+        # Delete original data sets
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        
+        # Restore with new HLQ
+        restore_results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            overwrite=True,
+            output=dict(
+                hlq=new_hlq
+            )
+        )
+        
+        # Verify restore succeeded
+        for result in restore_results.contacted.values():
+            assert result.get("changed") is True
+        
+        # Verify datasets were restored with new HLQ
+        results = hosts.all.shell(f"dls '{expected_ds_1}'")
+        for result in results.contacted.values():
+            assert result.get("rc") == 0
+        
+        results = hosts.all.shell(f"dls '{expected_ds_2}'")
+        for result in results.contacted.values():
+            assert result.get("rc") == 0
+        
+        # Verify content is intact
+        results = hosts.all.shell(f"dcat '{expected_ds_1}'")
+        for result in results.contacted.values():
+            assert "DATA SET ONE CONTENT" in result.get("stdout")
+        
+        results = hosts.all.shell(f"dcat '{expected_ds_2}'")
+        for result in results.contacted.values():
+            assert "DATA SET TWO CONTENT" in result.get("stdout")
+        
+        # Verify original dataset names don't exist
+        results = hosts.all.shell(f"dls '{data_set_name_1}'")
+        for result in results.contacted.values():
+            assert result.get("rc") != 0  # Should not exist
+            
+    finally:
+        # Clean up
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, expected_ds_1)
+        delete_data_set_or_file(hosts, expected_ds_2)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_data_set_or_file(hosts, backup_name)

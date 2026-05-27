@@ -170,8 +170,9 @@ New Modules
 
 New Roles
 ---------
-- `gather_diagnostics` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios.
-- `playbook_upgrade_validator` - Adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0.
+- ``gather_diagnostics`` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios.
+- ``job_status`` - Adds a role that provides a simple way to check the status of a z/OS job. It can be used to check the status of a job that is currently running, or to check the status of a job that has completed.
+- ``playbook_upgrade_validator`` - Adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0.
 
 Availability
 ------------

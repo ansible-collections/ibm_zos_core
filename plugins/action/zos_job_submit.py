@@ -16,7 +16,6 @@ __metaclass__ = type
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.utils.display import Display
-# from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
@@ -25,6 +24,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 from datetime import datetime
 from os import path
+
 
 display = Display()
 
@@ -107,7 +107,10 @@ class ActionModule(ActionBase):
                 return result
 
             rendered_file = None
+
+            # Updated Code
             if use_template:
+                display.vvv(u"Entering template rendering block for {0}".format(source), host=self._play_context.remote_addr)
                 template_parameters = module_args.get("template_parameters", dict())
                 encoding = module_args.get("encoding", dict())
 
@@ -117,15 +120,42 @@ class ActionModule(ActionBase):
                     )
 
                 try:
+                    # Pass the full source path to create_template_environment
+                    # The template module will extract the directory internally
                     renderer = template.create_template_environment(
                         template_parameters,
                         source_full,
                         encoding.get("from", None)
                     )
+
+                    # Use Ansible's templar to get fully evaluated variables
+                    # This ensures variables like "{{ item.dataset_name }}" are resolved
+                    template_vars = {}
+                    if task_vars:
+                        # Template all variables using Ansible's templar
+                        for key, value in task_vars.items():
+                            try:
+                                # Use templar to evaluate any Jinja2 expressions in the value
+                                template_vars[key] = self._templar.template(value)
+                            except Exception:
+                                # If templating fails, use the original value
+                                template_vars[key] = value
+
                     template_dir, rendered_file = renderer.render_file_template(
                         os.path.basename(source_full),
-                        task_vars
+                        template_vars
                     )
+
+                    # Debug: Log the rendered content
+                    if os.path.exists(rendered_file):
+                        with open(rendered_file, 'r') as file:
+                            rendered_content = file.read()
+                            display.vvv(u"Template rendered successfully for {0}".format(os.path.basename(source)), host=self._play_context.remote_addr)
+                            display.vvv(u"Template variables available: {0}".format(list(template_vars.keys())), host=self._play_context.remote_addr)
+                            display.vvv(u"Rendered Template Content:\n{0}".format(rendered_content), host=self._play_context.remote_addr)
+                    else:
+                        display.warning(u"Template file {0} does not exist after rendering.".format(rendered_file))
+
                 except Exception as err:
                     result["msg"] = to_text(err)
                     result["failed"] = True

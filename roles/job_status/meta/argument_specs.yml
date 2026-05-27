@@ -14,7 +14,7 @@ argument_specs:
   main:
     short_description: Query a job for status and execution state
     description:
-    - >-
+      - >-
         The B(job_status) role queries a particular job with a given C(job_status_id) and parses the response
         to return the job status and whether the job is currently running.
     author:

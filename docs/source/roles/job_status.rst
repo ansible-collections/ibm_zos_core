@@ -31,9 +31,9 @@ Variables
 job_status_id
   The job ID assigned to the target job.
 
-  Expected format is `STC`, `JOB`, or `TSU` followed by up to 5 digits, or `S`, `J`, or `T` followed by 7 digits for IDs over 99,999.
+  Expected format is ``STC``, ``JOB``, or ``TSU`` followed by up to 5 digits, or ``S``, ``J``, or ``T`` followed by 7 digits for IDs over 99,999.
 
-  Value can include the asterisk (`*`) as a wildcard, but only job information from the first match is returned.
+  Value can include the asterisk (``*``) as a wildcard, but only job information from the first match is returned.
 
   | **required**: True
   | **type**: str

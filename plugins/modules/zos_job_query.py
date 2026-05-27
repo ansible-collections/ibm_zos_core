@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,10 +46,10 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the default set is 'none' and all jobs will be
-        queried.
+      - If no owner is set, the parameter will default to the current user.
     type: str
     required: False
+    default: null
   job_id:
     description:
       - The job id that has been assigned to the job.
@@ -59,8 +59,10 @@ options:
         with `S`, `J`, `T` and are followed by 7 digits.
       - The I(job_id) can contain include multiple wildcards.
       - The asterisk (`*`) wildcard will match zero or more specified characters.
+      - If no job_id is set, the parameter will not be used for job querying.
     type: str
     required: False
+    default: null
 
 attributes:
   action:
@@ -359,6 +361,7 @@ from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+import os
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
@@ -374,8 +377,8 @@ def run_module():
     """
     module_args = dict(
         job_name=dict(type="str", required=False, default="*"),
-        owner=dict(type="str", required=False),
-        job_id=dict(type="str", required=False),
+        owner=dict(type="str", required=False, default=None),
+        job_id=dict(type="str", required=False, default=None),
     )
 
     result = dict(changed=False)
@@ -447,14 +450,16 @@ def query_jobs(job_name, job_id, owner):
         No job with was found.
     """
     jobs = []
-    if job_id:
-        jobs = job_status(job_id=job_id)
-    elif owner:
-        jobs = job_status(owner=owner, job_name=job_name)
-    else:
-        jobs = job_status(job_name=job_name)
-    if not jobs:
-        raise RuntimeError("List FAILED! no such job was found.")
+
+    try:
+        # Owner defaults to current user if none is specified
+        if owner is None:
+            current_user = os.environ.get('USER') or os.environ.get('LOGNAME')
+            jobs = job_status(job_id=job_id, owner=current_user, job_name=job_name, dd_name=False)
+        else:
+            jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
+    except Exception as e:
+        raise RuntimeError("Error querying jobs: " + str(e))
     return jobs
 
 

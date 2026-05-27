@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_job_query – Users would see RACF violations when job_id or owner were not
+    set and the user lacked authority to view all jobs, as job_id and owner defaulted
+    to ``*``. The fix now sets both defaults to None, preventing overly broad job queries.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2367).

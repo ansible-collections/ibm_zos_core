@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_gather_facts.py
 
-.. _zos_gather_facts_module:
+.. _ibm.ibm_zos_core.zos_gather_facts_module:
 
 
 zos_gather_facts -- Gather z/OS system facts.

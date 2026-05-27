@@ -562,8 +562,6 @@ def managed_user_test_query_ceedump(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("code") == 0
             
-        # Test owner and job_id defaults - job query should only return job of managed user
-        # Job submitted with the same name by a different user should not appear
         job_name_query_results = hosts.all.zos_job_query(job_name="H*", owner=current_user)
 
         for result in job_name_query_results.contacted.values():

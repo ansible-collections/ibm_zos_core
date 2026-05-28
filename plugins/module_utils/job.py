@@ -352,7 +352,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
     # Observation shows the job_name parameter is not being used, so we will drop that
 
     # expanding > 1.3.0 of zoau, to include all params
-    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
+    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, job_name=job_name, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()

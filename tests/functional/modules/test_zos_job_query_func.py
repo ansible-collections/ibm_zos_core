@@ -497,7 +497,7 @@ def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
             hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
-def test_zos_job_query_no_ceedump_returned(ansible_zos_module, z_python_interpreter):
+def test_zos_job_query_no_ceedump_created(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
     managed_user = None
 

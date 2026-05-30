@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -159,10 +159,13 @@ notes:
   - When querying a partitioned data set (PDS), if the Ansible user has
     RACF READ authority on it, the last referenced date will be updated by
     the query operation.
+  - If you need to filter the output from the module by resource type, you
+    can use the zos_stat_by_type filter inside of a playbook.
 
 seealso:
-  - module: zos_find
-  - module: zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_find
+  - module: ibm.ibm_zos_core.zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_stat_by_type
 """
 
 EXAMPLES = r"""
@@ -1016,6 +1019,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DatasetCreateError,
     GDSNameResolveError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, gdgs
@@ -2231,7 +2238,7 @@ class GenerationDataGroupHandler(DataSetHandler):
             'order': self.gdg_view.order,
             'purge': self.gdg_view.purge,
             'extended': self.gdg_view.extended,
-            'active_gens': [generation.name for generation in self.gdg_view.generations()]
+            'active_gens': [generation.name for generation in self.gdg_view.generations]
         }
 
         # Now we call LISTCAT to get the creation time.
@@ -2565,6 +2572,7 @@ def run_module():
         },
         supports_check_mode=True
     )
+    validate_dependencies(module)
 
     args_def = {
         'name': {
@@ -2621,6 +2629,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     name = module.params.get('name')
     volumes = module.params.get('volumes')

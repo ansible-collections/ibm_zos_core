@@ -6,58 +6,240 @@
 Releases
 ========
 
+Version 2.0.0
+=============
+
+Minor Changes
+-------------
+
+- ``zos_backup_restore``
+
+   - Adds option `access` to specify how the module will access data sets and z/OS UNIX files when performing a backup or restore operation. 
+   - Adds option `share` to specify the module allow data set read access to other programs while backing up or restoring.
+   - Adds option `auth` allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and catalogs.
+   - Adds option `compress` option to enable compression of partitioned data sets using hardware compression if available.
+   - Adds option `terse` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
+   - Adds option `disable_automatic_class` to specify that automatic class selection routines will not be used to determine classes for provide list.
+   - Adds option `disable_automatic_storage_class` to specify the automatic class selection routines will not be used to determine the source data set storage class.
+   - Adds option `disable_automatic_management_class` to specify the automatic class selection routines will not be used to determine the source data set management class.
+   - Adds option `index` that allows for the backup and restore of all the associated alternate index (AIX) clusters and paths of a VSAM.
+   - Adds option `output` to specify how backup will be restored to the filesystem when `operation=restore`.
+
+- ``zos_data_set``
+
+   - Adds option `noscratch` to allow uncataloging a data set without deleting it from the volume's VTOC.
+   - Adds return value `data_sets` which contains the attributes of all data sets created.
+
+- ``zos_encode`` - Adds new return value `encoding` that contains the `from` and `to` encoding values used in the operation.
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+* ``zos_apf``
+
+  * Sub-option `persistent.data_set_name` renamed to `persistent.target` (old name still accepted).
+  * New return value: `stdout_lines`.
+  * New return value: `stderr_lines`.
+
+* ``zos_archive``
+
+  * Sub-option `format.name` renamed to `format.type` (old name still accepted).
+  * Sub-option `format.format_options` renamed to `format.options`.
+  * Sub-option `format.format_options.use_adrdssu` renamed to `format.options.adrdssu`.
+  * Sub-option `format.format_options.terse_pack` renamed to `format.options.spack` (type changed from `string` to `bool`).
+  * New return value: `dest`.
+
+* ``zos_backup_restore``
+
+  * Module option `hlq` renamed to `output.hlq`.
+  * Module option `sms_storage_class` renamed to `sms.storage_class`.
+  * Module option `sms_management_class` renamed to `sms.management_class`.
+  * New module option: `access` (with suboptions: `share`, `auth`).
+  * New module option: `index`.
+  * New SMS suboptions: `disable_automatic_class`, `disable_automatic_storage_class`, `disable_automatic_management_class`.
+
+
+* ``zos_blockinfile``
+
+  * Module option `insertafter` can be referenced as `after`.
+  * Module option `insertbefore` can be referenced as `before`.
+  * New return value: `stdout_lines`.
+  * New return value: `stderr_lines`.
+
+* ``zos_copy``
+
+  * Module option `is_binary` renamed to `binary`.
+  * Module option `force` renamed to `replace` (note: `force` remains valid with different functionality).
+  * Module option `force_lock` renamed to `force`.
+
+* ``zos_data_set``
+
+  * Return value `names` renamed to `data_sets`.
+
+
+* ``zos_fetch``
+
+  * Module option `is_binary` renamed to `binary`.
+  * Return value `file` renamed to `src`.
+  * Return value `is_binary` renamed to `binary`.
+  * Return value `note` renamed to `msg`.
+  * New return value: `encoding` (with `from`/ `to` suboptions).
+  * New return values: `stdout`, `stderr`, `stdout_lines`, `stderr_lines`.
+
+* ``zos_find``
+
+  * Module option `pds_patterns` removed (and aliases `pds_path`, `pds_pattern`). In v1.x, this option was used to specify PDS/PDSE data sets to search for members. In v2.0.0, use the `patterns` option with PDS member syntax: `DATASET.NAME(MEMBER*)`.
+
+* ``zos_job_output``
+
+  * Module option `ddname` renamed to `dd_name` (old name still accepted).
+  * Return value `ddnames` renamed to `dds`.
+  * Return value `ddnames[].ddname` renamed to `dds[].dd_name`.
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
+
+* ``zos_job_query``
+
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
+  * Return value `message` removed (top-level return value).
+
+* ``zos_job_submit``
+
+  * Module option `location` removed (choices: data_set, uss, local). Use new module option `remote_src` (boolean): `location=data_set` or `location=uss` → `remote_src=true`, `location=local`` → `remote_src=false`.
+  * Module option `wait_time_s` renamed to `wait_time`.
+  * Return value `ddnames` renamed to `dds`.
+  * Return value `ddnames[].ddname`` renamed to `dds[].dd_name`.
+  * Return value `ret_code.steps` moved to `steps` (moved from inside ret_code to job level).
+
+* ``zos_lineinfile``
+
+  * Module option `insertafter` can be referenced as `after`.
+  * Module option `insertbefore` can be referenced as `before`.
+  * Return value `return_content` renamed to `stdout`.
+  * New return values: `stderr`, `stdout_lines`, `stderr_lines`.
+
+* ``zos_mount``
+
+  * Sub-option `persistent.data_store` renamed to `persistent.name` (old name still accepted).
+  * Sub-option `persistent.comment` renamed to `persistent.marker` (old name still accepted).
+
+* ``zos_operator``
+
+  * Module option `wait_time_s` renamed to `wait_time` (use in conjunction with new option `time_unit`).
+  * Return value `content` removed (replaced by `stdout`, `stderr`, `stdout_lines` and `stderr_lines`).
+  * Return value `wait_time_s` renamed to `wait_time`.
+  * New module option: `time_unit` (choices: `s`, `cs`).
+  * New return values: `stdout`, `stdout_lines`, `stderr`, `stderr_lines`, `time_unit`.
+
+* ``zos_operator_action_query``
+
+  * Module option `use_regex` renamed to `literal` (note: `literal` is the inverse of `use_regex`).
+  * Module option `message_filter` renamed to `msg_filter`` (old name still accepted).
+  * Module option `message_id` renamed to `msg_id` (old name still accepted).
+  * Return value `message_text` renamed to `msg_text`.
+  * Return value `message_id` renamed to `msg_id`.
+
+* ``zos_tso_command``
+
+  * Return value `content` renamed to `stdout`.
+  * Return value `lines` renamed to `line_count`.
+  * New return values: `stdout` (string version), `stdout_lines`, `stderr_lines`.
+
+* ``zos_unarchive``
+
+  * Sub-option `format.name` renamed to `format.type`.
+  * Sub-option `format.format_options` renamed to `format.options`.
+  * Sub-option `format.format_options.use_adrdssu` renamed to `format.options.adrdssu`.
+
+Bugfixes
+--------
+- ``zos_backup_restore`` - Clarified documentation for `temp_volume`, including a known issue where operations fail if `temp_volume` matches source volume or is not specified.
+- ``zos_fetch`` - Fixed an `UnboundLocalError` that could occur when source was missing. Fix  initializes the `is_member` prior to data set existence checks, allowing the module to fail gracefully.
+- ``zos_mount`` - Fixed an issue where using the `persistent` option could delete the entire member or data set even without a pattern match. Fix now only deletes content when a pattern match is found, preserving existing configuration.
+- ``zos_started_task`` - System logs could not be fetched due to an internal variable name conflict. Fix renames the internal variable to distinguish the boolean control flag from the system_logs output variable.
+
+New Filter Plugins
+------------------
+
+- ``ibm.ibm_zos_core.generate_data_set_name`` - Filter HLQs to generate a new random valid data set name.
+- ``ibm.ibm_zos_core.zos_stat_by_type`` - Filter down zos_stat output based on the type of resource that queried.
+
+New Modules
+-----------
+
+- ``zos_user`` - Manage z/OS user and group profiles in RACF.
+
+New Roles
+---------
+- ``gather_diagnostics`` - Adds role that gathers comprehensive diagnostic information from both the Ansible control node and target z/OS managed nodes. The role collects system configuration, environment variables, installed packages, ZOAU and Python details, operator command output, and SSH configuration to aid in troubleshooting and support scenarios.
+- ``job_status`` - Adds a role that provides a simple way to check the status of a z/OS job. It can be used to check the status of a job that is currently running, or to check the status of a job that has completed.
+- ``playbook_upgrade_validator`` - Adds a role that scans playbooks in a directory and reports required actions to migrate from v1.x.x to v2.0.0.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+
+* Task line numbers in the playbook upgrade validator report rely on task names and may be ambiguous when duplicate task names exist within a playbook.
+* The playbook upgrade validator role runs on the control node (localhost) and does not require connection to z/OS systems.
+* Python 3 must be available on the control node for the validator to run.
+
 Version 1.16.0
 ==============
 
 Minor Changes
 -------------
 
-- ``zos_apf`` - Adds a new alias ``target`` for option ``data_set_name`` and a warning message that ``data_set_name`` will be deprecated in version 2.0.0.
+- ``zos_apf`` - Adds a new alias `target` for option `data_set_name` and a warning message that `data_set_name` will be deprecated in version 2.0.0.
 - ``zos_archive``
 
-   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and a warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``options`` for option ``format_options`` and a warning message that ``format_options`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``type`` for option ``name`` and a warning message that ``name`` will be deprecated in version 2.0.0.
+   - Adds a new alias `adrdssu` for option `use_adrdssu` and a warning message that `use_adrdssu` will be deprecated in version 2.0.0.
+   - Adds a new alias `options` for option `format_options` and a warning message that `format_options` will be deprecated in version 2.0.0.
+   - Adds a new alias `type` for option `name` and a warning message that `name` will be deprecated in version 2.0.0.
 
 - ``zos_backup_restore``
 
-   - Adds ``compress`` option to enable compression of partitioned data sets using hardware compression if available.
-   - Adds ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
+   - Adds `compress` option to enable compression of partitioned data sets using hardware compression if available.
+   - Adds `terse` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
 
 - ``zos_copy``
 
-   - Improved error message that identifies if a copy operation fails when a GDS in the ``src`` GDG is being used by another process.
-   - Adds a new alias ``binary`` for option ``is_binary`` and a warning message that ``is_binary`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``replace`` for option ``force`` and a warning message that ``force`` will be deprecated in version 2.0.0.
+   - Improved error message that identifies if a copy operation fails when a GDS in the `src` GDG is being used by another process.
+   - Adds a new alias `binary` for option `is_binary` and a warning message that `is_binary` will be deprecated in version 2.0.0.
+   - Adds a new alias `replace` for option `force` and a warning message that `force` will be deprecated in version 2.0.0.
 
 - ``zos_data_set``
 
    - Improved error messages when creating or deleting a Generation Data Group fails.
-   - Adds ``noscratch`` functionality into the ``scratch`` option. This allows a data set to be uncataloged without deleting it from the volume's VTOC.
+   - Adds `noscratch` functionality into the `scratch` option. This allows a data set to be uncataloged without deleting it from the volume's VTOC.
 
-- ``zos_fetch`` - Adds new alias ``binary`` for option ``is_binary`` and a warning message that ``is_binary`` will be deprecated in version 2.0.0.
+- ``zos_fetch`` - Adds a new alias `binary` for option `is_binary` and a warning message that `is_binary` will be deprecated in version 2.0.0.
 - ``zos_job_output``
 
-   - Adds a new alias ``dd_name`` for option ``ddname`` and a warning message that ``ddname`` will be deprecated on 2.0.0.
-   - Adds support to query **SYSIN DDs** from a job with module option ``sysin_dd``.
+   - Adds a new alias `dd_name` for option `ddname` and a warning message that `ddname` will be deprecated on 2.0.0.
+   - Adds support to query **SYSIN DDs** from a job with module option `sysin_dd`.
 
 - ``zos_job_submit``
 
-   - Adds a new alias ``wait_time`` for option ``wait_time_s`` and a warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
-   - Adds support for jobs with ``TYPRUN=JCLHOLD`` and ``TYPRUN=HOLD``.
+   - Adds a new alias `wait_time` for option `wait_time_s` and a warning message that `wait_time_s` will be deprecated in version 2.0.0.
+   - Adds support for jobs with `TYPRUN=JCLHOLD` and `TYPRUN=HOLD`.
 
 - ``zos_mount``
 
-   - Adds a new alias ``marker`` for option ``comment`` and a warning message that ``comment`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``name`` for option ``data_store`` and a warning message that ``data_store`` will be deprecated in version 2.0.0.
+   - Adds a new alias `marker` for option `comment` and a warning message that `comment` will be deprecated in version 2.0.0.
+   - Adds a new alias `name` for option `data_store` and a warning message that `data_store` will be deprecated in version 2.0.0.
 
-- ``zos_mvs_raw`` - Adds a new ``raw`` module option under ``dd_data_set`` that allows the MVS program to create datasets with its own DCB attributes without the user having to specify them.
-- ``zos_operator`` - Adds new alias ``wait_time`` for ``wait_time_s`` and a warning message that ``wait_time_s`` will be deprecated in version 2.0.0.
+- ``zos_mvs_raw`` - Adds a new `raw` module option under `dd_data_set` that allows the MVS program to create datasets with its own DCB attributes without the user having to specify them.
+- ``zos_operator`` - Adds a new alias `wait_time` for `wait_time_s` and a warning message that `wait_time_s` will be deprecated in version 2.0.0.
 - ``zos_unarchive``
 
-   - Adds a new alias ``adrdssu`` for option ``use_adrdssu`` and a warning message that ``use_adrdssu`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``options`` for option ``format_options`` and a warning message that ``format_options`` will be deprecated in version 2.0.0.
-   - Adds a new alias ``type`` for option ``name`` and a warning message that ``name`` will be deprecated in version 2.0.0.
+   - Adds a new alias `adrdssu` for option `use_adrdssu` and a warning message that `use_adrdss`` will be deprecated in version 2.0.0.
+   - Adds a new alias `options` for option `format_options` and a warning message that `format_options` will be deprecated in version 2.0.0.
+   - Adds a new alias `type` for option `name` and a warning message that `name` will be deprecated in version 2.0.0.
 
 New Modules
 -----------
@@ -72,8 +254,8 @@ Availability
 
 Known Issues
 ------------
-- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
-- ``zos_copy`` - Copying program objects or load modules with module option ``executable=True`` may not retain an exact byte-for-byte match with source; functionality remains unaffected.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when `type=gdg` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying program objects or load modules with module option `executable=True` may not retain an exact byte-for-byte match with source; functionality remains unaffected.
 
 
 Version 1.15.1
@@ -82,9 +264,9 @@ Version 1.15.1
 Bugfixes
 --------
 
-- zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
-- zos_copy - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
-- zos_replace - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided ``encoding`` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
+- ``zos_backup_restore`` - Module documentation stated that default `space_type` for a backup was `m` but module would use bytes instead. Fix now uses the correct default space type. (https://github.com/ansible-collections/ibm_zos_core/pull/2391).
+- ``zos_copy`` - When a data set name had the maximum length of 44 characters, a check to see if it is an alias would fail. Fix now solves this issue so that any valid data set name can be used as a source or destination. (https://github.com/ansible-collections/ibm_zos_core/pull/2391)
+- ``zos_replace`` - Module would always write USS files in UTF-8 encoding regardless if an occurrence was found or not. Fix now writes the file with the provided `encoding` value only if an occurrence is found. (https://github.com/ansible-collections/ibm_zos_core/pull/2372).
 
 Availability
 ------------
@@ -94,7 +276,7 @@ Availability
 
 Known Issues
 ------------
-- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when `type=gdg` and source GDS is a sequential data set in use.
 
 
 Version 1.15.0
@@ -133,7 +315,7 @@ Minor Changes
 - ``zos_stat``
 
    - Added support to recall migrated data sets and return its attributes.
-   - Adds new fields that describe the type of the resource that was queried. These new fields are ``isfile``, ``isdataset``, ``isaggregate`` and ``isgdg``.
+   - Adds new fields that describe the type of the resource that was queried. These new fields are `isfile`, `isdataset`, `isaggregate` and `isgdg`.
    - Adds support to query data sets using their aliases.
    - Module now returns whether the resource queried exists on the managed node with the `exists` field inside `stat`.
 
@@ -141,12 +323,12 @@ Minor Changes
 
 Bugfixes
 --------
-- ``zos_backup_restore`` - Return value ``backup_name`` was empty upon successful result. Fix now returns ``backup_name`` populated.
+- ``zos_backup_restore`` - Return value `backup_name` was empty upon successful result. Fix now returns `backup_name` populated.
 - ``zos_data_set`` - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume.
 - ``zos_fetch`` - Previously, the use of `become` would result in a permissions error  while trying to fetch a data set or a member. Fix now allows a user to escalate privileges when fetching resources.
 - ``zos_lineinfile``
 
-   - Return values ``return_content`` and ``backup_name`` were not always being returned. Fix now ensure that these values are always present in the module's response.
+   - Return values `return_content` and `backup_name` were not always being returned. Fix now ensure that these values are always present in the module's response.
    - The module would report a false negative when certain special characters where present in the `line` option. Fix now reports the successful operation.
 
 - ``zos_mount`` - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored.
@@ -165,7 +347,7 @@ Availability
 
 Known Issues
 ------------
-- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when `type=gdg` and source GDS is a sequential data set in use.
 
 
 Version 1.14.1
@@ -188,7 +370,7 @@ Availability
 
 Known Issues
 ------------
-- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when `type=gdg` and source GDS is a sequential data set in use.
 
 
 Version 1.14.0
@@ -199,7 +381,7 @@ Minor Changes
 
 - ``zos_copy``
 
-   - Adds ``large`` as a choice for ``type`` in ``dest_data_set``.
+   - Adds `large` as a choice for `type` in `dest_data_set`.
    - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
    - Adds support for copying in asynchronous mode inside playbooks.
    - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked.
@@ -280,17 +462,17 @@ Minor Changes
 
 - ``zos_copy``
 
-   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Added new option `autoescape` to `template_parameters`, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
    - Adds error message when a PDS/E source member does not exist or is not cataloged.
 
 - ``zos_job_submit``
 
    - Add deploy and forget capability. Now when wait_time_s is 0, the module will submit the job and will not wait to get the job details or content, returning only the job id.
-   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Added new option `autoescape` to `template_parameters`, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
    - Added support to run zos_job_submit tasks in async mode inside playbooks.
 
-- ``zos_mvs_raw`` - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerates the failure if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if the program return code is not 0.
-- ``zos_script`` - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+- ``zos_mvs_raw`` - Added `max_rc` option. Now when the user sets `max_rc`, the module tolerates the failure if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if the program return code is not 0.
+- ``zos_script`` - Added new option `autoescape` to `template_parameters`, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
 
 Bugfixes
 --------
@@ -299,8 +481,8 @@ Bugfixes
 
    - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
    - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
-   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
-   - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+   - Previously, if the dataset name included special characters such as `$` and `asa_text` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - When `asa_text` was set to true at the same time as `force_lock`, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
 
 - ``zos_fetch`` - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter.
 - ``zos_find``
@@ -315,7 +497,7 @@ Bugfixes
    - Module would not populate stderr return value. Fix now populates stderr in return values.
    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
    - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
-   - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses ``tmp_hlq`` as HLQ for backup data sets.
+   - Option `tmp_hlq` was not being used as HLQ when creating backup data sets. Fix now uses `tmp_hlq` as HLQ for backup data sets.
 
 - ``zos_script`` - When the user trying to run a remote script had execute permissions but wasn't owner of the file, the module would fail while trying to change permissions on it. Fix now ensures the module first checks if the user can execute the script and only try to change permissions when necessary.
 
@@ -336,7 +518,7 @@ Known Issues
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation might fail.
-- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when `type=gdg` and source GDS is a sequential data set in use.
 
 Version 1.12.1
 ==============
@@ -346,9 +528,9 @@ Bugfixes
 
 -  ``zos_copy``
 
-   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - Previously, if the dataset name included special characters such as `$` and `asa_text` option is true, the module would fail. Fix now allows the use of special characters in the data set name when `asa_text` option is true.
    - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
-   - When ``asa_text`` was set to true at the same time as ``force_lock``,  a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+   - When `asa_text` was set to true at the same time as `force_lock`,  a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when `force_lock` and `asa_text` are set to true.
 
 Availability
 ------------
@@ -436,9 +618,9 @@ Bugfixes
    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
    - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code.
 
-- ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
+- ``zos_script`` - Module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
 
-- ``zos_unarchive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+- ``zos_unarchive`` - Module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
 Availability
 ------------
@@ -449,8 +631,8 @@ Availability
 
 Known Issues
 ------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_job_submit`` - When setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - When submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 - ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
 
@@ -476,221 +658,9 @@ Availability
 
 Known Issues
 ------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_job_submit`` - When setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - When submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
-
-Version 1.11.0
-==============
-
-Minor Changes
--------------
-
-- ``zos_apf`` - Added support for data set names (libraries) with special characters ($, /#, /- and @).
-- ``zos_archive``
-
-   - Added support for GDG and GDS relative name notation to archive data sets.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_backup_restore``
-
-   - Added support for GDS relative name notation to include or exclude data sets when operation is backup.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_blockinfile``
-
-   - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_copy``
-
-   - Added support for copying from and to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_data_set``
-
-   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_encode``
-
-   - Added support for converting the encodings of generation data sets (GDS).
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_fetch``
-
-   - Added support for fetching generation data groups (GDG) and generation data sets (GDS).
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_find``
-
-   - Added support for finding generation data groups (GDG) and generation data sets (GDS).
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_job_submit``
-
-   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
-   - Added support for running JCL stored in generation data groups (GDG) and generation data sets (GDS).
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_lineinfile``
-
-   - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @).
-- ``zos_mvs_raw``
-
-   - Added support for GDG and GDS relative name notation to specify data set names.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_script`` - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
-- ``zos_tso_command``
-
-   - Added support for using GDG and GDS relative name notation in running TSO commands.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-- ``zos_unarchive``
-
-   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
-   - Added support for data set names with special characters ($, /#, /- and @).
-
-Bugfixes
---------
-
-- ``zos_copy``
-
-   - Fixes the issue that prevents the module from automatically computing member names when copying a file into a PDS/E. The module now computes the member name when copying into a PDS/E.
-   - Fixes an issue that would perform an unnecessary check if a destination data set is locked for data sets the module created. The module only performs this check for destinations that are present.
-
-- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The module now raises an MVSCmdExecError if the return code from LISTCAT exceeds the determined threshold.
-- ``zos_job_submit`` - Was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The module now shares the error type (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) in the error message.
-- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The module now includes the first character of each line.
-
-Availability
-------------
-
-* `Ansible Automation Platform`_
-* `Galaxy`_
-* `GitHub`_
-
-Known Issues
-------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
-- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
-
-Version 1.10.0
-==============
-
-Major Changes
--------------
-
-- Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
-- Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
-  review the porting guide for specifics.
-- The README has been updated with a new template.
-- The **Reference** section has been renamed to **Requirements** and now includes a support matrix.
-
-Minor Changes
--------------
-
-- ``zos_apf`` - Enhanced error messages when an exception is caught.
-- ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup data sets.
-- ``zos_copy`` - Documented module options `group` and `owner`.
-
-Bugfixes
---------
-
-- ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
-- ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
-- ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
-
-- ``zos_job_submit``
-
-  - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
-  - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
-
-- ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
-
-Porting Guide
--------------
-
-This section discusses the behavioral changes between ``ibm_zos_core`` v1.9.0 and ``ibm_zos_core`` v1.10.0-beta.1.
-It is intended to assist in updating your playbooks so this collection will continue to work.
-
-- ``zos_archive``
-
-  - option **terse_pack** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_backup_restore`` - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_copy``
-
-  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_data_set``
-
-  - option **record_format** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - options inside **batch** no longer accept uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_job_submit`` - option **location** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_mount``
-
-  - option **automove** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **fs_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **mount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **tag_untagged** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **unmount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-- ``zos_mvs_raw``
-
-  - options inside **dd_concat** no longer accept uppercase choices, users should replace them with lowercase ones.
-  - suboption **record_format** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **record_format** of **dd_unix** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **space_type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboptions **disposition_normal** and **disposition_abnormal** of **dd_data_set** no longer accept **catlg** and **uncatlg** as choices. This also applies when defining a **dd_data_set** inside **dd_concat**.
-
-- ``zos_unarchive``
-
-  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
-
-Availability
-------------
-
-* `Ansible Automation Platform`_
-* `Galaxy`_
-* `GitHub`_
-
-Known Issues
-------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
-- ``zos_data_set`` - When data set creation fails, exception can throw a bad import error instead of data set creation error.
-- ``zos_copy`` - To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
-- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters JSON decoding (DecodeError, TypeError, KeyError) errors when interacting with results that contain non-printable UTF-8 characters in the response. This will be addressed in **ZOAU version 1.3.2** and later.
-
-   - Some options to work around this known issue are:
-
-      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
-      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
-      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
-        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
-      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
-
-- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
-- Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
 .. .............................................................................
 .. Global Links

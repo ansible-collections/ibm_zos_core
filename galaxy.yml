@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.16.0"
+version: "2.0.0"
 
 # Collection README file
 readme: README.md
@@ -22,6 +22,8 @@ authors:
   - "Surendra Ravella @surendrababuravella"
   - "Rohitash Goyal @Rohitcodes28"
   - "Mayank Mani @mayankmani-sde"
+  - "Yogesh Rana @yrana17"
+  - "Sarah Miller @hmillersarah"
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.
@@ -68,6 +70,7 @@ issues: https://github.com/ansible-collections/ibm_zos_core/issues
 build_ignore:
   - '*.tar.gz'
   - __pycache__
+  - .ansible-lint
   - .cache
   - .DS_Store
   - .git
@@ -75,6 +78,7 @@ build_ignore:
   - .gitignore
   - .python-version
   - .pytest_cache
+  - .secrets.baseline
   - .vscode
   - Jenkinsfile
   - ansible.cfg

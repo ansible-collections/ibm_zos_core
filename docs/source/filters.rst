@@ -27,7 +27,15 @@ the `filter`_ directory included in the collection.
    https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/filter/
 
 
+The **IBM z/OS core** collection provides many filters.
+Reference material for each role contains documentation on how to use certain
+filters in your playbook.
 
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   filters/*
 
 
 

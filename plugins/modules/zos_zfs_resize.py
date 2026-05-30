@@ -241,6 +241,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -427,8 +431,8 @@ def create_trace_dataset(name, member=False):
                                         space_type="K", space_primary="42000", space_secondary="25000")
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
-                                             space_type="K", space_primary="42000", space_secondary="25000")
+        rc, zoau_data_set = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
+                                                            space_type="K", space_primary="42000", space_secondary="25000")
 
     return rc
 
@@ -486,6 +490,7 @@ def run_module():
         ),
         supports_check_mode=False
     )
+    validate_dependencies(module)
     args_def = dict(
         target=dict(type="data_set", required=True, aliases=['src']),
         size=dict(type="int", required=True),
@@ -509,6 +514,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     result = dict()
     target = module.params.get("target")

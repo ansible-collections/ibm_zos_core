@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2025, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -135,6 +135,7 @@ options:
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
+  - Whitespaces at the end of line will be ignored in order for regex to work.
 """
 
 EXAMPLES = r"""
@@ -268,6 +269,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import zoau_io, datasets
@@ -531,6 +536,7 @@ def open_file(file, encoding, uss):
     else:
         with zoau_io.RecordIO(f"//'{file}'") as dataset_read:
             dataset_content = dataset_read.readrecords()
+        # As in ZOAU 1.4.0 on reading dataset we are getting extra whitespace so we need rstrip for regex to work.
         decode_list = [codecs.decode(record, encoding).rstrip() for record in dataset_content]
 
     return decode_list
@@ -605,6 +611,7 @@ def run_module():
         ),
         supports_check_mode=False
     )
+    validate_dependencies(module)
     args_def = dict(
         after=dict(type='str', default=''),
         backup=dict(type='bool', default=False, required=False),
@@ -627,6 +634,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     src = module.params.get("target")
 
@@ -703,9 +714,9 @@ def run_module():
                     pass
                 content = [line.rstrip() for line in full_text]
                 full_text = "\n".join(content)
-                rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
-                if rc_write != 0:
-                    raise Exception("Non zero return code from datasets.write.")
+                rc_write = datasets.write(dataset_name=src, content=full_text)
+                if rc_write is not None:
+                    raise Exception(f"There was an error executing datasets.write rc: {rc_write}")
             except Exception as e:
                 module.fail_json(
                     msg=f"Unable to write on data set {src}. {e}",

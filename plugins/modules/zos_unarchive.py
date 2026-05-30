@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2025
+# Copyright (c) IBM Corporation 2023, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,7 +46,7 @@ options:
     type: dict
     required: true
     suboptions:
-      name:
+      type:
         description:
           - The compression format used while archiving.
         type: str
@@ -59,13 +59,11 @@ options:
           - terse
           - xmit
           - pax
-        aliases: [type]
-      format_options:
+      options:
         description:
           - Options specific to a compression format.
         type: dict
         required: false
-        aliases: [options]
         suboptions:
           xmit_log_data_set:
             description:
@@ -78,7 +76,7 @@ options:
               - When providing the I(xmit_log_data_set) name, ensure there
                 is adequate space.
             type: str
-          use_adrdssu:
+          adrdssu:
             description:
               - If set to true, the C(zos_unarchive) module will use Data
                 Facility Storage Management Subsystem data set services
@@ -86,10 +84,9 @@ options:
                 a portable format after using C(xmit) or C(terse).
             type: bool
             default: False
-            aliases: [adrdssu]
           dest_volumes:
             description:
-              - When I(use_adrdssu=True), specify the volume the data sets
+              - When I(adrdssu=True), specify the volume the data sets
                 will be written to.
               - If no volume is specified, storage management rules will be
                 used to determine the volume where the file will be
@@ -372,7 +369,7 @@ notes:
     SCP, it will temporarily use SFTP for transfers, if not available, the module
     will fail.
 seealso:
-  - module: zos_archive
+  - module: ibm.ibm_zos_core.zos_archive
 '''
 
 EXAMPLES = r'''
@@ -381,14 +378,14 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "./files/archive_folder_test.tar"
     format:
-      name: tar
+      type: tar
 
 # use include
 - name: Unarchive a bzip file selecting only a file to unpack.
   zos_unarchive:
     src: "/tmp/test.bz2"
     format:
-      name: bz2
+      type: bz2
     include:
       - 'foo.txt'
 
@@ -397,7 +394,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
     exclude:
       - USER.ARCHIVE.TEST1
       - USER.ARCHIVE.TEST2
@@ -407,16 +404,16 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE(0)"
     format:
-      name: terse
+      type: terse
 
 # List option
 - name: List content from XMIT
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.XMIT"
     format:
-      name: xmit
-      format_options:
-        use_adrdssu: true
+      type: xmit
+      options:
+        adrdssu: true
     list: true
 
 # Encoding example
@@ -424,7 +421,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -433,7 +430,7 @@ EXAMPLES = r'''
   zos_unarchive:
     src: "USER.ARCHIVE.RESULT.TRS"
     format:
-      name: terse
+      type: terse
     encoding:
       from: IBM-1047
       to: ISO8859-1
@@ -496,6 +493,10 @@ import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -525,7 +526,7 @@ class Unarchive():
             Destination of the unarchive.
         format : str
             Name of the format of the module.
-        format_options : list[str]
+        options : list[str]
             Options of the format of the module.
         tmphql : str
             High level qualifier for temporary datasets.
@@ -555,8 +556,8 @@ class Unarchive():
         self.module = module
         self.src = module.params.get("src")
         self.dest = module.params.get("dest")
-        self.format = module.params.get("format").get("name")
-        self.format_options = module.params.get("format").get("format_options")
+        self.format = module.params.get("format").get("type")
+        self.options = module.params.get("format").get("options")
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
         self.targets = list()
@@ -891,7 +892,7 @@ class MVSUnarchive(Unarchive):
         ----------
         volumes : list[str]
             List of destination volumes.
-        use_adrdssu : bool
+        adrdssu : bool
             Whether to use Data Facility Storage Management Subsystem data set services
             program ADRDSSU to uncompress data sets or not.
         dest_dat_set : dict
@@ -900,8 +901,8 @@ class MVSUnarchive(Unarchive):
             Source size.
         """
         super(MVSUnarchive, self).__init__(module)
-        self.volumes = self.format_options.get("dest_volumes")
-        self.use_adrdssu = self.format_options.get("use_adrdssu")
+        self.volumes = self.options.get("dest_volumes")
+        self.adrdssu = self.options.get("adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
@@ -1036,7 +1037,7 @@ class MVSUnarchive(Unarchive):
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed, zoau_data_set = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
     def _get_include_data_sets_cmd(self):
@@ -1118,9 +1119,10 @@ class MVSUnarchive(Unarchive):
             self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing ADRDSSU to unarchive {0}. List of data sets not restored : {1}".format(source, unrestored_data_sets),
-                stdout=out,
+                stdout=f"command: {restore_cmd} \n stdout:{out}",
                 stderr=err,
-                stdout_lines=restore_cmd,
+                stdout_lines=f"command: {restore_cmd} \n stdout:{out}".splitlines(),
+                stderr_lines=err.splitlines(),
                 rc=rc,
             )
         return rc
@@ -1179,7 +1181,7 @@ class MVSUnarchive(Unarchive):
 
         """
         temp_ds = ""
-        if not self.use_adrdssu:
+        if not self.adrdssu:
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
             self.targets = [temp_ds]
@@ -1325,6 +1327,8 @@ class AMATerseUnarchive(MVSUnarchive):
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
                 rc=rc,
             )
         return rc
@@ -1372,6 +1376,8 @@ class XMITUnarchive(MVSUnarchive):
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
                 rc=rc,
             )
         return rc
@@ -1394,7 +1400,7 @@ def get_unarchive_handler(module):
     ZipUnarchive
         The appropriate object type for any other format.
     """
-    format = module.params.get("format").get("name")
+    format = module.params.get("format").get("type")
     if format in ["tar", "gz", "bz2", "pax"]:
         return TarUnarchive(module)
     elif format == "terse":
@@ -1597,16 +1603,14 @@ def run_module():
                 type='dict',
                 required=True,
                 options=dict(
-                    name=dict(
+                    type=dict(
                         type='str',
                         required=True,
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                        aliases=['type'],
                     ),
-                    format_options=dict(
+                    options=dict(
                         type='dict',
                         required=False,
-                        aliases=['options'],
                         options=dict(
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1616,10 +1620,9 @@ def run_module():
                                 type='list',
                                 elements='str',
                             ),
-                            use_adrdssu=dict(
+                            adrdssu=dict(
                                 type='bool',
                                 default=False,
-                                aliases=['adrdssu']
                             )
                         )
                     ),
@@ -1693,6 +1696,7 @@ def run_module():
         ],
         supports_check_mode=True,
     )
+    validate_dependencies(module)
 
     arg_defs = dict(
         src=dict(type='str', required=True),
@@ -1704,17 +1708,15 @@ def run_module():
             type='dict',
             required=True,
             options=dict(
-                name=dict(
+                type=dict(
                     type='str',
                     required=True,
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax'],
-                    aliases=['type'],
                 ),
-                format_options=dict(
+                options=dict(
                     type='dict',
                     required=False,
-                    aliases=['options'],
                     options=dict(
                         xmit_log_data_set=dict(
                             type='str',
@@ -1724,16 +1726,15 @@ def run_module():
                             type='list',
                             elements='str',
                         ),
-                        use_adrdssu=dict(
+                        adrdssu=dict(
                             type='bool',
                             default=False,
-                            aliases=['adrdssu']
                         ),
                     ),
                     default=dict(xmit_log_data_set=""),
                 )
             ),
-            default=dict(name="", format_options=dict(xmit_log_data_set="")),
+            default=dict(type="", options=dict(xmit_log_data_set="")),
         ),
         dest_data_set=dict(
             arg_type='dict',
@@ -1779,35 +1780,14 @@ def run_module():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
-
-        format_param = module.params.get('format', {})
-
-        if format_param and format_param.get('name') is not None:
-            module.deprecate(
-                msg="The 'format.name' option will be deprecated in version 2.0.0. Use 'format.type' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        if format_param and format_param.get('format_options') is not None:
-            module.deprecate(
-                msg="The 'format.format_options' option will be deperecated. Use 'format.options' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
-        format_options = format_param['format_options']
-
-        if format_options and format_options.get('use_adrdssu') is not None:
-            module.deprecate(
-                msg="The 'format.format_options.use_adrdssu' option will be deperecated. Use 'format.format_options.adrdssu' instead.",
-                version="2.0.0",
-                collection_name='ibm.ibm_zos_core',
-            )
-
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
+
     unarchive = get_unarchive_handler(module)
 
     if not unarchive.src_exists():

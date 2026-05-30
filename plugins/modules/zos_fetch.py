@@ -77,13 +77,12 @@ options:
     required: false
     default: "false"
     type: bool
-  is_binary:
+  binary:
     description:
       - Specifies if the file being fetched is a binary.
     required: false
     default: "false"
     type: bool
-    aliases: [binary]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
@@ -170,8 +169,8 @@ notes:
       back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for
       transfers, if not available, the module will fail.
 seealso:
-- module: zos_data_set
-- module: zos_copy
+- module: ibm.ibm_zos_core.zos_data_set
+- module: ibm.ibm_zos_core.zos_copy
 """
 
 EXAMPLES = r"""
@@ -191,7 +190,7 @@ EXAMPLES = r"""
     src: SOME.PDS.DATASET
     dest: /tmp/
     flat: true
-    is_binary: true
+    binary: true
 
 - name: Fetch a UNIX file and don't validate its checksum
   zos_fetch:
@@ -241,8 +240,10 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-file:
-    description: The source file path or data set on the remote machine.
+src:
+    description:
+        - The source file path or data set on the remote machine.
+        - If the source is not found, then src will be empty.
     returned: success
     type: str
     sample: SOME.DATA.SET
@@ -251,7 +252,7 @@ dest:
     returned: success
     type: str
     sample: /tmp/SOME.DATA.SET
-is_binary:
+binary:
     description: Indicates the transfer mode that was used to fetch.
     returned: success
     type: bool
@@ -267,14 +268,9 @@ data_set_type:
     returned: success
     type: str
     sample: PDSE
-note:
-    description: Notice of module failure when C(fail_on_missing) is false.
-    returned: failure and fail_on_missing=false
-    type: str
-    sample: The data set USER.PROCLIB does not exist. No data was fetched.
 msg:
-    description: Message returned on failure.
-    returned: failure
+    description: Any important messages from the module.
+    returned: always
     type: str
     sample: The source 'TEST.DATA.SET' does not exist or is uncataloged.
 stdout:
@@ -324,7 +320,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, mvscmd, ztypes, gdgs
@@ -535,7 +534,7 @@ class FetchHandler:
 
         return out_ds_name
 
-    def _fetch_uss_file(self, src, is_binary, encoding=None):
+    def _fetch_uss_file(self, src, binary, encoding=None):
         """Convert encoding of a USS file. Return a tuple of temporary file
         name containing converted data.
 
@@ -543,7 +542,7 @@ class FetchHandler:
         ----------
         src : str
             Source of the file.
-        is_binary : bool
+        binary : bool
             If is binary.
         encoding : str
             The file encoding.
@@ -559,7 +558,7 @@ class FetchHandler:
             Any exception ocurred while converting encoding.
         """
         file_path = None
-        if (not is_binary) and encoding:
+        if (not binary) and encoding:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
@@ -583,7 +582,7 @@ class FetchHandler:
 
         return file_path if file_path else src
 
-    def _fetch_vsam(self, src, is_binary, encoding=None):
+    def _fetch_vsam(self, src, binary, encoding=None):
         """Copy the contents of a VSAM to a sequential data set.
         Afterwards, copy that data set to a USS file.
 
@@ -591,7 +590,7 @@ class FetchHandler:
         ----------
         src : str
             Source of the file.
-        is_binary : bool
+        binary : bool
             If is binary.
         encoding : str
             The file encoding.
@@ -607,7 +606,7 @@ class FetchHandler:
             Unable to delete temporary dataset.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
-        file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding=encoding)
+        file_path = self._fetch_mvs_data(temp_ds, binary, encoding=encoding)
         rc = datasets.delete(temp_ds)
         if rc != 0:
             os.remove(file_path)
@@ -617,7 +616,7 @@ class FetchHandler:
 
         return file_path
 
-    def _fetch_pdse(self, src, is_binary, temp_dir=None, encoding=None):
+    def _fetch_pdse(self, src, binary, temp_dir=None, encoding=None):
         """Copy a partitioned data set to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all members inside
         the data set will be converted.
@@ -626,7 +625,7 @@ class FetchHandler:
         ----------
         src : str
             Source of the dataset.
-        is_binary : bool
+        binary : bool
             If it is binary.
         temp_dir : str
             Parent directory for the temp directory of the copy.
@@ -651,7 +650,7 @@ class FetchHandler:
             "options": ""
         }
 
-        if is_binary:
+        if binary:
             copy_args["options"] = "-B"
 
         try:
@@ -671,7 +670,7 @@ class FetchHandler:
                 stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
 
-        if (not is_binary) and encoding:
+        if (not binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
@@ -694,7 +693,7 @@ class FetchHandler:
                 )
         return dir_path
 
-    def _fetch_gdg(self, src, is_binary, encoding=None):
+    def _fetch_gdg(self, src, binary, encoding=None):
         """Copy a generation data group to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all data sets inside
         the GDG will be converted.
@@ -703,7 +702,7 @@ class FetchHandler:
         ----------
         src : str
             Source of the generation data group.
-        is_binary : bool
+        binary : bool
             If it is binary.
         encoding : str
             The file encoding.
@@ -723,11 +722,11 @@ class FetchHandler:
         dir_path = tempfile.mkdtemp()
 
         data_group = gdgs.GenerationDataGroupView(src)
-        for current_gds in data_group.generations():
+        for current_gds in data_group.generations:
             if current_gds.organization in data_set.DataSet.MVS_SEQ:
                 self._fetch_mvs_data(
                     current_gds.name,
-                    is_binary,
+                    binary,
                     temp_dir=dir_path,
                     file_override=current_gds.name,
                     encoding=encoding
@@ -735,14 +734,14 @@ class FetchHandler:
             elif current_gds.organization in data_set.DataSet.MVS_PARTITIONED:
                 self._fetch_pdse(
                     current_gds.name,
-                    is_binary,
+                    binary,
                     temp_dir=dir_path,
                     encoding=encoding
                 )
 
         return dir_path
 
-    def _fetch_mvs_data(self, src, is_binary, temp_dir=None, file_override=None, encoding=None):
+    def _fetch_mvs_data(self, src, binary, temp_dir=None, file_override=None, encoding=None):
         """Copy a sequential data set or a partitioned data set member
         to a USS file.
 
@@ -750,7 +749,7 @@ class FetchHandler:
         ----------
         src : str
             Source of the dataset.
-        is_binary : bool
+        binary : bool
             If it is binary.
         temp_dir : str
             Parent directory for the temp directory of the copy.
@@ -785,7 +784,7 @@ class FetchHandler:
             "options": ""
         }
 
-        if is_binary:
+        if binary:
             copy_args["options"] = "-B"
 
         try:
@@ -802,7 +801,7 @@ class FetchHandler:
                 stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
 
-        if (not is_binary) and encoding:
+        if (not binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
@@ -850,7 +849,7 @@ def run_module():
             dest=dict(required=True, type="path"),
             fail_on_missing=dict(required=False, default=True, type="bool"),
             flat=dict(required=False, default=False, type="bool"),
-            is_binary=dict(required=False, default=False, type="bool", aliases=["binary"]),
+            binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
@@ -858,16 +857,10 @@ def run_module():
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
+    validate_dependencies(module)
 
     src = module.params.get("src")
     hlq = None
-
-    if module.params.get('is_binary') is not None:
-        module.deprecate(
-            msg="The 'is_binary' option will be deprecated. Please use 'binary' instead.",
-            version="2.0.0",
-            collection_name='ibm.ibm_zos_core',
-        )
 
     if module.params.get("use_qualifier"):
         hlq = datasets.get_hlq()
@@ -881,12 +874,12 @@ def run_module():
         src=dict(arg_type="data_set_or_path", required=True),
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
-        is_binary=dict(arg_type="bool", required=False, default=False, aliases=["binary"]),
+        binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
-    if not module.params.get("encoding").get("from") and not module.params.get("is_binary"):
+    if not module.params.get("encoding").get("from") and not module.params.get("binary"):
         mvs_src = data_set.is_data_set(src)
         remote_charset = encode.Defaults.get_default_system_charset()
 
@@ -919,21 +912,41 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
+
     src = parsed_args.get("src")
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
-    is_binary = boolean(parsed_args.get("is_binary"))
+    binary = boolean(parsed_args.get("binary"))
     encoding = module.params.get("encoding")
     tmphlq = module.params.get("tmp_hlq")
 
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
     # ********************************************************** #
-
-    res_args = dict()
+    encoding_dict = {"from": encoding.get("from"), "to": encoding.get("to")}
+    result = dict(
+        src=src,
+        dest="",
+        binary=binary,
+        checksum="",
+        changed=False,
+        data_set_type="",
+        remote_path="",
+        msg="",
+        stdout="",
+        stderr="",
+        stdout_lines=[],
+        stderr_lines=[],
+        rc=0,
+        encoding=encoding_dict,
+    )
     src_data_set = None
     ds_type = None
-
+    is_member = False
     try:
         # Checking the source actually exists on the system.
         if "/" in src:  # USS
@@ -971,7 +984,7 @@ def run_module():
                     )
             else:
                 module.exit_json(
-                    note=("Source '{0}' was not found. No data was fetched.".format(src))
+                    msg=("Source '{0}' was not found. No data was fetched.".format(src))
                 )
 
         if "/" in src:
@@ -997,10 +1010,10 @@ def run_module():
     if ds_type in data_set.DataSet.MVS_SEQ:
         file_path = fetch_handler._fetch_mvs_data(
             src_data_set.name,
-            is_binary,
+            binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #    Fetch a partitioned data set or one of its members      #
@@ -1010,14 +1023,14 @@ def run_module():
         if is_member:
             file_path = fetch_handler._fetch_mvs_data(
                 src_data_set.name,
-                is_binary,
+                binary,
                 encoding=encoding
             )
-            res_args["remote_path"] = file_path
+            result["remote_path"] = file_path
         else:
-            res_args["remote_path"] = fetch_handler._fetch_pdse(
+            result["remote_path"] = fetch_handler._fetch_pdse(
                 src_data_set.name,
-                is_binary,
+                binary,
                 encoding=encoding
             )
 
@@ -1032,10 +1045,10 @@ def run_module():
             )
         file_path = fetch_handler._fetch_uss_file(
             src,
-            is_binary,
+            binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a VSAM data set                     #
@@ -1044,35 +1057,35 @@ def run_module():
     elif ds_type in data_set.DataSet.MVS_VSAM:
         file_path = fetch_handler._fetch_vsam(
             src_data_set.name,
-            is_binary,
+            binary,
             encoding=encoding
         )
-        res_args["remote_path"] = file_path
+        result["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a GDG                               #
     # ********************************************************** #
 
     elif ds_type == "GDG":
-        res_args["remote_path"] = fetch_handler._fetch_gdg(
+        result["remote_path"] = fetch_handler._fetch_gdg(
             src_data_set.name,
-            is_binary,
+            binary,
             encoding=encoding
         )
 
     if ds_type == "USS":
-        res_args["file"] = src
+        result["src"] = src
     else:
-        res_args["file"] = src_data_set.name
+        result["src"] = src_data_set.name
 
         # Removing the HLQ since the user is probably not expecting it. The module
         # hasn't returned it ever since it was originally written. Changes made to
         # add GDG/GDS support started leaving the HLQ behind in the file name.
         if hlq:
-            res_args["file"] = res_args["file"].replace(f"{hlq}.", "")
+            result["src"] = result["src"].replace(f"{hlq}.", "")
 
-    res_args["ds_type"] = ds_type
-    module.exit_json(**res_args)
+    result["ds_type"] = ds_type
+    module.exit_json(**result)
 
 
 class ZOSFetchError(Exception):
@@ -1102,7 +1115,7 @@ class ZOSFetchError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
         )
-        super().__init__(self.msg)
+        super().__init__(msg)
 
 
 def main():

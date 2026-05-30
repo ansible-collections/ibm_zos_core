@@ -33,6 +33,10 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
+        - v2.0.0
+        - v1.16.0
+        - v1.16.0-beta.1
+        - v1.15.0
         - v1.15.0-beta.1
         - v1.14.1
         - v1.14.0
@@ -44,7 +48,6 @@ body:
         - v1.12.0-beta.1
         - v1.11.1
         - v1.11.0
-        - v1.10.0
       default: 3
     validations:
       required: true
@@ -55,6 +58,8 @@ body:
       description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v1.4.1
+        - v1.4.0
         - v1.3.6
         - v1.3.5
         - v1.3.4
@@ -72,6 +77,7 @@ body:
       description: Which version of IBM Enterprise Python are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v3.14.x
         - v3.13.x
         - v3.12.x
         - v3.11.x
@@ -101,6 +107,7 @@ body:
       description: What is the version of z/OS on the managed node? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v3.2
         - v3.1
         - v2.5
         - v2.4
@@ -110,8 +117,8 @@ body:
   - type: dropdown
     id: modules
     attributes:
-      label: Ansible module
-      description: Select which modules are being reported in this bug. You can select more than one.
+      label: Ansible module, filter plugin or role
+      description: Select which modules, filter, or roles are being reported in this bug. You can select more than one.
       multiple: true
       options:
         - zos_apf
@@ -135,11 +142,19 @@ body:
         - zos_ping
         - zos_replace
         - zos_script
+        - zos_started_task
         - zos_stat
         - zos_tso_command
         - zos_unarchive
+        - zos_user
         - zos_volume_init
         - zos_zfs_resize
+        - filter_generate_data_set_name
+        - filter_wtor
+        - filter_zos_stat_by_type
+        - role_gather_diagnostics
+        - role_job_status
+        - role_playbook_upgrade_validator
     validations:
       required: false
   - type: textarea

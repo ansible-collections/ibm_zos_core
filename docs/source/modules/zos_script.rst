@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_script.py
 
-.. _zos_script_module:
+.. _ibm.ibm_zos_core.zos_script_module:
 
 
 zos_script -- Run scripts in z/OS
@@ -340,8 +340,8 @@ See Also
 
 .. seealso::
 
-   - :ref:`zos_copy_module`
-   - :ref:`zos_tso_command_module`
+   - :ref:`ibm.ibm_zos_core.zos_copy_module`
+   - :ref:`ibm.ibm_zos_core.zos_tso_command_module`
 
 
 

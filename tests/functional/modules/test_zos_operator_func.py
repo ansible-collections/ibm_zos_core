@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -45,7 +45,7 @@ PARALLEL_RUNNING = """- hosts : zvm
       - name: zos_operator
         zos_operator:
           cmd: 'd a,all'
-          wait_time_s: 3
+          wait_time: 3
           verbose: true
         register: output
 
@@ -112,8 +112,16 @@ def test_zos_operator_various_command(ansible_zos_module):
         hosts = ansible_zos_module
         results = hosts.all.zos_operator(cmd=command)
         for result in results.contacted.values():
-            assert result["rc"] == expected_rc
+            assert result.get("rc") == expected_rc
             assert result.get("changed") is changed
+            assert result.get("msg", False) is False
+            assert result.get("cmd") == command
+            assert result.get("elapsed") is not None
+            assert result.get("wait_time") is not None
+            assert result.get("time_unit") == "s"
+            assert result.get("stderr") == ""
+            assert result.get("stdout") is not None
+            assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_invalid_command(ansible_zos_module):
@@ -121,6 +129,14 @@ def test_zos_operator_invalid_command(ansible_zos_module):
     results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is True
+        assert result.get("rc") == 0
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module):
@@ -128,8 +144,16 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
     results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is True
+        assert result.get("rc") == 0
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
         transparency = False
-        if any('DUMP COMMAND' in str for str in result.get("content")):
+        if any('DUMP COMMAND' in str for str in result.get("stdout_lines")):
             transparency = True
         assert transparency
 
@@ -139,21 +163,35 @@ def test_zos_operator_positive_path(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="d u,all", verbose=False)
     for result in results.contacted.values():
-        assert result["rc"] == 0
+        assert result.get("rc") == 0
         assert result.get("changed") is True
-        assert result.get("content") is not None
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stderr") == ""
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_path_verbose(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="d u,all", verbose=True)
     for result in results.contacted.values():
-        assert result["rc"] == 0
+        assert result.get("rc") == 0
         assert result.get("changed") is True
-        assert result.get("content") is not None
-        # Traverse the content list for a known verbose keyword and track state
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
+        assert result.get("stderr_lines") is not None
+        # Traverse the stdout_lines list for a known verbose keyword and track state
         is_verbose = False
-        if any('BGYSC0804I' in str for str in result.get("content")):
+        if any('BGYSC0804I' in str for str in result.get("stderr_lines")):
             is_verbose = True
         assert is_verbose
 
@@ -163,45 +201,58 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
     hosts = ansible_zos_module
     wait_time = 10
     results = hosts.all.zos_operator(
-        cmd="RO *ALL,LOG 'dummy syslog message'", verbose=True, wait_time_s=wait_time
+        cmd="RO *ALL,LOG 'dummy syslog message'", verbose=True, wait_time=wait_time
     )
 
     for result in results.contacted.values():
-        assert result["rc"] == 0
+        assert result.get("rc") == 0
         assert result.get("changed") is True
-        assert result.get("content") is not None
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
         assert result.get("elapsed") > wait_time
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
-    wait_time_s=10
+    wait_time=10
     results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=wait_time_s
+        cmd="d u,all", verbose=True, wait_time=wait_time
     )
 
     for result in results.contacted.values():
-        assert result["rc"] == 0
+        assert result.get("rc") == 0
         assert result.get("changed") is True
-        assert result.get("content") is not None
-        # Account for slower network
-        assert result.get('elapsed') <= (2 * wait_time_s)
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") <= (2 * wait_time)
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
     hosts = ansible_zos_module
     if is_zoau_version_higher_than(hosts,"1.2.4.5"):
-        wait_time_s=5
+        wait_time=5
         results = hosts.all.zos_operator(
-            cmd="d u,all", verbose=True, wait_time_s=wait_time_s
+            cmd="d u,all", verbose=True, wait_time=wait_time
         )
 
         for result in results.contacted.values():
-            assert result["rc"] == 0
+            assert result.get("rc") == 0
             assert result.get("changed") is True
-            assert result.get("content") is not None
-            # Account for slower network
-            assert result.get('elapsed') >= wait_time_s
+            assert result.get("msg", False) is False
+            assert result.get("cmd") is not None
+            assert result.get("elapsed") >= wait_time
+            assert result.get("wait_time") is not None
+            assert result.get("time_unit") == "s"
+            assert result.get("stdout") is not None
+            assert result.get("stdout_lines") is not None
 
 
 def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
@@ -214,13 +265,19 @@ def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result["rc"] == 0
+        assert result.get("rc") == 0
         assert result.get("changed") is True
-        assert result.get("content") is not None
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
         # Making sure the output from opercmd logged the command
         # exactly as it was written.
-        assert len(result.get("content")) > 1
-        assert command in result.get("content")[1]
+        assert len(result.get("stdout_lines")) > 1
+        assert command in result.get("stdout_lines")[1]
 
 
 def test_response_come_back_complete(ansible_zos_module):
@@ -229,7 +286,68 @@ def test_response_come_back_complete(ansible_zos_module):
     res = {}
     res["stdout"] = []
     for result in results.contacted.values():
-        stdout = result.get('content')
+        assert result.get("rc") == 0
+        assert result.get("changed") is True
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("time_unit") == "s"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
+        stdout_lines = result.get('stdout_lines')
         # HASP646 Only appears in the last line that before did not appears
-        last_line = len(stdout)
-        assert "HASP646" in stdout[last_line - 1]
+        last_line = len(stdout_lines)
+        assert "HASP646" in stdout_lines[last_line - 1]
+
+
+def test_operator_sentiseconds(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_operator(cmd="d a", time_unit="cs", wait_time=100)
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+        assert result.get("changed") is True
+        assert result.get("msg", False) is False
+        assert result.get("cmd") is not None
+        assert result.get("elapsed") is not None
+        assert result.get("wait_time") is not None
+        assert result.get("time_unit") == "cs"
+        assert result.get("stdout") is not None
+        assert result.get("stdout_lines") is not None
+
+
+def test_zos_operator_parallel_terminal(get_config):
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
+            zoau,
+            cut_python_path,
+            python_version
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), inventory))
+        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+            inventory,
+            playbook,
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")

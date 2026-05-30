@@ -1318,7 +1318,7 @@ notes:
     - 3. When executing a program, refer to the programs documentation as each programs requirments
       can vary fom DDs, instream-data indentation and continuation characters.
 seealso:
-- module: zos_data_set
+- module: ibm.ibm_zos_core.zos_data_set
 """
 
 RETURN = r"""
@@ -1806,6 +1806,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawInputDefinition,
     RawOutputDefinition,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from ansible.module_utils.basic import AnsibleModule
@@ -1818,6 +1821,7 @@ import re
 import traceback
 
 from shlex import quote
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, zoau_io
@@ -2049,6 +2053,7 @@ def run_module():
     # ---------------------------------------------------------------------------- #
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    validate_dependencies(module)
 
     # ---------------------------------------------------------------------------- #
     #                                  Main Logic                                  #
@@ -2061,6 +2066,11 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
+
+            # Initialize logging module
+            module_verbosity_level = module._verbosity
+            SingletonLogger().get_logger(module_verbosity_level)
+
             tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
@@ -2842,8 +2852,6 @@ def resolve_data_set_names(dataset, disposition, type, raw=False):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
-      type : str
-          Type of dataset
       Returns
       -------
       str
@@ -2861,9 +2869,11 @@ def resolve_data_set_names(dataset, disposition, type, raw=False):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disp == "new":
                 if type:
-                    return str(datasets.create(dataset, type).name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type=type)
+                    return new_generation.name, "shr"
                 else:
-                    return str(datasets.create(dataset, "seq").name), "shr"
+                    new_generation = datasets.create(name=dataset, dataset_type="seq")
+                    return new_generation.name, "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:

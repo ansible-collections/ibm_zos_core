@@ -304,6 +304,25 @@ backup_name:
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
+encoding:
+  description:
+    - Specifies which encodings the destination file or data set was
+      converted from and to.
+  type: dict
+  returned: always
+  contains:
+    from:
+      description:
+        - The character set of the source I(src).
+      type: str
+      sample: IBM-1047
+      returned: always
+    to:
+      description:
+        - The destination I(dest) character set for the output that was written as.
+      type: str
+      sample: ISO8859-1
+      returned: always
 """
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -314,12 +333,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     encode,
     backup as zos_backup,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
 from ansible.module_utils.basic import AnsibleModule
 from os import path
 from os import makedirs
 from os import listdir
 import re
 import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -486,6 +509,7 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args)
+    validate_dependencies(module)
 
     if module.params.get("encoding"):
         module.params.update(
@@ -515,6 +539,11 @@ def run_module():
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
     parsed_args = parser.parse_args(module.params)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
+
     src = parsed_args.get("src")
     dest = parsed_args.get("dest")
     backup = parsed_args.get("backup")
@@ -536,10 +565,8 @@ def run_module():
     dest_data_set = None
     convert_rc = False
     changed = False
-
-    result = dict(changed=changed, src=src, dest=dest)
-    if backup:
-        result["backup_name"] = None
+    encoding_dict = {"from": from_encoding, "to": to_encoding}
+    result = dict(changed=changed, src=src, dest=dest, encoding=encoding_dict, backup_name=None)
 
     try:
         # Check the src is a USS file/path or an MVS data set
@@ -701,9 +728,7 @@ def run_module():
                 eu.uss_tag_encoding(new_dest, to_encoding)
 
             changed = True
-            result = dict(changed=changed, src=new_src, dest=new_dest, backup_name=backup_name)
-        else:
-            result = dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name)
+        result.update(dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name))
     except encode.TaggingError as e:
         module.fail_json(
             msg=e.msg,

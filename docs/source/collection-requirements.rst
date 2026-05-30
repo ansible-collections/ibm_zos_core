@@ -100,6 +100,12 @@ Dependency Matrix
    +---------+----------------------------+-----------------------------------------------------+
    | Version | Control Node               | Managed Node                                        |
    +=========+============================+=====================================================+
+   | 2.0.x   |- `ansible-core`_ >=2.16.x  |- `z/OS`_ V2R5 - V3Rx                                |
+   |         |- `Ansible`_ >=9.0.x        |- `z/OS shell`_                                      |
+   |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |
+   |         |                            |- IBM `Open Enterprise SDK for Python`_              |
+   |         |                            |- IBM `Z Open Automation Utilities`_ >=1.4.0, <1.5.0 |
+   +---------+----------------------------+-----------------------------------------------------+
    | 1.16.x  |- `ansible-core`_ >=2.16.x  |- `z/OS`_ V2R5 - V3Rx                                |
    |         |- `Ansible`_ >=9.0.x        |- `z/OS shell`_                                      |
    |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |
@@ -135,12 +141,6 @@ Dependency Matrix
    |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |
    |         |                            |- IBM `Open Enterprise SDK for Python`_              |
    |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.1, <1.4.0 |
-   +---------+----------------------------+-----------------------------------------------------+
-   | 1.10.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                                |
-   |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                      |
-   |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_              |
-   |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.0, <1.4.0 |
    +---------+----------------------------+-----------------------------------------------------+
 
 .. .............................................................................

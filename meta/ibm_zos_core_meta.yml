@@ -7,4 +7,4 @@ managed_requirements:
     -
         name: "Z Open Automation Utilities"
         version:
-            - ">=1.4.0"
+            - ">=1.4.0, <1.5.0"

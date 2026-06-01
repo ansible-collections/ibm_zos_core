@@ -512,7 +512,7 @@ def test_zos_job_query_no_ceedump_created(ansible_zos_module, z_python_interpret
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(
-            managed_user_test_case="managed_user_test_query_ceedump",
+            managed_user_test_case="managed_user_test_query_no_ceedump",
             debug=False,
             verbose=False,
             managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
@@ -522,7 +522,7 @@ def test_zos_job_query_no_ceedump_created(ansible_zos_module, z_python_interpret
             managed_user.delete_managed_user()
 
 
-def managed_user_test_query_ceedump(ansible_zos_module):
+def managed_user_test_query_no_ceedump(ansible_zos_module):
     hosts = ansible_zos_module
     
     # Get the current user from the fixture options (set by ManagedUser class)
@@ -533,6 +533,11 @@ def managed_user_test_query_ceedump(ansible_zos_module):
     temp_path = get_random_file_name(dir=TEMP_PATH)
 
     try:
+        # Check for existing CEE dumps before test
+        pre_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
@@ -574,11 +579,33 @@ def managed_user_test_query_ceedump(ansible_zos_module):
                     f"Retrieved job owner mismatch: expected {current_user}"
                 assert job.get("job_id") == managed_user_job_id
 
+        # Check for CEE dumps after test
+        post_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+        
+        # Verify no new CEE dumps were created
+        for pre_result, post_result in zip(
+            pre_test_dumps.contacted.values(),
+            post_test_dumps.contacted.values()
+        ):
+            pre_dumps = pre_result.get("stdout", "NONE")
+            post_dumps = post_result.get("stdout", "NONE")
+            
+            # Assert that no new dumps were created
+            assert pre_dumps == post_dumps, \
+                f"CEE dump created during zos_job_query execution. " \
+                f"Before: {pre_dumps}, After: {post_dumps}"
+
     finally:
         if temp_path:
             hosts.all.file(path=temp_path, state="absent")
         if data_set_name:
             hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        # Clean up any CEE dumps that may have been created
+        hosts.all.shell(
+            cmd=f"drm '{current_user}.CEE.CEEDUMP*' 2>/dev/null || true"
+        )
 
 
 # test to show job_id="*" and job_id=None has the same results if job_name and owner are specified

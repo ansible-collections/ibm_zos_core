@@ -1,7 +1,0 @@
-minor_changes:
-  - gather_diagnostics - Adds role that gathers comprehensive diagnostic information
-    from both the Ansible control node and target z/OS managed nodes. The role collects
-    system configuration, environment variables, installed packages, ZOAU and Python
-    details, operator command output, and SSH configuration to aid in troubleshooting
-    and support scenarios.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2168).

@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_data_set.py
 
-.. _zos_data_set_module:
+.. _ibm.ibm_zos_core.zos_data_set_module:
 
 
 zos_data_set -- Manage data sets
@@ -877,10 +877,171 @@ Return Values
 -------------
 
 
-names
-  The data set names, including temporary generated data set names, in the order provided to the module.
+data_sets
+  The affected data set, including temporary generated data set, in the order provided to the module.
 
   | **returned**: always
   | **type**: list
   | **elements**: str
+
+  name
+    The data set name.
+
+    | **returned**: always
+    | **type**: str
+
+  state
+    The final state desired for specified data set.
+
+    | **returned**: always
+    | **type**: str
+
+  type
+    The data set type.
+
+    | **returned**: always
+    | **type**: str
+
+  space_primary
+    The amount of primary space allocated for the dataset.
+
+    | **returned**: always
+    | **type**: int
+
+  space_secondary
+    The amount of secondary space allocated for the dataset.
+
+    | **returned**: always
+    | **type**: int
+
+  space_type
+    The unit of measurement used when defining primary and secondary space.
+
+    | **returned**: always
+    | **type**: str
+
+  record_format
+    The format of the data set.
+
+    | **returned**: always
+    | **type**: str
+    | **sample**: fb
+
+  sms_storage_class
+    The storage class for the SMS-managed dataset.
+
+    Returned empty if the data set was not specified as SMS-managed dataset.
+
+    | **returned**: always
+    | **type**: str
+
+  sms_data_class
+    The data class for an SMS-managed dataset.
+
+    Returned empty if the data set was not specified as SMS-managed dataset.
+
+    | **returned**: always
+    | **type**: str
+
+  sms_management_class
+    The management class for an SMS-managed dataset.
+
+    Returned empty if the data set was not specified as SMS-managed dataset.
+
+    | **returned**: always
+    | **type**: str
+
+  record_length
+    The length, in bytes, of each record in the data set.
+
+    | **returned**: always
+    | **type**: int
+
+  block_size
+    The block size used for the data set.
+
+    | **returned**: always
+    | **type**: int
+
+  directory_blocks
+    The number of directory blocks to allocate to the data set.
+
+    | **returned**: always
+    | **type**: int
+
+  key_offset
+    The key offset used when creating a KSDS data set.
+
+    | **returned**: always
+    | **type**: int
+
+  key_length
+    The key length used when creating a KSDS data set.
+
+    | **returned**: always
+    | **type**: int
+
+  empty
+    *empty* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: bool
+
+  extended
+    *extended* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: bool
+
+  fifo
+    *fifo* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: bool
+
+  limit
+    *limit* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: int
+
+  purge
+    *purge* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: bool
+
+  scratch
+    *scratch* attribute for Generation Data Groups.
+
+    Returned empty if the data set provided was not defined as a GDG.
+
+    | **returned**: always
+    | **type**: bool
+
+  volumes
+    Specifies the name of the volume(s) where the data set is located.
+
+    Returned empty if volume was not provided.
+
+    | **returned**: always
+    | **type**: list
+
+
+msg
+  A string with a generic message relayed to the user.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: Error while gathering data set information
 

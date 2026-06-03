@@ -497,6 +497,115 @@ def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
             hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
+def test_zos_job_query_no_ceedump_generated(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+
+    try:
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Create Ansible temp directory with permissions for managed user
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_test_query_no_ceedump",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+
+
+def managed_user_test_query_no_ceedump(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        # Check for existing CEE dumps before test
+        pre_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+        )
+
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+        )
+
+        MANAGED_USER_JOB_NAME = "HELLO"
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+
+        job_name_query_results = hosts.all.zos_job_query(job_name="H*", owner=current_user)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+
+            for job in jobs:
+                assert job.get("owner") == current_user
+                assert job.get("job_id") == managed_user_job_id
+
+        # Check for CEE dumps after test
+        post_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+
+        # Verify no new CEE dumps were created
+        for pre_result, post_result in zip(
+            pre_test_dumps.contacted.values(),
+            post_test_dumps.contacted.values()
+        ):
+            pre_dumps = pre_result.get("stdout", "NONE")
+            post_dumps = post_result.get("stdout", "NONE")
+
+            # Assert that no new dumps were created
+            assert pre_dumps == post_dumps, \
+                f"CEE dump created during zos_job_query execution. " \
+                f"Before: {pre_dumps}, After: {post_dumps}"
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        # Clean up any CEE dumps that may have been created
+        hosts.all.shell(
+            cmd=f"drm '{current_user}.CEE.CEEDUMP*' 2>/dev/null || true"
+        )
+
 # test to show job_id="*" and job_id=None has the same results if job_name and owner are specified
 def test_zos_job_query_null_vs_wildcard_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -535,16 +644,39 @@ def test_zos_job_query_null_vs_wildcard_job_id(ansible_zos_module):
 
 def test_zos_job_query_with_null_job_owner(ansible_zos_module):
     hosts = ansible_zos_module
-    len_id = 9
-    job = get_job(hosts)
-    job_name = job[1]
-    job_id = job[2]
 
-    assert job_name is not None
-    assert job_id is not None
+    # Submit a job as the current user
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+    hosts.all.file(path=temp_path, state="directory")
+    hosts.all.shell(
+        cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+    )
+    hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+    hosts.all.shell(
+        cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+    )
+    results = hosts.all.zos_job_submit(
+        src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+    )
+    
+    job_id = ""
+    job_name = ""
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("msg", False) is False
+        assert result.get("jobs") is not None
+
+        job = result.get("jobs")[0]
+        assert job.get("job_id") is not None
+        assert job.get("job_name") is not None
+        job_id = job.get("job_id")
+        job_name = job.get("job_name")
+        break
 
     qresults_null = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
     
+    # Verify owner defaulted to current user
     for qresult in qresults_null.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None

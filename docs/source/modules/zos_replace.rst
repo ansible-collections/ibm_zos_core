@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_replace.py
 
-.. _zos_replace_module:
+.. _ibm.ibm_zos_core.zos_replace_module:
 
 
 zos_replace -- Replace all instances of a pattern within a file or data set.
@@ -245,6 +245,8 @@ Notes
 
 .. note::
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+
+   Whitespaces at the end of line will be ignored in order for regex to work.
 
 
 

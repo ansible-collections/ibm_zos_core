@@ -1,5 +1,17 @@
 objects:
-  role: {}
+  role:
+    gather_diagnostics:
+      description: Gathers diagnostic data from z/OS managed nodes and the control node
+      name: gather_diagnostics
+      version_added: 2.0.0
+    job_status:
+      description: Query a job for status and execution state
+      name: job_status
+      version_added: 2.0.0
+    playbook_upgrade_validator:
+      description: Validate playbooks for IBM z/OS Core migration changes
+      name: playbook_upgrade_validator
+      version_added: 2.0.0
 plugins:
   become: {}
   cache: {}
@@ -11,6 +23,14 @@ plugins:
       description: Filter a list of WTOR messages
       name: filter_wtor_messages
       version_added: 1.2.0
+    generate_data_set_name:
+      description: Filter HLQs to generate a new random valid data set name.
+      name: generate_data_set_name
+      version_added: 2.0.0
+    zos_stat_by_type:
+      description: Filter returned fields from zos_stat
+      name: zos_stat_by_type
+      version_added: 2.0.0
   httpapi: {}
   inventory: {}
   lookup: {}
@@ -141,6 +161,11 @@ plugins:
       name: zos_unarchive
       namespace: ''
       version_added: 1.7.0
+    zos_user:
+      description: Manage z/OS user and group profiles in RACF
+      name: zos_user
+      namespace: ''
+      version_added: 2.0.0
     zos_volume_init:
       description: Initialize volumes or minidisks.
       name: zos_volume_init
@@ -156,4 +181,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 1.16.0
+version: 2.0.0

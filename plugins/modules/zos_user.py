@@ -1492,7 +1492,7 @@ cmd:
     type: str
     sample: "ADDUSER (DUSR1001)"
 msg:
-    description: |
+    description: >
         Message returned by the module. Contains error messages on failure,
         informational messages when no changes are needed (e.g., entity already exists),
         or validation error messages.
@@ -1505,7 +1505,7 @@ rc:
     type: int
     sample: 0
 stdout:
-    description: |
+    description: >
         Standard output from the RACF command execution.
         In check mode, may contain informational messages about the entity state.
         For I(state=purge), this includes technical details such as dump data set names and CLIST processing messages.
@@ -1519,7 +1519,7 @@ stdout_lines:
     elements: str
     sample: ["User DUSR1001 is defined as PROTECTED.", ""]
 stderr:
-    description: |
+    description: >
         Standard error from the RACF command execution.
         TSO command output is automatically filtered out.
     returned: always
@@ -1532,7 +1532,7 @@ stderr_lines:
     elements: str
     sample: [""]
 num_entities_modified:
-    description: |
+    description: >
         Returns the number of profiles and references modified by the state.
         Set to C(0) if no changes were made (e.g., C(the entity is already in the desired state)).
         Set to C(1) for successful single-entity states C(create, update, or delete).
@@ -1541,7 +1541,7 @@ num_entities_modified:
     type: int
     sample: 1
 entities_modified:
-    description: |
+    description: >
         A list of profiles and references modified by the state.
         For I(profile_type=user), state (C(create), C(update), C(delete), C(connect), C(remove)): Contains the user profile name upon success.
         For I(profile_type=group), state C(create), C(update), C(delete)): Contains the group profile name upon success.
@@ -1552,7 +1552,7 @@ entities_modified:
     elements: str
     sample: ['DUSR1001']
 database_dumped:
-    description: |
+    description: >
         Whether the module used IRRDBU00 utility to dump the RACF database.
         Set to C(true) only when the purge state successfully executes the C(IRRDBU00) utility.
         Only relevant when I(state=purge).
@@ -1560,7 +1560,7 @@ database_dumped:
     type: bool
     sample: false
 dump_kept:
-    description: |
+    description: >
         Indicates whether the RACF database dump was retained on the managed node.
         This behavior is controlled by the I(keep_dump) input parameter.
         Only relevant when I(database_dumped=true).
@@ -1568,7 +1568,7 @@ dump_kept:
     type: bool
     sample: false
 dump_name:
-    description: |
+    description: >
         The name of the data set containing the output from the C(IRRDBU00) utility.
         This field is only populated when both I(database_dumped) and I(keep_dump) are C(true).
         Otherwise, this value returns C(null).
@@ -2206,7 +2206,7 @@ class RACFHandler():
 
         try:
             # Create SYSIN data set with profile name
-            sysin_data_set = datasets.create(
+            datasets.create(
                 name=sysin_name,
                 dataset_type='SEQ',
                 record_format='FB',
@@ -2612,7 +2612,6 @@ class GroupHandler(RACFHandler):
         """
         cmd = ""
         group = self.params.get('group')
-        state = self.params.get('state')
 
         if group is not None:
             if group.get('superior_group') is not None:
@@ -4503,7 +4502,6 @@ def run_module():
         # In check_mode, determine if changes would be made
         # changed=true if state would execute, changed=false if already in desired state
         stdout = result.get('stdout', '')
-        cmd = result.get('cmd', '')
 
         # Check if entity already in desired state (no changes needed)
         pattern = r'already exists|does not exist|not connected to group'

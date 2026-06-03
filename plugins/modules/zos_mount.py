@@ -744,7 +744,7 @@ def run_module(module, arg_def):
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
-    logger = SingletonLogger().get_logger(module_verbosity_level)
+    SingletonLogger().get_logger(module_verbosity_level)
 
     changed = False
     res_args = dict()
@@ -1066,7 +1066,7 @@ def run_module(module, arg_def):
 
             try:
                 # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-                with zoau_io.zopen(f"//'{name}'", "w", "cp1047", recfm="*") as ds:
+                with zoau_io.zopen(f"//'{name}'", "w", "cp1047", recfm="*"):
                     pass
                 full_text = "\n".join(modified_str)
                 rc_write = datasets.write(dataset_name=name, content=full_text, append=True, force=True)

@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_encode - Updated error messaging to explicitly identify when a generation data set (GDS) does not exist or is not cataloged, 
+    which was not clear in previous error messages.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2284).
+

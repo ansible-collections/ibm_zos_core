@@ -340,7 +340,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
         If no job status is found it will return a ret_code diction with
         parameter 'msg_txt" = "The job could not be found.
     """
-    if job_id == "*":
+    if job_id == "*" or job_id is None:
         job_id_temp = None
     else:
         # Preserve the original job_id for the failure path

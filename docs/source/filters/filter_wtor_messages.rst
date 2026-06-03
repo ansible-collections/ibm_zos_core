@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/filter_wtor_messages.py
 
-.. _filter_wtor_messages_module:
+.. _ibm.ibm_zos_core.filter_wtor_messages_module:
 
 
 filter_wtor_messages -- Filter a list of WTOR messages

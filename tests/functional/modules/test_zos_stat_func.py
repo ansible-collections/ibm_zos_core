@@ -1077,6 +1077,9 @@ def test_query_file_no_symlink(ansible_zos_module):
     hosts = ansible_zos_module
     test_file = '/etc/profile'
 
+    # Ensure /etc/profile has valid UID/GID for testing
+    hosts.all.shell(cmd=f"chown $(id -u):$(id -g) {test_file}")
+
     zos_stat_result = hosts.all.zos_stat(
         src=test_file,
         get_checksum=True,
@@ -1113,6 +1116,9 @@ def test_query_file_no_symlink(ansible_zos_module):
 def test_query_file_no_checksum_no_mime(ansible_zos_module):
     hosts = ansible_zos_module
     test_file = '/etc/profile'
+
+    # Ensure /etc/profile has valid UID/GID for testing
+    hosts.all.shell(cmd=f"chown $(id -u):$(id -g) {test_file}")
 
     zos_stat_result = hosts.all.zos_stat(
         src=test_file,
@@ -1154,6 +1160,9 @@ def test_query_file_symlink_follow_on(ansible_zos_module):
     hosts = ansible_zos_module
     test_src = '/etc/profile'
     test_file = '/tmp/zos_stat_symlink'
+
+    # Ensure /etc/profile has valid UID/GID for testing
+    hosts.all.shell(cmd=f"chown $(id -u):$(id -g) {test_src}")
 
     try:
         symlink_result = hosts.all.shell(

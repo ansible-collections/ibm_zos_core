@@ -262,7 +262,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "started"
     member_name: "PROCAPP"
-    verbose: True
+    verbose: true
     wait_time: 30
     wait_full_time: true
 
@@ -307,7 +307,7 @@ EXAMPLES = r"""
   zos_started_task:
     state: "cancelled"
     job_name: "SAMPLE"
-    asidx: 0014
+    asidx: '0014'
 
 - name: Modify a started task's parameters.
   zos_started_task:
@@ -489,6 +489,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import opercmd, zsystem, jobs
@@ -1358,6 +1363,8 @@ def run_module():
         supports_check_mode=True
     )
 
+    validate_dependencies(module)
+
     args_def = {
         'state': {
             'arg_type': 'str',
@@ -1472,6 +1479,15 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    result = dict()
+    if module.check_mode:
+        module.exit_json(**result)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
+
     before_time = ""
     state = module.params.get('state')
     wait_time_s = module.params.get('wait_time')
@@ -1645,9 +1661,6 @@ def run_module():
         stdout = out
         stderr = err
 
-    result = dict()
-    if module.check_mode:
-        module.exit_json(**result)
     if state == "displayed":
         changed = False
 

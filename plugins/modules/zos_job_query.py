@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -36,7 +36,7 @@ options:
     description:
        - The job name to query.
        - A job name can be up to 8 characters long.
-       - The I(job_name) can contain include multiple wildcards.
+       - The I(job_name) can contain multiple wildcards.
        - The asterisk (`*`) wildcard will match zero or more specified characters.
        - Note that using this value will query the system for '*' and then return just matching values.
        - This may lead to security issues if there are read-access limitations on some users or jobs.
@@ -46,10 +46,10 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the default set is 'none' and all jobs will be
-        queried.
+      - If no owner is set, the parameter will default to the current user.
     type: str
     required: False
+    default: null
   job_id:
     description:
       - The job id that has been assigned to the job.
@@ -57,10 +57,12 @@ options:
         followed by up to 5 digits.
       - When a job id is greater than 99,999, the job id format will begin
         with `S`, `J`, `T` and are followed by 7 digits.
-      - The I(job_id) can contain include multiple wildcards.
+      - The I(job_id) can contain multiple wildcards.
       - The asterisk (`*`) wildcard will match zero or more specified characters.
+      - If no job_id is set, the parameter will not be used for job querying.
     type: str
     required: False
+    default: null
 
 attributes:
   action:
@@ -79,19 +81,19 @@ EXAMPLES = r"""
   zos_job_query:
     job_name: "JOB12345"
 
-- name: Query jobs using a wildcard to match any job id begging with 'JOB12'
+- name: Query jobs using a wildcard to match any job id beginning with 'JOB12'
   zos_job_query:
     job_id: "JOB12*"
 
-- name: Query jobs using wildcards to match any job name begging with 'H' and ending in 'O'.
+- name: Query jobs using wildcards to match any job name beginning with 'H' and ending in 'O'.
   zos_job_query:
     job_name: "H*O"
 
-- name: Query jobs using a wildcards to match a range of job id(s) that include 'JOB' and '014'.
+- name: Query jobs using wildcards to match a range of job id(s) that include 'JOB' and '014'.
   zos_job_query:
     job_id: JOB*014*
 
-- name: Query all job names beginning wih 'H' that match job id that includes '14'.
+- name: Query all job names beginning with 'H' that match job id that includes '14'.
   zos_job_query:
     job_name: "H*"
     job_id: "JOB*14*"
@@ -273,7 +275,7 @@ jobs:
       sample: "14:15:00"
     queue_position:
       description:
-        The position within the job queue where the jobs resides.
+        The position within the job queue where the job resides.
       type: int
       sample: 3
     program_name:
@@ -295,7 +297,7 @@ jobs:
             "owner": "ADMIN",
             "job_id": "JOB01427",
             "content_type": "JOB",
-            "ret_code": { "msg" : "CC", "msg_code" : "0000", "code" : "0", msg_txt : "CC" },
+            "ret_code": { "msg" : "CC", "msg_code" : "0000", "code" : "0", "msg_txt" : "CC" },
             "steps": [
               { "step_name": "STEP0001",
                 "step_cc": 0
@@ -360,6 +362,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+import os
 
 
 def run_module():
@@ -374,8 +377,8 @@ def run_module():
     """
     module_args = dict(
         job_name=dict(type="str", required=False, default="*"),
-        owner=dict(type="str", required=False),
-        job_id=dict(type="str", required=False),
+        owner=dict(type="str", required=False, default=None),
+        job_id=dict(type="str", required=False, default=None),
     )
 
     result = dict(changed=False)
@@ -438,23 +441,25 @@ def query_jobs(job_name, job_id, owner):
 
     Returns
     -------
-    Union[str]
+    list[dict]
         List with the jobs.
 
     Raises
     ------
     RuntimeError
-        No job with was found.
+        No job was found.
     """
     jobs = []
-    if job_id:
-        jobs = job_status(job_id=job_id)
-    elif owner:
-        jobs = job_status(owner=owner, job_name=job_name)
-    else:
-        jobs = job_status(job_name=job_name)
-    if not jobs:
-        raise RuntimeError("List FAILED! no such job was found.")
+
+    try:
+        # Owner defaults to current user if none is specified
+        if owner is None:
+            current_user = os.environ.get('USER') or os.environ.get('LOGNAME')
+            jobs = job_status(job_id=job_id, owner=current_user, job_name=job_name, dd_name=False)
+        else:
+            jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
+    except Exception as e:
+        raise RuntimeError("Error querying jobs: " + str(e))
     return jobs
 
 
@@ -468,12 +473,12 @@ def parsing_jobs(jobs_raw):
 
     Returns
     -------
-    dict
+    list[dict]
         Parsed jobs.
     """
     jobs = []
     for job in jobs_raw:
-        ret_code = job.get("ret_code")
+        ret_code = job.get("ret_code") or {}
         # Easier to see than checking for an empty string, JOB NOT FOUND was
         # replaced with None in the jobs.py and msg_txt field describes the job query instead
         if job.get("ret_code") is None:

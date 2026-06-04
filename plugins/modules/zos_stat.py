@@ -546,14 +546,6 @@ stat:
               description: ISPF member statistics
               type: dict
               contains:
-                prompt:
-                  description: Prompt flag indicator
-                  type: str
-                  sample: "ON"
-                lib:
-                  description: Library indicator
-                  type: str
-                  sample: MYLIB
                 version:
                   description: Version and modification level (VV.MM format)
                   type: str

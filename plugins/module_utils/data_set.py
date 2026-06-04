@@ -966,8 +966,6 @@ class DataSet(object):
                 - codeset: CCSID as string
                 - modified_time: Last modification timestamp
             - ispf_statistics: Dict with ISPF member statistics (or defaults if unavailable)
-                - prompt: Prompt flag
-                - lib: Library indicator
                 - version: Version.Modification level (VV.MM format)
                 - created: Creation date
                 - changed: Last change date and time
@@ -1012,8 +1010,6 @@ class DataSet(object):
             try:
                 ispf_stats = member.ispf_statistics
                 member_info['ispf_statistics'] = {
-                    'prompt': '',
-                    'lib': '',
                     'version': f"{ispf_stats.version:02d}.{ispf_stats.modification_level:02d}",
                     'created': ispf_stats.date_created.strftime('%Y/%m/%d'),
                     'changed': ispf_stats.time_changed.strftime('%Y/%m/%d %H:%M:%S'),
@@ -1025,8 +1021,6 @@ class DataSet(object):
             except IspfMemberStatisticsUnavailable:
                 # Member doesn't have ISPF statistics
                 member_info['ispf_statistics'] = {
-                    'prompt': '',
-                    'lib': '',
                     'version': '',
                     'created': '',
                     'changed': '',

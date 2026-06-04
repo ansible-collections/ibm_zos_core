@@ -333,7 +333,6 @@ options:
           - When C(write=conditional) is used with option C(names), if a data set with the old name exists,
             the module will allocate and restore the data set with the new name. Otherwise, the data set is
             restored with the old name.
-          - Corresponds with the ADRDSSU RENAME command keyword.
         required: false
         type: str
         choices:

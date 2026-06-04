@@ -336,7 +336,6 @@ options:
         type: str
         choices:
           - conditional
-        default: conditional
       names:
         description:
           - Specifies the data set names to be used for both filtering and replacing during restore.

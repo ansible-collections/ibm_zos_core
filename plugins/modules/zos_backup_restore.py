@@ -330,7 +330,9 @@ options:
       write:
         description:
           - Specifies how the module should write to the file system when performing a restore operation.
-          - When C(write=conditional) is used with option C(names), if a data set with the old name exists, the module will allocate and restore the data set with the new name. Otherwise, the data set is restored with the old name.
+          - When C(write=conditional) is used with option C(names), if a data set with the old name exists,
+            the module will allocate and restore the data set with the new name. Otherwise, the data set is
+            restored with the old name.
           - Corresponds with the ADRDSSU RENAME command keyword.
         required: false
         type: str
@@ -340,12 +342,21 @@ options:
         description:
           - Specifies the data set names to be used for both filtering and replacing during restore.
           - Names must be a list of dictionaries where each dictionary is a C(key-value) pair with keys C(old) and C(new).
-          - Dictionary key C(old) is the original data set name, the value must be a valid data set name or pattern.
-          - Dictionary key C(new) is the new data set name or pattern to replace the matching C(old) data set.
           - Mutually exclusive with I(hlq), you can either set I(names) or I(hlq) but not both.
         required: false
         type: list
         elements: dict
+        suboptions:
+          old:
+            description:
+              - The original data set name, the value must be a valid data set name or pattern.
+            type: str
+            required: true
+          new:
+            description:
+              - The new data set name or pattern to replace the matching C(old) data set.
+            type: str
+            required: true
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
@@ -707,7 +718,7 @@ def main():
                 module.fail_json(
                     msg="Parameters 'hlq' and 'names' in 'output' are mutually exclusive."
                 )
-    
+
         # Initialize logging module
         module_verbosity_level = module._verbosity
         SingletonLogger().get_logger(module_verbosity_level)

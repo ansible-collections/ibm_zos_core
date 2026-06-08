@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_zfs_resize.py
 
-.. _zos_zfs_resize_module:
+.. _ibm.ibm_zos_core.zos_zfs_resize_module:
 
 
 zos_zfs_resize -- Resize a zfs data set.

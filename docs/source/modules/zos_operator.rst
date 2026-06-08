@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_operator.py
 
-.. _zos_operator_module:
+.. _ibm.ibm_zos_core.zos_operator_module:
 
 
 zos_operator -- Execute operator command
@@ -51,18 +51,27 @@ verbose
   | **default**: False
 
 
-wait_time_s
+wait_time
   Set maximum time in seconds to wait for the commands to execute.
 
   When set to 0, the system default is used.
 
   This option is helpful on a busy system requiring more time to execute commands.
 
-  Setting *wait* can instruct if execution should wait the full *wait_time_s*.
+  Setting *wait* can instruct if execution should wait the full *wait_time*.
 
   | **required**: False
   | **type**: int
   | **default**: 1
+
+
+time_unit
+  Set the ``wait_time`` unit of time, which can be ``s`` (seconds) or ``cs`` (centiseconds).
+
+  | **required**: False
+  | **type**: str
+  | **default**: s
+  | **choices**: s, cs
 
 
 case_sensitive
@@ -111,11 +120,17 @@ Examples
    - name: Execute operator command to show jobs, always waiting 5 seconds for response
      zos_operator:
        cmd: 'd a,all'
-       wait_time_s: 5
+       wait_time: 5
 
    - name: Display the system symbols and associated substitution texts.
      zos_operator:
        cmd: 'D SYMBOLS'
+
+   - name: Execute an operator command to show device status and allocation wait 10 centiseconds.
+     zos_operator:
+       cmd: 'd u'
+       wait_time: 10
+       time_unit: 'cs'
 
 
 
@@ -150,7 +165,7 @@ cmd
   | **sample**: d u,all
 
 elapsed
-  The number of seconds that elapsed waiting for the command to complete.
+  The number of seconds or centiseconds that elapsed waiting for the command to complete.
 
   | **returned**: always
   | **type**: float
@@ -160,44 +175,70 @@ elapsed
 
         51.53
 
-wait_time_s
-  The maximum time in seconds to wait for the commands to execute.
+wait_time
+  The maximum time in the time_unit set to wait for the commands to execute.
 
   | **returned**: always
   | **type**: int
   | **sample**: 5
 
-content
-  The resulting text from the command submitted.
+time_unit
+  The time unit set for wait_time.
 
-  | **returned**: on success
+  | **returned**: always
+  | **type**: str
+  | **sample**: s
+
+stdout
+  The standard output from the operator command execution.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED EC000000   2022244  16:00:49.00            -D U,ALL EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645
+                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS
+                                           0000 3390 F-NRD                        /RSDNT     0
+                                           0001 3211 OFFLINE                                 0
+
+
+stdout_lines
+  The standard output split into individual lines.
+
+  | **returned**: always
   | **type**: list
+  | **elements**: str
   | **sample**:
 
     .. code-block:: json
 
         [
-            "EC33017A   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
-            "EC33017A   2022244  16:00:49.00            -D U,ALL ",
-            "EC33017A   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
+            "EC000000   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
+            "EC000000   2022244  16:00:49.00            -D U,ALL ",
+            "EC000000   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
             "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS",
             "                                           0000 3390 F-NRD                        /RSDNT     0",
             "                                           0001 3211 OFFLINE                                 0",
             "                                           0002 3211 OFFLINE                                 0",
-            "                                           0003 3211 OFFLINE                                 0",
-            "                                           0004 3211 OFFLINE                                 0",
-            "                                           0005 3211 OFFLINE                                 0",
-            "                                           0006 3211 OFFLINE                                 0",
-            "                                           0007 3211 OFFLINE                                 0",
             "                                           0008 3211 OFFLINE                                 0",
             "                                           0009 3277 OFFLINE                                 0",
             "                                           000C 2540 A                                       0",
-            "                                           000D 2540 A                                       0",
             "                                           000E 1403 A                                       0",
             "                                           000F 1403 A                                       0",
             "                                           0010 3211 A                                       0",
             "                                           0011 3211 A                                       0"
         ]
+
+stderr
+  The standard error from the operator command execution.
+
+  | **returned**: always
+  | **type**: str
+
+stderr_lines
+  The standard error split into individual lines.
+
+  | **returned**: always
+  | **type**: list
+  | **elements**: str
 
 changed
   Indicates if any changes were made during module operation. Given operator commands may introduce changes that are unknown to the module. True is always returned unless either a module or command failure has occurred.

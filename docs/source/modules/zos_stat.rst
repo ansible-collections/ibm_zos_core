@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_stat.py
 
-.. _zos_stat_module:
+.. _ibm.ibm_zos_core.zos_stat_module:
 
 
 zos_stat -- Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
@@ -32,7 +32,7 @@ name
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
-  This option doesn't accept the use of wilcards (? and *).
+  This option doesn't accept the use of wildcards (\? and \*).
 
   | **required**: True
   | **type**: str
@@ -222,6 +222,8 @@ Notes
 
    When querying a partitioned data set (PDS), if the Ansible user has RACF READ authority on it, the last referenced date will be updated by the query operation.
 
+   If you need to filter the output from the module by resource type, you can use the zos_stat_by_type filter inside of a playbook.
+
 
 
 See Also
@@ -229,9 +231,9 @@ See Also
 
 .. seealso::
 
-   - :ref:`ansible.builtin.stat_module`
-   - :ref:`zos_find_module`
-   - :ref:`zos_gather_facts_module`
+   - :ref:`ibm.ibm_zos_core.zos_find_module`
+   - :ref:`ibm.ibm_zos_core.zos_gather_facts_module`
+   - :ref:`ibm.ibm_zos_core.zos_stat_by_type_module`
 
 
 

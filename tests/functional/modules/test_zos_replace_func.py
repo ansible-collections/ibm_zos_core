@@ -485,7 +485,7 @@ def test_uss_after_replace(ansible_zos_module):
 def test_uss_after_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^export \w+",
+        "regexp":r"^export \w+",
         "after":"export PATH",
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
@@ -514,7 +514,7 @@ def test_uss_after_line(ansible_zos_module):
 def test_uss_after_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^export \w+",
+        "regexp":r"^export \w+",
         "after":"export PATH",
         "replace":"export TMP=tmp/etc",
     }
@@ -603,7 +603,7 @@ def test_uss_before_replace(ansible_zos_module):
 def test_uss_before_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+        "regexp":r"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
@@ -632,7 +632,7 @@ def test_uss_before_line(ansible_zos_module):
 def test_uss_before_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+        "regexp":r"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
         "replace":"PATH=/usr/lpp/zoautil/v100/bin",
     }
@@ -723,7 +723,7 @@ def test_uss_after_before_replace(ansible_zos_module):
 def test_uss_after_before_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+        "regexp":r"^\s*(export \w+=\w+|exec -a \d+ \w+)",
         "after":"then",
         "before":"fi",
     }
@@ -753,7 +753,7 @@ def test_uss_after_before_line(ansible_zos_module):
 def test_uss_after_before_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+        "regexp":r"^\s*(export \w+=\w+|exec -a \d+ \w+)",
         "after":"then",
         "before":"fi",
         "replace":"    export SHELL",
@@ -890,7 +890,7 @@ def test_uss_after_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_AFTER_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -921,7 +921,7 @@ def test_uss_before_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_BEFORE_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -951,7 +951,7 @@ def test_uss_regexp_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_REGEXP
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_REGEXP_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -983,7 +983,7 @@ def test_uss_after_before_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE_AFTER
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_BEFORE_AFTER_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1014,7 +1014,7 @@ def test_uss_after_regexp_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1045,7 +1045,7 @@ def test_uss_before_regexp_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1077,7 +1077,7 @@ def test_uss_before_after_regexp_literal(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_LITERAL_CONTENT_AFTER_REGEXP_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1105,7 +1105,7 @@ def test_uss_remove_multiple_lines(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MULTIPLE_LINES
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_MULTIPLE_LINES_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1134,7 +1134,7 @@ def test_uss_backref(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BACKREF
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_BACKREF_IBM1047_CHECKSUM in result.get("stdout")
     finally:
@@ -1166,7 +1166,7 @@ exec -a 0 /bin/bash
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_MATCH_MULTIPLE_LINES
-        results = hosts.all.shell(cmd=f"md5 {params["target"]}")
+        results = hosts.all.shell(cmd=f"md5 {params['target']}")
         for result in results.contacted.values():
             assert TEST_MATCH_MULTIPLE_LINES_IBM1047_CHECKSUM in result.get("stdout")
     finally:

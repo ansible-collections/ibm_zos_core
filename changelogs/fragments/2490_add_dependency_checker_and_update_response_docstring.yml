@@ -1,6 +1,0 @@
-trivial:
-  - zos_started_task - Added dependency checker to zos_started_task module.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2490)
-
-  - zos_tso_command - Updated RETURN docstring to reflect the implementation.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2490)

@@ -275,6 +275,76 @@ segments:
       returned: when csdata segment is requested
       type: dict
       sample: {}
+    CICS:
+      description: >
+        CICS segment information for user profiles.
+        Contains CICS-related configuration and resource limits.
+        Only returned when I(profile_type=user) and C(cics) is included in the I(segments) parameter.
+      returned: when profile_type is user and cics segment is requested
+      type: dict
+    DCE:
+      description: >
+        DCE (Distributed Computing Environment) segment information for user profiles.
+        Contains DCE-related configuration and identifiers.
+        Only returned when I(profile_type=user) and C(dce) is included in the I(segments) parameter.
+      returned: when profile_type is user and dce segment is requested
+      type: dict
+    EIM:
+      description: >
+        EIM (Enterprise Identity Mapping) segment information for user profiles.
+        Contains EIM-related configuration and mappings.
+        Only returned when I(profile_type=user) and C(eim) is included in the I(segments) parameter.
+      returned: when profile_type is user and eim segment is requested
+      type: dict
+    OVM:
+      description: >
+        OVM (OpenExtensions VM) segment information for user profiles.
+        Contains OVM-related configuration and settings.
+        Only returned when I(profile_type=user) and C(ovm) is included in the I(segments) parameter.
+      returned: when profile_type is user and ovm segment is requested
+      type: dict
+    NETVIEW:
+      description: >
+        NETVIEW segment information for user profiles.
+        Contains NetView-related configuration and authorities.
+        Only returned when I(profile_type=user) and C(netview) is included in the I(segments) parameter.
+      returned: when profile_type is user and netview segment is requested
+      type: dict
+    NDS:
+      description: >
+        NDS (Network Directory Services) segment information for user profiles.
+        Contains NDS-related configuration and identifiers.
+        Only returned when I(profile_type=user) and C(nds) is included in the I(segments) parameter.
+      returned: when profile_type is user and nds segment is requested
+      type: dict
+    LNOTES:
+      description: >
+        LNOTES (Lotus Notes) segment information for user profiles.
+        Contains Lotus Notes-related configuration and settings.
+        Only returned when I(profile_type=user) and C(lnotes) is included in the I(segments) parameter.
+      returned: when profile_type is user and lnotes segment is requested
+      type: dict
+    WORKATTR:
+      description: >
+        WORKATTR (Work Attributes) segment information for user profiles.
+        Contains work-related attributes and organizational information.
+        Only returned when I(profile_type=user) and C(workattr) is included in the I(segments) parameter.
+      returned: when profile_type is user and workattr segment is requested
+      type: dict
+    PROXY:
+      description: >
+        PROXY segment information for user profiles.
+        Contains proxy-related configuration and authorities.
+        Only returned when I(profile_type=user) and C(proxy) is included in the I(segments) parameter.
+      returned: when profile_type is user and proxy segment is requested
+      type: dict
+    KERB:
+      description: >
+        KERB (Kerberos) segment information for user profiles.
+        Contains Kerberos-related configuration, principals, and encryption settings.
+        Only returned when I(profile_type=user) and C(kerb) is included in the I(segments) parameter.
+      returned: when profile_type is user and kerb segment is requested
+      type: dict
 """
 
 EXAMPLES = r"""
@@ -332,16 +402,21 @@ except ImportError:
     better_arg_parser = None
 
 
-# Fields that contain space-separated or comma-separated lists in RACF output
-# These fields will be split into Python lists instead of keeping as strings
-FIELDS_TO_SPLIT = {
-    "MONITOR",      # Space-separated list of monitor attributes
-    "MSCOPE",       # Space-separated list of message scopes
-    "ROUTCODE",     # Comma-separated list of routing codes (e.g., "1:2,11")
-    "ATTRIBUTES",   # Space-separated list of user/group attributes
-    "CLASS AUTHORIZATIONS",  # Space-separated list of authorized classes
-    "MFORM",      # Space-separated list of message forms
+# Fields that contain space-separated lists in RACF output
+# These fields will be split into Python lists by whitespace
+SPLIT_BY_SPACE = {
+    "MONITOR",
+    "MSCOPE",
+    "ATTRIBUTES",
+    "CLASS AUTHORIZATIONS",
+    "MFORM",
     "KEY ENCRYPTION TYPE"
+}
+
+# Fields that contain comma-separated lists in RACF output
+# These fields will be split into Python lists by commas
+SPLIT_BY_COMMA = {
+    "ROUTCODE"
 }
 
 # Regex patterns for parsing RACF output
@@ -354,19 +429,17 @@ SKIP_PREFIXES = ('---', 'LISTUSER ', 'LISTGRP ')
 
 def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[str, Any]:
     """
-    Parse a specific segment from RACF LISTUSER/LISTGRP command output.
+    Extract and parse a specific RACF segment from command output.
 
-    This function extracts and parses a named segment (e.g., TSO, OMVS, DFP)
-    from RACF command output. It handles both 'KEY=VALUE' and 'KEY: VALUE'
-    formats and automatically splits certain fields into lists.
+    Handles both 'KEY=VALUE' and 'KEY: VALUE' formats. Automatically splits
+    fields listed in SPLIT_BY_SPACE or SPLIT_BY_COMMA into lists.
 
     Args:
-        output_text (str): Raw output from RACF LISTUSER or LISTGRP command
-        target_segment_name (str): Name of segment to extract (e.g., 'TSO', 'OMVS', 'DFP')
+        output_text: Raw RACF LISTUSER or LISTGRP command output.
+        target_segment_name: Segment name to extract (e.g., 'TSO', 'OMVS', 'DFP').
 
     Returns:
-        Dict[str, Any]: Dictionary containing parsed segment data as key-value pairs.
-                       Returns empty dict if segment not found or has no data.
+        Dictionary with parsed segment data. Empty dict if segment not found or has no data.
     """
     segment_data = {}
     in_target_segment = False
@@ -403,15 +476,12 @@ def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[
             if kv_match:
                 key = kv_match.group(1).strip()
                 value = kv_match.group(2).strip()
-                # segment_data[key] = value
-                # --- THE NEW LIST LOGIC ---
-                if key in FIELDS_TO_SPLIT:
-                    if key == "ROUTCODE":
-                        # Routcodes use commas (e.g., "1:2,11")
-                        segment_data[key] = [v.strip() for v in value.split(',') if v.strip()]
-                    else:
-                        # Split by space for things like MONITOR or MSCOPE
-                        segment_data[key] = [v.strip() for v in value.split() if v.strip()]
+
+                # Split fields based on their delimiter type
+                if key in SPLIT_BY_COMMA:
+                    segment_data[key] = [v.strip() for v in value.split(',') if v.strip()]
+                elif key in SPLIT_BY_SPACE:
+                    segment_data[key] = [v.strip() for v in value.split() if v.strip()]
                 else:
                     segment_data[key] = value
 
@@ -420,23 +490,17 @@ def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[
 
 def parse_base_user_info(output_text: str) -> Dict[str, Any]:
     """
-    Parse base user information from RACF LISTUSER output.
+    Parse base user profile information from RACF LISTUSER output.
 
-    Extracts general user attributes and group connection details from the base
-    section of LISTUSER output (before any segment headers like "TSO INFORMATION").
+    Extracts user attributes and group connections from the base section
+    (before segment headers like "TSO INFORMATION").
 
     Args:
-        output_text: Raw RACF LISTUSER command output text
+        output_text: Raw RACF LISTUSER command output.
 
     Returns:
-        Dictionary with structure:
-        {
-            "general": {key: value, ...},  # User-level attributes
-            "group": {
-                "GROUP_NAME": {key: value, ...},  # Per-group connection attributes
-                ...
-            }
-        }
+        Dictionary containing 'base_segment' (user attributes) and 'group'
+        (group connection details for each connected group).
     """
     # Initialize the clean, split structure immediately
     base_data = {
@@ -550,23 +614,17 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
 
 def parse_base_group_info(output_text: str) -> Dict[str, Any]:
     """
-    Parse base group information from RACF LISTGROUP output.
+    Parse base group profile information from RACF LISTGRP output.
 
-    Extracts general group attributes and connected user details from the base
-    section of LISTGROUP output (before any segment headers).
+    Extracts group attributes and connected users from the base section
+    (before segment headers).
 
     Args:
-        output_text: Raw RACF LISTGROUP command output text
+        output_text: Raw RACF LISTGRP command output.
 
     Returns:
-        Dictionary with structure:
-        {
-            "general": {key: value, ...},  # Group-level attributes
-            "users": {
-                "USERNAME": {key: value, ...},  # Per-user connection attributes
-                ...
-            }
-        }
+        Dictionary containing 'base_segment' (group attributes) and 'users'
+        (connection details for each connected user).
     """
     base_data = {
         "base_segment": {},
@@ -683,88 +741,35 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
     return base_data
 
 
-def parse_tso(output_text: str) -> Dict[str, Any]:
-    """Parse TSO segment from RACF output."""
-    return extract_generic_segment(output_text, "TSO")
-
-
-def parse_omvs(output_text: str) -> Dict[str, Any]:
-    """Parse OMVS segment from RACF output."""
-    return extract_generic_segment(output_text, "OMVS")
-
-
-def parse_dfp(output_text: str) -> Dict[str, Any]:
-    """Parse DFP segment from RACF output."""
-    return extract_generic_segment(output_text, "DFP")
-
-
-def parse_operparm(output_text: str) -> Dict[str, Any]:
-    """Parse OPERPARM segment from RACF output."""
-    return extract_generic_segment(output_text, "OPERPARM")
-
-
-def parse_language(output_text: str) -> Dict[str, Any]:
-    """Parse LANGUAGE segment from RACF output."""
-    return extract_generic_segment(output_text, "LANGUAGE")
-
-
-def parse_csdata(output_text: str) -> Dict[str, Any]:
-    """Parse CSDATA segment from RACF output."""
-    return extract_generic_segment(output_text, "CSDATA")
-
-
-def parse_cics(output_text: str) -> Dict[str, Any]:
-    """Parse CICS segment from RACF output."""
-    return extract_generic_segment(output_text, "CICS")
-
-
-def parse_dce(output_text: str) -> Dict[str, Any]:
-    """Parse DCE segment from RACF output."""
-    return extract_generic_segment(output_text, "DCE")
-
-
-def parse_eim(output_text: str) -> Dict[str, Any]:
-    """Parse EIM segment from RACF output."""
-    return extract_generic_segment(output_text, "EIM")
-
-
-def parse_ovm(output_text: str) -> Dict[str, Any]:
-    """Parse OVM segment from RACF output."""
-    return extract_generic_segment(output_text, "OVM")
-
-
-def parse_netview(output_text: str) -> Dict[str, Any]:
-    """Parse NETVIEW segment from RACF output."""
-    return extract_generic_segment(output_text, "NETVIEW")
-
-
-def parse_nds(output_text: str) -> Dict[str, Any]:
-    """Parse NDS segment from RACF output."""
-    return extract_generic_segment(output_text, "NDS")
-
-
-def parse_lnotes(output_text: str) -> Dict[str, Any]:
-    """Parse LNOTES segment from RACF output."""
-    return extract_generic_segment(output_text, "LNOTES")
-
-
-def parse_workattr(output_text: str) -> Dict[str, Any]:
-    """Parse WORKATTR segment from RACF output."""
-    return extract_generic_segment(output_text, "WORKATTR")
-
-
-def parse_proxy(output_text: str) -> Dict[str, Any]:
-    """Parse PROXY segment from RACF output."""
-    return extract_generic_segment(output_text, "PROXY")
-
-
-def parse_kerb(output_text: str) -> Dict[str, Any]:
-    """Parse KERB segment from RACF output."""
-    return extract_generic_segment(output_text, "KERB")
+# Segment name mapping: maps input segment names to RACF segment names
+# Used for both TSO command construction and output parsing
+SEGMENT_NAME_MAP = {
+    'tso': 'TSO',
+    'omvs': 'OMVS',
+    'dfp': 'DFP',
+    'operparm': 'OPERPARM',
+    'lang': 'LANGUAGE',
+    'csdata': 'CSDATA',
+    'cics': 'CICS',
+    'dce': 'DCE',
+    'eim': 'EIM',
+    'ovm': 'OVM',
+    'netview': 'NETVIEW',
+    'nds': 'NDS',
+    'lnotes': 'LNOTES',
+    'workattr': 'WORKATTR',
+    'proxy': 'PROXY',
+    'kerb': 'KERB'
+}
 
 
 def run_module():
-    """Main module execution function."""
+    """
+    Execute the zos_user_info module.
+
+    Retrieves RACF user or group profile information by executing LISTUSER or
+    LISTGRP commands and parsing the output into structured data.
+    """
 
     module_args = {
         'name': {
@@ -843,26 +848,7 @@ def run_module():
 
         # Add segments if specified
         if filtered_segments:
-            # Map segment names to TSO command keywords
-            segment_map = {
-                'dfp': 'DFP',
-                'tso': 'TSO',
-                'omvs': 'OMVS',
-                'operparm': 'OPERPARM',
-                'lang': 'LANG',
-                'csdata': 'CSDATA',
-                'cics': 'CICS',
-                'dce': 'DCE',
-                'eim': 'EIM',
-                'ovm': 'OVM',
-                'netview': 'NETVIEW',
-                'nds': 'NDS',
-                'lnotes': 'LNOTES',
-                'workattr': 'WORKATTR',
-                'proxy': 'PROXY',
-                'kerb': 'KERB'
-            }
-            segment_keywords = [segment_map[s] for s in filtered_segments]
+            segment_keywords = [SEGMENT_NAME_MAP[s] for s in filtered_segments]
             cmd = f"{cmd} {' '.join(segment_keywords)}"
     else:
         # Valid segments for group: dfp, omvs, csdata
@@ -876,13 +862,7 @@ def run_module():
 
         # Add segments if specified
         if filtered_segments:
-            # Map segment names to TSO command keywords
-            segment_map = {
-                'dfp': 'DFP',
-                'omvs': 'OMVS',
-                'csdata': 'CSDATA'
-            }
-            segment_keywords = [segment_map[s] for s in filtered_segments]
+            segment_keywords = [SEGMENT_NAME_MAP[s] for s in filtered_segments]
             cmd = f"{cmd} {' '.join(segment_keywords)}"
 
     result['cmd'] = cmd
@@ -909,46 +889,23 @@ def run_module():
 
             # Only include segments that were explicitly requested
             if filtered_segments:
-                segment_parser_map = {
-                    'tso': ('TSO', parse_tso),
-                    'omvs': ('OMVS', parse_omvs),
-                    'dfp': ('DFP', parse_dfp),
-                    'operparm': ('OPERPARM', parse_operparm),
-                    'lang': ('LANGUAGE', parse_language),
-                    'csdata': ('CSDATA', parse_csdata),
-                    'cics': ('CICS', parse_cics),
-                    'dce': ('DCE', parse_dce),
-                    'eim': ('EIM', parse_eim),
-                    'ovm': ('OVM', parse_ovm),
-                    'netview': ('NETVIEW', parse_netview),
-                    'nds': ('NDS', parse_nds),
-                    'lnotes': ('LNOTES', parse_lnotes),
-                    'workattr': ('WORKATTR', parse_workattr),
-                    'proxy': ('PROXY', parse_proxy),
-                    'kerb': ('KERB', parse_kerb)
-                }
-
                 for seg in filtered_segments:
-                    if seg in segment_parser_map:
-                        key, parser_func = segment_parser_map[seg]
-                        final_user_profile[key] = parser_func(stdout)
+                    if seg in SEGMENT_NAME_MAP:
+                        segment_name = SEGMENT_NAME_MAP[seg]
+                        final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
 
         else:  # profile_type == 'group'
             base_data = parse_base_group_info(stdout)
             final_user_profile = {**base_data}
 
             # Only include segments that were explicitly requested
+            # Valid segments for group profiles
+            valid_group_segments = {'dfp', 'omvs', 'csdata'}
             if filtered_segments:
-                segment_parser_map = {
-                    'omvs': ('OMVS', parse_omvs),
-                    'dfp': ('DFP', parse_dfp),
-                    'csdata': ('CSDATA', parse_csdata)
-                }
-
                 for seg in filtered_segments:
-                    if seg in segment_parser_map:
-                        key, parser_func = segment_parser_map[seg]
-                        final_user_profile[key] = parser_func(stdout)
+                    if seg in valid_group_segments and seg in SEGMENT_NAME_MAP:
+                        segment_name = SEGMENT_NAME_MAP[seg]
+                        final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
 
         result['segments'] = final_user_profile
 

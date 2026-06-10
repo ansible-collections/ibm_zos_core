@@ -23,15 +23,13 @@ author:
   - "Yogesh Rana (@yrana17)"
 short_description: Retrieve user and group profile information from RACF
 description:
-  - The L(zos_user_info,./zos_user_info.html) module retrieves detailed information
-    about RACF user and group profiles.
-  - The module executes RACF LISTUSER or LISTGRP TSO commands and parses the output
-    into structured data.
+  - Retrieve detailed information about RACF user and group profiles.
+  - The module executes RACF LISTUSER or LISTGRP TSO commands and parses the output into structured data.
   - This is an info module that does not make any changes to the system.
 options:
   name:
     description:
-      - Name of the RACF profile to retrieve information about.
+      - The name of the RACF profile to retrieve information about.
       - Can be a user ID or group name depending on the I(profile_type) parameter.
     type: str
     required: true
@@ -49,7 +47,8 @@ options:
     description:
       - List of RACF segments to retrieve from the profile.
       - If not specified, only the base profile information (C(base_segment)) is retrieved.
-      - When I(profile_type=user), valid segments are C(dfp), C(tso), C(omvs), C(operparm), C(lang), and C(csdata).
+      - When I(profile_type=user), valid segments are C(dfp), C(tso), C(omvs), C(operparm), C(lang), C(csdata),
+        C(cics), C(dce), C(eim), C(ovm), C(netview), C(nds), C(lnotes), C(workattr), C(proxy), and C(kerb).
       - When I(profile_type=group), valid segments are C(dfp), C(omvs), and C(csdata).
       - The C(base_segment) section is always retrieved regardless of this parameter.
       - Invalid segments for the specified I(profile_type) will be silently ignored.
@@ -63,34 +62,76 @@ options:
       - operparm
       - lang
       - csdata
+      - cics
+      - dce
+      - eim
+      - ovm
+      - netview
+      - nds
+      - lnotes
+      - workattr
+      - proxy
+      - kerb
 """
 
 RETURN = r"""
+changed:
+  description: Indicates whether any changes were made to the system (always false for info modules).
+  returned: always
+  type: bool
+  sample: false
 cmd:
-  description: The TSO command that was executed.
+  description: The RACF command that was executed with tsocmd.
   returned: always
   type: str
-  sample: LISTUSER TESTU01 TSO OMVS
+  sample: "LISTUSER TESTU01 TSO OMVS"
+rc:
+  description: >
+    Return code from the RACF command execution.
+    Returns 0 on success.
+    Returns non-zero on failure (e.g., 8 when profile not found).
+  returned: always
+  type: int
+  sample: 0
+stdout:
+  description: Standard output from the RACF command execution.
+  returned: always
+  type: str
+  sample: "USER=TESTU01  NAME=TEST USER 01  OWNER=ADMIN01  CREATED=2025/01/10"
+stderr:
+  description: >
+    Standard error from the RACF command execution.
+    TSO command output is automatically filtered out.
+  returned: always
+  type: str
+  sample: ""
+msg:
+  description: >
+    Error message describing the failure reason.
+    Only present when the module fails.
+  returned: failure
+  type: str
+  sample: "Profile 'TESTU01' not found in RACF database"
 segments:
-  description:
-    - Dictionary containing the RACF profile information organized by segments.
-    - Always includes base profile information (C(base_segment) and C(group)/C(users) sections).
-    - Additional segments are only included if explicitly requested via the I(segments) parameter.
-    - Each segment is a dictionary with key-value pairs extracted from RACF output.
-    - The keys and values within each segment are dynamic and depend on what RACF returns.
-    - Empty segments (where RACF returns "NO [SEGMENT] INFORMATION") will be empty dictionaries.
+  description: >
+    Dictionary containing the RACF profile information organized by segments.
+    Always includes base profile information (C(base_segment) and C(group)/C(users) sections).
+    Additional segments are only included if explicitly requested via the I(segments) parameter.
+    Each segment is a dictionary with key-value pairs extracted from RACF output.
+    The keys and values within each segment are dynamic and depend on what RACF returns.
+    Empty segments (where RACF returns "NO [SEGMENT] INFORMATION") will be empty dictionaries.
   returned: success
   type: dict
   contains:
     base_segment:
-      description:
-        - Base profile information that is always returned regardless of the I(segments) parameter.
-        - When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED),
-          C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
-        - When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA),
-          C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
-        - The exact keys present are dynamic and depend on the profile's RACF configuration.
-        - Some fields like C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are returned as lists when they contain multiple values.
+      description: >
+        Base profile information that is always returned regardless of the I(segments) parameter.
+        When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED),
+        C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
+        When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA),
+        C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
+        The exact keys present are dynamic and depend on the profile's RACF configuration.
+        Some fields like C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are returned as lists when they contain multiple values.
       returned: always
       type: dict
       sample:
@@ -103,11 +144,11 @@ segments:
         OWNER: "ADMIN01"
         CREATED: "2025/01/10"
     group:
-      description:
-        - Group connection information for user profiles.
-        - Dictionary where each key is a group name and the value contains connection attributes.
-        - Contains attributes such as C(AUTH), C(CONNECT-OWNER), C(CONNECT-DATE), C(LAST-CONNECT), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
-        - Only returned when I(profile_type=user).
+      description: >
+        Group connection information for user profiles.
+        Dictionary where each key is a group name and the value contains connection attributes.
+        Contains attributes such as C(AUTH), C(CONNECT-OWNER), C(CONNECT-DATE), C(LAST-CONNECT), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
+        Only returned when I(profile_type=user).
       returned: when profile_type is user
       type: dict
       sample:
@@ -123,11 +164,11 @@ segments:
           CONNECT-OWNER: "ADMIN01"
           CONNECT-DATE: "2025/02/15"
     users:
-      description:
-        - Connected user information for group profiles.
-        - Dictionary where each key is a username and the value contains connection attributes.
-        - Contains attributes such as C(ACCESS), C(ACCESS COUNT), C(UNIVERSAL ACCESS), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
-        - Only returned when I(profile_type=group).
+      description: >
+        Connected user information for group profiles.
+        Dictionary where each key is a username and the value contains connection attributes.
+        Contains attributes such as C(ACCESS), C(ACCESS COUNT), C(UNIVERSAL ACCESS), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
+        Only returned when I(profile_type=group).
       returned: when profile_type is group
       type: dict
       sample:
@@ -142,12 +183,12 @@ segments:
           ACCESS COUNT: "000012"
           UNIVERSAL ACCESS: "NONE"
     TSO:
-      description:
-        - TSO segment information for user profiles.
-        - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS),
-          C(USERDATA), C(COMMAND), etc.
-        - The exact keys present depend on the user's TSO configuration in RACF.
-        - Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
+      description: >
+        TSO segment information for user profiles.
+        Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS),
+        C(USERDATA), C(COMMAND), etc.
+        The exact keys present depend on the user's TSO configuration in RACF.
+        Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
       returned: when profile_type is user and tso segment is requested
       type: dict
       sample:
@@ -162,11 +203,11 @@ segments:
         USERDATA: "E4F1"
         COMMAND: "ISPF PANEL(ISR@390)"
     OMVS:
-      description:
-        - OMVS segment information for user and group profiles.
-        - Contains dynamic key-value pairs such as C(UID), C(HOME), C(PROGRAM), C(CPUTIMEMAX), C(ASSIZEMAX), C(FILEPROCMAX), C(PROCUSERMAX), etc.
-        - The exact keys present depend on the OMVS configuration in RACF.
-        - Only returned when C(omvs) is included in the I(segments) parameter.
+      description: >
+        OMVS segment information for user and group profiles.
+        Contains dynamic key-value pairs such as C(UID), C(HOME), C(PROGRAM), C(CPUTIMEMAX), C(ASSIZEMAX), C(FILEPROCMAX), C(PROCUSERMAX), etc.
+        The exact keys present depend on the OMVS configuration in RACF.
+        Only returned when C(omvs) is included in the I(segments) parameter.
       returned: when omvs segment is requested
       type: dict
       sample:
@@ -176,11 +217,11 @@ segments:
         CPUTIMEMAX: "NONE"
         ASSIZEMAX: "NONE"
     DFP:
-      description:
-        - DFP (Data Facility Product) segment information for user and group profiles.
-        - Contains dynamic key-value pairs related to data management such as C(MGMTCLAS), C(STORCLAS), C(DATACLAS), etc.
-        - The exact keys present depend on the DFP configuration in RACF.
-        - Only returned when C(dfp) is included in the I(segments) parameter.
+      description: >
+        DFP (Data Facility Product) segment information for user and group profiles.
+        Contains dynamic key-value pairs related to data management such as C(MGMTCLAS), C(STORCLAS), C(DATACLAS), etc.
+        The exact keys present depend on the DFP configuration in RACF.
+        Only returned when C(dfp) is included in the I(segments) parameter.
       returned: when dfp segment is requested
       type: dict
       sample:
@@ -188,12 +229,12 @@ segments:
         STORCLAS: "SCPERM"
         DATACLAS: "DCEXTL"
     OPERPARM:
-      description:
-        - OPERPARM segment information for user profiles.
-        - Contains operator parameters such as C(STORAGE), C(AUTH), C(ALTGRP), C(AUTO), C(HC), C(INTIDS), C(LEVEL), C(LOGCMDRESP), C(MIGID), etc.
-        - Some fields like C(MONITOR), C(MSCOPE), and C(ROUTCODE) are returned as lists when they contain multiple values.
-        - The exact keys present depend on the operator configuration in RACF.
-        - Only returned when I(profile_type=user) and C(operparm) is included in the I(segments) parameter.
+      description: >
+        OPERPARM segment information for user profiles.
+        Contains operator parameters such as C(STORAGE), C(AUTH), C(ALTGRP), C(AUTO), C(HC), C(INTIDS), C(LEVEL), C(LOGCMDRESP), C(MIGID), etc.
+        Some fields like C(MONITOR), C(MSCOPE), and C(ROUTCODE) are returned as lists when they contain multiple values.
+        The exact keys present depend on the operator configuration in RACF.
+        Only returned when I(profile_type=user) and C(operparm) is included in the I(segments) parameter.
       returned: when profile_type is user and operparm segment is requested
       type: dict
       sample:
@@ -215,57 +256,25 @@ segments:
           - "1:2"
           - "11"
     LANGUAGE:
-      description:
-        - LANGUAGE segment information for user profiles.
-        - Contains language-related settings such as C(PRIMARY) and C(SECONDARY) language codes.
-        - The exact keys present depend on the language configuration in RACF.
-        - Only returned when I(profile_type=user) and C(lang) is included in the I(segments) parameter.
+      description: >
+        LANGUAGE segment information for user profiles.
+        Contains language-related settings such as C(PRIMARY) and C(SECONDARY) language codes.
+        The exact keys present depend on the language configuration in RACF.
+        Only returned when I(profile_type=user) and C(lang) is included in the I(segments) parameter.
       returned: when profile_type is user and lang segment is requested
       type: dict
       sample:
         PRIMARY: "ENU"
         SECONDARY: "JPN"
     CSDATA:
-      description:
-        - CSDATA (Custom Data) segment information for user and group profiles.
-        - Contains custom application-specific data defined in RACF.
-        - The exact keys present depend on what custom data has been configured for the profile.
-        - Only returned when C(csdata) is included in the I(segments) parameter.
+      description: >
+        CSDATA (Custom Data) segment information for user and group profiles.
+        Contains custom application-specific data defined in RACF.
+        The exact keys present depend on what custom data has been configured for the profile.
+        Only returned when C(csdata) is included in the I(segments) parameter.
       returned: when csdata segment is requested
       type: dict
       sample: {}
-changed:
-  description: Indicates if any changes were made (always false for info modules).
-  returned: always
-  type: bool
-  sample: false
-rc:
-  description:
-    - Return code from the TSO command.
-    - Returns 0 on success.
-    - Returns non-zero on failure (e.g., 8 when profile not found).
-  returned: always
-  type: int
-  sample: 0
-msg:
-  description:
-    - Error message describing the failure reason.
-    - Only present when the module fails.
-  returned: failure
-  type: str
-  sample: "Profile 'TESTU01' not found in RACF database"
-stdout:
-  description:
-    - Standard output from the TSO command.
-  returned: always
-  type: str
-  sample: "NAME NOT FOUND IN RACF DATA SET"
-stderr:
-  description:
-    - Standard error from the TSO command.
-  returned: always
-  type: str
-  sample: ""
 """
 
 EXAMPLES = r"""
@@ -274,7 +283,7 @@ EXAMPLES = r"""
     name: TESTU01
     profile_type: user
 
-- name: Get user profile info with segments
+- name: Get user profile info for multiple segments
   ibm.ibm_zos_core.zos_user_info:
     name: TESTU01
     profile_type: user
@@ -285,6 +294,16 @@ EXAMPLES = r"""
       - operparm
       - lang
       - csdata
+      - cics
+      - dce
+      - eim
+      - ovm
+      - netview
+      - nds
+      - lnotes
+      - workattr
+      - proxy
+      - kerb
 
 - name: Get basic group profile info
   ibm.ibm_zos_core.zos_user_info:
@@ -321,7 +340,8 @@ FIELDS_TO_SPLIT = {
     "ROUTCODE",     # Comma-separated list of routing codes (e.g., "1:2,11")
     "ATTRIBUTES",   # Space-separated list of user/group attributes
     "CLASS AUTHORIZATIONS",  # Space-separated list of authorized classes
-    "MFORM"      # Space-separated list of message forms
+    "MFORM",      # Space-separated list of message forms
+    "KEY ENCRYPTION TYPE"
 }
 
 # Regex patterns for parsing RACF output
@@ -693,6 +713,56 @@ def parse_csdata(output_text: str) -> Dict[str, Any]:
     return extract_generic_segment(output_text, "CSDATA")
 
 
+def parse_cics(output_text: str) -> Dict[str, Any]:
+    """Parse CICS segment from RACF output."""
+    return extract_generic_segment(output_text, "CICS")
+
+
+def parse_dce(output_text: str) -> Dict[str, Any]:
+    """Parse DCE segment from RACF output."""
+    return extract_generic_segment(output_text, "DCE")
+
+
+def parse_eim(output_text: str) -> Dict[str, Any]:
+    """Parse EIM segment from RACF output."""
+    return extract_generic_segment(output_text, "EIM")
+
+
+def parse_ovm(output_text: str) -> Dict[str, Any]:
+    """Parse OVM segment from RACF output."""
+    return extract_generic_segment(output_text, "OVM")
+
+
+def parse_netview(output_text: str) -> Dict[str, Any]:
+    """Parse NETVIEW segment from RACF output."""
+    return extract_generic_segment(output_text, "NETVIEW")
+
+
+def parse_nds(output_text: str) -> Dict[str, Any]:
+    """Parse NDS segment from RACF output."""
+    return extract_generic_segment(output_text, "NDS")
+
+
+def parse_lnotes(output_text: str) -> Dict[str, Any]:
+    """Parse LNOTES segment from RACF output."""
+    return extract_generic_segment(output_text, "LNOTES")
+
+
+def parse_workattr(output_text: str) -> Dict[str, Any]:
+    """Parse WORKATTR segment from RACF output."""
+    return extract_generic_segment(output_text, "WORKATTR")
+
+
+def parse_proxy(output_text: str) -> Dict[str, Any]:
+    """Parse PROXY segment from RACF output."""
+    return extract_generic_segment(output_text, "PROXY")
+
+
+def parse_kerb(output_text: str) -> Dict[str, Any]:
+    """Parse KERB segment from RACF output."""
+    return extract_generic_segment(output_text, "KERB")
+
+
 def run_module():
     """Main module execution function."""
 
@@ -710,7 +780,9 @@ def run_module():
             'type': 'list',
             'elements': 'str',
             'required': False,
-            'choices': ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata']
+            'choices': ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata',
+                        'cics', 'dce', 'eim', 'ovm', 'netview', 'nds',
+                        'lnotes', 'workattr', 'proxy', 'kerb']
         }
     }
 
@@ -758,8 +830,10 @@ def run_module():
 
     # Build the appropriate TSO command based on profile_type and segments
     if profile_type == 'user':
-        # Valid segments for user: dfp, tso, omvs, operparm, lang, csdata
-        valid_user_segments = ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata']
+        # Valid segments for user
+        valid_user_segments = ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata',
+                               'cics', 'dce', 'eim', 'ovm', 'netview', 'nds',
+                               'lnotes', 'workattr', 'proxy', 'kerb']
 
         # Filter segments to only valid ones for user
         filtered_segments = [s for s in segments if s in valid_user_segments]
@@ -776,7 +850,17 @@ def run_module():
                 'omvs': 'OMVS',
                 'operparm': 'OPERPARM',
                 'lang': 'LANG',
-                'csdata': 'CSDATA'
+                'csdata': 'CSDATA',
+                'cics': 'CICS',
+                'dce': 'DCE',
+                'eim': 'EIM',
+                'ovm': 'OVM',
+                'netview': 'NETVIEW',
+                'nds': 'NDS',
+                'lnotes': 'LNOTES',
+                'workattr': 'WORKATTR',
+                'proxy': 'PROXY',
+                'kerb': 'KERB'
             }
             segment_keywords = [segment_map[s] for s in filtered_segments]
             cmd = f"{cmd} {' '.join(segment_keywords)}"
@@ -831,7 +915,17 @@ def run_module():
                     'dfp': ('DFP', parse_dfp),
                     'operparm': ('OPERPARM', parse_operparm),
                     'lang': ('LANGUAGE', parse_language),
-                    'csdata': ('CSDATA', parse_csdata)
+                    'csdata': ('CSDATA', parse_csdata),
+                    'cics': ('CICS', parse_cics),
+                    'dce': ('DCE', parse_dce),
+                    'eim': ('EIM', parse_eim),
+                    'ovm': ('OVM', parse_ovm),
+                    'netview': ('NETVIEW', parse_netview),
+                    'nds': ('NDS', parse_nds),
+                    'lnotes': ('LNOTES', parse_lnotes),
+                    'workattr': ('WORKATTR', parse_workattr),
+                    'proxy': ('PROXY', parse_proxy),
+                    'kerb': ('KERB', parse_kerb)
                 }
 
                 for seg in filtered_segments:

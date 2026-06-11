@@ -3270,22 +3270,84 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def remote_cleanup(module):
+def remote_cleanup(module, dest_exists=None):
     """Remove all files or data sets pointed to by 'dest' on the remote
     z/OS system. The idea behind this cleanup step is that if, for some
     reason, the module fails after copying the data, we want to return the
     remote system to its original state. Which means deleting any newly
     created files or data sets.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The module object
+    dest_exists : bool, optional
+        Whether the destination existed before the copy operation
     """
     dest = module.params.get('dest')
+
+    # If we don't have tracking info, fall back to conservative cleanup
+    # (only clean up what we're certain was newly created)
+    if dest_exists is None:
+        dest_exists = True  # Assume it existed to be safe
+
+    # USS file/directory cleanup
     if "/" in dest:
-        if os.path.isfile(dest):
-            os.remove(dest)
+        # Only delete if it didn't exist before
+        if not dest_exists:
+            if os.path.isfile(dest):
+                os.remove(dest)
+            elif os.path.isdir(dest):
+                shutil.rmtree(dest)
+
+    # PDS member or GDS cleanup
+    elif "(" in dest and ")" in dest:
+        dest_name = data_set.extract_dsname(dest)
+
+        # GDG handling
+        if "(+1)" in dest or "(-" in dest or "(0)" in dest:
+            # This is a GDS (generation data set)
+            if "(+1)" in dest:
+                # Convert (+1) to (0) to get the actual created generation
+                actual_dest = dest_name + "(0)"
+            else:
+                actual_dest = dest
+
+            # Cleanup logic for GDS:
+            # - If dest_exists=False: Neither GDG nor GDS existed, delete both
+            # - If dest_exists=True and dest was (+1): GDG existed but GDS didn't, delete only GDS
+            # - If dest_exists=True and dest was (0) or (-N): GDS existed, delete nothing
+
+            if not dest_exists:
+                # Neither GDG nor GDS existed - delete the GDS first, then try GDG base
+                data_set.DataSet.ensure_absent(name=actual_dest)
+                # Try to delete the GDG base (will only succeed if empty)
+                try:
+                    data_set.DataSet.ensure_absent(name=dest_name)
+                except Exception:
+                    # GDG base might have other generations or be in use, ignore
+                    pass
+            elif "(+1)" in dest:
+                # GDG existed but this GDS didn't - delete only the GDS
+                data_set.DataSet.ensure_absent(name=actual_dest)
+            # else: GDS already existed, don't delete anything
+
+        # PDS member handling
         else:
-            shutil.rmtree(dest)
+            if not dest_exists:
+                try:
+                    data_set.DataSet.ensure_absent(name=dest_name)
+                except Exception:
+                    # PDS might be in use or already deleted, ignore
+                    pass
+            # else: PDS existed before copy, don't delete anything
+
+    # Sequential and VSAM dataset cleanup
     else:
-        dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+        # Only delete if it didn't exist before
+        if not dest_exists:
+            dest_name = data_set.extract_dsname(dest)
+            data_set.DataSet.ensure_absent(name=dest_name)
 
 
 def update_result(res_args, original_args):
@@ -4010,6 +4072,8 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
+        err.json_args["dest_exists"] = dest_exists
+        err.json_args["backup_name"] = backup_name
         raise err
 
     res_args.update(
@@ -4236,6 +4300,7 @@ def main():
         )
 
     res_args = conv_path = None
+
     try:
         res_args, conv_path = run_module(module, arg_def)
 
@@ -4254,7 +4319,10 @@ def main():
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
-        remote_cleanup(module=module)
+        remote_cleanup(
+            module=module,
+            dest_exists=err.json_args.get("dest_exists", None)
+        )
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])

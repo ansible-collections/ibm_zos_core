@@ -1,0 +1,4 @@
+minor_changes:
+   - zos_stat - Adds support for retrieving and exposing ISPF statistics and extended data set member
+     listing attributes for z/OS data set members.
+     (https://github.com/ansible-collections/ibm_zos_core/issues/2354)

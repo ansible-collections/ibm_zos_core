@@ -885,8 +885,6 @@ def prepare_modify_command(module, started_task=None):
             msg="parameters are mandatory while modifying a started task.",
             changed=False
         )
-    else
-        cmd = f"F {started_task_name},{','.join(parameters)}"
     cmd = f"F {started_task_name},{','.join(parameters)}"
     return started_task_name, cmd
 

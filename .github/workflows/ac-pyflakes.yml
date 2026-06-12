@@ -6,6 +6,7 @@ on:
       - dev
       - staging*
       - test*
+      - feature/gh*
     paths:
       - 'plugins/**'
 jobs:

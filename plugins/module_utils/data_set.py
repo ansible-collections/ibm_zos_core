@@ -986,28 +986,46 @@ class DataSet(object):
             }
 
             # Get SMDE Extended Attributes - each attribute handled independently
-            modified_time = getattr(member, 'time_modified', None)
-            member_info['extended_attributes'] = {
-                'user': getattr(member, 'user_modified', '') or '',
-                'codeset': str(getattr(member, 'ccsid', '')) if getattr(member, 'ccsid', None) else '',
-                'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else ''
-            }
+            try:
+                modified_time = getattr(member, 'time_modified', None)
+                member_info['extended_attributes'] = {
+                    'user': getattr(member, 'user_modified', '') or '',
+                    'codeset': str(getattr(member, 'ccsid', '')) if getattr(member, 'ccsid', None) else '',
+                    'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else ''
+                }
+            except Exception:
+                member_info['extended_attributes'] = {
+                    'user': '',
+                    'codeset': '',
+                    'modified_time': ''
+                }
 
             # Get ISPF Statistics - each attribute handled independently
-            ispf = getattr(member, 'ispf_statistics', None)
-            if ispf:
-                date_created = getattr(ispf, 'date_created', None)
-                time_changed = getattr(ispf, 'time_changed', None)
-                member_info['ispf_statistics'] = {
-                    'version': f"{getattr(ispf, 'version', 0):02d}.{getattr(ispf, 'modification_level', 0):02d}",
-                    'created': date_created.strftime('%Y/%m/%d') if date_created else '',
-                    'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else '',
-                    'size': getattr(ispf, 'current_lines', 0),
-                    'init': getattr(ispf, 'initial_lines', 0),
-                    'mod': getattr(ispf, 'modification_level', 0),
-                    'id': getattr(ispf, 'modified_user', '') or ''
-                }
-            else:
+            try:
+                ispf = getattr(member, 'ispf_statistics', None)
+                if ispf:
+                    date_created = getattr(ispf, 'date_created', None)
+                    time_changed = getattr(ispf, 'time_changed', None)
+                    member_info['ispf_statistics'] = {
+                        'version': f"{getattr(ispf, 'version', 0):02d}.{getattr(ispf, 'modification_level', 0):02d}",
+                        'created': date_created.strftime('%Y/%m/%d') if date_created else '',
+                        'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else '',
+                        'size': getattr(ispf, 'current_lines', 0),
+                        'init': getattr(ispf, 'initial_lines', 0),
+                        'mod': getattr(ispf, 'modification_level', 0),
+                        'id': getattr(ispf, 'modified_user', '') or ''
+                    }
+                else:
+                    member_info['ispf_statistics'] = {
+                        'version': '',
+                        'created': '',
+                        'changed': '',
+                        'size': 0,
+                        'init': 0,
+                        'mod': 0,
+                        'id': ''
+                    }
+            except Exception:
                 member_info['ispf_statistics'] = {
                     'version': '',
                     'created': '',

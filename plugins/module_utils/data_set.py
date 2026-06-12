@@ -38,10 +38,6 @@ try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
     from zoautil_py.exceptions import GenerationDataGroupCreateException
     from zoautil_py.members import fetch_members
-    from zoautil_py.exceptions import (
-        SmdeExtendedAttributesUnavailable,
-        IspfMemberStatisticsUnavailable
-    )
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -50,8 +46,6 @@ except ImportError:
     ztypes = ZOAUImportError(traceback.format_exc())
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
     fetch_members = ZOAUImportError(traceback.format_exc())
-    SmdeExtendedAttributesUnavailable = ZOAUImportError(traceback.format_exc())
-    IspfMemberStatisticsUnavailable = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -947,15 +941,15 @@ class DataSet(object):
     @staticmethod
     def get_member_details(dataset_name):
         """Get extended attributes and ISPF statistics for all members in a PDS/PDSE.
-        
+
         Uses the zoautil_py.members.fetch_members() function which returns Member objects
         with SmdeExtendedAttributes and IspfMemberStatistics.
-        
+
         Parameters
         ----------
         dataset_name : str
             The name of the PDS/PDSE data set.
-        
+
         Returns
         -------
         list
@@ -973,7 +967,7 @@ class DataSet(object):
                 - init: Initial number of lines
                 - mod: Modification level
                 - id: User ID who modified
-                
+
         Raises
         ------
         Exception
@@ -981,7 +975,7 @@ class DataSet(object):
         """
         # Call ZOAU API to get all members with their attributes
         members_list = fetch_members(dataset_name)
-        
+
         # Transform Member objects to structured format
         result = []
         for member in members_list:
@@ -990,36 +984,30 @@ class DataSet(object):
                 'extended_attributes': None,
                 'ispf_statistics': None
             }
-            
-            # Try to get SMDE Extended Attributes
-            try:
-                member_info['extended_attributes'] = {
-                    'user': member.user_modified if member.user_modified else '',
-                    'codeset': str(member.ccsid) if member.ccsid else '',
-                    'modified_time': member.time_modified.strftime('%Y/%m/%d %H:%M:%S') if member.time_modified else ''
-                }
-            except SmdeExtendedAttributesUnavailable:
-                # Member doesn't have SMDE extended attributes
-                member_info['extended_attributes'] = {
-                    'user': '',
-                    'codeset': '',
-                    'modified_time': ''
-                }
-            
-            # Try to get ISPF Statistics
-            try:
-                ispf_stats = member.ispf_statistics
+
+            # Get SMDE Extended Attributes - each attribute handled independently
+            modified_time = getattr(member, 'time_modified', None)
+            member_info['extended_attributes'] = {
+                'user': getattr(member, 'user_modified', '') or '',
+                'codeset': str(getattr(member, 'ccsid', '')) if getattr(member, 'ccsid', None) else '',
+                'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else ''
+            }
+
+            # Get ISPF Statistics - each attribute handled independently
+            ispf = getattr(member, 'ispf_statistics', None)
+            if ispf:
+                date_created = getattr(ispf, 'date_created', None)
+                time_changed = getattr(ispf, 'time_changed', None)
                 member_info['ispf_statistics'] = {
-                    'version': f"{ispf_stats.version:02d}.{ispf_stats.modification_level:02d}",
-                    'created': ispf_stats.date_created.strftime('%Y/%m/%d'),
-                    'changed': ispf_stats.time_changed.strftime('%Y/%m/%d %H:%M:%S'),
-                    'size': ispf_stats.current_lines,
-                    'init': ispf_stats.initial_lines,
-                    'mod': ispf_stats.modification_level,
-                    'id': ispf_stats.modified_user if ispf_stats.modified_user else ''
+                    'version': f"{getattr(ispf, 'version', 0):02d}.{getattr(ispf, 'modification_level', 0):02d}",
+                    'created': date_created.strftime('%Y/%m/%d') if date_created else '',
+                    'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else '',
+                    'size': getattr(ispf, 'current_lines', 0),
+                    'init': getattr(ispf, 'initial_lines', 0),
+                    'mod': getattr(ispf, 'modification_level', 0),
+                    'id': getattr(ispf, 'modified_user', '') or ''
                 }
-            except IspfMemberStatisticsUnavailable:
-                # Member doesn't have ISPF statistics
+            else:
                 member_info['ispf_statistics'] = {
                     'version': '',
                     'created': '',
@@ -1029,9 +1017,9 @@ class DataSet(object):
                     'mod': 0,
                     'id': ''
                 }
-            
+
             result.append(member_info)
-        
+
         return result
 
     @staticmethod

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
-        - This option doesn't accept the use of wilcards (? and *).
+        - This option doesn't accept the use of wildcards (\? and \*).
     type: str
     required: true
     aliases:
@@ -159,11 +159,13 @@ notes:
   - When querying a partitioned data set (PDS), if the Ansible user has
     RACF READ authority on it, the last referenced date will be updated by
     the query operation.
+  - If you need to filter the output from the module by resource type, you
+    can use the zos_stat_by_type filter inside of a playbook.
 
 seealso:
-  - module: ansible.builtin.stat
   - module: ibm.ibm_zos_core.zos_find
   - module: ibm.ibm_zos_core.zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_stat_by_type
 """
 
 EXAMPLES = r"""
@@ -1020,6 +1022,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, gdgs
@@ -2626,6 +2629,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     name = module.params.get('name')
     volumes = module.params.get('volumes')

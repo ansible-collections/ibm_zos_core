@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_backup_restore - Module documentation stated that default ``space_type`` for a backup was ``m`` but module would use bytes instead.
-    Fix now uses the correct default space type.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2238).

@@ -156,6 +156,10 @@ options:
         created during the backup and restore process.
       - When I(operation=backup) and I(backup_name) is a data set, specifies the
         volume the backup should be placed in.
+      - When backing up a data set from one volume to another, the operation
+        will fail if temporary data sets are created on the same volume as the volume containing
+        the source data set(s). To avoid this, set I(temp_volume) to a different volume
+        than the source volume.
     type: str
     required: False
     aliases:
@@ -306,9 +310,9 @@ options:
   index:
     description:
       - When C(operation=backup) specifies that for any VSAM cluster backup, the backup must also contain
-        all the associated alternate index (AIX®) clusters and paths.
+        all the associated alternate index (AIX) clusters and paths.
       - When C(operation=restore) specifies that for any VSAM cluster dumped with the SPHERE keyword,
-        the module must also restore all associated AIX® clusters and paths.
+        the module must also restore all associated AIX clusters and paths.
       - The alternate index is a VSAM function that allows logical records of a
         KSDS or ESDS to be accessed sequentially and directly by more than one key
         field. The cluster that has the data is called the base cluster. An
@@ -354,6 +358,11 @@ notes:
       the module option without access to the class.
     - If your system uses a different security product, consult that product's
       documentation to configure the required security classes.
+    - When backing up a data set from one volume to another, the operation will
+      fail if temporary data sets are created on the same volume as the volume
+      containing the source data set(s). To avoid this, use the I(temp_volume)
+      option to specify a different volume than the source volume for temporary
+      data sets.
 """
 
 EXAMPLES = r"""
@@ -569,6 +578,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets
@@ -643,6 +653,11 @@ def main():
     validate_dependencies(module)
     try:
         params = parse_and_validate_args(module.params)
+
+        # Initialize logging module
+        module_verbosity_level = module._verbosity
+        SingletonLogger().get_logger(module_verbosity_level)
+
         operation = params.get("operation")
         data_sets = params.get("data_sets", {})
         space = params.get("space")

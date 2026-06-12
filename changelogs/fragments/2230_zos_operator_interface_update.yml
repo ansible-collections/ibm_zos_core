@@ -1,4 +1,0 @@
-breaking_changes:
-  - zos_operator - Option ``wait_time_s`` is being deprecated in favor of ``wait_time``. New option ``time_unit`` is being added to select
-    seconds or centiseconds. New return value ``time_unit`` is being added. Return value ``wait_time_s`` is being deprecated in favor of ``wait_time``.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2230).

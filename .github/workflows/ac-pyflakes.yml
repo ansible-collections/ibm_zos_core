@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - staging*
+      - test*
     paths:
       - 'plugins/**'
 jobs:

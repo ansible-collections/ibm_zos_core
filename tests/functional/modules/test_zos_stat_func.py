@@ -301,6 +301,90 @@ def test_query_data_set_pds_no_volume(ansible_zos_module, volumes_on_systems):
         )
 
 
+def test_query_data_set_pds_member_no_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pds'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('block_size') is not None
+            assert stat['attributes'].get('dir_blocks_allocated') is not None
+            assert stat['attributes'].get('dir_blocks_used') is not None
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('members') == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is not None
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pds')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
 def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
 
@@ -361,6 +445,92 @@ def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pdse')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
+def test_query_data_set_pdse_members_no_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpdse -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pdse'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('pages_allocated') is not None
+            assert stat['attributes'].get('pages_used') is not None
+            assert stat['attributes'].get('perc_pages_used') is not None
+            assert stat['attributes'].get('pdse_version') is not None
+            assert stat['attributes'].get('max_pdse_generation') is not None
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('members') == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is not None
             assert stat['attributes'].get('volser') == available_vol.lower()
             assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1

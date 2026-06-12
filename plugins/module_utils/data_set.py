@@ -37,6 +37,7 @@ except ImportError:
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
     from zoautil_py.exceptions import GenerationDataGroupCreateException
+    from zoautil_py.members import fetch_members
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -44,6 +45,7 @@ except ImportError:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
+    fetch_members = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -935,6 +937,108 @@ class DataSet(object):
         rc, out, err = module.run_command(ls_cmd, errors='replace')
         # RC 2 for mls means that there aren't any members.
         return rc == 2
+
+    @staticmethod
+    def get_member_details(dataset_name):
+        """Get extended attributes and ISPF statistics for all members in a PDS/PDSE.
+
+        Uses the zoautil_py.members.fetch_members() function which returns Member objects
+        with SmdeExtendedAttributes and IspfMemberStatistics.
+
+        Parameters
+        ----------
+        dataset_name : str
+            The name of the PDS/PDSE data set.
+
+        Returns
+        -------
+        list
+            List of dictionaries containing:
+            - name: Member name
+            - extended_attributes: Dict with SMDE extended attributes (or defaults if unavailable)
+                - user: Last user who modified
+                - codeset: CCSID as string
+                - modified_time: Last modification timestamp
+            - ispf_statistics: Dict with ISPF member statistics (or defaults if unavailable)
+                - version: Version.Modification level (VV.MM format)
+                - created: Creation date
+                - changed: Last change date and time
+                - size: Current number of lines
+                - init: Initial number of lines
+                - mod: Modification level
+                - id: User ID who modified
+
+        Raises
+        ------
+        Exception
+            If ZOAU API is not available or member fetch fails.
+        """
+        # Call ZOAU API to get all members with their attributes
+        members_list = fetch_members(dataset_name)
+
+        # Transform Member objects to structured format
+        result = []
+        for member in members_list:
+            member_info = {
+                'name': member.name,
+                'extended_attributes': None,
+                'ispf_statistics': None
+            }
+
+            # Get SMDE Extended Attributes - each attribute handled independently
+            try:
+                modified_time = getattr(member, 'time_modified', None)
+                member_info['extended_attributes'] = {
+                    'user': getattr(member, 'user_modified', '') or '',
+                    'codeset': str(getattr(member, 'ccsid', '')) if getattr(member, 'ccsid', None) else '',
+                    'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else ''
+                }
+            except Exception:
+                member_info['extended_attributes'] = {
+                    'user': '',
+                    'codeset': '',
+                    'modified_time': ''
+                }
+
+            # Get ISPF Statistics - each attribute handled independently
+            try:
+                ispf = getattr(member, 'ispf_statistics', None)
+                if ispf:
+                    date_created = getattr(ispf, 'date_created', None)
+                    time_changed = getattr(ispf, 'time_changed', None)
+                    member_info['ispf_statistics'] = {
+                        'version': f"{getattr(ispf, 'version', 0):02d}.{getattr(ispf, 'modification_level', 0):02d}",
+                        'created': date_created.strftime('%Y/%m/%d') if date_created else '',
+                        'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else '',
+                        'size': getattr(ispf, 'current_lines', 0),
+                        'init': getattr(ispf, 'initial_lines', 0),
+                        'mod': getattr(ispf, 'modification_level', 0),
+                        'id': getattr(ispf, 'modified_user', '') or ''
+                    }
+                else:
+                    member_info['ispf_statistics'] = {
+                        'version': '',
+                        'created': '',
+                        'changed': '',
+                        'size': 0,
+                        'init': 0,
+                        'mod': 0,
+                        'id': ''
+                    }
+            except Exception:
+                member_info['ispf_statistics'] = {
+                    'version': '',
+                    'created': '',
+                    'changed': '',
+                    'size': 0,
+                    'init': 0,
+                    'mod': 0,
+                    'id': ''
+                }
+
+            result.append(member_info)
+
+        return result
 
     @staticmethod
     def _vsam_empty(name, tmphlq=None):

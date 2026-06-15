@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_tso_command.py
 
-.. _zos_tso_command_module:
+.. _ibm.ibm_zos_core.zos_tso_command_module:
 
 
 zos_tso_command -- Execute TSO commands
@@ -128,6 +128,7 @@ output
 
     | **returned**: always
     | **type**: str
+    | **sample**: LU TESTUSER
 
   rc
     The return code from the executed TSO command.
@@ -135,19 +136,19 @@ output
     | **returned**: always
     | **type**: int
 
-  max_rc
-    Specifies the maximum return code allowed for a TSO command.
-
-    If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+  stdout
+    The standard output from the TSO command execution.
 
     | **returned**: always
-    | **type**: int
+    | **type**: str
+    | **sample**: NO MODEL DATA SET                                                OMVSADM
 
-  content
-    The response resulting from the execution of the TSO command.
+  stdout_lines
+    The standard output split into individual lines.
 
     | **returned**: always
     | **type**: list
+    | **elements**: str
     | **sample**:
 
       .. code-block:: json
@@ -162,10 +163,45 @@ output
               "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           "
           ]
 
-  lines
-    The line number of the content.
+  line_count
+    The number of lines in the standard output.
 
     | **returned**: always
     | **type**: int
+    | **sample**: 7
 
+  stderr
+    The standard error from the TSO command execution.
+
+    | **returned**: always
+    | **type**: str
+
+  stderr_lines
+    The standard error split into individual lines.
+
+    | **returned**: always
+    | **type**: list
+    | **elements**: str
+    | **sample**:
+
+      .. code-block:: json
+
+          [
+              ""
+          ]
+
+  failed
+    Whether the command failed based on the return code exceeding max_rc.
+
+    | **returned**: always
+    | **type**: bool
+
+
+max_rc
+  The maximum return code that was allowed for the TSO commands.
+
+  If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+
+  | **returned**: always
+  | **type**: int
 

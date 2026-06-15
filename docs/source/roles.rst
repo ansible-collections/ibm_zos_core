@@ -1,8 +1,9 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2021, 2025                                    .
+.. © Copyright IBM Corporation 2021, 2026                                    .
 .. ...........................................................................
+
 Roles
-=======
+=====
 
 An Ansible role is a primary mechanism for organizing and reusing automation
 content in a modular and portable way. A role contains a set of related tasks,

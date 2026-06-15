@@ -1,6 +1,0 @@
-minor_changes:
-  - zos_backup_restore - Adds ``access`` to specify how the module will access data sets and z/OS UNIX files when performing a backup or restore operation.
-    Adds ``share`` to specify the module allow data set read access to other programs while backing up or restoring.
-    Adds ``auth``  allows you to act as an administrator, where it will disable checking the current users privileges for z/OS UNIX files, data sets and
-    catalogs.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2320)

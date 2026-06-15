@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_volume_init.py
 
-.. _zos_volume_init_module:
+.. _ibm.ibm_zos_core.zos_volume_init_module:
 
 
 zos_volume_init -- Initialize volumes or minidisks.
@@ -213,7 +213,7 @@ See Also
 
 .. seealso::
 
-   - :ref:`zos_backup_restore_module`
+   - :ref:`ibm.ibm_zos_core.zos_backup_restore_module`
 
 
 

@@ -109,7 +109,7 @@ def get_volumes(ansible_zos_module, path):
         time.sleep(1)
         if all_volumes is not None:
             for volume in all_volumes.contacted.values():
-                temp = volume.get('content')
+                temp = volume.get('stdout_lines')
                 if temp is not None:
                     all_volumes_list += temp
             flag = True if len(all_volumes_list) > 5 else False
@@ -206,7 +206,7 @@ def get_volume_and_unit(ansible_zos_module):
         time.sleep(1)
         if all_volumes is not None:
             for volume in all_volumes.contacted.values():
-                temp = volume.get('content')
+                temp = volume.get('stdout_lines')
                 if temp is not None:
                     all_volumes_list += temp
             flag = True if len(all_volumes_list) > 5 else False
@@ -264,7 +264,7 @@ def find_volume_with_sms_class(ansible_zos_module, volumes_on_system):
     for vol in volumes_on_system:
         response = hosts.all.zos_operator(cmd=f"D SMS,VOL({vol})")
         for res in response.contacted.values():
-            content = res.get('content')
+            content = res.get('stdout_lines')
             for line in content:
                 if 'REJECTED' in line or 'EC' in line:
                     continue

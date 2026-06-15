@@ -159,10 +159,13 @@ notes:
   - When querying a partitioned data set (PDS), if the Ansible user has
     RACF READ authority on it, the last referenced date will be updated by
     the query operation.
+  - If you need to filter the output from the module by resource type, you
+    can use the zos_stat_by_type filter inside of a playbook.
 
 seealso:
   - module: ibm.ibm_zos_core.zos_find
   - module: ibm.ibm_zos_core.zos_gather_facts
+  - module: ibm.ibm_zos_core.zos_stat_by_type
 """
 
 EXAMPLES = r"""
@@ -1019,6 +1022,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import datasets, gdgs
@@ -2625,6 +2629,10 @@ def run_module():
             msg='Parameter verification failed.',
             stderr=str(err)
         )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     name = module.params.get('name')
     volumes = module.params.get('volumes')

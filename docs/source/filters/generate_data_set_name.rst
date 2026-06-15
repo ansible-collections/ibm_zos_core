@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/generate_data_set_name.py
 
-.. _generate_data_set_name_module:
+.. _ibm.ibm_zos_core.generate_data_set_name_module:
 
 
 generate_data_set_name -- Filter HLQs to generate a new random valid data set name.
@@ -40,7 +40,7 @@ middle_level_qualifier
   | **type**: str
 
 
-last_level_qualifier
+low_level_qualifier
   Low level qualifier to be used in the data set names.
 
   | **required**: False
@@ -72,21 +72,21 @@ Examples
      set_fact:
        data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM') }}"
 
-   - name: Filter to generate a data set name with a specific last level qualifier
+   - name: Filter to generate a data set name with a specific low level qualifier
      set_fact:
-       data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM') }}"
+       data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(low_level_qualifier='LLQADM') }}"
 
-   - name: Filter to generate a data set name with a specific middle and last level qualifier
+   - name: Filter to generate a data set name with a specific middle and low level qualifier
      set_fact:
-       data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', last_level_qualifier='LLQADM') }}"
+       data_set_name: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(middle_level_qualifier='MLQADM', low_level_qualifier='LLQADM') }}"
 
    - name: Filter to generate 10 data set names
      set_fact:
        data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(num_names=10) }}"
 
-   - name: Filter to generate 3 data set names with a specific last level qualifier
+   - name: Filter to generate 3 data set names with a specific low level qualifier
      set_fact:
-       data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(last_level_qualifier='LLQADM', num_names=3) }}"
+       data_set_names: "{{ hlq | ibm.ibm_zos_core.generate_data_set_name(low_level_qualifier='LLQADM', num_names=3) }}"
 
    - name: Filter to generate 5 data set names with a specific middle level qualifier
      set_fact:

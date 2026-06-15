@@ -1,3 +1,0 @@
-bugfixes:
-  - zos_started_task - System logs could not be fetched due to an internal variable name conflict. Fix renames the internal variable to distinguish the boolean control flag from the system_logs output variable.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2422)

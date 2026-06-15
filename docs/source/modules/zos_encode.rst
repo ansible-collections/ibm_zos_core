@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_encode.py
 
-.. _zos_encode_module:
+.. _ibm.ibm_zos_core.zos_encode_module:
 
 
 zos_encode -- Perform encoding operations.
@@ -332,4 +332,25 @@ backup_name
   | **returned**: changed and if backup=yes
   | **type**: str
   | **sample**: /path/file_name.2020-04-23-08-32-29-bak.tar
+
+encoding
+  Specifies which encodings the destination file or data set was converted from and to.
+
+  | **returned**: always
+  | **type**: dict
+
+  from
+    The character set of the source *src*.
+
+    | **returned**: always
+    | **type**: str
+    | **sample**: IBM-1047
+
+  to
+    The destination *dest* character set for the output that was written as.
+
+    | **returned**: always
+    | **type**: str
+    | **sample**: ISO8859-1
+
 

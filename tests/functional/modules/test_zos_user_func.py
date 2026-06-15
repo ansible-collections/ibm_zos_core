@@ -1,0 +1,5809 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2026
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
+import pytest
+import random
+import string
+import re
+from datetime import datetime, timedelta
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def generate_random_name(prefix="TEST", length=8):
+    """Generate a random name for RACF profiles (users/groups)."""
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length - len(prefix)))
+    return prefix + suffix
+
+
+def cleanup_user(hosts, username):
+    """Clean up a test user from RACF."""
+    try:
+        hosts.all.shell(cmd=f"tsocmd 'DELUSER {username}'")
+    except Exception:
+        pass  # User may not exist
+
+
+def cleanup_group(hosts, groupname):
+    """Clean up a test group from RACF."""
+    try:
+        hosts.all.shell(cmd=f"tsocmd 'DELGROUP {groupname}'")
+    except Exception:
+        pass  # Group may not exist
+
+
+def verify_user_exists(hosts, username):
+    """Verify that a user exists in RACF."""
+    result = hosts.all.shell(cmd=f"tsocmd 'LISTUSER {username}'")
+    for res in result.contacted.values():
+        return res.get("rc") == 0
+    return False
+
+
+def verify_group_exists(hosts, groupname):
+    """Verify that a group exists in RACF."""
+    result = hosts.all.shell(cmd=f"tsocmd 'LISTGRP {groupname}'")
+    for res in result.contacted.values():
+        return res.get("rc") == 0
+    return False
+
+# ============================================================================
+# GROUP CREATE Tests
+# ============================================================================
+
+def test_group_create_basic(ansible_zos_module):
+    """Test: Create new group profile with RACF defaults."""
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TG")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+    
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert result.get("cmd") == f"ADDGROUP ({group_name})"
+
+        assert verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_create_with_model(ansible_zos_module):
+    """Test: Create new group profile using another group as model"""
+    hosts = ansible_zos_module
+    group_name_model = generate_random_name("TG")
+    group_name = generate_random_name("TG")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name_model,
+            state="create",
+            profile_type="group",
+            base_segment={"model":"SYS1"}
+        )
+    
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name_model in result.get("entities_modified", [])
+
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"model": group_name_model}
+        )
+    
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert f"MODEL({group_name_model})" in result.get("cmd", "")
+
+        assert verify_group_exists(hosts, group_name)
+    finally:
+        cleanup_group(hosts, group_name_model)
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_with_all_attributes_comprehensive(ansible_zos_module):
+    """
+    Test: Create group with maximum attributes configured.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGF")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={
+                "owner": "SYS1",
+                "installation_data": "Full configuration test group"
+            },
+            group={
+                "superior_group": "SYS1",
+                "terminal_access": True,
+                "universal_group": True
+            },
+            dfp={
+                "data_app_id": "FULLAPP",
+                "data_class": "DCFULL",
+                "management_class": "MCFULL",
+                "storage_class": "SCFULL"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            
+            # Validate command contains all parameters
+            cmd = result.get("cmd", "")
+            assert "OWNER(SYS1)" in cmd
+            assert "DATA('Full configuration test group')" in cmd
+            assert "SUPGROUP(SYS1)" in cmd
+            assert (("TERMUACC" in cmd) and ("NOTERMUACC" not in cmd))
+            assert "UNIVERSAL" in cmd
+            assert "DATAAPPL(FULLAPP)" in cmd
+            assert "DATACLAS(DCFULL)" in cmd
+            assert "MGMTCLAS(MCFULL)" in cmd
+            assert "STORCLAS(SCFULL)" in cmd    
+        
+        assert verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_omvs_auto_gid_validation(ansible_zos_module):
+    """
+    Test: Create group with OMVS auto GID and validate GID assignment.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGO")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            omvs={
+                "uid": "auto"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "OMVS(AUTOGID)" in result.get("cmd", "")
+            
+            stdout = result.get("stdout", "")
+            assert "was assigned an OMVS GID value" in stdout or result.get("rc") == 0
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_omvs_custom_gid_specific(ansible_zos_module):
+    """
+    Test: Create group with specific custom GID value.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGC")
+    custom_gid = 2500
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            omvs={
+                "uid": "custom",
+                "custom_uid": custom_gid
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"OMVS(GID({custom_gid}))" in result.get("cmd", "")
+        
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_omvs_shared_gid(ansible_zos_module):
+    """
+    Test: Create group with shared GID mode.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGS")
+    shared_gid = 2600
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            omvs={
+                "uid": "shared",
+                "custom_uid": shared_gid
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"GID({shared_gid})SHARED" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_terminal_access_variations(ansible_zos_module):
+    """
+    Test: Validate both terminal access enabled and disabled scenarios.
+    """
+    hosts = ansible_zos_module
+    group_enabled = generate_random_name("TGT")
+    group_disabled = generate_random_name("TGT")
+    
+    try:
+        # Test with terminal access enabled
+        results_enabled = hosts.all.zos_user(
+            name=group_enabled,
+            state="create",
+            profile_type="group",
+            group={"terminal_access": True}
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert "TERMUACC" in result.get("cmd", "")
+    
+        
+        # Test with terminal access disabled
+        results_disabled = hosts.all.zos_user(
+            name=group_disabled,
+            state="create",
+            profile_type="group",
+            group={"terminal_access": False}
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert "NOTERMUACC" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_enabled)
+        cleanup_group(hosts, group_disabled)
+
+
+def test_group_create_universal_group_variations(ansible_zos_module):
+    """
+    Test: Validate universal and non-universal group creation.
+    """
+    hosts = ansible_zos_module
+    group_universal = generate_random_name("TGU")
+    group_non_universal = generate_random_name("TGU")
+    
+    try:
+        # Test universal group
+        results_universal = hosts.all.zos_user(
+            name=group_universal,
+            state="create",
+            profile_type="group",
+            group={"universal_group": True}
+        )
+        
+        for result in results_universal.contacted.values():
+            assert result.get("changed") is True
+            assert "UNIVERSAL" in result.get("cmd", "")
+        
+        
+        # Test non-universal group (default behavior)
+        results_non_universal = hosts.all.zos_user(
+            name=group_non_universal,
+            state="create",
+            profile_type="group",
+            group={"universal_group": False}
+        )
+        
+        for result in results_non_universal.contacted.values():
+            assert result.get("changed") is True
+            # Non-universal is default, so UNIVERSAL should not be in command
+            assert "UNIVERSAL" not in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_universal)
+        cleanup_group(hosts, group_non_universal)
+
+
+def test_group_create_dfp_combinations(ansible_zos_module):
+    """
+    Test: Various combinations of DFP attributes.
+    """
+    hosts = ansible_zos_module
+    group_name_1 = generate_random_name("TGD")
+    group_name_2 = generate_random_name("TGD")
+    
+    try:
+        # Test data class and management class only
+        results1 = hosts.all.zos_user(
+            name=group_name_1,
+            state="create",
+            profile_type="group",
+            dfp={
+                "data_class": "DCPART",
+                "management_class": "MCPART"
+            }
+        )
+        
+        for result in results1.contacted.values():
+            assert result.get("changed") is True
+            cmd = result.get("cmd", "")
+            assert "DATACLAS(DCPART)" in cmd
+            assert "MGMTCLAS(MCPART)" in cmd
+        
+        # Test storage class and data app ID only
+        results2 = hosts.all.zos_user(
+            name=group_name_2,
+            state="create",
+            profile_type="group",
+            dfp={
+                "storage_class": "SCPART",
+                "data_app_id": "PARTAPP"
+            }
+        )
+        
+        for result in results2.contacted.values():
+            assert result.get("changed") is True
+            cmd = result.get("cmd", "")
+            assert "STORCLAS(SCPART)" in cmd
+            assert "DATAAPPL(PARTAPP)" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name_1)
+        cleanup_group(hosts, group_name_2)
+
+
+def test_group_create_error_already_exists(ansible_zos_module):
+    """
+    Test: Attempt to create a group that already exists.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGE")
+    
+    try:
+        # Create the group first
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        # Attempt to create again (should fail)
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") == 0, "Group already exists"
+            assert result.get("changed") is False
+            stdout = result.get("stdout", "").lower()
+            assert f"GROUP {group_name} already exists".lower() in stdout
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_group_create_error_invalid_name(ansible_zos_module):
+    """
+    Test: Attempt to create group with invalid naming convention(> 8 characters).
+    """
+    hosts = ansible_zos_module
+    invalid_group_name = "TESTGRP0123"  
+    
+    try:
+        results = hosts.all.zos_user(
+            name=invalid_group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") != 0, "Expected failure with invalid group name"
+            assert result.get("changed") is False
+            stdout = result.get("stdout", "")
+            assert "INVALID GROUP" in stdout or result.get("rc") == 8
+        
+    finally:
+        cleanup_group(hosts, invalid_group_name)
+
+
+def test_group_create_error_custom_uid_missing(ansible_zos_module):
+    """
+    Test: Attempt to create group with custom UID but no custom_uid value.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGM")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            omvs={
+                "uid": "custom"
+                # Missing custom_uid parameter
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            msg = result.get("msg", "")
+            assert "missing: custom_uid" in msg.lower() and result.get("rc") != 0
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+# ============================================================================
+# END OF CREATE GROUP TESTS
+# ============================================================================
+
+# ============================================================================
+# GROUP UPDATE Tests
+# ============================================================================
+
+def test_group_update_base_segment_attributes(ansible_zos_module):
+    """
+    Test: Update group base segment attributes (owner, installation_data).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"installation_data": "Initial data"}
+        )
+        
+        # Update owner and installation data
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            base_segment={
+                "owner": "SYS1",
+                "installation_data": "Updated installation data"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OWNER(SYS1)" in cmd
+            assert "DATA('Updated installation data')" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_clear_base_segment_attributes(ansible_zos_module):
+    """
+    Test: Clear base segment group attributes using empty strings.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with data
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"installation_data": "Data to clear"}
+        )
+        
+        # Clear installation data
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            base_segment={"installation_data": ""}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NODATA" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_terminal_access(ansible_zos_module):
+    """
+    Test: Update group terminal access (enable/disable).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with terminal access disabled
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            group={"terminal_access": False}
+        )
+        
+        # Enable terminal access
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            group={"terminal_access": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TERMUACC" in cmd and "NOTERMUACC" not in cmd
+        
+        # Disable terminal access
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            group={"terminal_access": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOTERMUACC" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_dfp_individual_attributes(ansible_zos_module):
+    """
+    Test: Update individual DFP attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with initial DFP
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            dfp={
+                "data_app_id": "OLDAPP",
+                "data_class": "DCOLD"
+            }
+        )
+        
+        # Update data app ID
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            dfp={"data_app_id": "NEWAPP"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "DATAAPPL(NEWAPP)" in result.get("cmd", "")
+        
+        # Update data class
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            dfp={"data_class": "DCNEW"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "DATACLAS(DCNEW)" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_all_dfp_attributes(ansible_zos_module):
+    """
+    Test: Update all DFP attributes together.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with initial DFP
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            dfp={
+                "data_app_id": "OLDAPP",
+                "data_class": "DCOLD",
+                "management_class": "MCOLD",
+                "storage_class": "SCOLD"
+            }
+        )
+        
+        # Update all DFP attributes
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            dfp={
+                "data_app_id": "NEWAPP",
+                "data_class": "DCNEW",
+                "management_class": "MCNEW",
+                "storage_class": "SCNEW"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATAAPPL(NEWAPP)" in cmd
+            assert "DATACLAS(DCNEW)" in cmd
+            assert "MGMTCLAS(MCNEW)" in cmd
+            assert "STORCLAS(SCNEW)" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_delete_dfp_block(ansible_zos_module):
+    """
+    Test: Delete entire DFP block from group.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group with DFP
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            }
+        )
+        
+        # Delete DFP block
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            dfp={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NODFP" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_combined_attributes(ansible_zos_module):
+    """
+    Test: Update multiple attribute types together (base_segment + group + DFP).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        # Update multiple attribute types
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            base_segment={
+                "owner": "SYS1",
+                "installation_data": "Combined update test"
+            },
+            group={
+                "terminal_access": True
+            },
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OWNER(SYS1)" in cmd
+            assert "DATA('Combined update test')" in cmd
+            assert "TERMUACC" in cmd
+            assert "DATACLAS(DCTEST)" in cmd
+            assert "STORCLAS(SCTEST)" in cmd
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_update_omvs_and_delete(ansible_zos_module):
+    """
+    Test: OMVS segment deletion and error scenarios.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGU")
+    nonexistent_group = "NONEXIST99"
+    
+    try:
+        # Update non-existent group
+        results = hosts.all.zos_user(
+            name=nonexistent_group,
+            state="update",
+            profile_type="group",
+            base_segment={"owner": "SYS1"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") != 0, "Expected failure for non-existent group"
+            assert result.get("changed") is False
+        
+        # Create group with auto gid
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            omvs={"uid": "auto"}
+        )
+        
+        # Delete OMVS segment
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="update",
+            profile_type="group",
+            omvs={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOOMVS" in result.get("cmd", "")
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+# ============================================================================
+# END OF GROUP UPDATE TESTS
+# ============================================================================
+
+# ============================================================================
+# GROUP DELETE AND PURGE TESTS
+# ============================================================================
+def test_group_delete_standard(ansible_zos_module):
+    """
+    Test: Delete a standard group profile with no subgroups.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGD")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        # Verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Delete group
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="delete",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert f"DELGROUP ({group_name})" in result.get("cmd", "")
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_delete_with_subgroups_error(ansible_zos_module):
+    """
+    Test: Delete superior group that has subgroups (should fail).
+    """
+    hosts = ansible_zos_module
+    superior_group = generate_random_name("TGS")
+    sub_group = generate_random_name("TGS")
+    
+    try:
+        # Create superior group
+        hosts.all.zos_user(
+            name=superior_group,
+            state="create",
+            profile_type="group"
+        )
+        
+        # Create subgroup
+        hosts.all.zos_user(
+            name=sub_group,
+            state="create",
+            profile_type="group",
+            group={"superior_group": superior_group}
+        )
+        
+        # Attempt to delete superior group (should fail)
+        results = hosts.all.zos_user(
+            name=superior_group,
+            state="delete",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("rc") == 8
+            assert result.get("changed") is False
+            stdout = result.get("stdout", "")
+            assert "INVALID GROUP" in stdout
+        
+        # Verify superior group still exists
+        assert verify_group_exists(hosts, superior_group)
+        
+    finally:
+        cleanup_group(hosts, sub_group)
+        cleanup_group(hosts, superior_group)
+
+def test_group_delete_nonexistent_error(ansible_zos_module):
+    """
+    Test: Attempt to delete a group that doesn't exist.
+    """
+    hosts = ansible_zos_module
+    nonexistent_group = "NOEXST99"
+    
+    # Attempt to delete non-existent group
+    results = hosts.all.zos_user(
+        name=nonexistent_group,
+        state="delete",
+        profile_type="group"
+    )
+    
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+        assert result.get("changed") is False
+        assert result.get("num_entities_modified") == 0
+        stdout = result.get("stdout", "").lower()
+        assert f"Group {nonexistent_group} does not exist".lower() in stdout
+
+def test_group_purge_default_options(ansible_zos_module):
+    """
+    Test: Purge group with default options (keep_dump=false, optimize_dump=false).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"owner": "SYS1"}
+        )
+        
+        # Verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Purge group with default options
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="purge",
+            profile_type="group",
+            database=racf_database
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert result.get("invocation").get("module_args").get("optimize_dump") is False
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_keep_dump(ansible_zos_module):
+    """
+    Test: Purge group with keep_dump=true.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"owner": "SYS1"}
+        )
+        
+        # Purge group with keep_dump=true
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="purge",
+            profile_type="group",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            # dump_name should be not none
+            assert result.get("dump_name") is not None
+            assert result.get("num_entities_modified") == 1
+            assert result.get("invocation").get("module_args").get("optimize_dump") is True
+            
+            # Verify dump dataset name is returned
+            dump_name = result.get("dump_name")
+            assert dump_name, "Dump dataset name should not be empty"
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_lockinput_mode(ansible_zos_module):
+    """
+    Test: Purge group with optimize_dump=false (LOCKINPUT mode).
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={"owner": "SYS1"}
+        )
+        
+        # Purge group with optimize_dump=false (LOCKINPUT)
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="purge",
+            profile_type="group",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=False
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert result.get("invocation").get("module_args").get("optimize_dump") is False
+        
+        # Verify group no longer exists
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        # Cleanup if purge failed
+        cleanup_group(hosts, group_name)
+
+def test_group_purge_comprehensive_with_attributes(ansible_zos_module):
+    """
+    Test: Purge group with various attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TGP")
+    racf_database = "SYS1.RACF"
+    
+    try:
+        # Create group with multiple attributes
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group",
+            base_segment={
+                "owner": "SYS1",
+                "installation_data": "Group to be purged"
+            },
+            group={
+                "terminal_access": True
+            },
+            dfp={
+                "data_class": "DCTEST",
+                "storage_class": "SCTEST"
+            },
+            omvs={
+                "uid": "auto"
+            }
+        )
+        
+        # verify group exists
+        assert verify_group_exists(hosts, group_name)
+        
+        # Purge group completely
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="purge",
+            profile_type="group",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=True
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("num_entities_modified") == 1
+            assert group_name in result.get("entities_modified", [])
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+        
+        assert not verify_group_exists(hosts, group_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+# ============================================================================
+# END OF GROUP DELETE AND PURGE TESTS
+# ============================================================================
+
+# ============================================================================
+# USER CREATE TESTS
+# ============================================================================
+
+def test_user_create_basic_racf_defaults(ansible_zos_module):
+    """
+    Test: Create new user profile with RACF defaults.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd") == f"ADDUSER ({user_name})"
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_owner(ansible_zos_module):
+    """
+    Test: Create new user profile with specific owner.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    owner = "SYS1"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": owner}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"OWNER({owner})" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_model(ansible_zos_module):
+    """
+    Test: Create new user profile using another user as model.
+    """
+    hosts = ansible_zos_module
+    model_user = generate_random_name("TSTU")
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create model user first
+        hosts.all.zos_user(
+            name=model_user,
+            state="create",
+            profile_type="user"
+        )
+        
+        # Create user with model
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"model": model_user}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"MODEL({model_user})" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_user(hosts, model_user)
+
+
+def test_user_create_with_installation_data(ansible_zos_module):
+    """
+    Test: Create new user profile with installation data.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    install_data = "Test User - Installation Data"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"installation_data": install_data}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATA(" in cmd
+            assert "Test User - Installation Data" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_dfp_attributes(ansible_zos_module):
+    """
+    Test: Create user with DFP attributes -data_app_id, data_class, management_class, storage_class.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            dfp={
+                "data_app_id": "APPID001",
+                "data_class": "DCLAS001",
+                "management_class": "MCLAS001",
+                "storage_class": "SCLAS001"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATAAPPL(APPID001)" in cmd
+            assert "DATACLAS(DCLAS001)" in cmd
+            assert "MGMTCLAS(MCLAS001)" in cmd
+            assert "STORCLAS(SCLAS001)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_language_settings(ansible_zos_module):
+    """
+    Test: Create user with language settings -primary and secondary.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            language={
+                "primary": "ENU",
+                "secondary": "JPN"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            pattern = r"LANGUAGE\s*\((?=.*PRIMARY\(ENU\))(?=.*SECONDARY\(JPN\)).*\)"
+            assert re.search(pattern, cmd)
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_basic_settings(ansible_zos_module):
+    """
+    Test: Create user with TSO class settings -account_num, job_class, hold_class, msg_class, sysout_class.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={
+                "account_num": 30000,
+                "job_class": "A",
+                "hold_class": "H",
+                "msg_class": "X",
+                "sysout_class": "A"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "ACCTNUM(30000)" in cmd
+            assert "JOBCLASS(A)" in cmd
+            assert "HOLDCLASS(H)" in cmd
+            assert "MSGCLASS(X)" in cmd
+            assert "SYS(A)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_region_sizes(ansible_zos_module):
+    """
+    Test: Create user with TSO region sizes -region_size, max_region_size.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={
+                "account_num": 32000,
+                "region_size": 8192,
+                "max_region_size": 16384
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "SIZE(8192)" in cmd
+            assert "MAXSIZE(16384)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_tso_multiple_parameters(ansible_zos_module):
+    """
+    Test: Create user with multiple TSO parameters combined.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={
+                "account_num": 33000,
+                "logon_proc": "IKJACCNT",
+                "region_size": 16384,
+                "max_region_size": 32768,
+                "job_class": "A",
+                "msg_class": "X",
+                "sysout_class": "A",
+                "hold_class": "H"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TSO(" in cmd
+            assert "ACCTNUM(33000)" in cmd
+            assert "PROC(IKJACCNT)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_auto_uid(ansible_zos_module):
+    """
+    Test: Create user with auto-assigned UID.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/sh"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "AUTOUID" in cmd
+            assert f"HOME({home_dir})" in cmd
+            assert "PROGRAM(/bin/sh)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_custom_uid(ansible_zos_module):
+    """
+    Test: Create user with custom UID.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    custom_uid = 50417
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={
+                "uid": "custom",
+                "custom_uid": custom_uid,
+                "home": home_dir,
+                "program": "/bin/bash"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert f"UID({custom_uid})" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_memory_limits(ansible_zos_module):
+    """
+    Test: Create user with memory limits configured- addr_space_size, map_size, nonshared_size, shared_size.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/sh",
+                "addr_space_size": 10485760,
+                "map_size": 2048,
+                "nonshared_size": 7,
+                "nonshared_size_unit": "g",
+                "shared_size": 5,
+                "shared_size_unit": "g"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "ASSIZEMAX(10485760)" in cmd
+            assert "MMAPAREAMAX(2048)" in cmd
+            assert "SHMEMMAX(5g)" in cmd
+            assert "MEMLIMIT(7g)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_omvs_process_limits(ansible_zos_module):
+    """
+    Test: Create user with process limits - max_cpu_time, max_files, max_threads, max_procs.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={
+                "uid": "auto",
+                "home": home_dir,
+                "program": "/bin/bash",
+                "max_cpu_time": 3600,
+                "max_files": 2000,
+                "max_threads": 200,
+                "max_procs": 100
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "CPUTIMEMAX(3600)" in cmd
+            assert "FILEPROCMAX(2000)" in cmd
+            assert "THREADSMAX(200)" in cmd
+            assert "PROCUSERMAX(100)" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_default_group_and_clauth(ansible_zos_module):
+    """
+    Test: Create new user profile with default group assignment and clauth.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # Create group first
+        hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        # Create user with default group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "default_group": group_name,
+                "clauth": {"add": ["TERMINAL"]}
+                }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"DFLTGRP({group_name})" in cmd
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert "CLAUTH( TERMINAL )" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_create_with_access_attributes(ansible_zos_module):
+    """
+    Test: Create user with various access attributes- roaudit, operator_card, maintenance_access, restricted.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "roaudit": False,
+                "operator_card": False,
+                "maintenance_access": False,
+                "restricted": False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOROAUDIT" in cmd
+            assert "NOOIDCARD" in cmd
+            assert "NORESTRICTED" in cmd
+            assert "NOOPERATIONS" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_create_with_new_access_attributes(ansible_zos_module):
+    """
+    Test: Create user with new access attributes (auto_protect_datasets, auditor,
+    authority, special, universal_access).
+    
+    Validates that all new access attributes are properly included in the ADDUSER command.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # First create a test group
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Create user with full access configuration including new attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "default_group": group_name,
+                "clauth": {
+                    "add": ["TERMINAL", "FACILITY"]
+                },
+                "roaudit": True,
+                "operator_card": False,
+                "maintenance_access": True,
+                "restricted": True,
+                "auto_protect_datasets": True,
+                "auditor": True,
+                "authority": "create",
+                "special": True,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            
+            # Validate command contains all new parameters
+            cmd = result.get("cmd", "")
+            assert f"DFLTGRP({group_name})" in cmd
+            assert "CLAUTH( TERMINAL FACILITY )" in cmd
+            assert "ROAUDIT" in cmd
+            assert "NOOIDCARD" in cmd
+            assert "OPERATIONS" in cmd
+            assert "RESTRICTED" in cmd
+            # Validate new attributes
+            assert "ADSP" in cmd
+            assert "NOADSP" not in cmd
+            assert "AUDITOR" in cmd
+            assert "NOAUDITOR" not in cmd
+            assert "AUTHORITY(CREATE)" in cmd
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+            assert "UACC(READ)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_update_with_new_access_attributes(ansible_zos_module):
+    """
+    Test: Update user with new access attributes to verify they can be modified.
+    
+    Validates that new access attributes can be changed using ALTUSER command.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with initial attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "auto_protect_datasets": True,
+                "auditor": True,
+                "authority": "create",
+                "special": True,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Update user with modified access configuration
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={
+                "roaudit": False,
+                "maintenance_access": True,
+                "restricted": True,
+                # Modified new attributes
+                "auto_protect_datasets": False,
+                "auditor": False,
+                "authority": "join",
+                "special": True,
+                "universal_access": "alter"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Validate update command
+            cmd = result.get("cmd", "")
+            assert "NOROAUDIT" in cmd
+            assert "OPERATIONS" in cmd
+            assert "RESTRICTED" in cmd
+            # Validate modified new attributes
+            assert "NOADSP" in cmd
+            assert "NOAUDITOR" in cmd
+            assert "AUTHORITY(JOIN)" in cmd
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+            assert "UACC(ALTER)" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_connect_with_group_level_attributes(ansible_zos_module):
+    """
+    Test: Connect user to group with group-level attributes (authority, universal_access,
+    adsp, special, auditor).
+    
+    Validates that group-level attributes are independent from system-wide attributes
+    and can be set per-group connection.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # Create test group
+        results = hosts.all.zos_user(
+            name=group_name,
+            state="create",
+            profile_type="group"
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Create user with system-wide attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            access={
+                "auto_protect_datasets": False,
+                "auditor": False,
+                "authority": "use",
+                "special": False,
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Connect user to group with different group-level attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group_name,
+                "group_access": True,
+                "group_operations": True,
+                "universal_access": "control",
+                "authority": "connect",
+                "adsp": True,  # Using alias - different from system-wide
+                "special": True,  # Different from system-wide
+                "auditor": True  # Different from system-wide
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Validate connect command with group-level attributes
+            cmd = result.get("cmd", "")
+            assert f"GROUP({group_name})" in cmd
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+            assert "UACC(CONTROL)" in cmd or "UACC(control)" in cmd
+            assert "AUTHORITY(CONNECT)" in cmd or "AUTHORITY(connect)" in cmd
+            assert "ADSP" in cmd
+            assert "SPECIAL" in cmd
+            assert "AUDITOR" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+def test_user_create_with_login_restrictions(ansible_zos_module):
+    """
+    Test: Create user with login restrictions - days, time.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            restrictions={
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "time": "0900:1700"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "WHEN(" in cmd
+            assert "DAYS( monday tuesday wednesday thursday friday )" in cmd
+            assert "TIME(0900:1700)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_operator_authority(ansible_zos_module):
+    """
+    Test: Create user with operator authority parameter like all, info, master, sys.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM" in cmd
+            assert "AUTH(info)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_error_already_exists(ansible_zos_module):
+    """
+    Test: Attempt to create user that already exists.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user first time
+        results1 = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user"
+        )
+        
+        for result in results1.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Attempt to create same user again (should fail)
+        results2 = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user"
+        )
+        
+        for result in results2.contacted.values():
+            assert result.get("rc") == 0
+            assert result.get("changed") is False
+            assert f"User {user_name} already exists".lower() in result.get("stdout").lower()
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_create_with_operator_cmd_and_search_settings(ansible_zos_module):
+    """
+    Test: Create user with operator command system and search key.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "cmd_system": "MVS",
+                "search_key": "TST0705"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTH(info)" in cmd
+            assert "CMDSYS(MVS)" in cmd
+            assert "KEY(TST0705)" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_create_with_operator_migration_and_display(ansible_zos_module):
+    """
+    Test: Create user with operator migration ID(enabled/disabled) and display settings.
+    """
+    hosts = ansible_zos_module
+    user_enabled = generate_random_name("TSTU")
+    user_disabled = generate_random_name("TSTU")
+    
+    try:
+        # Test with migration ID enabled and display settings
+        results_enabled = hosts.all.zos_user(
+            name=user_enabled,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "migration_id": "yes",
+                "display": ["jobnames", "sess"]
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "MIGID(YES)" in cmd
+            assert "MONITOR( jobnames sess ) " in cmd
+        
+        # Test with migration ID disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_disabled,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "migration_id": "no"
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "MIGID(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_enabled)
+        assert verify_user_exists(hosts, user_disabled)
+        
+    finally:
+        cleanup_user(hosts, user_enabled)
+        cleanup_user(hosts, user_disabled)
+
+
+def test_user_create_with_operator_message_settings(ansible_zos_module):
+    """
+    Test: Create user with operator message settings - msg_level, msg_format, msg_storage.
+    """
+    hosts = ansible_zos_module
+    user_all = generate_random_name("TSTU")
+    user_info = generate_random_name("TSTU")
+    
+    try:
+        # Test with msg_level=all
+        results_all = hosts.all.zos_user(
+            name=user_all,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "msg_level": "all",
+                "msg_format": "m",
+                "msg_storage": 1000
+            }
+        )
+        
+        for result in results_all.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "LEVEL(all)" in cmd
+            assert "MFORM(m)" in cmd
+            assert "STORAGE(1000)" in cmd
+        
+        # Test with msg_level=i (info)
+        results_info = hosts.all.zos_user(
+            name=user_info,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "msg_level": "i",
+                "msg_format": "m",
+                "msg_storage": 2000
+            }
+        )
+        
+        for result in results_info.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "LEVEL(i)" in cmd
+            assert "MFORM(m)" in cmd
+            assert "STORAGE(2000)" in cmd
+        
+        assert verify_user_exists(hosts, user_all)
+        assert verify_user_exists(hosts, user_info)
+        
+    finally:
+        cleanup_user(hosts, user_all)
+        cleanup_user(hosts, user_info)
+
+
+def test_user_create_with_operator_automated_and_hardcopy_msgs(ansible_zos_module):
+    """
+    Test: Create user with automated and hardcopy message settings.
+    """
+    hosts = ansible_zos_module
+    user_auto_hc = generate_random_name("TSTU")
+    user_no_auto_no_hc = generate_random_name("TSTU")
+    
+    try:
+        # Test with automated and hardcopy enabled
+        results_enabled = hosts.all.zos_user(
+            name=user_auto_hc,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "automated_msgs": "yes",
+                "hardcopy_msgs": "yes"
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTO(YES)" in cmd
+            assert "HC(YES)" in cmd
+        
+        # Test with automated and hardcopy disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_no_auto_no_hc,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "automated_msgs": "no",
+                "hardcopy_msgs": "no"
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTO(NO)" in cmd
+            assert "HC(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_auto_hc)
+        assert verify_user_exists(hosts, user_no_auto_no_hc)
+        
+    finally:
+        cleanup_user(hosts, user_auto_hc)
+        cleanup_user(hosts, user_no_auto_no_hc)
+
+
+def test_user_create_with_operator_unknown_and_undelivered_msgs(ansible_zos_module):
+    """
+    Test: Create user with unknown and undelivered message settings.
+    """
+    hosts = ansible_zos_module
+    user_enabled = generate_random_name("TSTU")
+    user_disabled = generate_random_name("TSTU")
+    
+    try:
+        # Test with unknown and undelivered messages enabled
+        results_enabled = hosts.all.zos_user(
+            name=user_enabled,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "unknown_msgs": "yes",
+                "undelivered_msgs": "yes"
+            }
+        )
+        
+        for result in results_enabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "UNKNIDS(YES)" in cmd
+            assert "UD(YES)" in cmd
+        
+        # Test with unknown and undelivered messages disabled
+        results_disabled = hosts.all.zos_user(
+            name=user_disabled,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "unknown_msgs": "no",
+                "undelivered_msgs": "no"
+            }
+        )
+        
+        for result in results_disabled.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "UNKNIDS(NO)" in cmd
+            assert "UD(NO)" in cmd
+        
+        assert verify_user_exists(hosts, user_enabled)
+        assert verify_user_exists(hosts, user_disabled)
+        
+    finally:
+        cleanup_user(hosts, user_enabled)
+        cleanup_user(hosts, user_disabled)
+
+
+def test_user_create_with_operator_internal_msgs_and_routing_msg(ansible_zos_module):
+    """
+    Test: Create user with internal messages and routing settings -internal_msgs (enabled/disabled), 
+    routing_msgs (single/multiple codes).
+    """
+    hosts = ansible_zos_module
+    user_internal_single = generate_random_name("TSTU")
+    user_no_internal_multi = generate_random_name("TSTU")
+    
+    try:
+        # Test with internal messages enabled and single routing code
+        results_single = hosts.all.zos_user(
+            name=user_internal_single,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "internal_msgs": "yes",
+                "routing_msgs": ["1"]
+            }
+        )
+        
+        for result in results_single.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "INTIDS(YES)" in cmd
+            assert "ROUTCODE(1)" in cmd
+
+        # Test with internal messages disabled and multiple routing codes
+        results_multi = hosts.all.zos_user(
+            name=user_no_internal_multi,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "internal_msgs": "no",
+                "routing_msgs": ["1", "2", "11"]
+            }
+        )
+        
+        for result in results_multi.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "INTIDS(NO)" in cmd
+            assert "ROUTCODE(1 2 11)" in cmd
+        
+        assert verify_user_exists(hosts, user_internal_single)
+        assert verify_user_exists(hosts, user_no_internal_multi)
+        
+    finally:
+        cleanup_user(hosts, user_internal_single)
+        cleanup_user(hosts, user_no_internal_multi)        
+        
+# ============================================================================
+# END OF USER CREATE TESTS
+# ============================================================================        
+
+# ============================================================================
+# USER UPDATE TESTS
+# ============================================================================
+
+def test_user_update_basic_attributes(ansible_zos_module):
+    """
+    Test: Update basic user attributes - owner, installation_data.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TG")
+    
+    try:
+        # Create group for owner
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        
+        # Create user
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Update owner
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            base_segment={"owner": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"OWNER({group_name})" in cmd
+        
+        # Update installation data
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            base_segment={"installation_data": "Updated Installation Data"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATA(" in cmd
+            assert "Updated Installation Data" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_update_model_dataset(ansible_zos_module):
+    """
+    Test: Update user with MODEL parameter (dataset name).
+    For user update, MODEL expects a dataset name.
+    RACF will issue RC=4 warning if the dataset profile doesn't exist.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    model_dsname = generate_random_name("MDLS")  # Dataset name for MODEL
+    
+    try:
+        # Create user
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Update with model (dataset name does not exists)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            base_segment={"model": model_dsname}
+        )
+        
+        for result in results.contacted.values():
+            # Expect RC=4 with warning about unable to locate model profile
+            assert result.get("failed") is True
+            assert result.get("rc") == 4
+            cmd = result.get("cmd", "")
+            assert f"MODEL({model_dsname})" in cmd
+            stdout = result.get("stdout", "")
+            assert f"WARNING, UNABLE TO LOCATE THE MODEL PROFILE FOR {user_name}.{model_dsname}" in stdout
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_dfp_attributes(ansible_zos_module):
+    """
+    Test: Update DFP attributes - data_app_id, data_class, management_class, storage_class, delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with DFP attributes
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            dfp={
+                "data_app_id": "APPID001",
+                "data_class": "DCLAS001"
+            }
+        )
+        
+        # Update individual DFP attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            dfp={
+                "data_app_id": "APPID999",
+                "data_class": "DCLAS999",
+                "management_class": "MCLAS999",
+                "storage_class": "SCLAS999"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DATAAPPL(APPID999)" in cmd
+            assert "DATACLAS(DCLAS999)" in cmd
+            assert "MGMTCLAS(MCLAS999)" in cmd
+            assert "STORCLAS(SCLAS999)" in cmd
+        
+        # Delete DFP block
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            dfp={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NODFP" in result.get("cmd","")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_language_settings(ansible_zos_module):
+    """
+    Test: Update language settings - primary, secondary, delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with language
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            language={"primary": "ENU"}
+        )
+        
+        # Update primary language
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            language={"primary": "JPN"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "PRIMARY(JPN)" in cmd
+        
+        # Add secondary language
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            language={"secondary": "DEU"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "LANGUAGE(" in cmd
+            assert "SECONDARY(DEU)" in cmd
+        
+        # Update both languages
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            language={"primary": "FRA", "secondary": "ENU"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "LANGUAGE(" in cmd
+            assert "PRIMARY(FRA)" in cmd
+            assert "SECONDARY(ENU)" in cmd
+        
+        # Delete language block
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            language={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOLANGUAGE" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_tso_basic_settings(ansible_zos_module):
+    """
+    Test: Update TSO basic settings - account_num, job_class, hold_class, msg_class, sysout_class, logon_proc.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with TSO
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={"account_num": 30000, "job_class": "A"}
+        )
+        
+        # Update account number
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={"account_num": 30999}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ACCTNUM(30999)" in result.get("cmd", "")
+        
+        # Update class settings
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={
+                "job_class": "B",
+                "hold_class": "X",
+                "msg_class": "Y",
+                "sysout_class": "B"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "JOBCLASS(B)" in cmd
+            assert "HOLDCLASS(X)" in cmd
+            assert "MSGCLASS(Y)" in cmd
+            assert "SYS(B)" in cmd
+        
+        # Update logon procedure
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={"logon_proc": "ISPFPROC"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "PROC(ISPFPROC)" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_tso_advanced_settings(ansible_zos_module):
+    """
+    Test: Update TSO advanced settings and delete -region_size, max_region_size, logon_cmd, dest_id, 
+    security_label, unit_name, delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with TSO
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={"account_num": 32000, "region_size": 8192}
+        )
+        
+        # Update region sizes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={"region_size": 16384, "max_region_size": 32768}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "SIZE(16384)" in cmd
+            assert "MAXSIZE(32768)" in cmd
+        
+        # Update multiple TSO attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={
+                "dest_id": "DEST999",
+                "security_label": "SECRET",
+                "unit_name": "SYSALLDA"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "DEST(DEST999)" in cmd
+            assert "SECLABEL(SECRET)" in cmd
+            assert "UNIT(SYSALLDA)" in cmd
+        
+        # Delete TSO segment
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOTSO" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_omvs_basic_settings(ansible_zos_module):
+    """
+    Test: Update OMVS basic settings - home, program, uid (custom/shared).
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        # Create user with OMVS
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={"uid": "auto", "home": home_dir, "program": "/bin/sh"}
+        )
+        
+        # Update home directory
+        new_home = f"/home/{user_name.lower()}"
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={"home": new_home}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "OMVS(" in result.get("cmd","")
+            assert f"HOME({new_home})" in result.get("cmd", "")
+        
+        # Update program
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={"program": "/bin/bash"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "OMVS(" in result.get("cmd","")
+            assert "PROGRAM(/bin/bash)" in result.get("cmd", "")
+        
+        # Update UID to custom
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={"uid": "custom", "custom_uid": 5999}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "OMVS(" in result.get("cmd","")
+            assert "UID(5999)" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_omvs_limits_and_delete(ansible_zos_module):
+    """
+    Test: Update OMVS limits and delete segment - memory limits, omvs process limits, delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    home_dir = f"/u/{user_name.lower()}"
+    
+    try:
+        # Create user with OMVS
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={"uid": "auto", "home": home_dir, "program": "/bin/sh"}
+        )
+        
+        # Update memory limits
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={
+                "addr_space_size": 10485760,
+                "map_size": 2048,
+                "nonshared_size": 7,
+                "nonshared_size_unit": "g",
+                "shared_size": 5,
+                "shared_size_unit": "g"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "SHMEMMAX(5g)" in cmd
+            assert "MEMLIMIT(7g)" in cmd
+            assert "ASSIZEMAX(10485760)" in cmd
+            assert "MMAPAREAMAX(2048)" in cmd
+        
+        # Update process limits
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={
+                "max_cpu_time": 3600,
+                "max_files": 2000,
+                "max_threads": 200,
+                "max_procs": 100
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OMVS(" in cmd
+            assert "PROCUSERMAX(100)" in cmd
+            assert "THREADSMAX(200)" in cmd
+            assert "CPUTIMEMAX(3600)" in cmd
+            assert "FILEPROCMAX(2000)" in cmd
+        
+        # Delete OMVS segment
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOOMVS" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_access_clauth(ansible_zos_module):
+    """
+    Test: Update CLAUTH - access.clauth.add, access.clauth.delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+        )
+        
+        # Add CLAUTH
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={"clauth": {"add": ["TERMINAL", "CONSOLE"]}}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "CLAUTH( TERMINAL CONSOLE )" in cmd
+        
+        # Remove CLAUTH
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={"clauth": {"delete": ["TERMINAL"]}}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOCLAUTH( TERMINAL )" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_access_security_attributes(ansible_zos_module):
+    """
+    Test: Update access security attributes - roaudit, category, operator_card, maintenance_access, restricted, security_level.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Enable ROAUDIT
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={"roaudit": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROAUDIT" in result.get("cmd", "")
+        
+        # Disable ROAUDIT
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={"roaudit": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOROAUDIT" in result.get("cmd", "")
+        
+        # Update operator card, maintenance access, restricted
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            access={
+                "operator_card": False,
+                "maintenance_access": False,
+                "restricted": False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "NOOIDCARD" in cmd
+            assert "NORESTRICTED" in cmd
+            assert "OPERATIONS" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_login_restrictions(ansible_zos_module):
+    """
+    Test: Update login restrictions - days, time, revoke, resume.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    # Generate future dates dynamically (MM/DD/YY format)
+    revoke_date = datetime.now() + timedelta(days=10)
+    resume_date = datetime.now() + timedelta(days=15)
+    revoke_date_str = revoke_date.strftime("%m/%d/%y")
+    resume_date_str = resume_date.strftime("%m/%d/%y")
+    
+    try:
+        # Create user
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Update login days to weekdays
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            restrictions={"days": ["weekdays"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "WHEN( DAYS( weekdays )" in cmd
+        
+        # Update login time
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            restrictions={"time": "0900:1700"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TIME(0900:1700)" in cmd
+        
+        # Update both days and time
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            restrictions={
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "time": "0800:1800"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "TIME(0800:1800)" in cmd
+            assert "DAYS( monday tuesday wednesday thursday friday )" in cmd
+        
+        # Revoke restrictions
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            restrictions={"revoke": revoke_date_str}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"REVOKE({revoke_date_str})" in cmd
+        
+        # Resume restrictions
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            restrictions={"resume": resume_date_str}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"RESUME({resume_date_str})" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_operator_authority_and_settings(ansible_zos_module):
+    """
+    Test: Update operator authority and basic settings -authority, 
+    cmd_system, search_key, migration_id, display.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Update authority to MASTER
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"authority": "master"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTH(master)" in cmd
+
+        # Update authority to SYS
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"authority": "sys"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "AUTH(sys)" in cmd
+        
+        # Update command system and search key
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "cmd_system": "JES2",
+                "search_key": "NEWSRCH"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "CMDSYS(JES2)" in cmd
+            assert "KEY(NEWSRCH)" in cmd
+        
+        # Update migration ID and display
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "migration_id": "yes",
+                "display": ["status", "jobnames"]
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "MONITOR( status jobnames )" in cmd
+            assert "MIGID(YES)" in cmd
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_operator_message_settings(ansible_zos_module):
+    """
+    Test: Update operator message settings - msg_level, msg_format, msg_storage
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Update message level
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"msg_level": "all"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "LEVEL(all)" in cmd
+        
+        # Update message format
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"msg_format": "m"}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "MFORM(m)" in cmd
+        
+        # Update message storage
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"msg_storage": 2000}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "STORAGE(2000)" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_update_operator_message_scope(ansible_zos_module):
+    """
+    Test: Update operator message scope (add and delete).
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Update operator message scope - add ALL
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"msg_scope": {"add": ["ALL"]}}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "ADDMSCOPE( ALL )" in cmd
+        
+        # Update operator message scope - delete ALL
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"msg_scope": {"delete": ["ALL"]}}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "OPERPARM(" in cmd
+            assert "DELMSCOPE( ALL )" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+
+def test_user_update_operator_message_flags(ansible_zos_module):
+    """
+    Test: Update operator message flags -automated_msgs, hardcopy_msgs, unknown_msgs, 
+    undelivered_msgs, internal_msgs (all enabled/disabled).
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Enable all message types
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "automated_msgs": "yes",
+                "hardcopy_msgs": "yes",
+                "unknown_msgs": "yes",
+                "undelivered_msgs": "yes",
+                "internal_msgs": "yes"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "AUTO(YES)" in cmd
+            assert "HC(YES)" in cmd
+            assert "UNKNIDS(YES)" in cmd
+            assert "UD(YES)" in cmd
+            assert "INTIDS(YES)" in cmd
+        
+        # Disable all message types
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "automated_msgs": "no",
+                "hardcopy_msgs": "no",
+                "unknown_msgs": "no",
+                "undelivered_msgs": "no",
+                "internal_msgs": "no"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "AUTO(NO)" in cmd
+            assert "HC(NO)" in cmd
+            assert "UNKNIDS(NO)" in cmd
+            assert "UD(NO)" in cmd
+            assert "INTIDS(NO)" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_operator_routing_and_delete(ansible_zos_module):
+    """
+    Test: Update operator routing messages and delete segment -
+    routing_msgs (single/multiple/ALL/NONE), delete.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Update routing messages - single code
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["1"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(1)" in result.get("cmd", "")
+        
+        # Update routing messages - multiple codes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["1", "2", "11"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(1 2 11)" in result.get("cmd", "")
+        
+        # Update routing messages - ALL
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(ALL)" in result.get("cmd", "")
+        
+        # Update routing messages - NONE
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["NONE"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "ROUTCODE(NONE)" in result.get("cmd", "")
+        
+        # Update with multiple operator attributes
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "authority": "all",
+                "automated_msgs": "yes",
+                "routing_msgs": ["1", "2", "3"]
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert "ROUTCODE(1 2 3)" in cmd
+            assert "AUTH(all)" in cmd
+            assert "AUTO(YES)" in cmd
+        
+        # Delete operator segment
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"delete": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert "NOOPERPARM"  in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_update_operator_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all operator segment fields individually.
+    Tests deletion of authority, alt_group, cmd_system, search_key, migration_id,
+    display, msg_level, msg_format, msg_storage, msg_scope, automated_msgs,
+    delete_operator_msgs, hardcopy_msgs, internal_msgs, routing_msgs, undelivered_msgs,
+    unknown_msgs, and log_responses.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full operator segment
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={
+                "authority": "info",
+                "alt_group": "TSTGRP07",
+                "cmd_system": "MVS",
+                "search_key": "TST0705",
+                "migration_id": "yes",
+                "display": ["jobnames", "sess", "status"],
+                "msg_level": "all",
+                "msg_format": "m",
+                "msg_storage": 1000,
+                "msg_scope": {
+                    "add": ["SYS1", "SYS2"]
+                },
+                "automated_msgs": "yes",
+                "delete_operator_msgs": "normal",
+                "hardcopy_msgs": "yes",
+                "internal_msgs": "yes",
+                "routing_msgs": ["1", "2", "11"],
+                "undelivered_msgs": "no",
+                "unknown_msgs": "no",
+                "log_responses": "yes"
+            }
+        )
+        
+        # Update to delete all operator fields
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={
+                "authority": "delete",
+                "alt_group": "",
+                "cmd_system": "",
+                "search_key": "",
+                "migration_id": "delete",
+                "display": ["delete"],
+                "msg_level": "delete",
+                "msg_format": "delete",
+                "msg_storage": 0,
+                "msg_scope": {
+                    "remove_all": True
+                },
+                "automated_msgs": "delete",
+                "delete_operator_msgs": "delete",
+                "hardcopy_msgs": "delete",
+                "internal_msgs": "delete",
+                "routing_msgs": ["delete"],
+                "undelivered_msgs": "delete",
+                "unknown_msgs": "delete",
+                "log_responses": "delete"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "OPERPARM(" in cmd
+            assert "NOAUTH" in cmd
+            assert "NOMIGID" in cmd
+            assert "NOMONITOR" in cmd
+            assert "NOLEVEL" in cmd
+            assert "NOMFORM" in cmd
+            assert "NOSTORAGE" in cmd
+            assert "NOMSCOPE" in cmd
+            assert "NOAUTO" in cmd
+            assert "NODOM" in cmd
+            assert "NOHC" in cmd
+            assert "NOINTIDS" in cmd
+            assert "NOROUTCODE" in cmd
+            assert "NOUD" in cmd
+            assert "NOUNKNIDS" in cmd
+            assert "NOLOGCMDRESP" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_operator_routing_msgs_validation(ansible_zos_module):
+    """
+    Test: Validate routing_msgs parameter rejects invalid combinations.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with operator
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            operator={"authority": "info"}
+        )
+        
+        # Test 1: ALL mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL", "1", "2"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 2: NONE mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["NONE", "1"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 3: delete mixed with routing codes should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["delete", "1"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "cannot be combined" in result.get("msg", "").lower()
+        
+        # Test 4: ALL and NONE together should fail
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            operator={"routing_msgs": ["ALL", "NONE"]}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "only one of" in result.get("msg", "").lower()
+        
+    finally:
+        # Cleanup
+        hosts.all.zos_user(
+            name=user_name,
+            state="delete",
+            profile_type="user"
+        )
+
+def test_user_update_tso_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all TSO segment fields individually.
+    Tests deletion of account_num, logon_proc, logon_cmd, region_size,
+    max_region_size, job_class, msg_class, sysout_class, hold_class,
+    user_data, dest_id, unit_name, and security_label.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full TSO segment
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            tso={
+                "account_num": "33000",
+                "logon_proc": "IKJACCNT",
+                "logon_cmd": "'ISPF PANEL(ISR@390)'",
+                "region_size": 16384,
+                "max_region_size": 32768,
+                "job_class": "A",
+                "msg_class": "X",
+                "sysout_class": "A",
+                "hold_class": "H",
+                "user_data": "E4F1",
+                "dest_id": "RMT001",
+                "unit_name": "SYSDA"
+            }
+        )
+        
+        # Update to delete all TSO fields
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            tso={
+                "account_num": "",
+                "logon_proc": "",
+                "logon_cmd": "",
+                "region_size": -1,
+                "max_region_size": -1,
+                "job_class": "",
+                "msg_class": "",
+                "sysout_class": "",
+                "hold_class": "",
+                "user_data": "",
+                "dest_id": "",
+                "unit_name": "",
+                "security_label": ""
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "TSO(" in cmd
+            assert "NOACCTNUM" in cmd
+            assert "NOCOMMAND" in cmd
+            assert "NODEST" in cmd
+            assert "NOHOLDCLASS" in cmd
+            assert "NOJOBCLASS" in cmd
+            assert "NOMSGCLASS" in cmd
+            assert "NOSYS" in cmd
+            assert "NOSIZE" in cmd
+            assert "NOMAXSIZE" in cmd
+            assert "NOPROC" in cmd
+            assert "NOSECLABEL" in cmd
+            assert "NOUNIT" in cmd
+            assert "NOUSERDATA" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_omvs_delete_all_fields(ansible_zos_module):
+    """
+    Test: Update user to delete all OMVS segment fields individually.
+    Tests deletion of nonshared_size, shared_size, addr_space_size, map_size,
+    max_procs, max_threads, max_cpu_time, and max_files.
+    Note: home and program are required fields and tested separately.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    
+    try:
+        # Create user with full OMVS segment
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            omvs={
+                "uid": "auto",
+                "home": f"/u/{user_name.lower()}",
+                "program": "/bin/bash",
+                "nonshared_size": 9,
+                "nonshared_size_unit": "g",
+                "shared_size": 7,
+                "shared_size_unit": "g",
+                "addr_space_size": 104857600,
+                "map_size": 4096,
+                "max_procs": 200,
+                "max_threads": 400,
+                "max_cpu_time": 7200,
+                "max_files": 5000
+            }
+        )
+        
+        # Update to delete all OMVS fields (except required home/program)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            omvs={
+                "home": f"/u/{user_name.lower()}",
+                "program": "/bin/bash",
+                "nonshared_size": -1,
+                "shared_size": -1,
+                "addr_space_size": 0,
+                "map_size": 0,
+                "max_procs": 0,
+                "max_threads": -1,
+                "max_cpu_time": 0,
+                "max_files": 0
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            
+            # Verify delete commands are present
+            assert "OMVS(" in cmd
+            assert "NOMEMLIMIT" in cmd
+            assert "NOSHMEMMAX" in cmd
+            assert "NOASSIZEMAX" in cmd
+            assert "NOMMAPAREAMAX" in cmd
+            assert "NOPROCUSERMAX" in cmd
+            assert "NOTHREADSMAX" in cmd
+            assert "NOCPUTIMEMAX" in cmd
+            assert "NOFILEPROCMAX" in cmd
+        
+        assert verify_user_exists(hosts, user_name)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+
+# ============================================================================
+# END OF USER UPDATE TESTS
+# ============================================================================
+# ============================================================================
+# USER CONNECT TESTS
+# ============================================================================
+
+def test_user_connect_basic_authorities(ansible_zos_module):
+    """
+    Test: Connect user to group with different authority levels.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect with defaults (no authority specified)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert f"CONNECT ({user_name})" in cmd
+            assert f"GROUP({group_name})" in cmd
+        
+        # Test different authority levels
+        authorities = ["use", "create", "connect", "join"]
+        for auth in authorities:
+            test_user = generate_random_name("TSTU")
+            hosts.all.zos_user(name=test_user, state="create", profile_type="user")
+            
+            results = hosts.all.zos_user(
+                name=test_user,
+                state="connect",
+                profile_type="user",
+                connect={"group_name": group_name, "authority": auth}
+            )
+            
+            for result in results.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("rc") == 0
+                assert result.get("num_entities_modified") == 1
+                assert test_user in result.get("entities_modified", [])
+                assert f"AUTHORITY({auth})" in result.get("cmd", "")
+            
+            cleanup_user(hosts, test_user)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_universal_access(ansible_zos_module):
+    """
+    Test: Connect user with different universal access (UACC) levels.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        
+        # Test all UACC levels
+        uacc_levels = ["none", "read", "update", "control", "alter"]
+        
+        for uacc in uacc_levels:
+            user_name = generate_random_name("TSTU")
+            hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+            
+            results = hosts.all.zos_user(
+                name=user_name,
+                state="connect",
+                profile_type="user",
+                connect={"group_name": group_name, "universal_access": uacc}
+            )
+            
+            for result in results.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("rc") == 0
+                assert result.get("num_entities_modified") == 1
+                assert user_name in result.get("entities_modified", [])
+                assert f"UACC({uacc})" in result.get("cmd", "")
+            
+            cleanup_user(hosts, user_name)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_group_attributes(ansible_zos_module):
+    """
+    Test: Connect user with group account and operations attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        
+        # Test group_access enabled
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "group_access": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "GRPACC" in cmd and not "NOGRPACC" in cmd
+        
+        # Test group_access disabled
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "group_access": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NOGRPACC" in result.get("cmd", "")
+        
+        # Test group_operations enabled
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "group_operations": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "OPERATIONS" in cmd and not "NOOPERATIONS" in cmd
+        
+        # Test group_operations disabled
+        user4 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user4, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user4,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "group_operations": False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user4 in result.get("entities_modified", [])
+            assert "NOOPERATIONS" in result.get("cmd", "")
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        cleanup_user(hosts, user4)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_special_attributes(ansible_zos_module):
+    """
+    Test: Connect user with auditor, auto_protect_datasets, and special attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        
+        # Test auditor enabled
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "auditor": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUDITOR" in cmd
+            assert "NOAUDITOR" not in cmd
+        
+        # Test auto_protect_datasets enabled
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "adsp": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "ADSP" in cmd
+            assert "NOADSP" not in cmd
+        
+        # Test special enabled
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name, "special": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "SPECIAL" in cmd
+            assert "NOSPECIAL" not in cmd
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_with_owner(ansible_zos_module):
+    """
+    Test: Connect user with specific owner.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    owner_group = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=owner_group, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect with specific owner
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            base_segment={"owner": owner_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"OWNER({owner_group})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+        cleanup_group(hosts, owner_group)
+
+
+def test_user_connect_with_restrictions(ansible_zos_module):
+    """
+    Test: Connect user with revoke/resume dates and deletion.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    # Generate dynamic dates for testing
+    today = datetime.now()
+    revoke_date1 = (today + timedelta(days=10)).strftime("%-m/%-d/%y")
+    resume_date1 = (today + timedelta(days=15)).strftime("%-m/%-d/%y")
+    revoke_date2 = (today + timedelta(days=30)).strftime("%-m/%-d/%y")
+    resume_date2 = (today + timedelta(days=35)).strftime("%-m/%-d/%y")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect with revoke date
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            restrictions={"revoke": revoke_date1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"REVOKE({revoke_date1})" in result.get("cmd", "")
+        
+        # Connect with resume date
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            restrictions={"resume": resume_date1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"RESUME({resume_date1})" in result.get("cmd", "")
+        
+        # Connect with both revoke and resume
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            restrictions={"revoke": revoke_date2, "resume": resume_date2}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert f"REVOKE({revoke_date2})" in cmd
+            assert f"RESUME({resume_date2})" in cmd
+        
+        # Delete resume date
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            restrictions={"delete_resume": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NORESUME" in result.get("cmd", "")
+        
+        # Delete revoke date
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name},
+            restrictions={"delete_revoke": True}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            assert "NOREVOKE" in result.get("cmd", "")
+        
+        cleanup_user(hosts, user2)
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_connect_combined_attributes(ansible_zos_module):
+    """
+    Test: Connect user with multiple combined attributes.
+    """
+    hosts = ansible_zos_module
+    group_name = generate_random_name("TSTG")
+    owner_group = generate_random_name("TSTG")
+    
+    try:
+        # Create groups
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=owner_group, state="create", profile_type="group")
+        
+        # Test authority and UACC
+        user1 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user1, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user1,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group_name,
+                "authority": "create",
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user1 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUTHORITY(create)" in cmd
+            assert "UACC(read)" in cmd
+        
+        # Test all group attributes
+        user2 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user2, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user2,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group_name,
+                "group_access": True,
+                "group_operations": True
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user2 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+        
+        # Test comprehensive attributes
+        user3 = generate_random_name("TSTU")
+        hosts.all.zos_user(name=user3, state="create", profile_type="user")
+        results = hosts.all.zos_user(
+            name=user3,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group_name,
+                "authority": "create",
+                "universal_access": "update",
+                "group_access": True,
+                "group_operations": True,
+                "auditor": False,
+                "auto_protect_datasets": False,
+                "special": False
+            },
+            base_segment={"owner": owner_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user3 in result.get("entities_modified", [])
+            cmd = result.get("cmd", "")
+            assert "AUTHORITY(create)" in cmd
+            assert "UACC(update)" in cmd
+            assert "GRPACC" in cmd
+            assert "OPERATIONS" in cmd
+            assert f"OWNER({owner_group})" in cmd
+            assert f"NOADSP" in cmd
+        
+        cleanup_user(hosts, user1)
+        cleanup_user(hosts, user2)
+        cleanup_user(hosts, user3)
+        
+    finally:
+        cleanup_group(hosts, group_name)
+        cleanup_group(hosts, owner_group)
+
+
+def test_user_connect_multiple_groups(ansible_zos_module):
+    """
+    Test: Connect user to multiple groups.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect to first group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group1,
+                "authority": "create",
+                "universal_access": "read"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group1})" in result.get("cmd", "")
+        
+        # Connect to second group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group2,
+                "authority": "use",
+                "universal_access": "none"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group2})" in result.get("cmd", "")
+        
+        # Connect to third group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={
+                "group_name": group3,
+                "authority": "join"
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"GROUP({group3})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+
+# ============================================================================
+# USER REMOVE Tests
+# ============================================================================
+
+def test_user_remove_from_group(ansible_zos_module):
+    """
+    Test: Remove user from existing group.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect user to group
+        hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        # Remove user from group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            cmd = result.get("cmd", "")
+            assert f"REMOVE ({user_name})" in cmd
+            assert f"GROUP({group_name})" in cmd
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_remove_error_scenarios(ansible_zos_module):
+    """
+    Test: Remove user from non-existing group and already removed group.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group_name = generate_random_name("TSTG")
+    nonexist_group = generate_random_name("TSTG")
+    
+    try:
+        # Create group and user
+        hosts.all.zos_user(name=group_name, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+        
+        # Connect user to group
+        hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        # Try to remove from non-existing group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": nonexist_group}
+        )
+        
+        for result in results.contacted.values():
+            # Expect failure - user not connected to non-existing group
+            assert result.get("changed") is False
+            assert result.get("rc") == 0
+            assert f"{user_name} IS NOT CONNECTED TO GROUP {nonexist_group}".upper() in result.get("stdout", "").upper()
+        
+        # Remove user from group (first time - should succeed)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+        
+        # Try to remove again (already removed)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group_name}
+        )
+        
+        for result in results.contacted.values():
+            # user already removed
+            assert result.get("rc") == 0
+            assert result.get("changed") is False
+            assert f"{user_name} IS NOT CONNECTED TO GROUP {group_name}".upper() in result.get("stdout", "").upper()
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group_name)
+
+
+def test_user_remove_from_multiple_groups(ansible_zos_module):
+    """
+    Test: Remove user from multiple groups.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+    
+    try:
+        # Create groups and user
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+
+        print(user_name) 
+        
+        # Connect user to all groups
+        for group in [group1, group2, group3]:
+            hosts.all.zos_user(
+                name=user_name,
+                state="connect",
+                profile_type="user",
+                connect={"group_name": group}
+            )
+
+        
+        # Remove from first group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group1}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group1})" in result.get("cmd", "")
+        
+        # Remove from second group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group2}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group2})" in result.get("cmd", "")
+        
+        # Remove from third group
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="remove",
+            profile_type="user",
+            connect={"group_name": group3}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"GROUP({group3})" in result.get("cmd", "")
+        
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+# ============================================================================
+# END OF USER CONNECT/REMOVE TESTS
+# ============================================================================
+
+
+# ============================================================================
+# USER DELETE AND PURGE TESTS
+# ============================================================================
+
+def test_user_delete_with_multiple_group_connections(ansible_zos_module):
+    """
+    Test: Delete a user that is connected to multiple groups.
+    Verifies DELUSER removes the user profile and all group connections atomically.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    group1 = generate_random_name("TSTG")
+    group2 = generate_random_name("TSTG")
+    group3 = generate_random_name("TSTG")
+
+    try:
+        # Create groups
+        hosts.all.zos_user(name=group1, state="create", profile_type="group")
+        hosts.all.zos_user(name=group2, state="create", profile_type="group")
+        hosts.all.zos_user(name=group3, state="create", profile_type="group")
+
+        # Create user
+        hosts.all.zos_user(name=user_name, state="create", profile_type="user")
+
+        # Connect user to all three groups with different authorities
+        hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group1, "authority": "create", "universal_access": "read"}
+        )
+        hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group2, "authority": "use", "universal_access": "none"}
+        )
+        hosts.all.zos_user(
+            name=user_name,
+            state="connect",
+            profile_type="user",
+            connect={"group_name": group3, "authority": "join", "universal_access": "none"}
+        )
+
+        # Verify user exists before deletion
+        assert verify_user_exists(hosts, user_name)
+
+        # Delete user
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="delete",
+            profile_type="user"
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert f"DELUSER ({user_name})" in result.get("cmd", "")
+            # Purge-specific fields should be at defaults for a plain delete
+            assert result.get("database_dumped") is False
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_group(hosts, group1)
+        cleanup_group(hosts, group2)
+        cleanup_group(hosts, group3)
+
+
+def test_user_delete_nonexistent_error(ansible_zos_module):
+    """
+    Test: Attempt to delete a user that does not exist.
+    """
+    hosts = ansible_zos_module
+    nonexistent_user = "TSTU963"
+
+    # Ensure the user does not exist before the test
+    cleanup_user(hosts, nonexistent_user)
+
+    results = hosts.all.zos_user(
+        name=nonexistent_user,
+        state="delete",
+        profile_type="user"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 0
+        assert result.get("num_entities_modified") == 0
+        assert result.get("entities_modified") == []
+        assert f"DELUSER ({nonexistent_user})" in result.get("cmd", "")
+        assert f"user {nonexistent_user} does not exist".lower() in result.get("stdout").lower()
+
+
+def test_user_purge_default_options_and_missing_database_validation(ansible_zos_module):
+    """
+    Test: Two sub-scenarios covering the default purge path and parameter validation.
+    - Missing mandatory 'database' parameter
+    - Purge with default params (keep_dump=false, optimize_dump=false). Verifies the standard purge path: database is dumped, dump is discarded after use,
+      user is fully removed from RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    user_no_db = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create users
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+        hosts.all.zos_user(
+            name=user_no_db,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Purge without 'database' should fail with arg validation error
+        results_no_db = hosts.all.zos_user(
+            name=user_no_db,
+            state="purge",
+            profile_type="user"
+        )
+
+        for result in results_no_db.contacted.values():
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            msg = result.get("msg", "")
+            assert "state is purge but all of the following are missing: database" in msg.lower(), (
+                f"Expected 'database' in error message, got: {msg}"
+            )
+
+        # Purge with default options (keep_dump=false, optimize_dump=false)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is False
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+        cleanup_user(hosts, user_no_db)
+
+
+def test_user_purge_keep_dump(ansible_zos_module):
+    """
+    Test: Purge user with keep_dump=true and optimize_dump=true.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with keep_dump=true, optimize_dump=true
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            # dump_name must be a non-empty string when keep_dump=true
+            dump_name = result.get("dump_name")
+            assert dump_name is not None, "dump_name should be returned when keep_dump=true"
+            assert isinstance(dump_name, str) and len(dump_name) > 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("keep_dump") is True
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is True
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_lockinput_mode(ansible_zos_module):
+    """
+    Test: PURGE-U - Purge user with optimize_dump=false (LOCKINPUT mode).
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Purge with optimize_dump=false (LOCKINPUT mode)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database,
+            keep_dump=False,
+            optimize_dump=False
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            # Confirm LOCKINPUT mode was used (optimize_dump=false)
+            assert result.get("invocation", {}).get("module_args", {}).get("optimize_dump") is False
+
+        # Verify user no longer exists in RACF
+        assert not verify_user_exists(hosts, user_name)
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_execute_clist_true(ansible_zos_module):
+    """
+    Test: Purge with execute_clist explicitly set to True.
+    Verifies that IRRRID00 executes the generated CLIST immediately,
+    resulting in the user being fully removed from RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with execute_clist=true
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database,
+            execute_clist=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            assert result.get("cmd", "").startswith("EXEC")
+            assert result.get("invocation", {}).get("module_args", {}).get("execute_clist") is True
+            stdout = result.get("stdout", "")
+            assert "DELUSER" in stdout, "stdout should contain the executed DELUSER command"
+            assert not re.search(r"^\s*EXIT\s*$", stdout, re.MULTILINE), (
+                "EXIT statement should not be present when execute_clist=true"
+            )
+
+        # user must not be present
+        assert not verify_user_exists(hosts, user_name), (
+            "User should be removed from RACF after execute_clist=true purge"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+def test_user_purge_invalid_database_with_execute_clist_true(ansible_zos_module):
+    """
+    Test: Purge user with execute_clist=true but database is invalid.
+    Verifies that when an invalid database is provided, the purge state
+    fails gracefully with an appropriate error message indicating the database
+    does not exist.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    invalid_database = "SYS11.RACF22.NONEXISTENT"  # Non-existent database
+
+    try:
+        # Create user with valid database
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+
+        # Attempt to purge with invalid database and execute_clist=true
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=invalid_database,
+            execute_clist=True
+        )
+
+        for result in results.contacted.values():
+            # Should fail with appropriate error
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert result.get("rc") == 1
+            assert result.get("database_dumped") is False
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            assert result.get("num_entities_modified") == 0
+            assert result.get("entities_modified") == []
+
+            # Verify error message contains information about invalid database
+            stderr = result.get("stderr", "")
+            msg = result.get("msg", "")
+            expected_msg = f"the racf database {invalid_database} does not exist. no purge was performed"
+            assert expected_msg.lower() in stderr.lower()
+            assert "An error occurred while executing the RACF command" in msg
+
+        # Verify user still exists (purge should have failed)
+        assert verify_user_exists(hosts, user_name), (
+            "User should still exist in RACF after failed purge with invalid database"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+
+def test_user_purge_execute_clist_false(ansible_zos_module):
+    """
+    Test: Dry-run purge (execute_clist=false): IRRRID00 generates the CLIST
+    with removal commands but does not execute them (EXIT statement is injected).
+    The user profile must still exist in RACF after the call.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+
+        # Verify user exists before dry-run
+        assert verify_user_exists(hosts, user_name)
+
+        # Purge with execute_clist=false (dry-run)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database,
+            execute_clist=False
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is False
+            assert result.get("dump_name") is None
+            # execute_clist=false
+            assert result.get("num_entities_modified") == 0
+            assert result.get("entities_modified") == []
+            stdout = result.get("stdout", "")
+            assert re.search(r"^\s*EXIT\s*$", stdout, re.MULTILINE), (
+                "CLIST should contain standalone EXIT statement"
+            )
+            assert "DELUSER" in stdout, "CLIST should contain DELUSER command"
+            assert result.get("invocation", {}).get("module_args", {}).get("execute_clist") is False
+
+        # user must still exist because execute_clist=false
+        assert verify_user_exists(hosts, user_name), (
+            "User should still exist in RACF after execute_clist=false purge"
+        )
+
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_purge_with_custom_tmp_hlq(ansible_zos_module):
+    """
+    Test: Purge user with custom tmp_hlq parameter.
+    Validates that temporary datasets are created with the specified HLQ.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    racf_database = "SYS1.RACF"
+    custom_hlq = "TESTHLQ"
+    
+    try:
+        # Create user
+        hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={"owner": "SYS1"}
+        )
+        
+        # Verify user exists
+        assert verify_user_exists(hosts, user_name)
+        
+        # Purge with custom tmp_hlq and keep_dump=true to verify dataset names
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="purge",
+            profile_type="user",
+            database=racf_database,
+            keep_dump=True,
+            optimize_dump=True,
+            tmp_hlq=custom_hlq,
+            execute_clist=False  # Do not execute the CLIST to avoid deletion during verification
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("rc") == 0
+            assert result.get("database_dumped") is True
+            assert result.get("dump_kept") is True
+            assert result.get("num_entities_modified") == 0
+            
+            # Verify dump_name starts with custom HLQ
+            dump_name = result.get("dump_name")
+            assert dump_name is not None
+            assert dump_name.startswith(custom_hlq), (
+                f"dump_name should start with custom HLQ '{custom_hlq}', got: {dump_name}"
+            )
+            
+            # Verify CLIST name in cmd also uses custom HLQ
+            cmd = result.get("cmd", "")
+            assert cmd.startswith("EXEC"), "Command should be EXEC for CLIST execution"
+            assert custom_hlq in cmd, (
+                f"EXEC command should reference dataset with custom HLQ '{custom_hlq}', got: {cmd}"
+            )
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
+# ============================================================================
+# END OF USER DELETE AND PURGE TESTS
+# ============================================================================
+
+# ============================================================================
+# USER NAME TESTS
+# ============================================================================
+
+def test_user_create_with_display_name(ansible_zos_module):
+    """
+    Test: Create user with a display name (display_name).
+    Validates that the NAME parameter is correctly set in RACF.
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    display_name = "John Doe"
+    
+    try:
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={
+                "display_name": display_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert result.get("num_entities_modified") == 1
+            assert user_name in result.get("entities_modified", [])
+            
+            # Verify the command contains NAME parameter with the display name
+            cmd = result.get("cmd", "")
+            assert f"NAME('{display_name}')" in cmd, f"Command should contain NAME('{display_name}')"
+        
+        # Verify user exists and has the correct name
+        assert verify_user_exists(hosts, user_name)
+        
+        # List user to verify NAME field
+        list_result = hosts.all.shell(cmd=f"tsocmd 'LISTUSER {user_name}'")
+        for res in list_result.contacted.values():
+            stdout = res.get("stdout", "")
+            assert "NAME=" in stdout or "NAME =" in stdout, "LISTUSER output should contain NAME field"
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
+
+def test_user_update_remove_user_name(ansible_zos_module):
+    """
+    Test: Update user's display name
+    Tests the flow: Joe Doe -> Joe Smith -> UNKNOWN
+    Validates that setting user_name to empty string generates NAME() command
+    """
+    hosts = ansible_zos_module
+    user_name = generate_random_name("TSTU")
+    initial_name = "Joe Doe"
+    updated_name = "Joe Smith"
+    
+    try:
+        # Step 1: Create user with initial display name "Joe Doe"
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="create",
+            profile_type="user",
+            base_segment={
+                "display_name": initial_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"NAME('{initial_name}')" in result.get("cmd", "")
+        
+        # Verify user exists with initial name
+        assert verify_user_exists(hosts, user_name)
+        
+        # Step 2: Update display name from "Joe Doe" to "Joe Smith"
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            base_segment={
+                "display_name": updated_name
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Verify the command contains the updated name
+            cmd = result.get("cmd", "")
+            assert f"NAME('{updated_name}')" in cmd, f"Command should contain NAME('{updated_name}')"
+        
+        # Step 3: Update to remove the display name (reset to UNKNOWN)
+        results = hosts.all.zos_user(
+            name=user_name,
+            state="update",
+            profile_type="user",
+            base_segment={
+                "display_name": ""
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            
+            # Verify the command contains NAME() without quotes (resets to UNKNOWN)
+            cmd = result.get("cmd", "")
+            assert "NAME()" in cmd, "Command should contain NAME() to reset name to UNKNOWN"
+        
+        # Verify user still exists
+        assert verify_user_exists(hosts, user_name)
+       
+            
+    finally:
+        cleanup_user(hosts, user_name)
+
+# ============================================================================
+# END OF USER NAME TESTS
+# ============================================================================
+
+# ============================================================================
+# USER PASSWORD MGMT TESTS
+# ============================================================================
+
+def test_create_user_with_password(ansible_zos_module):
+    """Create user with plain text password."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'password': 'Tst@12B'},
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PASSWORD(" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_create_user_with_passphrase(ansible_zos_module):
+    """Create user with plain text passphrase."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE(" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_update_password_to_noexpired(ansible_zos_module):
+    """Update password to NOEXPIRED."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    password = 'Tst@12B'
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'password': password},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Update password to NOEXPIRED
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'password': password,
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PASSWORD" in result.get("cmd", "")
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_update_passphrase_to_noexpired(ansible_zos_module):
+    """Update passphrase to NOEXPIRED."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    passphrase = 'MySecurePassphrase123'
+    
+    try:
+        # Create user with passphrase
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'passphrase': passphrase},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Update passphrase to NOEXPIRED
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'passphrase': passphrase,
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_remove_password(ansible_zos_module):
+    """Remove password (set to NOPASSWORD)."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Remove password
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={'password': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOPASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_remove_passphrase(ansible_zos_module):
+    """Remove passphrase (set to NOPHRASE)."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with passphrase
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+        
+        # Remove passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={'passphrase': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOPHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_switch_password_to_passphrase(ansible_zos_module):
+    """Switch from password to passphrase explicitly set NOPASSWORD"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 1: Remove password
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={'password': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert "NOPASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 2: Set passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'passphrase': 'MySecurePassphrase123',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE" in result.get("cmd", "")
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_switch_passphrase_to_password(ansible_zos_module):
+    """Switch from passphrase to password explicitly set to NOPHRASE"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'passphrase': 'MySecurePassphrase123'},
+            omvs={'uid': 'auto'}
+        )
+
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "PHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 1: Remove passphrase
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={'passphrase': ''}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert "NOPHRASE" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+        
+        # Step 2: Set password
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'password': 'Test@12B',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('rc') == 0
+            assert "NOEXPIRE" in result.get("cmd", "")
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 1
+            assert username in result.get("entities_modified", [])
+            
+    finally:
+        cleanup_user(hosts, username)
+
+def test_password_change_rejection(ansible_zos_module):
+    """Test PASSWORD CHANGE REJECTED BY INSTALLATION SYNTAX RULES"""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user with password
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'password': 'Test@123'},
+            omvs={'uid': 'auto'}
+        )
+      
+        # Update Password to  violation of Syntax Rules but still within max length
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'password': 'Test@123',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert result.get('rc') == 4
+            assert "PASSWORD CHANGE REJECTED BY INSTALLATION SYNTAX RULES" in result.get("stdout_lines")
+            assert "PASSWORD" in result.get("cmd", "")
+            assert result.get("num_entities_modified") == 0
+            assert username not in result.get("entities_modified", [])
+
+        # Update Password to  violation of Syntax Rules exceeding max length
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={
+                'password': 'Test@12B1234567',
+                'expired': False
+            }
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert "Option password_mgmt.password has an invalid value" in result.get("msg")
+            assert result.get("num_entities_modified") == 0
+            assert username not in result.get("entities_modified", [])    
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_expired_without_password_fails(ansible_zos_module):
+    """Validation - expired without password attribute should fail."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Create user without password
+        hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to set expired without password (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            state='update',
+            profile_type='user',
+            password_mgmt={'expired': False}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert "The 'expired' parameter can only be used when 'password' or 'passphrase' is also specified. RACF does not allow EXPIRED/NOEXPIRED to be set independently.".lower() in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_short_passphrase_fails(ansible_zos_module):
+    """Validation - passphrase shorter than 9 characters should fail."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Try to create user with short passphrase (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={'passphrase': 'Short12'},  # Only 7 chars
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'Passphrase must be either empty string (to remove passphrase) or 9-100 characters long'.lower() in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+
+def test_validation_password_and_passphrase_mutually_exclusive(ansible_zos_module):
+    """Test 11: Validation - password and passphrase cannot be used together."""
+    hosts = ansible_zos_module
+    username = generate_random_name()
+    
+    try:
+        # Try to create user with both password and passphrase (should fail)
+        results = hosts.all.zos_user(
+            name=username,
+            state='create',
+            profile_type='user',
+            password_mgmt={
+                'password': 'Test@123',
+                'passphrase': 'MySecurePassphrase123'
+            },
+            omvs={'uid': 'auto'}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'parameters are mutually exclusive: password|passphrase found in password_mgmt' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, username)
+
+# ============================================================================
+# END OF USER PASSWORD MGMT TESTS
+# ============================================================================        
+# ============================================================================
+# TESTING - Invalid Operation/Scope Combinations
+# ============================================================================
+
+def test_connect_with_group_profile_type(ansible_zos_module):
+    """Test: Attempt CONNECT state with profile_type=group (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create test group first
+        hosts.all.zos_user(
+            name=test_group,
+            state='create',
+            profile_type='group'
+        )
+        
+        # Try to connect with group profile_type (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='connect',
+            profile_type='group',
+            connect={'group_name': test_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'not supported for group profiles' in result.get('msg', '').lower()
+            assert 'connect' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_group(hosts, test_group)
+
+
+def test_remove_with_group_profile_type(ansible_zos_module):
+    """Test: Attempt REMOVE state with profile_type=group (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create test group first
+        hosts.all.zos_user(
+            name=test_group,
+            state='create',
+            profile_type='group'
+        )
+        
+        # Try to remove with group profile_type (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='remove',
+            profile_type='group',
+            connect={'group_name': test_group}
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'not supported for group profiles' in result.get('msg', '').lower()
+            assert 'remove' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_group(hosts, test_group)
+
+
+def test_update_without_blocks(ansible_zos_module):
+    """Test: Attempt UPDATE without any parameter blocks (should exit gracefully)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Create user first
+        hosts.all.zos_user(
+            name=test_user,
+            state='create',
+            profile_type='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to update without any blocks (should exit gracefully)
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='update',
+            profile_type='user'
+            # No parameter blocks provided
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert 'no parameter blocks were provided for update state' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_connect_without_connect_block(ansible_zos_module):
+    """Test: Attempt CONNECT without connect block (should exit gracefully)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    test_group = generate_random_name("TG")
+    
+    try:
+        # Create user and group first
+        hosts.all.zos_user(
+            name=test_user,
+            state='create',
+            profile_type='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        hosts.all.zos_user(
+            name=test_group,
+            state='create',
+            profile_type='group'
+        )
+        
+        # Try to connect without connect block (should exit gracefully)
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='connect',
+            profile_type='user',
+            base_segment={'owner': 'ADMIN'}  # Wrong block
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert 'required parameter block connect was not provided for connect state' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+        cleanup_group(hosts, test_group)
+
+
+def test_connect_without_group_name(ansible_zos_module):
+    """Test: Attempt CONNECT without group_name (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Create user first
+        hosts.all.zos_user(
+            name=test_user,
+            state='create',
+            profile_type='user',
+            omvs={'uid': 'auto'}
+        )
+        
+        # Try to connect without group_name (should fail)
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='connect',
+            profile_type='user',
+            connect={'authority': 'use'}  # Missing group_name
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            # Check stderr or msg for the error
+            error_msg = result.get('stderr', '') + result.get('msg', '')
+            assert 'no group was provided' in error_msg.lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_invalid_profile_type_value(ansible_zos_module):
+    """Test: Invalid profile_type value (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Try to create with invalid profile_type
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='create',
+            profile_type='invalid_scope'  # Invalid value
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'value of profile_type must be one of: user, group, got: invalid_scope' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+
+def test_invalid_state_value(ansible_zos_module):
+    """Test: Invalid state value (should fail)."""
+    hosts = ansible_zos_module
+    test_user = generate_random_name("TU")
+    
+    try:
+        # Try to use invalid state
+        results = hosts.all.zos_user(
+            name=test_user,
+            state='invalid_op',  # Invalid value
+            profile_type='user'
+        )
+        
+        for result in results.contacted.values():
+            assert result.get('failed') is True
+            assert 'value of state must be one of: create, update, delete, purge, connect, remove, got: invalid_op' in result.get('msg', '').lower()
+            
+    finally:
+        cleanup_user(hosts, test_user)
+
+# ============================================================================
+# End Of Invalid Operation/Scope Combinations Testing
+# ============================================================================

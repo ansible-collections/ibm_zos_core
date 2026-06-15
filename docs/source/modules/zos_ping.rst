@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_ping.py
 
-.. _zos_ping_module:
+.. _ibm.ibm_zos_core.zos_ping_module:
 
 
 zos_ping -- Ping z/OS and check dependencies.

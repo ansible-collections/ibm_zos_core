@@ -102,7 +102,7 @@ NO_AUTO_INCREMENT= """- hosts: zvm
         - name:  Shrink ZFS aggregate in k and auto_increment.
           zos_zfs_resize:
             target: {3}
-            size: 900
+            size: {6}
             no_auto_increase: {5}
           poll: 0
           register: shrink_output
@@ -1045,7 +1045,8 @@ def no_auto_increase(path):
             python_version,
             ds_name,
             mount_point,
-            "True"
+            "True",
+            700
         )), playbook))
         os.system("echo {0} > {1}".format(quote(INVENTORY.format(
             hosts,
@@ -1108,7 +1109,8 @@ def no_auto_increase_accept(path):
             python_version,
             ds_name,
             mount_point,
-            "False"
+            "False",
+            900
         )), playbook))
         os.system("echo {0} > {1}".format(quote(INVENTORY.format(
             hosts,

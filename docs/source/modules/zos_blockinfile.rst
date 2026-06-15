@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_blockinfile.py
 
-.. _zos_blockinfile_module:
+.. _ibm.ibm_zos_core.zos_blockinfile_module:
 
 
 zos_blockinfile -- Manage block of multi-line textual data on z/OS
@@ -343,7 +343,7 @@ See Also
 
 .. seealso::
 
-   - :ref:`zos_data_set_module`
+   - :ref:`ibm.ibm_zos_core.zos_data_set_module`
 
 
 
@@ -396,6 +396,18 @@ stderr
   | **returned**: failure
   | **type**: str
   | **sample**: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+
+stdout_lines
+  List of strings containing individual lines from stdout.
+
+  | **returned**: failure
+  | **type**: list
+
+stderr_lines
+  List of strings containing individual lines from stderr.
+
+  | **returned**: failure
+  | **type**: list
 
 rc
   The return code from ZOAU dmod when json.loads() fails to parse the result from dmod

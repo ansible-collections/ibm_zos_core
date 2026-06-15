@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_mvs_raw.py
 
-.. _zos_mvs_raw_module:
+.. _ibm.ibm_zos_core.zos_mvs_raw_module:
 
 
 zos_mvs_raw -- Run a z/OS program.
@@ -1997,7 +1997,7 @@ See Also
 
 .. seealso::
 
-   - :ref:`zos_data_set_module`
+   - :ref:`ibm.ibm_zos_core.zos_data_set_module`
 
 
 

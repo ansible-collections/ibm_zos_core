@@ -132,6 +132,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
     from zoautil_py import zsystem
@@ -270,6 +271,10 @@ def run_module():
         module.exit_json(**result)
     # Validate dependencies
     validate_dependencies(module)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     if not zoau_version_checker.is_zoau_version_higher_than("1.3.0"):
         module.fail_json(

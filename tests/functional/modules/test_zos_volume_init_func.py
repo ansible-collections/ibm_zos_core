@@ -180,7 +180,7 @@ def test_volid_address_assigned_correctly(ansible_zos_module, volumes_unit_on_sy
 
     # zos_operator output contains the command as well, only the last line of
     # the output is relevant for the needs of this test case.
-    display_cmd_output = display_cmd_output.get('content')[-1]
+    display_cmd_output = display_cmd_output.get('stdout_lines')[-1]
 
     assert volume in display_cmd_output
 

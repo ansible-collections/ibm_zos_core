@@ -1,7 +1,7 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_started_task.py
 
-.. _zos_started_task_module:
+.. _ibm.ibm_zos_core.zos_started_task_module:
 
 
 zos_started_task -- Perform operations on started tasks.
@@ -232,31 +232,31 @@ Examples
    - name: Start a started task using a member in a partitioned data set.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
+       member_name: "PROCAPP"
 
    - name: Start a started task using a member name and giving it an identifier.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
-       identifier: "SAMPLE"
+       member_name: "PROCAPP"
+       identifier_name: "SAMPLE"
 
    - name: Start a started task using both a member and a job name.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
+       member_name: "PROCAPP"
        job_name: "SAMPLE"
 
    - name: Start a started task and enable verbose output.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
+       member_name: "PROCAPP"
        job_name: "SAMPLE"
        verbose: true
 
    - name: Start a started task and wait for 30 seconds before fetching task details.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
+       member_name: "PROCAPP"
        verbose: true
        wait_time: 30
        wait_full_time: true
@@ -264,14 +264,14 @@ Examples
    - name: Start a started task specifying the subsystem and enabling a reusable ASID.
      zos_started_task:
        state: "started"
-       member: "PROCAPP"
+       member_name: "PROCAPP"
        subsystem: "MSTR"
        reusable_asid: "YES"
 
    - name: Display a started task using a started task name.
      zos_started_task:
        state: "displayed"
-       task_name: "PROCAPP"
+       job_name: "PROCAPP"
 
    - name: Display a started task using a started task id.
      zos_started_task:
@@ -281,17 +281,17 @@ Examples
    - name: Display all started tasks that begin with an s using a wildcard.
      zos_started_task:
        state: "displayed"
-       task_name: "s*"
+       job_name: "s*"
 
    - name: Display all started tasks.
      zos_started_task:
        state: "displayed"
-       task_name: "all"
+       job_name: "all"
 
    - name: Cancel a started task using task name.
      zos_started_task:
        state: "cancelled"
-       task_name: "SAMPLE"
+       job_name: "SAMPLE"
 
    - name: Cancel a started task using a started task id.
      zos_started_task:
@@ -301,13 +301,13 @@ Examples
    - name: Cancel a started task using it's task name and ASID.
      zos_started_task:
        state: "cancelled"
-       task_name: "SAMPLE"
-       asidx: "0014"
+       job_name: "SAMPLE"
+       asidx: '0014'
 
    - name: Modify a started task's parameters.
      zos_started_task:
        state: "modified"
-       task_name: "SAMPLE"
+       job_name: "SAMPLE"
        parameters: ["XX=12"]
 
    - name: Modify a started task's parameters using a started task id.
@@ -319,7 +319,7 @@ Examples
    - name: Stop a started task using it's task name.
      zos_started_task:
        state: "stopped"
-       task_name: "SAMPLE"
+       job_name: "SAMPLE"
 
    - name: Stop a started task using a started task id.
      zos_started_task:
@@ -329,14 +329,14 @@ Examples
    - name: Stop a started task using it's task name, identifier and ASID.
      zos_started_task:
        state: "stopped"
-       task_name: "SAMPLE"
-       identifier: "SAMPLE"
-       asidx: "00A5"
+       job_name: "SAMPLE"
+       identifier_name: "SAMPLE"
+       asidx: 00A5
 
    - name: Force a started task using it's task name.
      zos_started_task:
        state: "forced"
-       task_name: "SAMPLE"
+       job_name: "SAMPLE"
 
    - name: Force a started task using it's task id.
      zos_started_task:

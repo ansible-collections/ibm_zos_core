@@ -234,3 +234,34 @@ def test_group_dfp_csdata_omvs_segments(ansible_zos_module):
             assert len(returned_segments) == 5
     finally:
         hosts.all.shell(cmd='tsocmd "DELGROUP {0}"'.format(test_group))
+
+def test_group_ignores_user_only_segments(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_group = _get_random_racf_name("TG")
+
+    try:
+        _run_tso_command(
+            hosts,
+            "ADDGROUP ({0}) DATA('Group profile for ignored segment validation') "
+            "OWNER(USRT001) "
+            "DFP( DATAAPPL(TESTAPP) DATACLAS(DCLAS001) MGMTCLAS(MCLAS001) STORCLAS(SCLAS001) )".format(test_group)
+        )
+
+        results = hosts.all.zos_user_info(
+            name=test_group,
+            profile_type="group",
+            segments=["dfp", "lang", "tso"]
+        )
+
+        for result in results.contacted.values():
+            returned_segments = result.get("segments", {})
+            assert result.get("rc") == 0
+            assert result.get("changed") is False
+            assert "base_segment" in returned_segments
+            assert "users" in returned_segments
+            assert "DFP" in returned_segments
+            assert "LANGUAGE" not in returned_segments
+            assert "TSO" not in returned_segments
+            assert len(returned_segments) == 3
+    finally:
+        hosts.all.shell(cmd='tsocmd "DELGROUP {0}"'.format(test_group))

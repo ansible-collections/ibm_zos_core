@@ -29,8 +29,9 @@ description:
 options:
   name:
     description:
-      - The name of the RACF profile to retrieve information about.
-      - Can be a user ID or group name depending on the I(profile_type) parameter.
+      - The RACF profile name to retrieve.
+      - For I(profile_type=user), this must be a user ID.
+      - For I(profile_type=group), this must be a group name.
     type: str
     required: true
   profile_type:
@@ -51,7 +52,8 @@ options:
         C(cics), C(dce), C(eim), C(ovm), C(netview), C(nds), C(lnotes), C(workattr), C(proxy), and C(kerb).
       - When I(profile_type=group), valid segments are C(dfp), C(omvs), and C(csdata).
       - The C(base_segment) section is always retrieved regardless of this parameter.
-      - Invalid segments for the specified I(profile_type) will be silently ignored.
+      - Segments that do not apply to the requested I(profile_type) are ignored.
+      - For example, user-only segments are ignored for group profiles.
     type: list
     elements: str
     required: false

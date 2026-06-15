@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -30,8 +31,9 @@ options:
   name:
     description:
       - The RACF profile name to retrieve.
-      - For I(profile_type=user), this must be a user ID.
-      - For I(profile_type=group), this must be a group name.
+      - For I(profile_type=user), this must be a single user ID.
+      - For I(profile_type=group), this must be a single group name.
+      - If multiple profile names are provided in the same string, only the first name is used and any additional names are ignored.
     type: str
     required: true
   profile_type:
@@ -831,9 +833,18 @@ def run_module():
                 stderr=str(err)
             )
 
-    name = module.params['name']
+    raw_name = module.params.get("name", "").strip()
+    name_parts = raw_name.split()  
+    name = name_parts[0]
+    # name = module.params['name']
     profile_type = module.params['profile_type'].lower()
     segments = [s.lower() for s in (module.params.get('segments') or [])]
+
+    # If multiple profile names were provided, only use the first one
+    if len(name_parts) > 1:
+      module.warn(
+        "Multiple profile names were provided in 'name'; only the first value '{0}' was used.".format(name)
+      )
 
     # Build the appropriate TSO command based on profile_type and segments
     if profile_type == 'user':

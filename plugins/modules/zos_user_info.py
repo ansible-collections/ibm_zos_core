@@ -52,7 +52,7 @@ options:
       - If not specified, only the base profile information (C(base_segment)) is retrieved.
       - When I(profile_type=user), valid segments are C(dfp), C(tso), C(omvs), C(operparm), C(lang), C(csdata),
         C(cics), C(dce), C(eim), C(ovm), C(netview), C(nds), C(lnotes), C(workattr), C(proxy), and C(kerb).
-      - When I(profile_type=group), valid segments are C(dfp), C(omvs), and C(csdata).
+      - When I(profile_type=group), valid segments are C(dfp), C(omvs), C(ovm), and C(csdata).
       - The C(base_segment) section is always retrieved regardless of this parameter.
       - Segments that do not apply to the requested I(profile_type) are ignored.
       - For example, user-only segments are ignored for group profiles.
@@ -302,10 +302,10 @@ segments:
       type: dict
     OVM:
       description: >
-        OVM (OpenExtensions VM) segment information for user profiles.
+        OVM (OpenExtensions VM) segment information for user and group profiles.
         Contains OVM-related configuration and settings.
-        Only returned when I(profile_type=user) and C(ovm) is included in the I(segments) parameter.
-      returned: when profile_type is user and ovm segment is requested
+        Only returned when C(ovm) is included in the I(segments) parameter.
+      returned: when ovm segment is requested
       type: dict
     NETVIEW:
       description: >
@@ -384,13 +384,15 @@ EXAMPLES = r"""
     name: TSTGRP01
     profile_type: group
 
-- name: Get group profile info with DFP and OMVS segments
+- name: Get group profile info with DFP, OMVS, and OVM segments
   ibm.ibm_zos_core.zos_user_info:
     name: TSTGRP01
     profile_type: group
     segments:
       - dfp
       - omvs
+      - ovm
+      - csdata
 """
 
 
@@ -834,7 +836,7 @@ def run_module():
             )
 
     raw_name = module.params.get("name", "").strip()
-    name_parts = raw_name.split()  
+    name_parts = raw_name.split()
     name = name_parts[0]
     # name = module.params['name']
     profile_type = module.params['profile_type'].lower()
@@ -842,9 +844,9 @@ def run_module():
 
     # If multiple profile names were provided, only use the first one
     if len(name_parts) > 1:
-      module.warn(
-        "Multiple profile names were provided in 'name'; only the first value '{0}' was used.".format(name)
-      )
+        module.warn(
+            "Multiple profile names were provided in 'name'; only the first value '{0}' was used.".format(name)
+        )
 
     # Build the appropriate TSO command based on profile_type and segments
     if profile_type == 'user':
@@ -864,8 +866,8 @@ def run_module():
             segment_keywords = [SEGMENT_NAME_MAP[s] for s in filtered_segments]
             cmd = f"{cmd} {' '.join(segment_keywords)}"
     else:
-        # Valid segments for group: dfp, omvs, csdata
-        valid_group_segments = ['dfp', 'omvs', 'csdata']
+        # Valid segments for group: dfp, omvs, ovm, csdata
+        valid_group_segments = ['dfp', 'omvs', 'ovm', 'csdata']
 
         # Filter segments to only valid ones for group
         filtered_segments = [s for s in segments if s in valid_group_segments]
@@ -913,7 +915,7 @@ def run_module():
 
             # Only include segments that were explicitly requested
             # Valid segments for group profiles
-            valid_group_segments = {'dfp', 'omvs', 'csdata'}
+            valid_group_segments = {'dfp', 'omvs', 'ovm', 'csdata'}
             if filtered_segments:
                 for seg in filtered_segments:
                     if seg in valid_group_segments and seg in SEGMENT_NAME_MAP:

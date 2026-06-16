@@ -6708,3 +6708,111 @@ def test_copy_file_to_seq_data_set_max_name_length(ansible_zos_module):
             assert result.get("dest") == dest
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+# This test is added to validate the fix for the GitHub issue #2510
+@pytest.mark.pds
+def test_copy_file_to_pds_member_with_lrecl_mismatch_cleanup(ansible_zos_module):
+    """
+    Test remote cleanup functionality when copy fails due to LRECL mismatch.
+    
+    This test validate that when a copy operation fails (e.g., due to truncation error), 
+    the remote_cleanup function properly removes the newly created member while preserving the PDS
+    and existing members.
+    
+    Test scenario (matching t1.yml):
+    1. Create a PDS with LRECL=80
+    2. Add MEMBER1 with normal content (fits in 80 chars)
+    3. Attempt to copy long content to MEMBER2 (exceeds 80 chars - should fail)
+    4. Validate that MEMBER2 is NOT created (cleaned up) while MEMBER1 remains
+    """
+    hosts = ansible_zos_module
+    data_set = get_tmp_ds_name()
+    member1 = "{0}(MEMBER1)".format(data_set)
+    member2 = "{0}(MEMBER2)".format(data_set)
+    
+    # Normal content that fits in 80 chars (matching t1.yml)
+    normal_content = "Normal JCL content\n//JOBNAME JOB\n//STEP1 EXEC PGM=IEFBR14"
+    
+    # Content that exceeds LRECL=80 (will cause truncation error - matching t1.yml)
+    long_content = "This is a very long line that exceeds 80 characters and will cause a truncation error when copying to a dataset with LRECL=80\nAnother long line to ensure we trigger the truncation error consistently across different test scenarios"
+    
+    try:
+        # Step 1: Create PDS with LRECL=80 (matching t1.yml exactly)
+        hosts.all.zos_data_set(
+            name=data_set,
+            type="pds",
+            state="present",
+            record_format="fb",
+            record_length=80,
+            block_size=3120,
+            directory_blocks=10,
+            space_primary=1,
+            space_type="trk"
+        )
+        
+        # Step 2: Create MEMBER1 with normal content (matching t1.yml)
+        hosts.all.zos_copy(
+            content=normal_content,
+            dest=member1,
+            replace=True
+        )
+        
+        # Verify MEMBER1 exists before attempting MEMBER2
+        list_members_before = hosts.all.shell(
+            cmd="mls {0}".format(data_set),
+            executable=SHELL_EXECUTABLE
+        )
+        
+        for result in list_members_before.contacted.values():
+            assert "MEMBER1" in result.get("stdout", ""), "MEMBER1 should exist before copy attempt"
+            assert "MEMBER2" not in result.get("stdout", ""), "MEMBER2 should not exist before copy attempt"
+        
+        # Step 3: Attempt to copy long content to MEMBER2 (should fail - matching t1.yml)
+        copy_result = hosts.all.zos_copy(
+            content=long_content,
+            dest=member2
+        )
+        
+        # Verify copy failed
+        for result in copy_result.contacted.values():
+            assert result.get("changed", False) is False, "Copy should not report changed=True on failure"
+            assert result.get("failed", False) is True, "Copy should report failed=True"
+            assert "Unable to copy source" in result.get("msg", ""), "Error message should indicate copy failure"
+            assert "EDC5003I Truncation of a record occurred" in result.get("stdout", ""), "Should show truncation error"
+        
+        # Step 4: Validate cleanup - MEMBER2 should NOT exist (cleaned up)
+        list_members_after = hosts.all.shell(
+            cmd="mls {0}".format(data_set),
+            executable=SHELL_EXECUTABLE
+        )
+        
+        for result in list_members_after.contacted.values():
+            stdout = result.get("stdout", "")
+            # MEMBER1 should still exist
+            assert "MEMBER1" in stdout, "MEMBER1 should still exist after failed copy"
+            # MEMBER2 should NOT exist (cleaned up by remote_cleanup)
+            assert "MEMBER2" not in stdout, "MEMBER2 should be cleaned up after failed copy"
+        
+        # Verify PDS itself still exists
+        verify_pds = hosts.all.shell(
+            cmd="dls {0}".format(data_set),
+            executable=SHELL_EXECUTABLE
+        )
+        
+        for result in verify_pds.contacted.values():
+            assert result.get("rc") == 0, "PDS should still exist after failed copy"
+        
+        # Verify MEMBER1 still has its original data intact
+        verify_member1 = hosts.all.shell(
+            cmd="dcat '{0}'".format(member1),
+            executable=SHELL_EXECUTABLE
+        )
+        
+        for result in verify_member1.contacted.values():
+            assert "Normal JCL content" in result.get("stdout", ""), "MEMBER1 should have original content"
+            assert result.get("rc") == 0, "MEMBER1 should be readable"
+        
+    finally:
+        # Cleanup
+        hosts.all.zos_data_set(name=data_set, state="absent")

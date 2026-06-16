@@ -3324,9 +3324,9 @@ def remote_cleanup(module, dest_exists=None):
                 # Try to delete the GDG base (will only succeed if empty)
                 try:
                     data_set.DataSet.ensure_absent(name=dest_name)
-                except Exception:
+                except Exception as e:
                     # GDG base might have other generations or be in use, ignore
-                    pass
+                    module.debug("Could not delete GDG base {0}: {1}".format(dest_name, str(e)))
             elif "(+1)" in dest:
                 # GDG existed but this GDS didn't - delete only the GDS
                 data_set.DataSet.ensure_absent(name=actual_dest)
@@ -3337,9 +3337,9 @@ def remote_cleanup(module, dest_exists=None):
             if not dest_exists:
                 try:
                     data_set.DataSet.ensure_absent(name=dest_name)
-                except Exception:
+                except Exception as e:
                     # PDS might be in use or already deleted, ignore
-                    pass
+                    module.debug("Could not delete PDS {0}: {1}".format(dest_name, str(e)))
             # else: PDS existed before copy, don't delete anything
 
     # Sequential and VSAM dataset cleanup

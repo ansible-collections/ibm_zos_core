@@ -19,30 +19,30 @@ module: playbook_upgrade_validator
 version_added: "2.0.0"
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Validates playbooks against ibm_zos_core 2.0.0 and provides migration actions.
+short_description: Build a report to migrate playbooks to v2.0.0
 description:
   - Scans one or more Ansible playbooks to identify removed or renamed parameters
     based on migration rules for IBM z/OS Core collection version 2.0.0.
   - Provides line numbers, affected modules, and suggested corrective actions.
 options:
-  ignore_response_params:
+  playbook_upgrade_validator_ignore_response_params:
     description:
       - Indicates whether information about response parameter changes should be included.
     required: false
     type: bool
-  migration_map:
+  playbook_upgrade_validator_migration_map:
     description:
       - A structured set of migration rules that specifies removed, renamed, and modified parameters
         to help upgrade playbooks from ibm_zos_core 1.x.x to 2.0.0.
     required: true
     type: dict
-  output_path:
+  playbook_upgrade_validator_output_path:
     description:
       - Path to the output JSON file where results should be saved.
       - Default path is <<playbook_dir>>/logs/migration_report.json
     required: true
     type: str
-  playbook_path:
+  playbook_upgrade_validator_playbook_path:
     description:
       - Path to a single Ansible playbook file or a directory containing playbooks to be validated.
       - If a directory is provided, all .yml and .yaml files will be recursively scanned.
@@ -59,9 +59,9 @@ EXAMPLES = r'''
   include_role:
     name: ibm.ibm_zos_core.playbook_upgrade_validator
   vars:
-    playbook_path: "/path/to/playbooks/*.yml"
-    output_path: "/path/to/reports/validation_report.json"
-    ignore_response_params: false
+    playbook_upgrade_validator_playbook_path: "/path/to/playbooks/*.yml"
+    playbook_upgrade_validator_output_path: "/path/to/reports/validation_report.json"
+    playbook_upgrade_validator_ignore_response_params: false
 '''
 
 RETURN = r'''
@@ -70,11 +70,11 @@ changed:
     - Always false as there are no state changes happening in this process.
   returned: always
   type: bool
-output_path:
+playbook_upgrade_validator_output_path:
   description: Path to the output JSON file containing validation results.
   returned: always
   type: str
-playbook_path:
+playbook_upgrade_validator_playbook_path:
   description: The path to the directory containing the Ansible playbooks to be validated.
   returned: always
   type: str

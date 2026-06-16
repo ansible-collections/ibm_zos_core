@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,32 +11,27 @@
 
 DOCUMENTATION = r"""
 role: job_status
-short_description: Role that queries a job to extract its current status and determine its execution state.
+short_description: Query a job for status and execution state
 description:
-    - >
-      The B(IBM z/OS core collection) provides an Ansible role, referred to as
-      B(job_status), to query a particular job with a given job_id and parse the response
-      to return as a msg the job status and if the job is currently running or not.
+    - >-
+        The B(job_status) role queries a particular job with a given C(job_status_id) and parses the response
+        to return the job status and whether the job is currently running.
 author:
     - Marcel Gutierrez (@AndreMarcel99)
 options:
-    job_id:
+    job_status_id:
         description:
-            - The job id that has been assigned to the job.
-            - A job id must begin with `STC`, `JOB`, `TSU` and are
-              followed by up to 5 digits.
-            - When a job id is greater than 99,999, the job id format will begin
-              with `S`, `J`, `T` and are followed by 7 digits.
+            - The job ID assigned to the target job.
+            - Expected format is C(STC), C(JOB), or C(TSU) followed by up to 5 digits,
+                or C(S), C(J), or C(T) followed by 7 digits for IDs over 99,999.
+            - Value can include the asterisk (C(*)) as a wildcard, but only job
+                information from the first match is returned.
         required: True
         type: str
-notes:
-    - >
-      The role tolerate the asterisk (`*`) as wildcard but only retrieve information from
-      the first job returned that math the patter.
 """
 
 EXAMPLES = r"""
-- name: Query the job status and if is running of the job STC00001
+- name: Query job status of job with ID 'STC00001'
   hosts: sampleHost
   gather_facts: no
   collections:
@@ -45,8 +40,7 @@ EXAMPLES = r"""
     - include_role:
         name: job_status
       vars:
-        job_id: STC00001
-
+        job_status_id: STC00001
 """
 
 # Roles don't return anything.
@@ -62,11 +56,11 @@ msg:
     returned: always
     type: dict
     contains:
-        job_active:
+        job_status_is_active:
             description: Boolean value that return if the job is running.
             returned: always
             type: bool
-        job_status:
+        job_status_code:
             description: Value of the current status of the job.
             returned:
             type: str

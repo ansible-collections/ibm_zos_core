@@ -607,7 +607,7 @@ def main():
 
     # Initialize logging module
     module_verbosity_level = module._verbosity
-    logger = SingletonLogger().get_logger(module_verbosity_level)
+    SingletonLogger().get_logger(module_verbosity_level)
 
     backup = parsed_args.get('backup')
     if parsed_args.get('backup_name') and backup:

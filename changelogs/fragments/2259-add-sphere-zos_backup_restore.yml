@@ -1,8 +1,0 @@
-minor_changes:
-  - zos_backup_restore - Adds ``compress`` option to enable compression of partitioned data sets using hardware compression if available.
-    Adds ``terse`` option to modify the behavior of executing an AMATERSE step to compress the temporary data set for the backup.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2259)
-  - zos_backup_restore - Adds ``index`` that allows for the backup and restore of all the associated
-    alternate index (AIX®) clusters and paths of a VSAM.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2259)
-

@@ -3001,14 +3001,6 @@ class GenerationDataGroup():
                 msg="GDG creation failed: dataset name exceeds 35 characters."
             )
 
-    @staticmethod
-    def _validate_gdg_name(name):
-        """Validates the length of a GDG name."""
-        if name and len(name) > 35:
-            raise GenerationDataGroupCreateError(
-                msg="GDG creation failed: dataset name exceeds 35 characters."
-            )
-
     def create(self):
         """Creates the GDG.
 

@@ -1,11 +1,11 @@
 
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_stat_by_type.py
 
-.. _zos_stat_by_type_module:
+.. _ibm.ibm_zos_core.zos_stat_by_type_module:
 
 
 zos_stat_by_type -- Filter returned fields from zos_stat
-===============================================================
+========================================================
 
 
 
@@ -35,9 +35,9 @@ attributes
 
 
 resource
-  Type of resource which fields should be filtered from the returned JSON of zos_stat.
+  Type of resource whose fields should be filtered from the zos_stat JSON output.
 
-  If the resource is a data set, the filter will only include the relevant fields for the specific type of data set queried by zos_stat. When ``isdataset=False``, only common data sets attribute fields will be returned.
+  If the resource is a data set, the filter will only include the relevant fields for the specific type of data set queried by zos_stat, which can be sequential, PDS, or VSAM. When ``isdataset=False``, only common data set attribute fields will be returned.
 
   | **required**: True
   | **type**: str
@@ -57,6 +57,18 @@ Examples
    - name: Get only data set specific attributes.
      set_fact:
        clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
+
+   - name: Get only file specific attributes.
+     set_fact:
+       clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('file') }}"
+
+   - name: Get only aggregate specific attributes.
+     set_fact:
+       clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('aggregate') }}"
+
+   - name: Get only GDG specific attributes.
+     set_fact:
+       clean_output: "{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('gdg') }}"
 
 
 

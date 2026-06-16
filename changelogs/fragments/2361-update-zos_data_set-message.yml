@@ -1,3 +1,0 @@
-breaking_changes:
-  - zos_data_set - Return value ``message`` is deprecated in favor of ``msg``.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2361).

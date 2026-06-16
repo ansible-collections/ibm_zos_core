@@ -23,11 +23,11 @@ def test_job_status_setting_vars(ansible_zos_module):
     for job in jobs.contacted.values():
         job_id = job.get("jobs")[0].get("job_id")
 
-    hosts.all.set_fact(job_id=job_id)
+    hosts.all.set_fact(job_status_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") is not None
-        assert result.get("msg").get("job_status") is not None
+        assert result.get("msg").get("job_status_is_active") is not None
+        assert result.get("msg").get("job_status_code") is not None
 
 def test_job_status_CC(ansible_zos_module):
     hosts = ansible_zos_module
@@ -42,11 +42,11 @@ def test_job_status_CC(ansible_zos_module):
             job_id = job.get("job_id")
             break
 
-    hosts.all.set_fact(job_id=job_id)
+    hosts.all.set_fact(job_status_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") is False
-        assert result.get("msg").get("job_status") == "CC"
+        assert result.get("msg").get("job_status_is_active") is False
+        assert result.get("msg").get("job_status_code") == "CC"
 
 def test_job_status_AC(ansible_zos_module):
     hosts = ansible_zos_module
@@ -61,11 +61,11 @@ def test_job_status_AC(ansible_zos_module):
             job_id = job.get("job_id")
             break
 
-    hosts.all.set_fact(job_id=job_id)
+    hosts.all.set_fact(job_status_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") is True
-        assert result.get("msg").get("job_status") == "AC"
+        assert result.get("msg").get("job_status_is_active") is True
+        assert result.get("msg").get("job_status_code") == "AC"
 
 def test_job_status_NOEXEC(ansible_zos_module):
     hosts = ansible_zos_module
@@ -80,19 +80,19 @@ def test_job_status_NOEXEC(ansible_zos_module):
             job_id = job.get("job_id")
             break
 
-    hosts.all.set_fact(job_id=job_id)
+    hosts.all.set_fact(job_status_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") is False
-        assert result.get("msg").get("job_status") == "NOEXEC"
+        assert result.get("msg").get("job_status_is_active") is False
+        assert result.get("msg").get("job_status_code") == "NOEXEC"
 
 def test_job_status_job_id_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
 
     job_id = "NOJOBID"
 
-    hosts.all.set_fact(job_id=job_id)
+    hosts.all.set_fact(job_status_id=job_id)
     results = hosts.all.include_role(name="job_status")
     for result in results.contacted.values():
-        assert result.get("msg").get("job_active") == "JOB_NOT_FOUND"
-        assert result.get("msg").get("job_status") == "JOB_NOT_FOUND" 
+        assert result.get("msg").get("job_status_is_active") == "JOB_NOT_FOUND"
+        assert result.get("msg").get("job_status_code") == "JOB_NOT_FOUND"

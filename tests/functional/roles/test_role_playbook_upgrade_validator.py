@@ -210,9 +210,9 @@ def test_validator_role_with_vars(ansible_zos_module):
         with open(playbook2, "w") as f:
             f.write(test_playbook2)
 
-        hosts.all.set_fact(playbook_path=playbooks_path)
-        hosts.all.set_fact(output_path=report_file)
-        hosts.all.set_fact(ignore_response_params=False)
+        hosts.all.set_fact(playbook_upgrade_validator_playbook_path=playbooks_path)
+        hosts.all.set_fact(playbook_upgrade_validator_output_path=report_file)
+        hosts.all.set_fact(playbook_upgrade_validator_ignore_response_params=False)
         results = hosts.all.include_role(name="playbook_upgrade_validator", apply=dict(delegate_to="localhost"))
 
         # Validate role execution results
@@ -292,9 +292,9 @@ def test_validator_role_with_taskfile(ansible_zos_module):
             f.write(test_playbook3)
 
         # Test with taskfile
-        hosts.all.set_fact(playbook_path=taskfile)
-        hosts.all.set_fact(output_path=report_file)
-        hosts.all.set_fact(ignore_response_params=False)
+        hosts.all.set_fact(playbook_upgrade_validator_playbook_path=taskfile)
+        hosts.all.set_fact(playbook_upgrade_validator_output_path=report_file)
+        hosts.all.set_fact(playbook_upgrade_validator_ignore_response_params=False)
         results = hosts.all.include_role(name="playbook_upgrade_validator", apply=dict(delegate_to="localhost"))
 
         # Validate role execution results
@@ -378,9 +378,9 @@ def test_validator_role_with_other_modules_playbook(ansible_zos_module):
         with open(playbook_file, "w") as f:
             f.write(test_playbook4)
 
-        hosts.all.set_fact(playbook_path=playbook_file)
-        hosts.all.set_fact(output_path=report_file)
-        hosts.all.set_fact(ignore_response_params=False)
+        hosts.all.set_fact(playbook_upgrade_validator_playbook_path=playbook_file)
+        hosts.all.set_fact(playbook_upgrade_validator_output_path=report_file)
+        hosts.all.set_fact(playbook_upgrade_validator_ignore_response_params=False)
         results = hosts.all.include_role(name="playbook_upgrade_validator", apply=dict(delegate_to="localhost"))
 
         for result in results.contacted.values():
@@ -472,9 +472,9 @@ def test_validator_role_with_single_file(ansible_zos_module):
             f.write(test_playbook1)
 
         # Test with single file path instead of directory
-        hosts.all.set_fact(playbook_path=playbook_file)
-        hosts.all.set_fact(output_path=report_file)
-        hosts.all.set_fact(ignore_response_params=False)
+        hosts.all.set_fact(playbook_upgrade_validator_playbook_path=playbook_file)
+        hosts.all.set_fact(playbook_upgrade_validator_output_path=report_file)
+        hosts.all.set_fact(playbook_upgrade_validator_ignore_response_params=False)
         results = hosts.all.include_role(name="playbook_upgrade_validator", apply=dict(delegate_to="localhost"))
 
         # Validate role execution results

@@ -11,7 +11,7 @@
 
 DOCUMENTATION = r"""
 role: gather_diagnostics
-short_description: Gathers diagnostic facts from z/OS managed nodes and the Ansible control node.
+short_description: Gathers diagnostic data from z/OS managed nodes and the control node
 description:
     - >
       The B(gather_diagnostics) role gathers a comprehensive set of diagnostic facts
@@ -29,7 +29,7 @@ description:
       (C(gather_diagnostics_report_managed_node_<hostname>.yml)) and the control node
       (C(gather_diagnostics_report_control.yml)) in the specified output directory.
     - >
-      Facts are also set on the respective hosts: C(gather_diagnostics_managed_results)
+      Facts are set on the respective hosts: C(gather_diagnostics_managed_results)
       on the z/OS host and C(gather_diagnostics_control_results) on localhost.
 author:
     - Rohitash Goyal (@Rohitcodes28)
@@ -51,7 +51,7 @@ options:
     gather_diagnostics_gather_control:
         description:
             - >
-              Controls whether the role will gather diagnostic facts from the
+              Controls whether the role gathers diagnostic facts from the
               Ansible control node.
         required: False
         type: bool
@@ -59,7 +59,7 @@ options:
     gather_diagnostics_gather_managed_node:
         description:
             - >
-              Controls whether the role will gather diagnostic facts from the
+              Controls whether the role gathers diagnostic facts from the
               z/OS managed node.
         required: False
         type: bool
@@ -102,7 +102,7 @@ options:
     gather_diagnostics_output_dir:
         description:
             - >
-              Directory where diagnostic report files will be created.
+              Directory where diagnostic report files are created.
               In AAP, defaults to the artifacts directory. In standalone mode,
               defaults to the control node's home directory.
         required: False

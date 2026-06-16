@@ -320,10 +320,13 @@ def test_uss_line_replace(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == 1
             assert all(key in result for key in expected_keys)
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        print(results.contacted.values())
         for result in results.contacted.values():
+            print(result)
             assert result.get("stdout") == EXPECTED_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)

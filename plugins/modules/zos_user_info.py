@@ -139,7 +139,7 @@ segments:
       returned: always
       type: dict
       sample:
-        USER-ID: "TESTU01"
+        USER: "TESTU01"
         NAME: "TEST USER 01"
         DEFAULT-GROUP: "TSTGRP01"
         PASSDATE: "2026/04/15"
@@ -157,16 +157,11 @@ segments:
       type: dict
       sample:
         TSTGRP01:
-          AUTH: "USE"
           CONNECT-OWNER: "ADMIN01"
           CONNECT-DATE: "2025/01/10"
           LAST-CONNECT: "2026/04/29"
           REVOKE DATE: "NONE"
           RESUME DATE: "NONE"
-        SYSADM:
-          AUTH: "JOIN"
-          CONNECT-OWNER: "ADMIN01"
-          CONNECT-DATE: "2025/02/15"
     users:
       description: >
         Connected user information for group profiles.
@@ -200,12 +195,6 @@ segments:
         HOLDCLASS: "H"
         JOBCLASS: "A"
         MSGCLASS: "X"
-        PROC: "IKJACCNT"
-        SIZE: "00016384"
-        MAXSIZE: "00032768"
-        SYSOUTCLASS: "A"
-        USERDATA: "E4F1"
-        COMMAND: "ISPF PANEL(ISR@390)"
     OMVS:
       description: >
         OMVS segment information for user and group profiles.
@@ -244,21 +233,10 @@ segments:
       sample:
         STORAGE: "YES"
         ALTGRP: "YES"
-        AUTO: "NO"
-        HC: "NO"
-        INTIDS: "NO"
-        LEVEL: "00"
-        LOGCMDRESP: "NO"
         MIGID: "NO"
-        MONITOR:
-          - "JOBNAMES"
-          - "SESS"
-          - "STATUS"
-        MSCOPE:
-          - "ALL"
-        ROUTCODE:
-          - "1:2"
-          - "11"
+        MONITOR: [ "JOBNAMES", "SESS" ]
+        MSCOPE: [ "ALL" ]
+        ROUTCODE: [ "1:2", "11" ]
     LANGUAGE:
       description: >
         LANGUAGE segment information for user profiles.
@@ -268,8 +246,8 @@ segments:
       returned: when profile_type is user and lang segment is requested
       type: dict
       sample:
-        PRIMARY: "ENU"
-        SECONDARY: "JPN"
+        PRIMARY LANGUAGE: "ENU"
+        SECONDARY LANGUAGE: "JPN"
     CSDATA:
       description: >
         CSDATA (Custom Data) segment information for user and group profiles.
@@ -278,7 +256,6 @@ segments:
         Only returned when C(csdata) is included in the I(segments) parameter.
       returned: when csdata segment is requested
       type: dict
-      sample: {}
     CICS:
       description: >
         CICS segment information for user profiles.
@@ -352,12 +329,31 @@ segments:
 """
 
 EXAMPLES = r"""
-- name: Get basic user profile info
+- name: Get basic user profile information
   ibm.ibm_zos_core.zos_user_info:
     name: TESTU01
     profile_type: user
 
-- name: Get user profile info for multiple segments
+- name: Get user profile information with TSO and OMVS segment
+  ibm.ibm_zos_core.zos_user_info:
+    name: "{{ test_user_id }}"
+    profile_type: user
+    segments:
+      - tso
+      - omvs
+
+- name: Get user profile with multiple segments
+  ibm.ibm_zos_core.zos_user_info:
+    name: "{{ test_user_id }}"
+    profile_type: user
+    segments:
+      - tso
+      - omvs
+      - dfp
+      - lang
+      - operparm
+
+- name: Get user profile with all segments
   ibm.ibm_zos_core.zos_user_info:
     name: TESTU01
     profile_type: user
@@ -379,12 +375,12 @@ EXAMPLES = r"""
       - proxy
       - kerb
 
-- name: Get basic group profile info
+- name: Get basic group profile information
   ibm.ibm_zos_core.zos_user_info:
     name: TSTGRP01
     profile_type: group
 
-- name: Get group profile info with DFP, OMVS, and OVM segments
+- name: Get group profile with multiple segments
   ibm.ibm_zos_core.zos_user_info:
     name: TSTGRP01
     profile_type: group

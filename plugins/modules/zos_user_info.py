@@ -336,7 +336,7 @@ EXAMPLES = r"""
 
 - name: Get user profile information with TSO and OMVS segment
   ibm.ibm_zos_core.zos_user_info:
-    name: "{{ test_user_id }}"
+    name: "TESTU01"
     profile_type: user
     segments:
       - tso
@@ -344,7 +344,7 @@ EXAMPLES = r"""
 
 - name: Get user profile with multiple segments
   ibm.ibm_zos_core.zos_user_info:
-    name: "{{ test_user_id }}"
+    name: "TESTU01"
     profile_type: user
     segments:
       - tso

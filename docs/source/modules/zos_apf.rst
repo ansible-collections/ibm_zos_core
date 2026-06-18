@@ -8,7 +8,6 @@ zos_apf -- Add or remove libraries to Authorized Program Facility (APF)
 =======================================================================
 
 
-
 .. contents::
    :local:
    :depth: 1
@@ -20,9 +19,6 @@ Synopsis
 - Manages APF statement persistent entries to a data set or data set member.
 - Changes APF list format to "DYNAMIC" or "STATIC".
 - Gets the current APF list entries.
-
-
-
 
 
 Parameters

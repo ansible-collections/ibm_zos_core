@@ -249,10 +249,10 @@ class TemplateRenderer:
     def _prepare_template_variables(self, variables, templar=None):
         """Prepare variables for template rendering by optionally resolving
         them using Ansible's templar.
-        
+
         This method ensures that nested variables and Jinja2 expressions in
         variable values are properly resolved before template rendering.
-        
+
         Parameters
         ----------
         variables : dict
@@ -261,18 +261,18 @@ class TemplateRenderer:
         templar : ansible.template.Templar, optional
             Ansible's templar instance for resolving nested variables.
             If provided, all variables will be templated before rendering.
-        
+
         Returns
         -------
         dict
             Variables ready for template rendering, with nested expressions
             resolved if templar was provided.
-        
+
         Raises
         ------
         TypeError
             If variables is not a dict type.
-        
+
         Notes
         -----
         - Templating failures for individual variables are handled gracefully,
@@ -282,7 +282,7 @@ class TemplateRenderer:
         # Validate input
         if not isinstance(variables, dict):
             raise TypeError("variables must be a dict, got {0}".format(type(variables).__name__))
-        
+
         # Use templar to resolve nested variables if provided
         if templar:
             resolved_vars = {}
@@ -295,7 +295,7 @@ class TemplateRenderer:
                     # This can happen with undefined variables or circular references
                     resolved_vars[key] = value
             return resolved_vars
-        
+
         return variables
 
     def render_file_template(self, file_path, variables, templar=None):

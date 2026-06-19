@@ -189,7 +189,7 @@ class ActionModule(ActionBase):
                                 template_encoding
                             )
                             template_dir, rendered_dir = renderer.render_dir_template(
-                                task_vars.get("vars", dict()),
+                                task_vars,
                                 templar=self._templar
                             )
                         except Exception as err:
@@ -226,7 +226,7 @@ class ActionModule(ActionBase):
                             )
                             template_dir, rendered_file = renderer.render_file_template(
                                 os.path.basename(src),
-                                task_vars.get("vars", dict()),
+                                task_vars,
                                 templar=self._templar
                             )
                         except Exception as err:

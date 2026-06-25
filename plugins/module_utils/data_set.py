@@ -955,18 +955,17 @@ class DataSet(object):
         list
             List of dictionaries containing:
             - name: Member name
-            - extended_attributes: Dict with SMDE extended attributes (or defaults if unavailable)
-                - user: Last user who modified
-                - codeset: CCSID as string
-                - modified_time: Last modification timestamp
-            - ispf_statistics: Dict with ISPF member statistics (or defaults if unavailable)
-                - version: Version.Modification level (VV.MM format)
-                - created: Creation date
-                - changed: Last change date and time
-                - size: Current number of lines
-                - init: Initial number of lines
-                - mod: Modification level
-                - id: User ID who modified
+            - extended_attributes: Dict with SMDE extended attributes (or None if unavailable)
+                - user: Last user who modified, or None if not set
+                - codeset: CCSID as string, or None if not set
+                - modified_time: Last modification timestamp, or None if not set
+            - ispf_statistics: Dict with ISPF member statistics (or None if unavailable)
+                - version: Version.Modification level (VV.MM format), or None if no ISPF stats
+                - created: Creation date, or None if not set
+                - changed: Last change date and time, or None if not set
+                - init: Initial number of lines, or None if no ISPF stats
+                - mod: Number of lines modified since the last full save, or None if no ISPF stats
+                - id: User ID who last modified, or None if not set
 
         Raises
         ------
@@ -988,16 +987,17 @@ class DataSet(object):
             # Get SMDE Extended Attributes - each attribute handled independently
             try:
                 modified_time = getattr(member, 'time_modified', None)
+                ccsid = getattr(member, 'ccsid', None)
                 member_info['extended_attributes'] = {
-                    'user': getattr(member, 'user_modified', '') or '',
-                    'codeset': str(getattr(member, 'ccsid', '')) if getattr(member, 'ccsid', None) else '',
-                    'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else ''
+                    'user': getattr(member, 'user_modified', None),
+                    'codeset': str(ccsid) if ccsid is not None else None,
+                    'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else None
                 }
             except Exception:
                 member_info['extended_attributes'] = {
-                    'user': '',
-                    'codeset': '',
-                    'modified_time': ''
+                    'user': None,
+                    'codeset': None,
+                    'modified_time': None
                 }
 
             # Get ISPF Statistics - each attribute handled independently
@@ -1006,34 +1006,33 @@ class DataSet(object):
                 if ispf:
                     date_created = getattr(ispf, 'date_created', None)
                     time_changed = getattr(ispf, 'time_changed', None)
+                    ver = getattr(ispf, 'version', None)
+                    mod_level = getattr(ispf, 'modification_level', None)
                     member_info['ispf_statistics'] = {
-                        'version': f"{getattr(ispf, 'version', 0):02d}.{getattr(ispf, 'modification_level', 0):02d}",
-                        'created': date_created.strftime('%Y/%m/%d') if date_created else '',
-                        'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else '',
-                        'size': getattr(ispf, 'current_lines', 0),
-                        'init': getattr(ispf, 'initial_lines', 0),
-                        'mod': getattr(ispf, 'modification_level', 0),
-                        'id': getattr(ispf, 'modified_user', '') or ''
+                        'version': f"{ver:02d}.{mod_level:02d}" if ver is not None and mod_level is not None else None,
+                        'created': date_created.strftime('%Y/%m/%d') if date_created else None,
+                        'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else None,
+                        'init': getattr(ispf, 'initial_lines', None),
+                        'mod': getattr(ispf, 'modified_lines', None),
+                        'id': getattr(ispf, 'modified_user', None)
                     }
                 else:
                     member_info['ispf_statistics'] = {
-                        'version': '',
-                        'created': '',
-                        'changed': '',
-                        'size': 0,
-                        'init': 0,
-                        'mod': 0,
-                        'id': ''
+                        'version': None,
+                        'created': None,
+                        'changed': None,
+                        'init': None,
+                        'mod': None,
+                        'id': None
                     }
             except Exception:
                 member_info['ispf_statistics'] = {
-                    'version': '',
-                    'created': '',
-                    'changed': '',
-                    'size': 0,
-                    'init': 0,
-                    'mod': 0,
-                    'id': ''
+                    'version': None,
+                    'created': None,
+                    'changed': None,
+                    'init': None,
+                    'mod': None,
+                    'id': None
                 }
 
             result.append(member_info)

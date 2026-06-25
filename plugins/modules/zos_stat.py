@@ -558,16 +558,12 @@ stat:
                   description: Last change date and time (YYYY/MM/DD HH:MM:SS)
                   type: str
                   sample: "2024/01/15 10:30:45"
-                size:
-                  description: Current size (number of lines)
-                  type: int
-                  sample: 100
                 init:
                   description: Initial size (number of lines)
                   type: int
                   sample: 95
                 mod:
-                  description: Number of modifications
+                  description: Number of lines modified since the last full save.
                   type: int
                   sample: 3
                 id:

@@ -1922,9 +1922,7 @@ return 0"""
         # Add member details for PDS/PDSE datasets
         if self.data_set_type in DataSet.MVS_PARTITIONED and not self.module.check_mode:
             try:
-                member_details = DataSet.get_member_details(self.name)
-                if member_details:
-                    data['attributes']['member_details'] = member_details
+                data['attributes']['member_details'] = DataSet.get_member_details(self.name)
             except Exception as e:
                 # Log warning but don't fail - member details are optional
                 self.extra_data = f'{self.extra_data}Could not retrieve member details: {str(e)}\n'

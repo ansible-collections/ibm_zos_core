@@ -385,6 +385,50 @@ def test_query_data_set_pds_member_no_volume(ansible_zos_module, volumes_on_syst
         )
 
 
+def test_query_data_set_pds_no_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is an empty list when PDS has no members."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat['attributes'].get('members') == 0
+            assert stat['attributes'].get('member_details') == []
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
 def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
 

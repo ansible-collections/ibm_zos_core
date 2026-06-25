@@ -175,11 +175,13 @@ def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
     creation_date = datetime.date.today().strftime('%Y-%m-%d')
 
     try:
+        print(f'dtouch -B{block_size} -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tseq -V{available_vol} {escaped_name}')
         data_set_creation_result = hosts.all.shell(
             cmd=f'dtouch -B{block_size} -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tseq -V{available_vol} {escaped_name}'
         )
 
         for result in data_set_creation_result.contacted.values():
+            print(result)
             assert result.get('changed') is True
             assert result.get('failed', False) is False
 

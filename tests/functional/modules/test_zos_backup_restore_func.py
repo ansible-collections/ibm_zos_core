@@ -1554,11 +1554,11 @@ def test_restore_of_data_sets_with_rename_without_original_data_sets(ansible_zos
         )
         assert_module_did_not_fail(results)
         
-        # Verify renamed data sets exist
+        # Verify renamed data sets do not exist
         assert_data_set_does_not_exist(hosts, renamed_ds_1)
         assert_data_set_does_not_exist(hosts, renamed_ds_2)
         
-        # Verify original data sets also exist
+        # Verify original data sets exist
         assert_data_set_exists(hosts, data_set_name_1)
         assert_data_set_exists(hosts, data_set_name_2)
         
@@ -1577,6 +1577,7 @@ def test_restore_of_data_sets_with_rename_without_original_data_sets(ansible_zos
         delete_data_set_or_file(hosts, data_set_name_2)
         delete_data_set_or_file(hosts, renamed_ds_1)
         delete_data_set_or_file(hosts, renamed_ds_2)
+        delete_data_set_or_file(hosts, backup_name)
 
 
 def test_restore_with_hlq_and_names_mutual_exclusivity(ansible_zos_module):
@@ -1635,6 +1636,7 @@ def test_restore_with_hlq_and_names_mutual_exclusivity(ansible_zos_module):
         # Clean up
         delete_data_set_or_file(hosts, data_set_name_1)
         delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, backup_name)
 
 
 def test_restore_with_hlq_only(ansible_zos_module):

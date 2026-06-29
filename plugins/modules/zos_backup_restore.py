@@ -332,7 +332,7 @@ options:
           - Specifies how the module should write to the file system when performing a restore operation.
           - When C(write=conditional) is used with option C(names), if a data set with the old name exists,
             the module will allocate and restore the data set with the new name. Otherwise, the data set is
-            restored with the old name.
+            restored with the old name even if a new name is provided by the user.
         required: false
         type: str
         choices:
@@ -486,7 +486,8 @@ EXAMPLES = r"""
     data_sets:
       include: "**.TEST"
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Only restore data sets whose last, or only qualifier is TEST.
@@ -497,14 +498,16 @@ EXAMPLES = r"""
       include: "**.TEST"
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the data set MY.BACKUP.DZP.
     Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP.DZP
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore volume from backup stored in the data set MY.BACKUP.DZP.
     Restore to volume MYVOL2.
@@ -1003,8 +1006,6 @@ def restore(
         matching name on the target device.
     recover : bool
         Specifies if potentially recoverable errors should be ignored.
-    hlq : str
-        Specifies the new HLQ to use for the data sets being restored.
     space : int
         Specifies the amount of space to allocate for data sets temporarily
         created during the restore process.

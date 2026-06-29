@@ -1639,6 +1639,63 @@ def test_restore_with_hlq_and_names_mutual_exclusivity(ansible_zos_module):
         delete_data_set_or_file(hosts, backup_name)
 
 
+def test_restore_requires_write_and_names_together(ansible_zos_module):
+    hosts = ansible_zos_module
+    # Create test data sets
+    data_set_name_1 = get_tmp_ds_name()
+    data_set_name_2 = get_tmp_ds_name()
+    backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
+    
+    try:
+        # Create and populate data sets
+        create_data_set_or_file_with_contents(hosts, data_set_name_1, "DATA SET ONE")
+        create_data_set_or_file_with_contents(hosts, data_set_name_2, "DATA SET TWO")
+        
+        # Backup the data sets
+        backup_results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            backup_name=backup_name,
+            overwrite=True
+        )
+        
+        for result in backup_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("backup_name") == backup_name
+        
+        # Delete original data sets
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        
+        # Attempt restore with both hlq and names (should fail)
+        restore_results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            data_sets=dict(
+                include=[data_set_name_1, data_set_name_2]
+            ),
+            output=dict(
+                names=[
+                    dict(old=data_set_name_1, new=f"RENAMED.{data_set_name_1.split('.')[-1]}"),
+                    dict(old=data_set_name_2, new=f"RENAMED.{data_set_name_2.split('.')[-1]}")
+                ]
+            )
+        )
+        
+        # Verify that the operation failed with mutual exclusivity error
+        for result in restore_results.contacted.values():
+            assert result.get("failed") is True
+            assert "specified together" in result.get("msg", "").lower()
+            
+    finally:
+        # Clean up
+        delete_data_set_or_file(hosts, data_set_name_1)
+        delete_data_set_or_file(hosts, data_set_name_2)
+        delete_data_set_or_file(hosts, backup_name)
+
+
 def test_restore_with_hlq_only(ansible_zos_module):
     hosts = ansible_zos_module
     # Create test data sets

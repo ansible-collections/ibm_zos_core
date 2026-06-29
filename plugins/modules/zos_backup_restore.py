@@ -713,12 +713,16 @@ def main():
     try:
         params = parse_and_validate_args(module.params)
 
-        # Custom validation for mutually exclusive output parameters
+        # Custom validation for mutually exclusive output parameters and mandate parameters
         output = params.get("output")
         if output:
             if output.get('hlq') and output.get('names'):
                 module.fail_json(
                     msg="Parameters 'hlq' and 'names' in 'output' are mutually exclusive."
+                )
+            if (output.get("write") is None) != (output.get("names") is None):
+                module.fail_json(
+                    msg="Parameters 'write' and 'names' must be specified together."
                 )
 
         # Initialize logging module

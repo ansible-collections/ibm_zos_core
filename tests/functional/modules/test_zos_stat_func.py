@@ -370,6 +370,8 @@ def test_query_data_set_pds_member_no_volume(ansible_zos_module, volumes_on_syst
             assert stat['attributes'].get('members') == 1
             assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
             assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes').get('user') is not None
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes').get('modified_time') is not None
             assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is not None
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'

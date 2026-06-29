@@ -518,7 +518,7 @@ stat:
           sample: 3
         member_details:
           description: Details for each member in a partitioned data set including extended attributes and ISPF statistics.
-          returned: when querying PDS/PDSE
+          returned: success
           type: list
           elements: dict
           contains:

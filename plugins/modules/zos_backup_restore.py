@@ -713,23 +713,27 @@ def main():
     try:
         params = parse_and_validate_args(module.params)
 
-        # Custom validation for mutually exclusive output parameters and mandate parameters
-        output = params.get("output")
-        if output:
-            if output.get('hlq') and output.get('names'):
-                module.fail_json(
-                    msg="Parameters 'hlq' and 'names' in 'output' are mutually exclusive."
-                )
-            if (output.get("write") is None) != (output.get("names") is None):
-                module.fail_json(
-                    msg="Parameters 'write' and 'names' must be specified together."
-                )
-
         # Initialize logging module
         module_verbosity_level = module._verbosity
         SingletonLogger().get_logger(module_verbosity_level)
 
         operation = params.get("operation")
+        output = params.get("output")
+        # Custom validation for mutually exclusive output parameters and mandate parameters.
+        # output is only meaningful for the restore operation.
+        if operation == "restore" and output:
+            if output.get('hlq') and output.get('names'):
+                module.fail_json(
+                    msg="Parameters 'hlq' and 'names' in 'output' are mutually exclusive."
+                )
+            # Treat names=None and names=[] as equivalent — both mean "not provided".
+            # write and names must either both be present (with names non-empty) or both absent.
+            if (output.get("write") is None) != (
+                    output.get("names") is None or len(output.get("names")) == 0):
+                module.fail_json(
+                    msg="Parameters 'write' and 'names' must be specified together."
+                )
+
         data_sets = params.get("data_sets", {})
         space = params.get("space")
         space_type = params.get("space_type", "m")
@@ -1010,6 +1014,24 @@ def restore(
         matching name on the target device.
     recover : bool
         Specifies if potentially recoverable errors should be ignored.
+    output : dict, optional
+        Controls how restored data sets are named on the target system.
+        write : str, optional
+            Determines the write behaviour for restored data sets.
+            Accepted value is ``conditional``. When set to ``conditional``
+            and *names* is provided, ADRDSSU renames each matching data set
+            to the corresponding new name instead of restoring it under its
+            original name.
+        names : list of dict, optional
+            A list of rename pairs used when *write* is ``conditional``.
+            Each entry must contain:
+            old : str
+                The original data set name as it exists in the backup.
+            new : str
+                The target data set name to restore to on the system.
+        hlq : str, optional
+            A high-level qualifier to prepend to every restored data set
+            name. Mutually exclusive with *names*.
     space : int
         Specifies the amount of space to allocate for data sets temporarily
         created during the restore process.
@@ -1471,17 +1493,10 @@ def to_dunzip_args(**kwargs):
         # Handle names parameter for rename functionality when write=conditional
         names_list = output.get("names")
         if output.get("write") == "conditional" and names_list:
-            rename_dict = {}
-            for name_pair in names_list:
-                if isinstance(name_pair, dict) and "old" in name_pair and "new" in name_pair:
-                    old_name = name_pair.get("old")
-                    new_name = name_pair.get("new")
-                    if old_name and new_name:
-                        rename_dict[old_name] = new_name
-            if rename_dict:
-                zoau_args["rename"] = rename_dict
-                # When using rename dict, set no_rename=False to enable RENAME keyword
-                zoau_args["no_rename"] = False
+            rename_dict = {pair["old"]: pair["new"] for pair in names_list}
+            zoau_args["rename"] = rename_dict
+            # Set no_rename=False to enable the RENAME keyword in ADRDSSU
+            zoau_args["no_rename"] = False
         # Handle hlq parameter (mutually exclusive with names)
         elif output.get("hlq"):
             zoau_args["high_level_qualifier"] = output.get("hlq")

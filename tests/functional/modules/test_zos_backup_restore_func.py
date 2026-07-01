@@ -1669,7 +1669,7 @@ def test_restore_requires_write_and_names_together(ansible_zos_module):
         delete_data_set_or_file(hosts, data_set_name_1)
         delete_data_set_or_file(hosts, data_set_name_2)
         
-        # Attempt restore with both hlq and names (should fail)
+        # Attempt restore with names alone(should fail)
         restore_results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
@@ -1778,5 +1778,50 @@ def test_restore_with_hlq_only(ansible_zos_module):
         delete_data_set_or_file(hosts, expected_ds_1)
         delete_data_set_or_file(hosts, expected_ds_2)
         delete_data_set_or_file(hosts, backup_name)
+
+
+def test_restore_fails_when_names_is_empty_list(ansible_zos_module):
+    """When output.names is provided as an empty list the module must reject
+    the call immediately with a clear error message, before any dunzip work
+    is attempted.
+    """
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    backup_name = get_tmp_ds_name(1, 1)
+
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(hosts, data_set_name, DATA_SET_CONTENTS)
+
+        # Backup so a valid archive exists
+        backup_results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(backup_results)
+
+        # Restore with an explicitly empty names list — must fail validation
+        restore_results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            output=dict(
+                write="conditional",
+                names=[],
+            ),
+        )
+
+        for result in restore_results.contacted.values():
+            assert result.get("failed") is True, (
+                "Module should have failed when 'names' is an empty list"
+            )
+            assert "specified together" in result.get("msg", "").lower(), (
+                f"Expected 'specified together' in error message, got: {result.get('msg')}"
+            )
+
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts)

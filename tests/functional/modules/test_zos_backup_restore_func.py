@@ -1824,4 +1824,3 @@ def test_restore_fails_when_names_is_empty_list(ansible_zos_module):
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)

@@ -260,7 +260,7 @@ class TemplateRenderer:
             loop variables, and user-defined variables.
         templar : ansible.template.Templar, optional
             Ansible's templar instance for resolving nested variables.
-            If provided, all variables will be templated before rendering.
+            If provided, string variables will be templated before rendering.
 
         Returns
         -------
@@ -275,9 +275,15 @@ class TemplateRenderer:
 
         Notes
         -----
+        - Only string values are passed to the templar; non-string values
+          (dicts, lists, booleans, integers, etc.) are carried over as-is
+          since they cannot contain Jinja2 expressions and templating them
+          would be unnecessarily expensive.
         - Templating failures for individual variables are handled gracefully,
-          falling back to the original value
-        - Specific Jinja2 exceptions are caught to avoid hiding system errors
+          falling back to the original value.
+        - Jinja2 template errors and common Python type/attribute errors are
+          caught per-variable, falling back to the original value. Other
+          exceptions propagate normally.
         """
         # Validate input
         if not isinstance(variables, dict):
@@ -287,12 +293,17 @@ class TemplateRenderer:
         if templar:
             resolved_vars = {}
             for key, value in variables.items():
-                try:
-                    # Use templar to evaluate any Jinja2 expressions in the value
-                    resolved_vars[key] = templar.template(value)
-                except (jinja2.TemplateError, jinja2.UndefinedError, TypeError, AttributeError):
-                    # If templating fails, use the original value
-                    # This can happen with undefined variables or circular references
+                # Only template string values; non-string types (dicts, lists,
+                # booleans, integers, etc.) cannot contain Jinja2 expressions
+                # and iterating over them with templar.template() is wasteful.
+                if isinstance(value, str):
+                    try:
+                        resolved_vars[key] = templar.template(value)
+                    except (jinja2.TemplateError, TypeError, AttributeError):
+                        # Fall back to the original value when templating fails
+                        # (e.g. undefined variables, circular references).
+                        resolved_vars[key] = value
+                else:
                     resolved_vars[key] = value
             return resolved_vars
 

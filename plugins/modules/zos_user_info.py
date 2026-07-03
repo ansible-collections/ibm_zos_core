@@ -833,8 +833,7 @@ def run_module():
 
     raw_name = module.params.get("name", "").strip()
     name_parts = raw_name.split()
-    name = name_parts[0]
-    # name = module.params['name']
+    name = name_parts[0] if name_parts else ""
     profile_type = module.params['profile_type'].lower()
     segments = [s.lower() for s in (module.params.get('segments') or [])]
 
@@ -879,7 +878,7 @@ def run_module():
     result['cmd'] = cmd
 
     # Execute the TSO command
-    rc, stdout, stderr = module.run_command(f'tsocmd "{cmd}"')
+    rc, stdout, stderr = module.run_command(['tsocmd', cmd])
 
     # Set command output in result dict immediately after execution
     result['rc'] = rc
@@ -888,8 +887,11 @@ def run_module():
     result['stderr'] = '' if stderr.strip() == cmd else stderr
 
     # Check if the profile was not found
-    if rc != 0 or 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {profile_type.upper()} NAME' in stdout.upper():
-        result['msg'] = f"Profile '{name}' not found in RACF database"
+    if rc != 0:
+        if 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {profile_type.upper()} NAME' in stdout.upper():
+            result['msg'] = f"Profile '{name}' not found in RACF database"
+        else:
+            result['msg'] = f"RACF command failed with rc={rc}"
         module.fail_json(**result)
 
     # Parse segments based on profile_type

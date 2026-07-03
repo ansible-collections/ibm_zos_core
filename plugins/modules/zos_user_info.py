@@ -764,6 +764,9 @@ SEGMENT_NAME_MAP = {
     'kerb': 'KERB'
 }
 
+# Valid segments for group profiles — subset of SEGMENT_NAME_MAP keys
+VALID_GROUP_SEGMENTS = frozenset(['dfp', 'omvs', 'ovm', 'csdata'])
+
 
 def run_module():
     """
@@ -845,13 +848,8 @@ def run_module():
 
     # Build the appropriate TSO command based on profile_type and segments
     if profile_type == 'user':
-        # Valid segments for user
-        valid_user_segments = ['dfp', 'tso', 'omvs', 'operparm', 'lang', 'csdata',
-                               'cics', 'dce', 'eim', 'ovm', 'netview', 'nds',
-                               'lnotes', 'workattr', 'proxy', 'kerb']
-
-        # Filter segments to only valid ones for user
-        filtered_segments = [s for s in segments if s in valid_user_segments]
+        # Filter segments to valid ones for user (all SEGMENT_NAME_MAP keys are valid)
+        filtered_segments = [s for s in segments if s in SEGMENT_NAME_MAP]
 
         # Build command - start with LISTUSER and user name
         cmd = f'LISTUSER {name}'
@@ -861,11 +859,8 @@ def run_module():
             segment_keywords = [SEGMENT_NAME_MAP[s] for s in filtered_segments]
             cmd = f"{cmd} {' '.join(segment_keywords)}"
     else:
-        # Valid segments for group: dfp, omvs, ovm, csdata
-        valid_group_segments = ['dfp', 'omvs', 'ovm', 'csdata']
-
-        # Filter segments to only valid ones for group
-        filtered_segments = [s for s in segments if s in valid_group_segments]
+        # Filter segments to valid ones for group
+        filtered_segments = [s for s in segments if s in VALID_GROUP_SEGMENTS]
 
         # Build command - start with LISTGRP and group name
         cmd = f'LISTGRP {name}'
@@ -912,11 +907,9 @@ def run_module():
             final_user_profile = {**base_data}
 
             # Only include segments that were explicitly requested
-            # Valid segments for group profiles
-            valid_group_segments = {'dfp', 'omvs', 'ovm', 'csdata'}
             if filtered_segments:
                 for seg in filtered_segments:
-                    if seg in valid_group_segments and seg in SEGMENT_NAME_MAP:
+                    if seg in VALID_GROUP_SEGMENTS:
                         segment_name = SEGMENT_NAME_MAP[seg]
                         final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
 

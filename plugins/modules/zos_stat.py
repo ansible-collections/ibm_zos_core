@@ -517,9 +517,12 @@ stat:
           type: int
           sample: 3
         member_details:
-          description: Details for each member in a partitioned data set including extended attributes and ISPF statistics.
+          description: >
+            Details for each member in a partitioned data set including extended
+            attributes and ISPF statistics. Set to null for non-PDS/PDSE types
+            (sequential, VSAM, GDG) where member details do not apply.
           returned: success
-          type: list
+          type: raw
           elements: dict
           contains:
             name:
@@ -1695,7 +1698,7 @@ class NonVSAMDataSetHandler(DataSetHandler):
             'encrypted', 'key_status', 'racf', 'key_label',
             'dir_blocks_allocated', 'dir_blocks_used',
             'pages_allocated', 'pages_used', 'perc_pages_used',
-            'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
+            'members', 'member_details', 'pdse_version', 'max_pdse_generation', 'seq_type'
         ],
         'nested': [
             ['jcl_attrs', ['creation_job', 'creation_step']]
@@ -1919,13 +1922,22 @@ return 0"""
             self.expected_attrs
         )
 
-        # Add member details for PDS/PDSE datasets
+        # Populate member_details for PDS/PDSE; it is already None for all
+        # other types via fill_missing_attrs above.
         if self.data_set_type in DataSet.MVS_PARTITIONED and not self.module.check_mode:
             try:
                 data['attributes']['member_details'] = DataSet.get_member_details(self.name)
+            except zoau_exceptions.MemberFetchException as e:
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}.",
+                    rc=e.response.rc,
+                    stdout=e.response.stdout_response,
+                    stderr=e.response.stderr_response
+                )
             except Exception as e:
-                # Log warning but don't fail - member details are optional
-                self.extra_data = f'{self.extra_data}Could not retrieve member details: {str(e)}\n'
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}."
+                )
 
         return data
 

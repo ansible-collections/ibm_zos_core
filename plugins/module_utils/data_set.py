@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -969,10 +969,20 @@ class DataSet(object):
 
         Raises
         ------
+        MemberFetchException
+            If the data set is not found or the underlying ``mls`` call fails.
+            Raised by ``fetch_members`` before any member processing begins,
+            so no partial results are returned.
         Exception
-            If ZOAU API is not available or member fetch fails.
+            If ``Member.from_core_json`` fails for any single member during the
+            ZOAU list comprehension inside ``fetch_members``, the entire member
+            list is lost — not just the failing member. This is a ZOAU-level
+            constraint; the caller at ``zos_stat`` re-raises it as a
+            ``QueryException``, which causes the module to fail with an error.
         """
-        # Call ZOAU API to get all members with their attributes
+        # fetch_members calls mls once and constructs all Member objects in a
+        # single list comprehension. A parse failure on any one member aborts
+        # the whole list — partial results are not possible at this level.
         members_list = fetch_members(dataset_name)
 
         # Transform Member objects to structured format
@@ -984,25 +994,19 @@ class DataSet(object):
                 'ispf_statistics': None
             }
 
-            # Get SMDE Extended Attributes - each attribute handled independently
             try:
-                modified_time = getattr(member, 'time_modified', None)
-                ccsid = getattr(member, 'ccsid', None)
+                modified_time = member.time_modified
+                ccsid = member.ccsid
                 member_info['extended_attributes'] = {
-                    'user': getattr(member, 'user_modified', None),
+                    'user': member.user_modified,
                     'codeset': str(ccsid) if ccsid is not None else None,
                     'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else None
                 }
             except Exception:
-                member_info['extended_attributes'] = {
-                    'user': None,
-                    'codeset': None,
-                    'modified_time': None
-                }
+                member_info['extended_attributes'] = None
 
-            # Get ISPF Statistics - each attribute handled independently
             try:
-                ispf = getattr(member, 'ispf_statistics', None)
+                ispf = member.ispf_statistics
                 if ispf:
                     date_created = getattr(ispf, 'date_created', None)
                     time_changed = getattr(ispf, 'time_changed', None)
@@ -1016,24 +1020,8 @@ class DataSet(object):
                         'mod': getattr(ispf, 'modified_lines', None),
                         'id': getattr(ispf, 'modified_user', None)
                     }
-                else:
-                    member_info['ispf_statistics'] = {
-                        'version': None,
-                        'created': None,
-                        'changed': None,
-                        'init': None,
-                        'mod': None,
-                        'id': None
-                    }
             except Exception:
-                member_info['ispf_statistics'] = {
-                    'version': None,
-                    'created': None,
-                    'changed': None,
-                    'init': None,
-                    'mod': None,
-                    'id': None
-                }
+                member_info['ispf_statistics'] = None
 
             result.append(member_info)
 

@@ -369,10 +369,8 @@ def test_query_data_set_pds_member_no_volume(ansible_zos_module, volumes_on_syst
             assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('members') == 1
             assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
-            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
-            assert stat['attributes'].get('member_details')[0].get('extended_attributes').get('user') is not None
-            assert stat['attributes'].get('member_details')[0].get('extended_attributes').get('modified_time') is not None
-            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is not None
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -429,6 +427,116 @@ def test_query_data_set_pds_no_members(ansible_zos_module, volumes_on_systems):
         hosts.all.shell(
             cmd=f'drm {escaped_name}'
         )
+
+
+def test_query_data_set_pds_multiple_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details contains one entry per member when a PDS has
+    multiple members, and that every entry has the expected structure."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    member_names = ["MEMBERA", "MEMBERB", "MEMBERC"]
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for mem in member_names:
+            hosts.all.shell(cmd=f'decho "content of {mem}" "{escaped_name}({mem})"')
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+
+            assert stat['attributes'].get('members') == len(member_names)
+
+            member_details = stat['attributes'].get('member_details')
+            assert isinstance(member_details, list)
+            assert len(member_details) == len(member_names)
+
+            returned_names = {m.get('name') for m in member_details}
+            assert returned_names == set(member_names)
+
+            for member in member_details:
+                assert 'name' in member
+                assert 'extended_attributes' in member
+                assert 'ispf_statistics' in member
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_pdse_no_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is an empty list when PDSE has no members."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tpdse -V{available_vol} {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+            assert stat['attributes'].get('members') == 0
+            assert stat['attributes'].get('member_details') == []
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_seq_has_no_member_details(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is None for a sequential dataset — the key is
+    always present but only populated for PDS and PDSE types."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tseq -V{available_vol} {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+            assert 'member_details' in stat.get('attributes', {}), (
+                "member_details key must always be present"
+            )
+            assert stat['attributes']['member_details'] is None, (
+                "member_details must be None for sequential datasets"
+            )
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
 
 
 def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
@@ -540,7 +648,7 @@ def test_query_data_set_pdse_members_no_volume(ansible_zos_module, volumes_on_sy
         for result in data_set_member_creation_result.contacted.values():
             assert result.get('changed') is True
             assert result.get('failed', False) is False
-        
+
         zos_stat_result = hosts.all.zos_stat(
             src=name,
             type='data_set'
@@ -576,7 +684,7 @@ def test_query_data_set_pdse_members_no_volume(ansible_zos_module, volumes_on_sy
             assert stat['attributes'].get('members') == 1
             assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
             assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
-            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is not None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
             assert stat['attributes'].get('volser') == available_vol.lower()
             assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1

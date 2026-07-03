@@ -424,6 +424,8 @@ SPLIT_BY_COMMA = {
 # Regex patterns for parsing RACF output
 RACF_HEADER_PATTERN = r'^(NO )?([A-Z]+) INFORMATION'
 RACF_KV_PATTERN = r'^\s*([A-Z0-9\s]+?)\s*[=:]\s*(.*)'
+RACF_HEADER_RE = re.compile(RACF_HEADER_PATTERN)
+RACF_KV_RE = re.compile(RACF_KV_PATTERN)
 
 # Compiled key-value pattern for LISTUSER base section parsing
 _USER_RACF_KEYS = r'(?:REVOKE DATE|RESUME DATE|CLASS AUTHORIZATIONS|CONNECT ATTRIBUTES|[A-Z0-9-]+)'
@@ -454,10 +456,6 @@ def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[
     segment_data = {}
     in_target_segment = False
 
-    # Compile regex patterns using module constants
-    header_pattern = re.compile(RACF_HEADER_PATTERN)
-    kv_pattern = re.compile(RACF_KV_PATTERN)
-
     lines = output_text.strip().split('\n')
 
     for line in lines:
@@ -467,7 +465,7 @@ def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[
             continue
 
         # Check if the line is a segment header
-        header_match = header_pattern.match(line)
+        header_match = RACF_HEADER_RE.match(line)
         if header_match:
             is_no_info = header_match.group(1)  # e.g., "NO "
             current_header = header_match.group(2)  # e.g., "OMVS", "LANGUAGE"
@@ -482,7 +480,7 @@ def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[
 
         # Extract data if we are inside the requested segment
         if in_target_segment:
-            kv_match = kv_pattern.match(line)
+            kv_match = RACF_KV_RE.match(line)
             if kv_match:
                 key = kv_match.group(1).strip()
                 value = kv_match.group(2).strip()
@@ -518,7 +516,6 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
         "group": {}
     }
 
-    kv_pattern = USER_KV_PATTERN
     KEYS_TO_SPLIT = {"ATTRIBUTES", "CLASS AUTHORIZATIONS"}
 
     lines = output_text.strip().split('\n')
@@ -538,7 +535,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
         # ==========================================
         # If we hit an optional segment header, the base section is over. Stop looping.
         # ==========================================
-        if re.match(r'^(NO )?([A-Z]+) INFORMATION', line):
+        if RACF_HEADER_RE.match(line):
             break
 
         if line.startswith('SECURITY-LEVEL=') or line.startswith('SECURITY-LABEL='):
@@ -578,7 +575,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
             last_key = actual_key
             continue
 
-        matches = kv_pattern.findall(line)
+        matches = USER_KV_PATTERN.findall(line)
 
         if matches:
             for key, value in matches:
@@ -591,7 +588,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
                     last_key = key
                     continue
 
-                # --- NEW: Route to specific group, OR the base_segment dictionary ---
+                # Route to specific group, OR the base_segment dictionary
                 target_dict = base_data["group"][current_group] if current_group else base_data["base_segment"]
 
                 if key in KEYS_TO_SPLIT:
@@ -640,8 +637,6 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         "users": {}  # Houses all the nested users
     }
 
-    kv_pattern = GROUP_KV_PATTERN
-
     lines = output_text.strip().split('\n')
 
     parsing_users = False
@@ -659,7 +654,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         # ==========================================
         # 1. THE STOP CONDITION
         # ==========================================
-        if re.match(r'^(NO )?([A-Z]+) INFORMATION', line):
+        if RACF_HEADER_RE.match(line):
             break
 
         # ==========================================
@@ -707,7 +702,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
                 last_key = None
             else:
                 # It's a nested attribute for the current user (e.g. "REVOKE DATE=NONE")
-                matches = kv_pattern.findall(line)
+                matches = GROUP_KV_PATTERN.findall(line)
                 for key, value in matches:
                     key = key.strip()
                     value = value.strip()
@@ -718,7 +713,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         # ==========================================
         # 4. GENERAL KEY EXTRACTION & CONTINUATION
         # ==========================================
-        matches = kv_pattern.findall(line)
+        matches = GROUP_KV_PATTERN.findall(line)
 
         if matches:
             for key, value in matches:

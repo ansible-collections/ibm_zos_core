@@ -425,6 +425,14 @@ SPLIT_BY_COMMA = {
 RACF_HEADER_PATTERN = r'^(NO )?([A-Z]+) INFORMATION'
 RACF_KV_PATTERN = r'^\s*([A-Z0-9\s]+?)\s*[=:]\s*(.*)'
 
+# Compiled key-value pattern for LISTUSER base section parsing
+_USER_RACF_KEYS = r'(?:REVOKE DATE|RESUME DATE|CLASS AUTHORIZATIONS|CONNECT ATTRIBUTES|[A-Z0-9-]+)'
+USER_KV_PATTERN = re.compile(rf'\b({_USER_RACF_KEYS})=(.*?)(?=\s+{_USER_RACF_KEYS}=|$)')
+
+# Compiled key-value pattern for LISTGRP base section parsing
+_GROUP_RACF_KEYS = r'(?:SUPERIOR GROUP|INSTALLATION DATA|MODEL DATA SET|SUBGROUP\(S\)|CONNECT ATTRIBUTES|REVOKE DATE|RESUME DATE|[A-Z0-9-]+)'
+GROUP_KV_PATTERN = re.compile(rf'\b({_GROUP_RACF_KEYS})=(.*?)(?=\s+{_GROUP_RACF_KEYS}=|$)')
+
 # Prefixes to skip when parsing RACF output
 SKIP_PREFIXES = ('---', 'LISTUSER ', 'LISTGRP ')
 
@@ -510,8 +518,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
         "group": {}
     }
 
-    racf_keys = r'(?:REVOKE DATE|RESUME DATE|CLASS AUTHORIZATIONS|CONNECT ATTRIBUTES|[A-Z0-9-]+)'
-    kv_pattern = re.compile(rf'\b({racf_keys})=(.*?)(?=\s+{racf_keys}=|$)')
+    kv_pattern = USER_KV_PATTERN
     KEYS_TO_SPLIT = {"ATTRIBUTES", "CLASS AUTHORIZATIONS"}
 
     lines = output_text.strip().split('\n')
@@ -633,9 +640,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         "users": {}  # Houses all the nested users
     }
 
-    # Whitelist of RACF group keys
-    group_keys = r'(?:SUPERIOR GROUP|INSTALLATION DATA|MODEL DATA SET|SUBGROUP\(S\)|CONNECT ATTRIBUTES|REVOKE DATE|RESUME DATE|[A-Z0-9-]+)'
-    kv_pattern = re.compile(rf'\b({group_keys})=(.*?)(?=\s+{group_keys}=|$)')
+    kv_pattern = GROUP_KV_PATTERN
 
     lines = output_text.strip().split('\n')
 

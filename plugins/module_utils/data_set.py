@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1826,6 +1826,25 @@ class DataSet(object):
             Whether the name is a GDS positive relative name.
         """
         pattern = r'(.+)\(([\\]?[+]\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
+    def is_gds_absolute_name(name):
+        """Determine if name is a GDG absolute name based
+        on the GDS absolute name syntax .GxxxxVyy, eg. 'USER.GDG.G0002V01'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS absolute name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS absolute name.
+        """
+        pattern = r'(.+)\.G(\d{4})V(\d{2})'
         match = re.fullmatch(pattern, name)
         return bool(match)
 

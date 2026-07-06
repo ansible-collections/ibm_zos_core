@@ -957,7 +957,7 @@ class DataSet(object):
             - name: Member name
             - extended_attributes: Dict with SMDE extended attributes (or None if unavailable)
                 - user: Last user who modified, or None if not set
-                - codeset: CCSID as string, or None if not set
+                - codeset: CCSID as integer, or None if not set
                 - modified_time: Last modification timestamp, or None if not set
             - ispf_statistics: Dict with ISPF member statistics (or None if unavailable)
                 - version: Version.Modification level (VV.MM format), or None if no ISPF stats
@@ -999,7 +999,7 @@ class DataSet(object):
                 ccsid = member.ccsid
                 member_info['extended_attributes'] = {
                     'user': member.user_modified,
-                    'codeset': str(ccsid) if ccsid is not None else None,
+                    'codeset': ccsid,
                     'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else None
                 }
             except Exception:

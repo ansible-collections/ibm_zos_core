@@ -538,9 +538,9 @@ stat:
                   type: str
                   sample: USER01
                 codeset:
-                  description: Coded character set identifier.
-                  type: str
-                  sample: IBM-1047
+                  description: Coded character set identifier (CCSID).
+                  type: int
+                  sample: 1047
                 modified_time:
                   description: Last time the member was modified (YYYY/MM/DD HH:MM:SS).
                   type: str

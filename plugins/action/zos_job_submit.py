@@ -108,7 +108,6 @@ class ActionModule(ActionBase):
 
             rendered_file = None
             if use_template:
-                display.vvv(u"Entering template rendering block for {0}".format(source), host=self._play_context.remote_addr)
                 template_parameters = module_args.get("template_parameters", dict())
                 encoding = module_args.get("encoding", dict())
 
@@ -123,16 +122,6 @@ class ActionModule(ActionBase):
                         source_full,
                         encoding.get("from", None)
                     )
-
-                    # Unpack dict loop items into task_vars so flat variable
-                    # names like {{ ds_name }} resolve without requiring
-                    # {{ item.ds_name }} in the template. This mirrors the
-                    # behaviour of Ansible's own template module.
-                    loop_var = task_vars.get("ansible_loop_var", "item")
-                    loop_item = task_vars.get(loop_var)
-                    if isinstance(loop_item, dict):
-                        task_vars = dict(task_vars)
-                        task_vars.update(loop_item)
 
                     template_dir, rendered_file = renderer.render_file_template(
                         os.path.basename(source_full),

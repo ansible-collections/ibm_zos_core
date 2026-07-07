@@ -236,16 +236,6 @@ class ActionModule(ActionBase):
                                 template_encoding
                             )
 
-                            # Unpack dict loop items into task_vars so flat variable
-                            # names like {{ ds_name }} resolve without requiring
-                            # {{ item.ds_name }} in the template. This mirrors the
-                            # behaviour of Ansible's own template module.
-                            loop_var = task_vars.get("ansible_loop_var", "item")
-                            loop_item = task_vars.get(loop_var)
-                            if isinstance(loop_item, dict):
-                                task_vars = dict(task_vars)
-                                task_vars.update(loop_item)
-
                             template_dir, rendered_file = renderer.render_file_template(
                                 os.path.basename(src),
                                 task_vars,

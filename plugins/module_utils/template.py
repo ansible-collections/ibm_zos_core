@@ -252,6 +252,10 @@ class TemplateRenderer:
 
         This method ensures that nested variables and Jinja2 expressions in
         variable values are properly resolved before template rendering.
+        It also unpacks dict loop items so that flat variable names like
+        ``{{ ds_name }}`` resolve without requiring ``{{ item.ds_name }}``
+        in the template, mirroring the behaviour of Ansible's own template
+        module.
 
         Parameters
         ----------
@@ -265,8 +269,8 @@ class TemplateRenderer:
         Returns
         -------
         dict
-            Variables ready for template rendering, with nested expressions
-            resolved if templar was provided.
+            Variables ready for template rendering, with loop items merged
+            and nested expressions resolved if templar was provided.
 
         Raises
         ------
@@ -288,6 +292,16 @@ class TemplateRenderer:
         # Validate input
         if not isinstance(variables, dict):
             raise TypeError("variables must be a dict, got {0}".format(type(variables).__name__))
+
+        # Unpack dict loop items into the top-level namespace so flat variable
+        # names like {{ ds_name }} resolve without requiring {{ item.ds_name }}
+        # in the template. This mirrors the behaviour of Ansible's own template
+        # module.
+        loop_var = variables.get("ansible_loop_var", "item")
+        loop_item = variables.get(loop_var)
+        if isinstance(loop_item, dict):
+            variables = dict(variables)
+            variables.update(loop_item)
 
         # Use templar to resolve nested variables if provided
         if templar:

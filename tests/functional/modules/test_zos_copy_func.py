@@ -266,6 +266,107 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
         msg: "{{ job_result }}"
 """
 
+# Playbook that validates nested variable resolution (templar) for zos_copy.
+# The template file contains {{ greeting }}, and greeting is itself defined as
+# "{{ base_greeting }} world" — templar must resolve that composition before
+# Jinja2 renders the file.  The dest path ({3}) is passed via .format().
+PLAYBOOK_COPY_TEMPLATE_NESTED_VAR = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  vars:
+    base_greeting: "hello"
+    greeting: "{{{{ base_greeting }}}} world"
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Copy template with nested variable reference.
+      ibm.ibm_zos_core.zos_copy:
+        src: {3}
+        dest: /tmp/copy_nested_rendered.txt
+        use_template: true
+        replace: true
+        template_parameters:
+          autoescape: false
+      register: copy_result
+
+    - name: Verify rendered file contains the resolved greeting.
+      ansible.builtin.shell:
+        cmd: "grep 'hello world' /tmp/copy_nested_rendered.txt"
+      register: grep_result
+
+    - name: Remove rendered file.
+      ansible.builtin.file:
+        path: /tmp/copy_nested_rendered.txt
+        state: absent
+      ignore_errors: true
+"""
+
+# Playbook that validates loop-item dict unpacking for zos_copy templates.
+# Each loop item is a dict with a "greeting" key; the template references
+# {{ greeting }} directly (a flat key), exercising the loop-item unpack
+# path without requiring {{ item.greeting }} inside the template.
+PLAYBOOK_COPY_TEMPLATE_LOOP_ITEMS = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Copy template for each item using loop (flat key access).
+      ibm.ibm_zos_core.zos_copy:
+        src: {3}
+        dest: "/tmp/copy_loop_{{{{ item.idx }}}}.txt"
+        use_template: true
+        replace: true
+        template_parameters:
+          autoescape: false
+      loop:
+        - idx: 1
+          greeting: hello
+        - idx: 2
+          greeting: world
+      register: loop_result
+
+    - name: Verify first rendered file has greeting resolved from loop item.
+      ansible.builtin.shell:
+        cmd: "grep hello /tmp/copy_loop_1.txt"
+      register: grep_result
+
+    - name: Clean up loop output files.
+      ansible.builtin.file:
+        path: "/tmp/copy_loop_{{{{ item }}}}.txt"
+        state: absent
+      loop:
+        - 1
+        - 2
+      ignore_errors: true
+"""
+
+
+
 INVENTORY_ASYNC_TEST = """all:
   hosts:
     zvm:
@@ -6708,3 +6809,187 @@ def test_copy_file_to_seq_data_set_max_name_length(ansible_zos_module):
             assert result.get("dest") == dest
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+# Template content used by the playbook-based template resolution tests below.
+# Uses {{ greeting }} so it exercises both the nested-var and loop-item paths.
+TEMPLATE_CONTENT_GREETING = "The greeting is: {{ greeting }}\n"
+
+# This tests is added to validate the fix for the GitHub issue #1499 and #1071
+@pytest.mark.template
+def test_copy_template_nested_variable_resolution(get_config):
+    """Verify zos_copy resolves a nested Jinja2 variable via Ansible templar.
+
+    The playbook defines:
+        base_greeting: "hello"
+        greeting: "{{ base_greeting }} world"
+
+    The template contains ``{{ greeting }}``.  Without templar pre-processing
+    the rendered value would be the literal string ``{{ base_greeting }} world``
+    instead of ``hello world``.  The fix passes ``templar`` to
+    ``render_file_template`` so that nested expressions are expanded first.
+    """
+    try:
+        # Write the local template file that the playbook will copy.
+        tmp_template = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".j2", delete=False, encoding="utf-8"
+        )
+        tmp_template.write(TEMPLATE_CONTENT_GREETING)
+        tmp_template.close()
+        template_path = tmp_template.name
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key = environment["ssh_key"]
+        hosts_str = environment["host"].upper()
+        user = environment["user"].upper()
+        python_path = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau = environment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split("/")[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    PLAYBOOK_COPY_TEMPLATE_NESTED_VAR.format(
+                        zoau,
+                        cut_python_path,
+                        python_version,
+                        template_path,
+                    )
+                ),
+                playbook.name,
+            )
+        )
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    INVENTORY_ASYNC_TEST.format(
+                        hosts_str,
+                        ssh_key,
+                        user,
+                        python_path,
+                    )
+                ),
+                inventory.name,
+            )
+        )
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name, playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding="utf-8",
+        )
+
+        # ok=3  → copy, grep verify, file cleanup
+        # changed=1 → only the copy task changes state
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr
+            )
+        )
+        assert "ok=3" in result.stdout
+    finally:
+        if os.path.exists(template_path):
+            os.remove(template_path)
+
+
+# This tests is added to validate the fix for the GitHub issue #1499 and #1071:
+@pytest.mark.template
+def test_copy_template_loop_item_dict_unpacking(get_config):
+    """Verify zos_copy unpacks loop dict items so flat keys resolve in templates.
+
+    The playbook loops over a list of dicts, each with keys ``idx`` and
+    ``greeting``.  The template uses ``{{ greeting }}`` (flat name).  Without
+    the loop-item unpack fix the variable would be undefined and the render
+    would fail or produce an empty string.
+    """
+    try:
+        # Write the local template file that the playbook will copy.
+        tmp_template = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".j2", delete=False, encoding="utf-8"
+        )
+        tmp_template.write(TEMPLATE_CONTENT_GREETING)
+        tmp_template.close()
+        template_path = tmp_template.name
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key = environment["ssh_key"]
+        hosts_str = environment["host"].upper()
+        user = environment["user"].upper()
+        python_path = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau = environment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split("/")[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    PLAYBOOK_COPY_TEMPLATE_LOOP_ITEMS.format(
+                        zoau,
+                        cut_python_path,
+                        python_version,
+                        template_path,
+                    )
+                ),
+                playbook.name,
+            )
+        )
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    INVENTORY_ASYNC_TEST.format(
+                        hosts_str,
+                        ssh_key,
+                        user,
+                        python_path,
+                    )
+                ),
+                inventory.name,
+            )
+        )
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name, playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding="utf-8",
+        )
+
+        # Ansible counts each looping task as 1 ok regardless of iteration count:
+        #   ok=3  → copy-loop task, grep verify, cleanup-loop task
+        #   changed=3 → copy-loop (2 items = 1 task-level change) + grep + cleanup-loop
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr
+            )
+        )
+        assert "ok=3" in result.stdout
+        assert "changed=3" in result.stdout
+    finally:
+        if os.path.exists(template_path):
+            os.remove(template_path)

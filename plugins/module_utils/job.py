@@ -163,16 +163,15 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     """
     # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
-    if job_id is None and job_name is None:
-        job_not_found_msg = "job_name and job_id"
-    elif job_id is None:
-        job_not_found_msg = "with the name {0}".format(job_name.upper())
-    elif job_id != '*' and job_name != '*':
-        job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
-    elif job_id != '*':
+
+    if job_id and job_name is "*":
         job_not_found_msg = "with the job_id {0}".format(job_id.upper())
+    elif owner and job_name is "*":
+        job_not_found_msg = "owner {0}".format(owner.upper())
+    elif job_name and job_id:
+        job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
     else:
-        job_not_found_msg = "with the name {0}".format(job_name.upper())
+        job_not_found_msg = "with name {0}".format(job_name.upper())
     job = {}
 
     job["job_not_found"] = True
@@ -340,7 +339,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
         If no job status is found it will return a ret_code diction with
         parameter 'msg_txt" = "The job could not be found.
     """
-    if job_id == "*" or job_id is None:
+    if job_id == "*":
         job_id_temp = None
     else:
         # Preserve the original job_id for the failure path
@@ -349,13 +348,19 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
     final_entries = []
 
     # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+    try:
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+    except exceptions.JobFetchException:
+        entries = []
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+        try:
+            entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+        except exceptions.JobFetchException:
+            entries = []
 
     if entries:
         for entry in entries:

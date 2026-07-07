@@ -362,7 +362,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
-import os
+import getpass
 
 
 def run_module():
@@ -454,7 +454,7 @@ def query_jobs(job_name, job_id, owner):
     try:
         # Owner defaults to current user if none is specified
         if owner is None:
-            current_user = os.environ.get('USER') or os.environ.get('LOGNAME')
+            current_user = getpass.getuser()
             jobs = job_status(job_id=job_id, owner=current_user, job_name=job_name, dd_name=False)
         else:
             jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)

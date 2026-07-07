@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -580,21 +580,28 @@ def run_module():
             is_mvs_src = True
             src_data_set = data_set.MVSDataSet(src)
             is_name_member = data_set.is_member(src_data_set.name)
-            dest_exists = False
 
             if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
+                src_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
             else:
-                dest_exists = data_set.DataSet.data_set_exists(
+                src_exists = data_set.DataSet.data_set_exists(
                     data_set.extract_dsname(src_data_set.name),
                     tmphlq=tmphlq
                 )
 
-            if not dest_exists:
-                raise EncodeError(
-                    "Data set {0} is not cataloged, please check data set provided in "
-                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
-                )
+            if not src_exists:
+                # Check if src is a GDS
+                gds_relative_name = data_set.DataSet.is_gds_relative_name(src)
+                gds_absolute_name = data_set.DataSet.is_gds_absolute_name(src)
+                if gds_relative_name or gds_absolute_name:
+                    raise EncodeError(
+                        "Generation Data Set {0} does not exist or is not cataloged.".format(src)
+                    )
+                else:
+                    raise EncodeError(
+                        "Data set {0} is not cataloged, please check data set provided in "
+                        "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                    )
 
             if is_name_member:
                 if not data_set.DataSet.data_set_member_exists(src_data_set.name):
@@ -639,10 +646,18 @@ def run_module():
                     )
 
                 if not dest_exists:
-                    raise EncodeError(
-                        "Data set {0} is not cataloged, please check data set provided in "
-                        "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
-                    )
+                    # Check if dest is a GDS
+                    gds_relative_name = data_set.DataSet.is_gds_relative_name(dest)
+                    gds_absolute_name = data_set.DataSet.is_gds_absolute_name(dest)
+                    if gds_relative_name or gds_absolute_name:
+                        raise EncodeError(
+                            "Generation Data Set {0} does not exist or is not cataloged.".format(dest)
+                        )
+                    else:
+                        raise EncodeError(
+                            "Data set {0} is not cataloged, please check data set provided in "
+                            "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
+                        )
 
                 if is_name_member:
                     ds_type_dest = "PS"

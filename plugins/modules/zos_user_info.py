@@ -883,6 +883,9 @@ def run_module():
 
     # Check if the profile was not found
     if rc != 0:
+        # On failure: surface RACF error in stderr, blank stdout for a clean response
+        result['stdout'] = ''
+        result['stderr'] = stdout.strip()
         stdout_upper = stdout.upper()
         if ('NAME NOT FOUND IN RACF DATA SET' in stdout_upper
                 or f'INVALID {profile_type.upper()} NAME' in stdout_upper

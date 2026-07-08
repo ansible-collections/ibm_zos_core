@@ -85,9 +85,9 @@ def test_missing_user_profile(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("rc") == 4
         assert "LISTUSER TSTU100" in result.get("cmd")
-        assert "UNABLE TO LOCATE" in result.get("stdout", "").upper()
+        assert result.get("stdout") == ""
+        assert "UNABLE TO LOCATE" in result.get("stderr", "").upper()
         assert "Profile 'TSTU100' not found in RACF database" in result.get("msg")
-        assert result.get("stderr") == ""
 
 
 def test_invalid_user_profile_name(ansible_zos_module):
@@ -101,9 +101,9 @@ def test_invalid_user_profile_name(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("rc") == 8
         assert "LISTUSER TSTU001123" in result.get("cmd")
-        assert "INVALID USERID, TSTU001123" in result.get("stdout", "").upper()
+        assert result.get("stdout") == ""
+        assert "INVALID USERID, TSTU001123" in result.get("stderr", "").upper()
         assert "Profile 'TSTU001123' not found in RACF database" in result.get("msg")
-        assert result.get("stderr") == ""
 
 
 def test_missing_group_profile(ansible_zos_module):
@@ -117,9 +117,9 @@ def test_missing_group_profile(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("rc") == 4
         assert "LISTGRP TSTU100" in result.get("cmd")
-        assert "NAME NOT FOUND IN RACF DATA SET" in result.get("stdout", "").upper()
+        assert result.get("stdout") == ""
+        assert "NAME NOT FOUND IN RACF DATA SET" in result.get("stderr", "").upper()
         assert "Profile 'TSTU100' not found in RACF database" in result.get("msg")
-        assert result.get("stderr") == ""
 
 
 def test_invalid_group_profile_name(ansible_zos_module):
@@ -133,9 +133,9 @@ def test_invalid_group_profile_name(ansible_zos_module):
         assert result.get("failed") is True
         assert result.get("rc") == 8
         assert "LISTGRP TSTU001123" in result.get("cmd")
-        assert "INVALID GROUP NAME, TSTU001123" in result.get("stdout", "").upper()
+        assert result.get("stdout") == ""
+        assert "INVALID GROUP NAME, TSTU001123" in result.get("stderr", "").upper()
         assert "Profile 'TSTU001123' not found in RACF database" in result.get("msg")
-        assert result.get("stderr") == ""
 
 
 def test_user_tso_omvs_segments(ansible_zos_module):

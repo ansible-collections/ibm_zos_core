@@ -395,14 +395,15 @@ EXAMPLES = r"""
 
 import re
 from typing import Dict, Any
-from ansible.module_utils.basic import AnsibleModule
 
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-        better_arg_parser
-    )
-except ImportError:
-    better_arg_parser = None
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 
 # Fields that contain space-separated lists in RACF output
@@ -808,32 +809,37 @@ def run_module():
         supports_check_mode=True
     )
 
-    if better_arg_parser:
-        args_def = {
-            'name': {
-                'arg_type': 'str',
-                'required': True
-            },
-            'profile_type': {
-                'arg_type': 'str',
-                'required': True
-            },
-            'segments': {
-                'arg_type': 'list',
-                'elements': 'str',
-                'required': False
-            }
-        }
+    validate_dependencies(module)
 
-        try:
-            parser = better_arg_parser.BetterArgParser(args_def)
-            parsed_args = parser.parse_args(module.params)
-            module.params = parsed_args
-        except ValueError as err:
-            module.fail_json(
-                msg='Parameter verification failed.',
-                stderr=str(err)
-            )
+    args_def = {
+        'name': {
+            'arg_type': 'str',
+            'required': True
+        },
+        'profile_type': {
+            'arg_type': 'str',
+            'required': True
+        },
+        'segments': {
+            'arg_type': 'list',
+            'elements': 'str',
+            'required': False
+        }
+    }
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     name = module.params.get("name", "").strip()
     name_parts = name.split()

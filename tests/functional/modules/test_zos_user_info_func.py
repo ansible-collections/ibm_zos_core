@@ -25,6 +25,32 @@ def _get_random_racf_name(prefix):
 def _run_tso_command(hosts, command):
     return hosts.all.shell(cmd='tsocmd "{0}"'.format(command))
 
+def test_name_with_whitespace_user(ansible_zos_module):
+    results = ansible_zos_module.all.zos_user_info(
+        name="Hello User",
+        profile_type="user"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("changed") is False
+        assert "Invalid value for parameter 'name'" in result.get("msg", "")
+        assert "Hello User" in result.get("msg", "")
+        assert "Expected a single RACF profile name with no spaces or whitespace characters" in result.get("msg", "")
+
+def test_name_with_whitespace_group(ansible_zos_module):
+    results = ansible_zos_module.all.zos_user_info(
+        name="Hello Group",
+        profile_type="group"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("changed") is False
+        assert "Invalid value for parameter 'name'" in result.get("msg", "")
+        assert "Hello Group" in result.get("msg", "")
+        assert "Expected a single RACF profile name with no spaces or whitespace characters" in result.get("msg", "")
+
 def test_invalid_profile_type(ansible_zos_module):
     results = ansible_zos_module.all.zos_user_info(
         name="TSTU100",
@@ -48,32 +74,70 @@ def test_invalid_user_segment(ansible_zos_module):
         assert "value of segments must be one or more of:" in result.get("msg", "").lower()
         assert "got no match for: test_invalid_segment" in result.get("msg", "").lower()
 
-def test_missing_group_profile(ansible_zos_module):
+def test_missing_user_profile(ansible_zos_module):
+    # Valid format but user does not exist — RACF returns "UNABLE TO LOCATE USER ENTRY <name>"
     results = ansible_zos_module.all.zos_user_info(
-        name="MISSING",
+        name="TSTU100",
+        profile_type="user"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("rc") == 4
+        assert "LISTUSER TSTU100" in result.get("cmd")
+        assert "UNABLE TO LOCATE" in result.get("stdout", "").upper()
+        assert "Profile 'TSTU100' not found in RACF database" in result.get("msg")
+        assert result.get("stderr") == ""
+
+
+def test_invalid_user_profile_name(ansible_zos_module):
+    # Name exceeds 8 characters — RACF returns "INVALID USERID, <name>"
+    results = ansible_zos_module.all.zos_user_info(
+        name="TSTU001123",
+        profile_type="user"
+    )
+
+    for result in results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("rc") == 8
+        assert "LISTUSER TSTU001123" in result.get("cmd")
+        assert "INVALID USERID, TSTU001123" in result.get("stdout", "").upper()
+        assert "Profile 'TSTU001123' not found in RACF database" in result.get("msg")
+        assert result.get("stderr") == ""
+
+
+def test_missing_group_profile(ansible_zos_module):
+    # Valid format but group does not exist — RACF returns "NAME NOT FOUND IN RACF DATA SET"
+    results = ansible_zos_module.all.zos_user_info(
+        name="TSTU100",
         profile_type="group"
     )
 
     for result in results.contacted.values():
         assert result.get("failed") is True
-        assert result.get("rc") != 0
-        assert "LISTGRP MISSING" in result.get("cmd")
-        assert "NAME NOT FOUND IN RACF DATA SET" in result.get("stdout").upper()  
-        assert "Profile 'MISSING' not found in RACF database" in result.get("msg")  
+        assert result.get("rc") == 4
+        assert "LISTGRP TSTU100" in result.get("cmd")
+        assert "NAME NOT FOUND IN RACF DATA SET" in result.get("stdout", "").upper()
+        assert "Profile 'TSTU100' not found in RACF database" in result.get("msg")
+        assert result.get("stderr") == ""
+
 
 def test_invalid_group_profile_name(ansible_zos_module):
+    # Name exceeds 8 characters — RACF returns "INVALID GROUP NAME, <name>"
     results = ansible_zos_module.all.zos_user_info(
-        name="INVALID_GRP",
+        name="TSTU001123",
         profile_type="group"
     )
 
     for result in results.contacted.values():
         assert result.get("failed") is True
-        assert result.get("rc") != 0
-        assert "LISTGRP INVALID_GRP" in result.get("cmd")
-        assert "INVALID GROUP NAME, INVALID_GRP" in result.get("stdout").upper()
-        assert "Profile 'INVALID_GRP' not found in RACF database" in result.get("msg") 
-      
+        assert result.get("rc") == 8
+        assert "LISTGRP TSTU001123" in result.get("cmd")
+        assert "INVALID GROUP NAME, TSTU001123" in result.get("stdout", "").upper()
+        assert "Profile 'TSTU001123' not found in RACF database" in result.get("msg")
+        assert result.get("stderr") == ""
+
+
 def test_user_tso_omvs_segments(ansible_zos_module):
     hosts = ansible_zos_module
     test_group = _get_random_racf_name("TG")

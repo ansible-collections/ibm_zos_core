@@ -33,7 +33,8 @@ options:
       - The RACF profile name to retrieve.
       - For I(profile_type=user), this must be a single user ID.
       - For I(profile_type=group), this must be a single group name.
-      - If multiple profile names are provided in the same string, only the first name is used and any additional names are ignored.
+      - The name is case-insensitive and will be normalized to uppercase before execution.
+      - The name must be a single continuous string with no spaces or whitespace characters.
     type: str
     required: true
   profile_type:
@@ -834,17 +835,16 @@ def run_module():
                 stderr=str(err)
             )
 
-    raw_name = module.params.get("name", "").strip()
-    name_parts = raw_name.split()
-    name = name_parts[0] if name_parts else ""
-    profile_type = module.params['profile_type'].lower()
-    segments = [s.lower() for s in (module.params.get('segments') or [])]
-
-    # If multiple profile names were provided, only use the first one
+    name = module.params.get("name", "").strip()
+    name_parts = name.split()
     if len(name_parts) > 1:
-        module.warn(
-            "Multiple profile names were provided in 'name'; only the first value '{0}' was used.".format(name)
+        module.fail_json(
+            msg="Invalid value for parameter 'name': '{0}'. "
+                "Expected a single RACF profile name with no spaces or whitespace characters.".format(name)
         )
+    name = name.upper()
+    profile_type = module.params['profile_type']
+    segments = list(module.params.get('segments') or [])
 
     # Build the appropriate TSO command based on profile_type and segments
     if profile_type == 'user':
@@ -883,7 +883,11 @@ def run_module():
 
     # Check if the profile was not found
     if rc != 0:
-        if 'NAME NOT FOUND IN RACF DATA SET' in stdout.upper() or f'INVALID {profile_type.upper()} NAME' in stdout.upper():
+        stdout_upper = stdout.upper()
+        if ('NAME NOT FOUND IN RACF DATA SET' in stdout_upper
+                or f'INVALID {profile_type.upper()} NAME' in stdout_upper
+                or 'INVALID USERID' in stdout_upper
+                or 'UNABLE TO LOCATE' in stdout_upper):
             result['msg'] = f"Profile '{name}' not found in RACF database"
         else:
             result['msg'] = f"RACF command failed with rc={rc}"

@@ -438,7 +438,7 @@ _GROUP_RACF_KEYS = r'(?:SUPERIOR GROUP|INSTALLATION DATA|MODEL DATA SET|SUBGROUP
 GROUP_KV_PATTERN = re.compile(rf'\b({_GROUP_RACF_KEYS})=(.*?)(?=\s+{_GROUP_RACF_KEYS}=|$)')
 
 # Prefixes to skip when parsing RACF output
-SKIP_PREFIXES = ('---', 'LISTUSER ', 'LISTGRP ')
+SKIP_PREFIXES = ('---', 'LISTUSER ', 'LISTGRP ', 'INFORMATION FOR GROUP')
 
 
 def extract_generic_segment(output_text: str, target_segment_name: str) -> Dict[str, Any]:
@@ -531,7 +531,7 @@ def parse_base_user_info(output_text: str) -> Dict[str, Any]:
         original_line = line
         line = line.strip()
 
-        if not line or line.startswith('---') or line.startswith('LISTUSER '):
+        if not line or line.startswith(SKIP_PREFIXES):
             continue
 
         # ==========================================
@@ -650,7 +650,7 @@ def parse_base_group_info(output_text: str) -> Dict[str, Any]:
         line = line.strip()
 
         # Skip headers and empty lines
-        if not line or line.startswith('---') or line.startswith('LISTGRP ') or line.startswith('INFORMATION FOR GROUP'):
+        if not line or line.startswith(SKIP_PREFIXES):
             continue
 
         # ==========================================

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -6894,13 +6894,14 @@ def test_copy_template_nested_variable_resolution(get_config):
         )
 
         # ok=3  → copy, grep verify, file cleanup
-        # changed=1 → only the copy task changes state
+        # changed=3 → copy task + grep + cleanup
         assert result.returncode == 0, (
             "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
                 result.stdout, result.stderr
             )
         )
         assert "ok=3" in result.stdout
+        assert "changed=3" in result.stdout
     finally:
         if os.path.exists(template_path):
             os.remove(template_path)

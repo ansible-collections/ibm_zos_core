@@ -988,6 +988,9 @@ class DataSet(object):
         # Transform Member objects to structured format
         result = []
         for member in members_list:
+            # Skip if it is an alias information
+            if member.is_alias:
+                continue
             member_info = {
                 'name': member.name,
                 'extended_attributes': None,

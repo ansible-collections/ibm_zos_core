@@ -362,7 +362,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
-import getpass
 
 
 def run_module():

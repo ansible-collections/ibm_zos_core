@@ -46,9 +46,7 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the parameter will attempt to default to the current user, else it will default to 'None'.
-      - If the environment variables are absent, misconfigured, or set to a custom value, the default resolved owner may not match
-        the z/OS authenticated user and job queries could return unexpected results or raise an error.
+      - If no owner is set, all owners will be queried. This may lead to security issues if there are read-access limitations on some users or jobs.
     type: str
     required: False
     default: null
@@ -454,15 +452,7 @@ def query_jobs(job_name, job_id, owner):
     jobs = []
 
     try:
-        # Owner defaults to current user if none is specified
-        if owner is None:
-            try:
-                updated_owner = getpass.getuser()
-            except OSError:
-                updated_owner = None
-        else:
-            updated_owner = owner
-        jobs = job_status(job_id=job_id, owner=updated_owner, job_name=job_name, dd_name=False)
+        jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
     except Exception as e:
         raise RuntimeError("Error querying jobs: " + str(e))
     return jobs

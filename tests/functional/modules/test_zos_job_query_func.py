@@ -389,7 +389,7 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         assert rc.get("code") == 0
 
 
-# zos_job_query should not return jobs that user is not authorized to view when default parameters are specified
+# zos_job_query should not return jobs that user is not authorized to view when querying with job_name and owner
 def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
     managed_user = None
@@ -442,7 +442,7 @@ def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_
             hosts.all.file(path=ansible_tmp_dir, state="absent")
 
 
-# helper test invoked using managed-user execution to test that only user-authorized jobs are returned when default parameters are specified
+# helper test invoked using managed-user execution to test that only user-authorized jobs are returned if job_name and owner are specified
 def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
     hosts = ansible_zos_module
     
@@ -477,7 +477,7 @@ def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
             
         # Test owner and job_id defaults - job query should only return job of managed user
         # Job submitted with the same name by a different user should not appear
-        job_name_query_results = hosts.all.zos_job_query(job_name=MANAGED_USER_JOB_NAME)
+        job_name_query_results = hosts.all.zos_job_query(job_name=MANAGED_USER_JOB_NAME, owner=current_user)
 
         for result in job_name_query_results.contacted.values():
             assert result.get("changed") is True
@@ -630,6 +630,8 @@ def test_zos_job_query_null_vs_wildcard_job_id(ansible_zos_module):
         assert qresult.get("msg", False) is False
 
         for job in qresult.get("jobs"):
+            assert job.get("owner") == job_owner
+            assert job.get("job_name") == job_name
             qresults_all_jobs_len += 1
 
     # Assert length of results for both queries is the same

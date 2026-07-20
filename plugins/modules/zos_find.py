@@ -309,10 +309,6 @@ data_sets:
       - All matches found with the specified criteria.
       - For C(alias) resource types, each entry includes an C(alias_of) field
         containing the real dataset name the alias points to.
-      - When C(include_member_aliases=true), PDS/PDSE alias entries additionally
-        include a C(member_aliases) list of dicts. Each dict has a C(member) key
-        (the member name) and an C(aliases) key (a list of alias names for that member).
-        Members with no aliases are omitted from the list.
     returned: success
     type: list
     sample: [
@@ -785,7 +781,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, 
         except Exception as e:
             module.fail_json(repr(e))
 
-        return filtered_data_sets
+    return filtered_data_sets
 
 
 # TODO:

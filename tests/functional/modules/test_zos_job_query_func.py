@@ -390,7 +390,7 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
 
 
 # zos_job_query should not return jobs that user is not authorized to view when querying with job_name and owner
-def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_interpreter):
+def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
     managed_user = None
     data_set_name = None
@@ -427,7 +427,7 @@ def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(
-            managed_user_test_case="managed_user_test_query_unauthorized_jobs",
+            managed_user_test_case="managed_user_query_unauthorized_jobs",
             debug=False,
             verbose=False,
             managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
@@ -445,7 +445,7 @@ def test_zos_job_query_return_only_authorized_jobs(ansible_zos_module, z_python_
 
 
 # helper test invoked using managed-user execution to test that only user-authorized jobs are returned if job_name and owner are specified
-def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
+def managed_user_query_unauthorized_jobs(ansible_zos_module):
     hosts = ansible_zos_module
     
     # Get the current user from the fixture options (set by ManagedUser class)
@@ -500,7 +500,7 @@ def managed_user_test_query_unauthorized_jobs(ansible_zos_module):
 
 
 # test to verify no CEE dump is generated when no job_id is specified in the parameters
-def test_zos_job_query_no_ceedump_generated(ansible_zos_module, z_python_interpreter):
+def test_managed_user_query_no_ceedump_generated(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
     managed_user = None
 
@@ -515,7 +515,7 @@ def test_zos_job_query_no_ceedump_generated(ansible_zos_module, z_python_interpr
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(
-            managed_user_test_case="managed_user_test_query_no_ceedump",
+            managed_user_test_case="managed_user_query_no_ceedump",
             debug=False,
             verbose=False,
             managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
@@ -526,7 +526,7 @@ def test_zos_job_query_no_ceedump_generated(ansible_zos_module, z_python_interpr
 
 
 # helper test invoked using managed-user execution to test that no CEE dump is generated when no job_id is specified
-def managed_user_test_query_no_ceedump(ansible_zos_module):
+def managed_user_query_no_ceedump(ansible_zos_module):
     hosts = ansible_zos_module
 
     # Get the current user from the fixture options (set by ManagedUser class)

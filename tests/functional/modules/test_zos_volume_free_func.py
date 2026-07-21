@@ -317,17 +317,111 @@ def test_filter_combined_status_and_percent(ansible_zos_module):
             assert vol['percent_free'] <= max_pct
 
 
-# ---------------------------------------------------------------------------
-# Tests: check mode
-# ---------------------------------------------------------------------------
-
-def test_check_mode_returns_no_change(ansible_zos_module):
-    """Module in check mode should return changed=False and an empty volumes list."""
+def test_filter_free_space_max_cylinders(ansible_zos_module):
+    """Filter with free_space_max in cylinders should convert to tracks correctly."""
     hosts = ansible_zos_module
-    results = hosts.all.zos_volume_free(_ansible_check_mode=True)
+    max_cylinders = 10000
+    max_tracks_expected = max_cylinders * 15
+    results = hosts.all.zos_volume_free(
+        filter={'free_space_max': max_cylinders, 'unit': 'cylinders'}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            assert vol['free_space'] <= max_tracks_expected, (
+                "Volume {0} has free_space={1} tracks, expected <= {2}".format(
+                    vol['volser'], vol['free_space'], max_tracks_expected
+                )
+            )
+
+
+def test_filter_percent_free_range(ansible_zos_module):
+    """All returned volumes should satisfy both percent_free_min and percent_free_max."""
+    hosts = ansible_zos_module
+    min_pct = 1
+    max_pct = 99
+    results = hosts.all.zos_volume_free(
+        filter={'percent_free_min': min_pct, 'percent_free_max': max_pct}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            assert vol['percent_free'] >= min_pct, (
+                "Volume {0} percent_free={1} is below min {2}".format(
+                    vol['volser'], vol['percent_free'], min_pct
+                )
+            )
+            assert vol['percent_free'] <= max_pct, (
+                "Volume {0} percent_free={1} is above max {2}".format(
+                    vol['volser'], vol['percent_free'], max_pct
+                )
+            )
+
+
+def test_filter_no_match_returns_empty(ansible_zos_module):
+    """A filter that matches no volumes should return an empty list without failing."""
+    hosts = ansible_zos_module
+    # free_space_min > any real volume will ever have
+    results = hosts.all.zos_volume_free(
+        filter={'free_space_min': 999999999}
+    )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         assert result.get('changed') is False
+        assert result.get('volumes') == []
+
+
+# ---------------------------------------------------------------------------
+# Tests: multiple VOLSERs / device numbers
+# ---------------------------------------------------------------------------
+
+def test_query_multiple_volsers(ansible_zos_module, volumes_on_systems):
+    """Querying with a list of VOLSERs should return all matching volumes."""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name_1 = vols.get_available_vol()
+    vol_name_2 = vols.get_available_vol()
+
+    results = hosts.all.zos_volume_free(volumes=[vol_name_1, vol_name_2])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('changed') is False
+        result_volsers = [v['volser'] for v in result.get('volumes', [])]
+        assert vol_name_1 in result_volsers
+        assert vol_name_2 in result_volsers
+        for vol in result.get('volumes', []):
+            _assert_volume_structure(vol)
+
+    vols.free_vol(vol_name_1)
+    vols.free_vol(vol_name_2)
+
+
+def test_query_nonexistent_device_number_returns_empty(ansible_zos_module):
+    """Querying a non-existent device number should return an empty list without failing."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(device_numbers=["FFFF"])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('changed') is False
+        assert result.get('volumes') == []
+
+
+def test_volser_input_is_case_insensitive(ansible_zos_module, volumes_on_systems):
+    """VOLSER matching should be case-insensitive — lowercase input must match."""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name = vols.get_available_vol()
+
+    results = hosts.all.zos_volume_free(volumes=[vol_name.lower()])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        result_vols = result.get('volumes', [])
+        assert len(result_vols) == 1, (
+            "Expected 1 volume for lowercase VOLSER {0}".format(vol_name.lower())
+        )
+        assert result_vols[0]['volser'] == vol_name
+
+    vols.free_vol(vol_name)
 
 
 # ---------------------------------------------------------------------------
@@ -350,3 +444,61 @@ def test_return_changed_always_false(ansible_zos_module):
     results = hosts.all.zos_volume_free()
     for result in results.contacted.values():
         assert result.get('changed') is False
+
+
+def test_return_stdout_present(ansible_zos_module):
+    """stdout is always an empty string — present for API consistency only."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert 'stdout' in result
+        assert result['stdout'] == '', (
+            "stdout should always be empty string, got: {0!r}".format(result['stdout'])
+        )
+
+
+def test_return_stderr_present(ansible_zos_module):
+    """stderr should always be present in the result (empty string on success)."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert 'stderr' in result
+        assert isinstance(result['stderr'], str)
+
+
+# ---------------------------------------------------------------------------
+# Tests: filter.status input validation
+# ---------------------------------------------------------------------------
+
+def test_filter_status_invalid_value_fails(ansible_zos_module):
+    """An invalid status value should cause the module to fail with a clear error."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(
+        filter={'status': ['onlin']}  # intentional typo
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is True, (
+            "Expected module to fail on invalid status value 'onlin' but it succeeded"
+        )
+        # Ansible's choices validation message always contains the bad value.
+        msg = result.get('msg', '') + result.get('stderr', '')
+        assert 'onlin' in msg, (
+            "Expected error message to reference the invalid value 'onlin', got: {0}".format(msg)
+        )
+
+
+def test_filter_status_valid_values_accepted(ansible_zos_module):
+    """Each valid status value should be accepted individually without failure."""
+    hosts = ansible_zos_module
+    for status_val in ('online', 'offline', 'pending'):
+        results = hosts.all.zos_volume_free(
+            filter={'status': [status_val]}
+        )
+        for result in results.contacted.values():
+            assert result.get('failed') is not True, (
+                "Module unexpectedly failed for valid status value '{0}': {1}".format(
+                    status_val, result.get('msg', '')
+                )
+            )

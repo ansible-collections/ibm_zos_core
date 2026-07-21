@@ -22,7 +22,7 @@ module: zos_volume_free
 version_added: '2.2.0'
 author:
   - "Ravella Surendra Babu (@surendrababuravella)"
-short_description: Query free space and status information for z/OS DASD volumes
+short_description: Query space and status information for z/OS DASD volumes
 description:
   - The L(zos_volume_free,./zos_volume_free.html) module retrieves free space
     and status information for one or more z/OS DASD volumes.
@@ -34,7 +34,7 @@ description:
   - Results can be filtered by volume status, free space thresholds, percentage
     free space, and VTOC index status.
   - This module does not make any changes to the z/OS system and always returns
-    C(changed=false).
+    C(changed) as false.
 options:
   volumes:
     description:
@@ -67,9 +67,9 @@ options:
       status:
         description:
           - Filter by volume status.
-          - C(online) - volume is online (ucbonli=True).
-          - C(offline) - volume is offline (ucbonli=False).
-          - C(pending) - volume status is changing (ucbchgs=True).
+          - C(online) - volume is online (C(ucbonli) flag is true).
+          - C(offline) - volume is offline (C(ucbonli) flag is false).
+          - C(pending) - volume status is changing (C(ucbchgs) flag is true).
         type: list
         elements: str
         choices:
@@ -90,12 +90,12 @@ options:
         type: int
       percent_free_min:
         description:
-          - Minimum percentage of free space.
+          - Minimum percentage of free space (0–100).
           - Volumes with a lower percentage of free space are excluded.
         type: int
       percent_free_max:
         description:
-          - Maximum percentage of free space.
+          - Maximum percentage of free space (0–100).
           - Volumes with a higher percentage of free space are excluded.
         type: int
       vtoc_indexed:
@@ -130,7 +130,7 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - This module is read-only and always returns C(changed=false).
+  - This module is read-only and always returns C(changed) as false.
   - When querying by I(device_numbers), all volumes are retrieved first and
     then filtered by device number.
   - When both I(volumes) and I(device_numbers) are specified, the module
@@ -141,8 +141,8 @@ notes:
     always in tracks.
   - To convert output tracks to cylinders, divide by 15 (for 3390/3380 devices).
   - The simplified C(status) field in the output is derived from
-    C(device_status) flags: C(pending) when C(status_changing=true), C(online)
-    when C(is_online=true), otherwise C(offline).
+    C(device_status) flags. It is C(pending) when C(status_changing) is true,
+    C(online) when C(is_online) is true, and C(offline) otherwise.
 
 seealso:
   - module: ibm.ibm_zos_core.zos_volume_init
@@ -233,8 +233,8 @@ volumes:
     status:
       description:
         - Simplified volume status derived from C(device_status) flags.
-        - C(pending) when C(status_changing=true).
-        - C(online) when C(is_online=true).
+        - C(pending) when C(status_changing) is true.
+        - C(online) when C(is_online) is true.
         - C(offline) otherwise.
       type: str
       returned: always
@@ -254,7 +254,11 @@ volumes:
       returned: always
       sample: 5432
     used_space:
-      description: Used space on the volume in tracks.
+      description:
+        - Used space on the volume in tracks.
+        - Calculated as C(total_space - free_space). Clamped to C(0) if ZOAU
+          reports C(free_tracks) greater than C(total_tracks) due to
+          corrupt or in-motion VTOC data.
       type: int
       returned: always
       sample: 4584
@@ -362,11 +366,29 @@ msg:
   returned: always
   type: str
   sample: "Successfully retrieved volume information for 2 volumes"
+stdout:
+  description:
+    - Always an empty string on success.
+    - On a ZOAU failure, contains C(ZOAUException.response.stdout_response).
+  returned: always
+  type: str
+  sample: ""
+stderr:
+  description:
+    - Error output returned on failure. Empty string on success.
+    - On a ZOAU failure, contains C(ZOAUException.response.stderr_response).
+    - On any other failure, contains the Python exception message.
+  returned: always
+  type: str
+  sample: ""
 """
 
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
@@ -376,9 +398,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
 try:
-    from zoautil_py import volumes as zoau_volumes
+    from zoautil_py import volumes
+    from zoautil_py import exceptions as zoau_exceptions
 except Exception:
-    zoau_volumes = ZOAUImportError(traceback.format_exc())
+    volumes = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 # Tracks per cylinder constant for 3390/3380 devices.
 _TRACKS_PER_CYLINDER = 15
@@ -490,7 +514,8 @@ def _volume_to_dict(vol):
 
     total_space = int(getattr(vol, 'total_tracks', 0) or 0)
     free_space = int(getattr(vol, 'free_tracks', 0) or 0)
-    used_space = total_space - free_space
+    # Clamp to 0: corrupt or in-motion VTOC data can report free_tracks > total_tracks.
+    used_space = max(0, total_space - free_space)
 
     if total_space > 0:
         percent_free = round((free_space / total_space) * 100, 1)
@@ -586,8 +611,10 @@ def get_volume_info(module):
 
     Raises
     ------
+    zoau_exceptions.ZOAUException
+        Raised by ZOAU if the list_volumes() call fails.
     Exception
-        Any error raised by the ZOAU volumes API.
+        Any other unexpected error.
     """
     logger = SingletonLogger().get_logger(module._verbosity)
 
@@ -604,8 +631,11 @@ def get_volume_info(module):
     # ZOAU 1.4.x list_volumes() returns all volumes when called with no args.
     # It does not accept a volumes list — filtering by VOLSER or device number
     # is always done in Python after fetching the full list.
-    logger.debug("Calling zoau_volumes.list_volumes() to retrieve all volumes.")
-    raw_volumes = zoau_volumes.list_volumes()
+    logger.debug("Calling volumes.list_volumes() to retrieve all volumes.")
+    try:
+        raw_volumes = volumes.list_volumes()
+    except zoau_exceptions.ZOAUException:
+        raise
 
     # Convert ZOAU objects to plain dicts.
     all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
@@ -669,31 +699,75 @@ def run_module():
         ),
     )
 
-    result = dict(
-        changed=False,
-        volumes=[],
-        msg='',
-    )
-
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True,
     )
     validate_dependencies(module)
 
+    args_def = dict(
+        volumes=dict(
+            arg_type='list',
+            elements='volume',
+            required=False,
+        ),
+        device_numbers=dict(
+            arg_type='list',
+            elements='str',
+            required=False,
+        ),
+        filter=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                status=dict(
+                    arg_type='list',
+                    elements='str',
+                    required=False,
+                ),
+                free_space_min=dict(arg_type='int', required=False),
+                free_space_max=dict(arg_type='int', required=False),
+                percent_free_min=dict(arg_type='int', required=False),
+                percent_free_max=dict(arg_type='int', required=False),
+                vtoc_indexed=dict(arg_type='bool', required=False),
+                unit=dict(arg_type='str', required=False),
+            ),
+        ),
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
+
     module_verbosity_level = module._verbosity
     SingletonLogger().get_logger(module_verbosity_level)
 
-    if module.check_mode:
-        result['msg'] = 'Check mode: no changes will be made.'
-        module.exit_json(**result)
+    result = dict(
+        changed=False,
+        volumes=[],
+        msg='',
+        stdout='',
+        stderr='',
+    )
 
     volume_list = []
     msg = ''
     try:
         volume_list, msg = get_volume_info(module)
+    except zoau_exceptions.ZOAUException as err:
+        result['msg'] = err.message
+        result['stdout'] = err.response.stdout_response
+        result['stderr'] = err.response.stderr_response
+        module.fail_json(**result)
     except Exception as err:
-        result['msg'] = 'An error occurred while querying volume information: {0}'.format(str(err))
+        result['msg'] = 'An unexpected error occurred while querying volume information: {0}'.format(str(err))
+        result['stderr'] = str(err)
         module.fail_json(**result)
 
     result['volumes'] = volume_list
@@ -701,9 +775,5 @@ def run_module():
     module.exit_json(**result)
 
 
-def main():
-    run_module()
-
-
 if __name__ == '__main__':
-    main()
+    run_module()

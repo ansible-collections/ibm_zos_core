@@ -103,8 +103,8 @@ options:
       - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
-        real dataset name it points to (returned as C(alias_of) in each result). Only C(patterns)
-        and C(excludes) options are applicable when using this resource type.
+        real dataset name it points to (returned as C(alias_of) in each result). Only C(patterns),
+        C(excludes), and C(include_member_aliases) options are applicable when using this resource type.
     aliases:
       - resource_types
     choices:
@@ -179,6 +179,21 @@ options:
       - If provided, will search for data sets with I(scratch) attribute set as provided.
     type: bool
     required: false
+  include_member_aliases:
+    description:
+      - Only valid when C(resource_type=alias).
+      - When C(true), each PDS/PDSE alias entry in the results will include a
+        C(members) list. Each item in that list is a dict with two keys,
+        C(name) (the PDS/PDSE member name) and C(aliases) (a list of alias names
+        that point to that member). Members with no aliases are included with an
+        empty C(aliases) list. Sequential dataset alias entries are unaffected.
+      - When C(false) (the default), only the dataset alias name and the real
+        dataset it points to (C(alias_of)) are returned.
+      - Note that for C(alias) entries, C(members) is a list of dicts, whereas
+        for C(nonvsam) entries C(members) is a list of member name strings.
+    type: bool
+    required: false
+    default: false
 
 attributes:
   action:
@@ -208,7 +223,9 @@ notes:
     besides C(excludes) and C(migrated_type) are not supported.
   - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), C(volume),
     and C(contains) options are ignored, as aliases are catalog pointers with no
-    independent attributes. Only C(patterns) and C(excludes) apply.
+    independent attributes. Only C(patterns), C(excludes), and C(include_member_aliases) apply.
+  - When C(include_member_aliases=true), PDS/PDSE alias entries additionally include
+    a C(member_aliases) list showing each member and its in-directory alias names.
 seealso:
 - module: ibm.ibm_zos_core.zos_data_set
 """
@@ -300,6 +317,14 @@ EXAMPLES = r"""
       - alias
     excludes:
       - '.*TEMP.*'
+
+- name: Find all PDS/PDSE aliases and include their member alias detail
+  zos_find:
+    patterns:
+      - ANSIBLE.ALIAS.TEST.*
+    resource_type:
+      - alias
+    include_member_aliases: true
 """
 
 
@@ -309,6 +334,12 @@ data_sets:
       - All matches found with the specified criteria.
       - For C(alias) resource types, each entry includes an C(alias_of) field
         containing the real dataset name the alias points to.
+      - When C(include_member_aliases=true), PDS/PDSE alias entries additionally
+        include a C(members) list of dicts. Each dict has a C(name) key
+        (the member name) and an C(aliases) key (a list of alias names for that member).
+        Members with no aliases are included with an empty C(aliases) list.
+        Note that for C(alias) entries C(members) is a list of dicts, whereas for
+        C(nonvsam) entries C(members) is a list of member name strings.
     returned: success
     type: list
     sample: [
@@ -333,6 +364,16 @@ data_sets:
         "name": "USER.ALIAS.NAME",
         "alias_of": "USER.REAL.DATASET",
         "type": "ALIAS"
+      },
+      {
+        "name": "USER.PDS.ALIAS",
+        "alias_of": "USER.REAL.PDS",
+        "type": "ALIAS",
+        "members": [
+          {"name": "MEM1", "aliases": ["ALIAS1", "ALIAS2"]},
+          {"name": "MEM2", "aliases": ["ALIAS3"]},
+          {"name": "MEM3", "aliases": []}
+        ]
       }
     ]
 matched:
@@ -1122,6 +1163,7 @@ def _dls_wrapper(
     migrated=False,
     data_set_type="",
     json=False,
+    members=False,
 ):
     """A wrapper for ZOAU 'dls' shell command.
 
@@ -1143,6 +1185,9 @@ def _dls_wrapper(
         Data set type to look for.
     json : bool
         Return content in json format.
+    members : bool
+        Enumerate PDS/PDSE members and member aliases (appends ``-a``).
+        Only meaningful when combined with ``data_set_type="ALIAS"``.
 
     Returns
     -------
@@ -1163,6 +1208,8 @@ def _dls_wrapper(
         dls_cmd += " -v"
     if data_set_type:
         dls_cmd += f" -t{data_set_type}"
+    if members:
+        dls_cmd += " -a"
     if json:
         dls_cmd += " -j"
 
@@ -1245,7 +1292,7 @@ def _ds_type(ds_name):
     return None
 
 
-def alias_filter(module, patterns, excludes=None):
+def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
     """Return all dataset catalog alias entries that match any of the patterns.
 
     Parameters
@@ -1256,14 +1303,21 @@ def alias_filter(module, patterns, excludes=None):
         A list of data set patterns.
     excludes : list[str], optional
         A list of patterns. Alias names matching any of these are excluded.
+    include_member_aliases : bool, optional
+        When True, pass ``-a`` to ``dls`` so that PDS/PDSE alias entries include
+        a ``members`` array in the JSON output. All members are returned; those
+        with no aliases have an empty ``aliases`` list.
 
     Returns
     -------
     list[dict]
         Each dict contains:
-          ``name``           (str)       -- the alias name
-          ``alias_of``       (str)       -- the real dataset the alias points to
-          ``type``           (str)       -- always "ALIAS"
+          ``name``     (str)       -- the alias name
+          ``alias_of`` (str)       -- the real dataset the alias points to
+          ``type``     (str)       -- always "ALIAS"
+          ``members``  (list[dict]) -- present only when
+            ``include_member_aliases=True`` and the alias points to a PDS/PDSE.
+            Each item is ``{"name": <memname>, "aliases": [<alias_name>, ...]}``.
 
     Raises
     ------
@@ -1276,13 +1330,14 @@ def alias_filter(module, patterns, excludes=None):
             pattern,
             data_set_type="ALIAS",
             list_details=True,
+            members=include_member_aliases,
             json=True,
         )
         if rc != 0:
             if "BGYSC1103E" in err:
                 # No matching datasets found -- not an error
                 continue
-            flag_str = "dls -ltALIAS -j"
+            flag_str = "dls -ltALIAS -a -j" if include_member_aliases else "dls -ltALIAS -j"
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command '{0}'".format(flag_str),
                 rc=rc, stdout=out, stderr=err
@@ -1301,8 +1356,15 @@ def alias_filter(module, patterns, excludes=None):
             entry = {
                 "name": alias_name,
                 "type": "ALIAS",
-                "alias_of": ds.get("relation", "")
+                "alias_of": ds.get("relation", ""),
             }
+            if include_member_aliases:
+                members = []
+                for mem in ds.get("members", []):
+                    memname = mem.get("memname", "")
+                    if memname:
+                        members.append({"name": memname, "aliases": mem.get("aliases", [])})
+                entry["members"] = members
             filtered.append(entry)
     return filtered
 
@@ -1350,6 +1412,7 @@ def run_module(module):
     extended = module.params.get('extended')
     migrated_type = module.params.get('migrated_type') or module.params.get('migrated_types')
     fifo = module.params.get('fifo')
+    include_member_aliases = module.params.get('include_member_aliases') or False
     vsam_types = {"CLUSTER", "DATA", "INDEX"}
     res_args = dict(data_sets=[])
     examined_ds = 0
@@ -1434,7 +1497,7 @@ def run_module(module):
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
         elif res_type == "ALIAS":
-            filtered_data_sets = alias_filter(module, patterns, excludes=excludes)
+            filtered_data_sets = alias_filter(module, patterns, excludes=excludes, include_member_aliases=include_member_aliases)
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:
@@ -1514,6 +1577,7 @@ def main():
             scratch=dict(type="bool", required=False),
             extended=dict(type="bool", required=False),
             fifo=dict(type="bool", required=False),
+            include_member_aliases=dict(type="bool", required=False, default=False),
         )
     )
 
@@ -1548,6 +1612,7 @@ def main():
         scratch=dict(type="bool", required=False),
         extended=dict(type="bool", required=False),
         fifo=dict(type="bool", required=False),
+        include_member_aliases=dict(arg_type="bool", required=False, default=False),
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

@@ -224,8 +224,10 @@ notes:
   - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), C(volume),
     and C(contains) options are ignored, as aliases are catalog pointers with no
     independent attributes. Only C(patterns), C(excludes), and C(include_member_aliases) apply.
+    Member-level exclude patterns (parenthesised expressions such as C((^MEM.*))) are also
+    ignored for C(alias) resource type.
   - When C(include_member_aliases=true), PDS/PDSE alias entries additionally include
-    a C(member_aliases) list showing each member and its in-directory alias names.
+    a C(members) list showing each member and its in-directory alias names.
 seealso:
 - module: ibm.ibm_zos_core.zos_data_set
 """

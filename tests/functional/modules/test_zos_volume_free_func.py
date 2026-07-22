@@ -25,16 +25,16 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 # ---------------------------------------------------------------------------
 
 VOLUME_RETURN_KEYS = {
-    'volser', 'device_number', 'device_type', 'status',
+    'volser', 'device_number',
     'total_space', 'free_space', 'used_space',
     'percent_free', 'percent_used',
-    'total_bytes', 'free_bytes',
-    'device_status', 'vtoc_info',
+    'total_kilobytes', 'free_kilobytes',
+    'status', 'vtoc_info',
 }
 
-DEVICE_STATUS_KEYS = {
-    'is_online', 'status_changing', 'is_reserved', 'is_unloaded',
-    'is_allocated', 'is_present', 'is_system_residence', 'is_dasd',
+STATUS_KEYS = {
+    'is_online', 'is_offline_pending', 'is_mount_reserved', 'is_unload_pending',
+    'is_allocated', 'is_permanently_resident', 'is_system_residence',
 }
 
 VTOC_INFO_KEYS = {'index_vtoc', 'vtoc_active', 'is_cylinder_managed'}
@@ -47,14 +47,13 @@ def _assert_volume_structure(vol):
     )
     assert isinstance(vol['volser'], str)
     assert isinstance(vol['device_number'], str)
-    assert vol['status'] in ('online', 'offline', 'pending')
     assert isinstance(vol['total_space'], int)
     assert isinstance(vol['free_space'], int)
     assert isinstance(vol['used_space'], int)
     assert isinstance(vol['percent_free'], float)
     assert isinstance(vol['percent_used'], float)
-    assert isinstance(vol['total_bytes'], int)
-    assert isinstance(vol['free_bytes'], int)
+    assert isinstance(vol['total_kilobytes'], int)
+    assert isinstance(vol['free_kilobytes'], int)
     assert 0.0 <= vol['percent_free'] <= 100.0
     assert 0.0 <= vol['percent_used'] <= 100.0
     assert vol['total_space'] >= 0
@@ -62,11 +61,11 @@ def _assert_volume_structure(vol):
     assert vol['used_space'] >= 0
     # used + free must equal total
     assert vol['used_space'] + vol['free_space'] == vol['total_space']
-    # device_status sub-keys
-    ds = vol['device_status']
-    assert DEVICE_STATUS_KEYS.issubset(set(ds.keys()))
-    for k in DEVICE_STATUS_KEYS:
-        assert isinstance(ds[k], bool)
+    # status sub-keys
+    st = vol['status']
+    assert STATUS_KEYS.issubset(set(st.keys()))
+    for k in STATUS_KEYS:
+        assert isinstance(st[k], bool)
     # vtoc_info sub-keys
     vi = vol['vtoc_info']
     assert VTOC_INFO_KEYS.issubset(set(vi.keys()))
@@ -170,19 +169,16 @@ def test_query_union_volser_and_device(ansible_zos_module, volumes_unit_on_syste
 # ---------------------------------------------------------------------------
 
 def test_filter_online_only(ansible_zos_module):
-    """All returned volumes should report status=online when filter is applied."""
+    """All returned volumes should have status.is_online=True when filter is applied."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online']}
+        filter={'status': ['is_online']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
-        vols = result.get('volumes', [])
-        for vol in vols:
-            assert vol['status'] == 'online', (
-                "Expected status=online but got {0} for {1}".format(
-                    vol['status'], vol['volser']
-                )
+        for vol in result.get('volumes', []):
+            assert vol['status']['is_online'] is True, (
+                "Expected status.is_online=True for {0}".format(vol['volser'])
             )
 
 
@@ -308,12 +304,12 @@ def test_filter_combined_status_and_percent(ansible_zos_module):
     hosts = ansible_zos_module
     max_pct = 80
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online'], 'percent_free_max': max_pct}
+        filter={'status': ['is_online'], 'percent_free_max': max_pct}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
-            assert vol['status'] == 'online'
+            assert vol['status']['is_online'] is True
             assert vol['percent_free'] <= max_pct
 
 
@@ -469,36 +465,341 @@ def test_return_stderr_present(ansible_zos_module):
 
 
 # ---------------------------------------------------------------------------
-# Tests: filter.status input validation
+# Tests: filter.status (UCB flag filtering)
 # ---------------------------------------------------------------------------
 
 def test_filter_status_invalid_value_fails(ansible_zos_module):
-    """An invalid status value should cause the module to fail with a clear error."""
+    """An invalid status flag should cause the module to fail with a clear error."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['onlin']}  # intentional typo
+        filter={'status': ['is_not_a_flag']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is True, (
-            "Expected module to fail on invalid status value 'onlin' but it succeeded"
+            "Expected module to fail on invalid status flag 'is_not_a_flag' but it succeeded"
         )
-        # Ansible's choices validation message always contains the bad value.
         msg = result.get('msg', '') + result.get('stderr', '')
-        assert 'onlin' in msg, (
-            "Expected error message to reference the invalid value 'onlin', got: {0}".format(msg)
+        assert 'is_not_a_flag' in msg, (
+            "Expected error message to reference the invalid value, got: {0}".format(msg)
         )
 
 
-def test_filter_status_valid_values_accepted(ansible_zos_module):
-    """Each valid status value should be accepted individually without failure."""
+def test_filter_status_is_online(ansible_zos_module):
+    """All returned volumes must have status.is_online=True."""
     hosts = ansible_zos_module
-    for status_val in ('online', 'offline', 'pending'):
+    results = hosts.all.zos_volume_free(
+        filter={'status': ['is_online']}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            assert vol['status']['is_online'] is True, (
+                "Volume {0} has is_online=False but passed the filter".format(vol['volser'])
+            )
+
+
+def test_filter_status_multiple_flags(ansible_zos_module):
+    """All returned volumes must satisfy every flag listed in the status filter."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(
+        filter={'status': ['is_online', 'is_allocated']}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            st = vol['status']
+            assert st['is_online'] is True, (
+                "Volume {0} has is_online=False".format(vol['volser'])
+            )
+            assert st['is_allocated'] is True, (
+                "Volume {0} has is_allocated=False".format(vol['volser'])
+            )
+
+
+def test_filter_status_valid_choices_accepted(ansible_zos_module):
+    """Every valid status flag name should be accepted without failure."""
+    hosts = ansible_zos_module
+    valid_flags = [
+        'is_online', 'is_offline_pending', 'is_mount_reserved',
+        'is_unload_pending', 'is_allocated', 'is_permanently_resident',
+        'is_system_residence',
+    ]
+    for flag in valid_flags:
         results = hosts.all.zos_volume_free(
-            filter={'status': [status_val]}
+            filter={'status': [flag]}
         )
         for result in results.contacted.values():
             assert result.get('failed') is not True, (
-                "Module unexpectedly failed for valid status value '{0}': {1}".format(
-                    status_val, result.get('msg', '')
+                "Module unexpectedly failed for valid status flag '{0}': {1}".format(
+                    flag, result.get('msg', '')
                 )
             )
+
+
+# ---------------------------------------------------------------------------
+# Gap 1: device number case-insensitivity
+# ---------------------------------------------------------------------------
+
+def test_query_device_number_case_insensitive(ansible_zos_module, volumes_unit_on_systems):
+    """Device number matching should be case-insensitive — lowercase input must match."""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_unit_on_systems)
+    vol_name, device_addr = vols.get_available_vol_addr()
+
+    results = hosts.all.zos_volume_free(device_numbers=[device_addr.lower()])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        device_numbers = [v['device_number'].upper() for v in result.get('volumes', [])]
+        assert device_addr.upper() in device_numbers, (
+            "Expected device {0} in results for lowercase input {1}".format(
+                device_addr.upper(), device_addr.lower()
+            )
+        )
+
+    vols.free_vol(vol_name)
+
+
+# ---------------------------------------------------------------------------
+# Gap 2: empty status list returns all volumes (no filter applied)
+# ---------------------------------------------------------------------------
+
+def test_filter_status_empty_list_returns_all(ansible_zos_module):
+    """An empty status list should apply no UCB filter — all volumes are returned."""
+    hosts = ansible_zos_module
+    # Baseline: total volumes with no filter.
+    baseline_results = hosts.all.zos_volume_free()
+    # Filtered: empty status list.
+    filtered_results = hosts.all.zos_volume_free(filter={'status': []})
+
+    for host in baseline_results.contacted:
+        baseline_count = len(baseline_results.contacted[host].get('volumes', []))
+        filtered_count = len(filtered_results.contacted[host].get('volumes', []))
+        assert filtered_results.contacted[host].get('failed') is not True
+        assert filtered_count == baseline_count, (
+            "Expected {0} volumes with empty status filter but got {1}".format(
+                baseline_count, filtered_count
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# Gap 3: free_space_min + free_space_max range together
+# ---------------------------------------------------------------------------
+
+def test_filter_free_space_range(ansible_zos_module):
+    """All returned volumes should satisfy both free_space_min and free_space_max."""
+    hosts = ansible_zos_module
+    min_tracks = 10
+    max_tracks = 999999
+    results = hosts.all.zos_volume_free(
+        filter={'free_space_min': min_tracks, 'free_space_max': max_tracks, 'unit': 'tracks'}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            assert vol['free_space'] >= min_tracks, (
+                "Volume {0} free_space={1} is below min {2}".format(
+                    vol['volser'], vol['free_space'], min_tracks
+                )
+            )
+            assert vol['free_space'] <= max_tracks, (
+                "Volume {0} free_space={1} is above max {2}".format(
+                    vol['volser'], vol['free_space'], max_tracks
+                )
+            )
+
+
+# ---------------------------------------------------------------------------
+# Gap 4: status + vtoc_indexed combined filter
+# ---------------------------------------------------------------------------
+
+def test_filter_combined_status_and_vtoc(ansible_zos_module):
+    """Combined status + vtoc_indexed filter: all results must satisfy both."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(
+        filter={'status': ['is_online'], 'vtoc_indexed': True}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            assert vol['status']['is_online'] is True, (
+                "Volume {0} has is_online=False but passed the filter".format(vol['volser'])
+            )
+            assert vol['vtoc_info']['index_vtoc'] is True, (
+                "Volume {0} has index_vtoc=False but passed the vtoc_indexed filter".format(
+                    vol['volser']
+                )
+            )
+
+
+# ---------------------------------------------------------------------------
+# Gap 5: msg count matches len(volumes) and singular/plural is correct
+# ---------------------------------------------------------------------------
+
+def test_return_msg_volume_count(ansible_zos_module, volumes_on_systems):
+    """msg should contain the correct volume count and use correct singular/plural."""
+    hosts = ansible_zos_module
+
+    # Case 1: query returning exactly one volume — expect singular "volume".
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name = vols.get_available_vol()
+    results = hosts.all.zos_volume_free(volumes=[vol_name])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        count = len(result.get('volumes', []))
+        msg = result.get('msg', '')
+        assert str(count) in msg, (
+            "Expected count {0} in msg '{1}'".format(count, msg)
+        )
+        if count == 1:
+            assert 'volume' in msg and 'volumes' not in msg, (
+                "Expected singular 'volume' in msg '{0}'".format(msg)
+            )
+    vols.free_vol(vol_name)
+
+    # Case 2: query all — expect plural "volumes" when count > 1.
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        count = len(result.get('volumes', []))
+        msg = result.get('msg', '')
+        assert str(count) in msg, (
+            "Expected count {0} in msg '{1}'".format(count, msg)
+        )
+        if count > 1:
+            assert 'volumes' in msg, (
+                "Expected plural 'volumes' in msg '{0}'".format(msg)
+            )
+
+
+# ---------------------------------------------------------------------------
+# Cross-validation: compare module output against vf -j CLI
+# ---------------------------------------------------------------------------
+
+# UCB flag mapping: module key -> vf JSON status key (uppercase in vf output)
+_UCB_MAP = [
+    ('is_online',               'UCBONLI'),
+    ('is_offline_pending',      'UCBCHGS'),
+    ('is_mount_reserved',       'UCBRESV'),
+    ('is_unload_pending',       'UCBUNLD'),
+    ('is_allocated',            'UCBALOC'),
+    ('is_permanently_resident', 'UCBPRES'),
+    ('is_system_residence',     'UCBSYSR'),
+]
+
+
+def _get_vf_vol(hosts, vol_name):
+    """Run ``vf -j -- <vol_name>`` and return the matching volume dict.
+
+    Returns None if vf fails or returns no entry for the volser (e.g. the
+    volume name is invalid or not active as a DASD volume).
+    """
+    import json
+    cli_results = hosts.all.shell(cmd="vf -j -- {0}".format(vol_name))
+    for result in cli_results.contacted.values():
+        if result.get('rc') != 0:
+            return None
+        cli_json = json.loads(result.get('stdout', '{}'))
+        cli_volumes = cli_json.get('data', {}).get('volumes', [])
+        return next(
+            (v for v in cli_volumes if v.get('volser', '').upper() == vol_name.upper()),
+            None
+        )
+    return None
+
+
+def _assert_vol_matches_vf(mod_vol, cli_vol):
+    """Assert every comparable field in mod_vol matches the vf CLI output."""
+    assert mod_vol['volser'].upper() == cli_vol['volser'].upper(), (
+        "volser: module={0}, vf={1}".format(mod_vol['volser'], cli_vol['volser'])
+    )
+    assert mod_vol['device_number'].upper() == cli_vol['unit'].upper(), (
+        "device_number: module={0}, vf={1}".format(mod_vol['device_number'], cli_vol['unit'])
+    )
+    assert mod_vol['total_space'] == int(cli_vol['total_tracks']), (
+        "total_space: module={0}, vf={1}".format(mod_vol['total_space'], cli_vol['total_tracks'])
+    )
+    assert mod_vol['free_space'] == int(cli_vol['free_tracks']), (
+        "free_space: module={0}, vf={1}".format(mod_vol['free_space'], cli_vol['free_tracks'])
+    )
+    # vf free_kilobytes/total_kilobytes are already in KB — compare directly
+    assert mod_vol['total_kilobytes'] == int(cli_vol['total_kilobytes']), (
+        "total_kilobytes: module={0}, vf={1}".format(mod_vol['total_kilobytes'], cli_vol['total_kilobytes'])
+    )
+    assert mod_vol['free_kilobytes'] == int(cli_vol['free_kilobytes']), (
+        "free_kilobytes: module={0}, vf={1}".format(mod_vol['free_kilobytes'], cli_vol['free_kilobytes'])
+    )
+    assert mod_vol['vtoc_info']['index_vtoc'] == bool(cli_vol['index_vtoc']), (
+        "index_vtoc: module={0}, vf={1}".format(
+            mod_vol['vtoc_info']['index_vtoc'], cli_vol['index_vtoc'])
+    )
+    assert mod_vol['vtoc_info']['vtoc_active'] == bool(cli_vol['vtoc_active']), (
+        "vtoc_active: module={0}, vf={1}".format(
+            mod_vol['vtoc_info']['vtoc_active'], cli_vol['vtoc_active'])
+    )
+    assert mod_vol['vtoc_info']['is_cylinder_managed'] == bool(cli_vol['is_cylinder_managed']), (
+        "is_cylinder_managed: module={0}, vf={1}".format(
+            mod_vol['vtoc_info']['is_cylinder_managed'], cli_vol['is_cylinder_managed'])
+    )
+    cli_status = cli_vol['status']
+    for flag, ucb_key in _UCB_MAP:
+        expected = bool(cli_status.get(ucb_key, False))
+        actual = mod_vol['status'][flag]
+        assert actual == expected, (
+            "status.{0}: module={1}, vf[{2}]={3}".format(flag, actual, ucb_key, expected)
+        )
+
+
+def test_volume_info_matches_vf_command(ansible_zos_module, volumes_on_systems):
+    """Module output must match 'vf -j -- <volser>' CLI output for up to 5 volumes.
+
+    For each volume:
+      1. Run ``vf -j -- <volser>`` and parse data.volumes[0].
+      2. Run zos_volume_free for the same volser.
+      3. Compare every numeric, boolean, and identity field.
+
+    vf -j JSON structure (confirmed from live run):
+      data.volumes[0]: unit, volser, free_tracks, total_tracks,
+      free_kilobytes, total_kilobytes, index_vtoc, vtoc_active,
+      is_cylinder_managed, status{UCBONLI..UCBSYSR}
+    """
+    hosts = ansible_zos_module
+    vol_handler = Volume_Handler(volumes_on_systems)
+
+    acquired = []
+    validated = 0
+    try:
+        for _ in range(len(volumes_on_systems)):
+            if validated >= 5:
+                break
+            vol_name = vol_handler.get_available_vol()
+            acquired.append(vol_name)
+
+            # ── Step 1: vf CLI — skip volumes vf cannot query ─────────────────
+            cli_vol = _get_vf_vol(hosts, vol_name)
+            if cli_vol is None:
+                print("Skipping {0}: vf -j returned no data.".format(vol_name))
+                continue
+
+            # ── Step 2: module ────────────────────────────────────────────────
+            mod_results = hosts.all.zos_volume_free(volumes=[vol_name])
+            for result in mod_results.contacted.values():
+                assert result.get('failed') is not True, (
+                    "zos_volume_free failed for {0}: {1}".format(vol_name, result.get('msg', ''))
+                )
+                mod_vols = result.get('volumes', [])
+                assert len(mod_vols) == 1, (
+                    "Expected 1 volume for {0}, got {1}".format(vol_name, len(mod_vols))
+                )
+                # ── Step 3: compare ───────────────────────────────────────────
+                _assert_vol_matches_vf(mod_vols[0], cli_vol)
+
+            validated += 1
+
+        assert validated > 0, (
+            "No valid volumes found in fixture to compare against vf CLI."
+        )
+
+    finally:
+        for vol_name in acquired:
+            vol_handler.free_vol(vol_name)

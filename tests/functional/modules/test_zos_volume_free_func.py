@@ -698,6 +698,9 @@ def _get_vf_vol(hosts, vol_name):
     cli_results = hosts.all.shell(cmd="vf -j -- {0}".format(vol_name))
     for result in cli_results.contacted.values():
         if result.get('rc') != 0:
+            print("Skipping {0}: vf rc={1} — {2}".format(
+                vol_name, result.get('rc'), result.get('stdout', '').strip()
+            ))
             return None
         cli_json = json.loads(result.get('stdout', '{}'))
         cli_volumes = cli_json.get('data', {}).get('volumes', [])

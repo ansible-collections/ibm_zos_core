@@ -110,14 +110,24 @@ def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
 
 
 def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
-    """Querying a non-existent VOLSER should return an empty list without failing."""
+    """A single non-existent VOLSER causes ZOAU to produce empty output (BGYSC6606E).
+
+    The module should fail with rc=8 and a message referencing BGYSC6606E.
+    """
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
     for result in results.contacted.values():
-        assert result.get('failed') is not True
-        assert result.get('changed') is False
-        vols = result.get('volumes', [])
-        assert vols == []
+        assert result.get('failed') is True, (
+            "Expected module to fail for non-existent single VOLSER 'XXXXXX' but it succeeded"
+        )
+        assert result.get('rc') == 8, (
+            "Expected rc=8 for JSONDecodeError / BGYSC6606E path, got rc={0}".format(
+                result.get('rc')
+            )
+        )
+        assert 'BGYSC6606E' in result.get('msg', '') + result.get('stderr', ''), (
+            "Expected BGYSC6606E in error output, got msg={0!r}".format(result.get('msg', ''))
+        )
 
 
 def test_query_by_device_number(ansible_zos_module, volumes_unit_on_systems):
@@ -423,6 +433,46 @@ def test_volser_input_is_case_insensitive(ansible_zos_module, volumes_on_systems
 # ---------------------------------------------------------------------------
 # Tests: return structure
 # ---------------------------------------------------------------------------
+
+def test_return_rc_success(ansible_zos_module):
+    """rc should be 0 on a successful query."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('rc') == 0, (
+            "Expected rc=0 on success, got rc={0}".format(result.get('rc'))
+        )
+
+
+def test_return_rc_present(ansible_zos_module):
+    """rc should always be present in the result."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert 'rc' in result, "Expected 'rc' key in result"
+        assert isinstance(result['rc'], int), (
+            "Expected 'rc' to be int, got {0}".format(type(result['rc']))
+        )
+
+
+def test_return_rc_5_on_param_validation_failure(ansible_zos_module):
+    """rc=5 when a parameter validation failure occurs (invalid free_space_min type)."""
+    hosts = ansible_zos_module
+    # free_space_min expects int — pass a non-numeric string to trigger BetterArgParser error.
+    results = hosts.all.zos_volume_free(
+        filter={'free_space_min': 'not_an_int'}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is True, (
+            "Expected module to fail for invalid free_space_min but it succeeded"
+        )
+        assert result.get('rc') == 5, (
+            "Expected rc=5 for parameter validation failure, got rc={0}".format(
+                result.get('rc')
+            )
+        )
+
 
 def test_return_msg_present(ansible_zos_module):
     """The 'msg' key should always be present in the result."""

@@ -375,6 +375,17 @@ changed:
   returned: always
   type: bool
   sample: false
+rc:
+  description:
+    - The return code is C(0) when the command executes successfully.
+    - The return code is mapped from C(ZOAUException.response.rc) when a ZOAU
+      error occurs.
+    - The return code is C(5) when parameter validation fails.
+    - The return code is C(8) when a JSON decode error occurs (e.g. BGYSC6606E).
+    - The return code is C(1) when any other unexpected error occurs.
+  returned: always
+  type: int
+  sample: 0
 msg:
   description: Message describing the result.
   returned: always
@@ -397,6 +408,7 @@ stderr:
   sample: ""
 """
 
+import json
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
@@ -417,6 +429,16 @@ try:
 except Exception:
     volumes = ZOAUImportError(traceback.format_exc())
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
+
+class VolumeUCBError(Exception):
+    """Raised when ZOAU cannot obtain UCB data for a volume serial (BGYSC6606E).
+
+    Carries rc=8 so run_module can distinguish this specific failure
+    from all other exceptions (rc=1) without catching bare JSONDecodeError,
+    which could originate from unrelated code paths.
+    """
+    rc: int = 8
+
 
 # Tracks per cylinder constant for 3390/3380 devices.
 _TRACKS_PER_CYLINDER = 15
@@ -649,9 +671,21 @@ def get_volume_info(module):
             matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
         elif single_volser_lookup:
             # Single VOLSER, no devices: direct lookup.
+            # list_volumes(volume_serial=) raises ZOAUException or
+            # json.JSONDecodeError when the volume does not exist or is not
+            # active (ZOAU receives empty output, e.g. BGYSC6606E).
+            # ZOAUException is re-raised as-is; JSONDecodeError is converted
+            # to an Exception with the BGYSC6606E message.
             logger.debug("Calling volumes.list_volumes(volume_serial=%r).", requested_volsers[0])
-            raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0])
-            matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
+            try:
+                raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0])
+                matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
+            except zoau_exceptions.ZOAUException:
+                raise
+            except json.JSONDecodeError:
+                raise VolumeUCBError(
+                    "BGYSC6606E Could not obtain UCB for volume serial {0}".format(requested_volsers[0])
+                )
         elif not requested_devices:
             # Multiple VOLSERs, no devices: fetch all and filter by VOLSER set.
             logger.debug("Calling volumes.list_volumes() for multi-VOLSER query.")
@@ -674,11 +708,7 @@ def get_volume_info(module):
                         seen_volsers.add(vol['volser'])
                         matched.append(vol)
     except zoau_exceptions.ZOAUException:
-        if single_volser_lookup:
-            # Volume not found or not active — return empty, not a failure.
-            matched = []
-        else:
-            raise
+        raise
 
     # Apply filters.
     filtered = _apply_filters(matched, filter_params)
@@ -763,8 +793,12 @@ def run_module():
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(
+            changed=False,
+            volumes=[],
+            rc=5,
             msg='Parameter verification failed.',
-            stderr=str(err)
+            stdout='',
+            stderr=str(err),
         )
 
     module_verbosity_level = module._verbosity
@@ -774,6 +808,7 @@ def run_module():
         changed=False,
         volumes=[],
         msg='',
+        rc=0,
         stdout='',
         stderr='',
     )
@@ -783,11 +818,13 @@ def run_module():
     try:
         volume_list, msg = get_volume_info(module)
     except zoau_exceptions.ZOAUException as err:
+        result['rc'] = err.response.rc
         result['msg'] = err.message
         result['stdout'] = err.response.stdout_response
         result['stderr'] = err.response.stderr_response
         module.fail_json(**result)
     except Exception as err:
+        result['rc'] = getattr(err, 'rc', 1)
         result['msg'] = 'An unexpected error occurred while querying volume information: {0}'.format(str(err))
         result['stderr'] = str(err)
         module.fail_json(**result)

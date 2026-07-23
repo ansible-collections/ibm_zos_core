@@ -33,8 +33,8 @@ VOLUME_RETURN_KEYS = {
 }
 
 STATUS_KEYS = {
-    'is_online', 'is_offline_pending', 'is_mount_reserved', 'is_unload_pending',
-    'is_allocated', 'is_permanently_resident', 'is_system_residence',
+    'online', 'offline_pending', 'mount_reserved', 'unload_pending',
+    'allocated', 'permanently_resident', 'system_residence', 'status_indicator',
 }
 
 VTOC_INFO_KEYS = {'index_vtoc', 'vtoc_active', 'is_cylinder_managed'}
@@ -110,23 +110,31 @@ def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
 
 
 def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
-    """A single non-existent VOLSER causes ZOAU to produce empty output (BGYSC6606E).
+    """A single non-existent VOLSER should return an empty list without failing.
 
-    The module should fail with rc=8 and a message referencing BGYSC6606E.
+    ZOAU raises VolumeInfoException (BGYSC6606E) for a single missing volume.
+    The module treats this as "not found" — consistent with multi-volser queries
+    where missing volumes are silently excluded from results.
+    The message should note the unavailable volume and report zero found.
     """
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
     for result in results.contacted.values():
-        assert result.get('failed') is True, (
-            "Expected module to fail for non-existent single VOLSER 'XXXXXX' but it succeeded"
+        assert result.get('failed') is not True, (
+            "Expected module to succeed for non-existent single VOLSER 'XXXXXX' but it failed"
         )
-        assert result.get('rc') == 8, (
-            "Expected rc=8 for JSONDecodeError / BGYSC6606E path, got rc={0}".format(
-                result.get('rc')
+        assert result.get('changed') is False
+        assert result.get('volumes') == [], (
+            "Expected empty volumes list for non-existent VOLSER, got: {0}".format(
+                result.get('volumes')
             )
         )
-        assert 'BGYSC6606E' in result.get('msg', '') + result.get('stderr', ''), (
-            "Expected BGYSC6606E in error output, got msg={0!r}".format(result.get('msg', ''))
+        msg = result.get('msg', '')
+        assert 'No matching volumes found.' in msg, (
+            "Expected 'No matching volumes found.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'XXXXXX' in msg, (
+            "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
         )
 
 
@@ -179,16 +187,16 @@ def test_query_union_volser_and_device(ansible_zos_module, volumes_unit_on_syste
 # ---------------------------------------------------------------------------
 
 def test_filter_online_only(ansible_zos_module):
-    """All returned volumes should have status.is_online=True when filter is applied."""
+    """All returned volumes should have status.online=True when filter is applied."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_online']}
+        filter={'status': ['online']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
-            assert vol['status']['is_online'] is True, (
-                "Expected status.is_online=True for {0}".format(vol['volser'])
+            assert vol['status']['online'] is True, (
+                "Expected status.online=True for {0}".format(vol['volser'])
             )
 
 
@@ -314,12 +322,12 @@ def test_filter_combined_status_and_percent(ansible_zos_module):
     hosts = ansible_zos_module
     max_pct = 80
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_online'], 'percent_free_max': max_pct}
+        filter={'status': ['online'], 'percent_free_max': max_pct}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
-            assert vol['status']['is_online'] is True
+            assert vol['status']['online'] is True
             assert vol['percent_free'] <= max_pct
 
 
@@ -457,18 +465,23 @@ def test_return_rc_present(ansible_zos_module):
 
 
 def test_return_rc_5_on_param_validation_failure(ansible_zos_module):
-    """rc=5 when a parameter validation failure occurs (invalid free_space_min type)."""
+    """rc=5 when BetterArgParser rejects an invalid VOLSER.
+
+    Ansible's argument_spec accepts any string for 'volumes', but
+    BetterArgParser's 'volume' element type rejects names that violate
+    z/OS VOLSER rules (e.g. longer than 6 characters), raising ValueError
+    which maps to rc=5.
+    """
     hosts = ansible_zos_module
-    # free_space_min expects int — pass a non-numeric string to trigger BetterArgParser error.
     results = hosts.all.zos_volume_free(
-        filter={'free_space_min': 'not_an_int'}
+        volumes=['TOOLONGVOLSERVALUE']
     )
     for result in results.contacted.values():
         assert result.get('failed') is True, (
-            "Expected module to fail for invalid free_space_min but it succeeded"
+            "Expected module to fail for invalid VOLSER but it succeeded"
         )
         assert result.get('rc') == 5, (
-            "Expected rc=5 for parameter validation failure, got rc={0}".format(
+            "Expected rc=5 for BetterArgParser validation failure, got rc={0}".format(
                 result.get('rc')
             )
         )
@@ -522,29 +535,29 @@ def test_filter_status_invalid_value_fails(ansible_zos_module):
     """An invalid status flag should cause the module to fail with a clear error."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_not_a_flag']}
+        filter={'status': ['not_a_flag']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is True, (
-            "Expected module to fail on invalid status flag 'is_not_a_flag' but it succeeded"
+            "Expected module to fail on invalid status flag 'not_a_flag' but it succeeded"
         )
         msg = result.get('msg', '') + result.get('stderr', '')
-        assert 'is_not_a_flag' in msg, (
+        assert 'not_a_flag' in msg, (
             "Expected error message to reference the invalid value, got: {0}".format(msg)
         )
 
 
 def test_filter_status_is_online(ansible_zos_module):
-    """All returned volumes must have status.is_online=True."""
+    """All returned volumes must have status.online=True."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_online']}
+        filter={'status': ['online']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
-            assert vol['status']['is_online'] is True, (
-                "Volume {0} has is_online=False but passed the filter".format(vol['volser'])
+            assert vol['status']['online'] is True, (
+                "Volume {0} has online=False but passed the filter".format(vol['volser'])
             )
 
 
@@ -552,17 +565,17 @@ def test_filter_status_multiple_flags(ansible_zos_module):
     """All returned volumes must satisfy every flag listed in the status filter."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_online', 'is_allocated']}
+        filter={'status': ['online', 'allocated']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
             st = vol['status']
-            assert st['is_online'] is True, (
-                "Volume {0} has is_online=False".format(vol['volser'])
+            assert st['online'] is True, (
+                "Volume {0} has online=False".format(vol['volser'])
             )
-            assert st['is_allocated'] is True, (
-                "Volume {0} has is_allocated=False".format(vol['volser'])
+            assert st['allocated'] is True, (
+                "Volume {0} has allocated=False".format(vol['volser'])
             )
 
 
@@ -570,9 +583,9 @@ def test_filter_status_valid_choices_accepted(ansible_zos_module):
     """Every valid status flag name should be accepted without failure."""
     hosts = ansible_zos_module
     valid_flags = [
-        'is_online', 'is_offline_pending', 'is_mount_reserved',
-        'is_unload_pending', 'is_allocated', 'is_permanently_resident',
-        'is_system_residence',
+        'online', 'offline_pending', 'mount_reserved',
+        'unload_pending', 'allocated', 'permanently_resident',
+        'system_residence', 'status_indicator',
     ]
     for flag in valid_flags:
         results = hosts.all.zos_volume_free(
@@ -667,13 +680,13 @@ def test_filter_combined_status_and_vtoc(ansible_zos_module):
     """Combined status + vtoc_indexed filter: all results must satisfy both."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['is_online'], 'vtoc_indexed': True}
+        filter={'status': ['online'], 'vtoc_indexed': True}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
         for vol in result.get('volumes', []):
-            assert vol['status']['is_online'] is True, (
-                "Volume {0} has is_online=False but passed the filter".format(vol['volser'])
+            assert vol['status']['online'] is True, (
+                "Volume {0} has online=False but passed the filter".format(vol['volser'])
             )
             assert vol['vtoc_info']['index_vtoc'] is True, (
                 "Volume {0} has index_vtoc=False but passed the vtoc_indexed filter".format(
@@ -723,18 +736,183 @@ def test_return_msg_volume_count(ansible_zos_module, volumes_on_systems):
 
 
 # ---------------------------------------------------------------------------
+# Gap 6: consistent messaging — "Found X of Y" / "No matching volumes found."
+# ---------------------------------------------------------------------------
+
+def test_msg_single_existing_volser(ansible_zos_module, volumes_on_systems):
+    """Single existing VOLSER: msg should say 'Found 1 of 1 requested volume.'"""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name = vols.get_available_vol()
+
+    results = hosts.all.zos_volume_free(volumes=[vol_name])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        msg = result.get('msg', '')
+        assert 'Found 1 of 1 requested volume.' in msg, (
+            "Expected 'Found 1 of 1 requested volume.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'Unavailable' not in msg, (
+            "Unexpected 'Unavailable' in msg for existing volume: {0!r}".format(msg)
+        )
+
+    vols.free_vol(vol_name)
+
+
+def test_msg_single_nonexistent_volser_no_fail(ansible_zos_module):
+    """Single nonexistent VOLSER: module succeeds, rc=0, volumes=[], msg lists unavailable."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('rc') == 0, (
+            "Expected rc=0 for nonexistent single VOLSER, got rc={0}".format(result.get('rc'))
+        )
+        assert result.get('volumes') == []
+        msg = result.get('msg', '')
+        assert 'No matching volumes found.' in msg, (
+            "Expected 'No matching volumes found.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'XXXXXX' in msg, (
+            "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
+        )
+
+
+def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
+    """Two VOLSERs, one exists, one does not: msg says 'Found 1 of 2' and lists missing."""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name = vols.get_available_vol()
+
+    results = hosts.all.zos_volume_free(volumes=[vol_name, "XXXXXX"])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('rc') == 0
+        result_volsers = [v['volser'] for v in result.get('volumes', [])]
+        assert vol_name in result_volsers, (
+            "Expected existing volser {0} in results".format(vol_name)
+        )
+        assert len(result.get('volumes', [])) == 1, (
+            "Expected exactly 1 volume in results, got {0}".format(len(result.get('volumes', [])))
+        )
+        msg = result.get('msg', '')
+        assert 'Found 1 of 2 requested volumes.' in msg, (
+            "Expected 'Found 1 of 2 requested volumes.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'XXXXXX' in msg, (
+            "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
+        )
+        assert 'Unavailable or inaccessible volumes' in msg, (
+            "Expected unavailability notice in msg, got: {0!r}".format(msg)
+        )
+
+    vols.free_vol(vol_name)
+
+
+def test_msg_multi_volser_both_missing(ansible_zos_module):
+    """Two nonexistent VOLSERs: module succeeds, volumes=[], msg lists both as unavailable."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(volumes=["XXXXXX", "YYYYYY"])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('rc') == 0
+        assert result.get('volumes') == [], (
+            "Expected empty volumes list, got: {0}".format(result.get('volumes'))
+        )
+        msg = result.get('msg', '')
+        assert 'No matching volumes found.' in msg, (
+            "Expected 'No matching volumes found.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'XXXXXX' in msg, (
+            "Expected 'XXXXXX' in unavailable list in msg, got: {0!r}".format(msg)
+        )
+        assert 'YYYYYY' in msg, (
+            "Expected 'YYYYYY' in unavailable list in msg, got: {0!r}".format(msg)
+        )
+        assert 'Unavailable or inaccessible volumes' in msg, (
+            "Expected unavailability notice in msg, got: {0!r}".format(msg)
+        )
+
+
+def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
+    """Two existing VOLSERs: msg says 'Found 2 of 2 requested volumes.' with no unavailable notice."""
+    hosts = ansible_zos_module
+    vols = Volume_Handler(volumes_on_systems)
+    vol_name_1 = vols.get_available_vol()
+    vol_name_2 = vols.get_available_vol()
+
+    results = hosts.all.zos_volume_free(volumes=[vol_name_1, vol_name_2])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        msg = result.get('msg', '')
+        assert 'Found 2 of 2 requested volumes.' in msg, (
+            "Expected 'Found 2 of 2 requested volumes.' in msg, got: {0!r}".format(msg)
+        )
+        assert 'Unavailable' not in msg, (
+            "Unexpected 'Unavailable' in msg when all volumes exist: {0!r}".format(msg)
+        )
+
+    vols.free_vol(vol_name_1)
+    vols.free_vol(vol_name_2)
+
+
+def test_msg_query_all_plural(ansible_zos_module):
+    """Query-all: msg should say 'Found N volumes.' (plural) when more than one volume exists."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        count = len(result.get('volumes', []))
+        msg = result.get('msg', '')
+        if count > 1:
+            assert 'Found {0} volumes.'.format(count) in msg, (
+                "Expected 'Found {0} volumes.' in msg, got: {1!r}".format(count, msg)
+            )
+        elif count == 1:
+            assert 'Found 1 volume.' in msg, (
+                "Expected 'Found 1 volume.' in msg, got: {0!r}".format(msg)
+            )
+        else:
+            assert 'No matching volumes found.' in msg
+
+
+def test_msg_nonexistent_volser_no_unavailable_when_query_all(ansible_zos_module):
+    """Query-all with no filter: msg must not contain 'Unavailable' (no specific volser requested)."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        msg = result.get('msg', '')
+        assert 'Unavailable' not in msg, (
+            "Unexpected 'Unavailable' in query-all msg: {0!r}".format(msg)
+        )
+
+
+def test_rc_zero_on_nonexistent_volser(ansible_zos_module):
+    """rc should be 0 for a nonexistent single VOLSER — BGYSC6606E is treated as not-found, not error."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
+    for result in results.contacted.values():
+        assert result.get('rc') == 0, (
+            "Expected rc=0 for nonexistent VOLSER, got rc={0}".format(result.get('rc'))
+        )
+        assert result.get('failed') is not True
+
+
+# ---------------------------------------------------------------------------
 # Cross-validation: compare module output against vf -j CLI
 # ---------------------------------------------------------------------------
 
 # UCB flag mapping: module key -> vf JSON status key (uppercase in vf output)
 _UCB_MAP = [
-    ('is_online',               'UCBONLI'),
-    ('is_offline_pending',      'UCBCHGS'),
-    ('is_mount_reserved',       'UCBRESV'),
-    ('is_unload_pending',       'UCBUNLD'),
-    ('is_allocated',            'UCBALOC'),
-    ('is_permanently_resident', 'UCBPRES'),
-    ('is_system_residence',     'UCBSYSR'),
+    ('online',               'UCBONLI'),
+    ('offline_pending',      'UCBCHGS'),
+    ('mount_reserved',       'UCBRESV'),
+    ('unload_pending',       'UCBUNLD'),
+    ('allocated',            'UCBALOC'),
+    ('permanently_resident', 'UCBPRES'),
+    ('system_residence',     'UCBSYSR'),
+    ('status_indicator',     'UCBDADI'),
 ]
 
 

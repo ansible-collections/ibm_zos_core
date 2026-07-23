@@ -68,27 +68,31 @@ options:
           - Filter by one or more UCB device status flags.
           - Only volumes where B(all) listed flags are C(true) in the
             C(status) return field are included.
-          - C(is_online) - device is online (C(ucbonli)).
-          - C(is_offline_pending) - device is transitioning from online to offline
+          - C(online) - device is online (C(ucbonli)).
+          - C(offline_pending) - device is transitioning from online to offline
             (C(ucbchgs)).
-          - C(is_mount_reserved) - mount status of the volume is reserved (C(ucbresv)).
-          - C(is_unload_pending) - unload command addressed but device not yet
+          - C(mount_reserved) - mount status of the volume is reserved (C(ucbresv)).
+          - C(unload_pending) - unload command addressed but device not yet
             unloaded (C(ucbunld)).
-          - C(is_allocated) - device is allocated (C(ucbaloc)).
-          - C(is_permanently_resident) - mount status of the volume is permanently resident
+          - C(allocated) - device is allocated (C(ucbaloc)).
+          - C(permanently_resident) - mount status of the volume is permanently resident
             (C(ucbpres)).
-          - C(is_system_residence) - system residence device, primary console,
+          - C(system_residence) - system residence device, primary console,
             or active console (C(ucbsysr)).
+          - C(status_indicator) - for tape volumes, standard tape labels have
+            been verified; for console devices, secondary console or console
+            status is changing (C(ucbdadi)).
         type: list
         elements: str
         choices:
-          - is_online
-          - is_offline_pending
-          - is_mount_reserved
-          - is_unload_pending
-          - is_allocated
-          - is_permanently_resident
-          - is_system_residence
+          - online
+          - offline_pending
+          - mount_reserved
+          - unload_pending
+          - allocated
+          - permanently_resident
+          - system_residence
+          - status_indicator
       free_space_min:
         description:
           - Minimum free space threshold.
@@ -146,6 +150,10 @@ notes:
   - This module is read-only and always returns C(changed) as false.
   - When a single VOLSER is specified with no I(device_numbers), the module
     uses C(list_volumes(volume_serial=)) for an efficient direct lookup.
+  - When a single VOLSER is not found or not active (BGYSC6606E), the module
+    returns an empty C(volumes) list with C(rc=0) and the missing VOLSER
+    listed in C(msg) — consistent with multi-VOLSER queries that silently
+    exclude missing volumes.
   - When multiple VOLSERs or any I(device_numbers) are specified, all active
     volumes are retrieved first and then filtered in Python.
   - When both I(volumes) and I(device_numbers) are specified, the module
@@ -196,7 +204,7 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       status:
-        - is_online
+        - online
   register: online_volumes
 
 - name: Get volumes with less than 20 percent free space that are online.
@@ -204,7 +212,7 @@ EXAMPLES = r"""
     filter:
       percent_free_max: 20
       status:
-        - is_online
+        - online
   register: low_space_volumes
 
 - name: Get volumes with at least 100 cylinders free that are online.
@@ -213,7 +221,7 @@ EXAMPLES = r"""
       free_space_min: 100
       unit: cylinders
       status:
-        - is_online
+        - online
   register: volumes_with_space
 
 - name: Get volumes with an indexed VTOC.
@@ -226,16 +234,16 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       status:
-        - is_online
-        - is_allocated
+        - online
+        - allocated
   register: online_allocated_volumes
 
 - name: Get volumes that are online and permanently resident.
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       status:
-        - is_online
-        - is_permanently_resident
+        - online
+        - permanently_resident
   register: resident_volumes
 """
 
@@ -300,13 +308,13 @@ volumes:
       type: dict
       returned: always
       contains:
-        is_online:
+        online:
           description:
             - Device is online.
             - Derived from the z/OS UCB C(ucbonli) flag.
           type: bool
           sample: true
-        is_offline_pending:
+        offline_pending:
           description:
             - Device status is transitioning from online to offline, and either
               allocation is enqueued on the device or the device is currently
@@ -314,20 +322,20 @@ volumes:
             - Derived from the z/OS UCB C(ucbchgs) flag.
           type: bool
           sample: false
-        is_mount_reserved:
+        mount_reserved:
           description:
             - The mount status of the volume on this device is reserved.
             - Derived from the z/OS UCB C(ucbresv) flag.
           type: bool
           sample: false
-        is_unload_pending:
+        unload_pending:
           description:
             - An unload operator command has been addressed to this device.
               The device has not yet been unloaded.
             - Derived from the z/OS UCB C(ucbunld) flag.
           type: bool
           sample: false
-        is_allocated:
+        allocated:
           description:
             - Device is allocated. For auto-switchable devices in a SYSPLEX,
               indicates the device was allocated by some system in the SYSPLEX
@@ -335,18 +343,26 @@ volumes:
             - Derived from the z/OS UCB C(ucbaloc) flag.
           type: bool
           sample: false
-        is_permanently_resident:
+        permanently_resident:
           description:
             - The mount status of the volume on this device is permanently
               resident.
             - Derived from the z/OS UCB C(ucbpres) flag.
           type: bool
           sample: true
-        is_system_residence:
+        system_residence:
           description:
             - Device is a system residence device, primary console, or active
               console.
             - Derived from the z/OS UCB C(ucbsysr) flag.
+          type: bool
+          sample: false
+        status_indicator:
+          description:
+            - For tape volumes, indicates that standard tape labels have been
+              verified. For console devices, indicates a secondary console or
+              that console status is changing.
+            - Derived from the z/OS UCB C(ucbdadi) flag.
           type: bool
           sample: false
     vtoc_info:
@@ -377,11 +393,12 @@ changed:
   sample: false
 rc:
   description:
-    - The return code is C(0) when the command executes successfully.
+    - The return code is C(0) when the command executes successfully, including
+      when a requested VOLSER is not found (BGYSC6606E) — that case returns
+      C(rc=0) with an empty C(volumes) list.
     - The return code is mapped from C(ZOAUException.response.rc) when a ZOAU
       error occurs.
     - The return code is C(5) when parameter validation fails.
-    - The return code is C(8) when a JSON decode error occurs (e.g. BGYSC6606E).
     - The return code is C(1) when any other unexpected error occurs.
   returned: always
   type: int
@@ -390,7 +407,7 @@ msg:
   description: Message describing the result.
   returned: always
   type: str
-  sample: "Successfully retrieved volume information for 2 volumes"
+  sample: "Found 2 of 2 requested volumes."
 stdout:
   description:
     - Always an empty string on success.
@@ -430,16 +447,6 @@ except Exception:
     volumes = ZOAUImportError(traceback.format_exc())
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
-class VolumeUCBError(Exception):
-    """Raised when ZOAU cannot obtain UCB data for a volume serial (BGYSC6606E).
-
-    Carries rc=8 so run_module can distinguish this specific failure
-    from all other exceptions (rc=1) without catching bare JSONDecodeError,
-    which could originate from unrelated code paths.
-    """
-    rc: int = 8
-
-
 # Tracks per cylinder constant for 3390/3380 devices.
 _TRACKS_PER_CYLINDER = 15
 
@@ -465,6 +472,8 @@ def _build_device_status(ucb_status):
     ucbpres : The mount status of the volume on this device is permanently
               resident.
     ucbsysr : System residence device, primary console, or active console.
+    ucbdadi : For tape volumes, standard tape labels have been verified.
+              For console devices, secondary console or console status changing.
 
     Parameters
     ----------
@@ -479,13 +488,14 @@ def _build_device_status(ucb_status):
     if not ucb_status:
         ucb_status = {}
     return {
-        'is_online': bool(ucb_status.get('ucbonli', False)),
-        'is_offline_pending': bool(ucb_status.get('ucbchgs', False)),
-        'is_mount_reserved': bool(ucb_status.get('ucbresv', False)),
-        'is_unload_pending': bool(ucb_status.get('ucbunld', False)),
-        'is_allocated': bool(ucb_status.get('ucbaloc', False)),
-        'is_permanently_resident': bool(ucb_status.get('ucbpres', False)),
-        'is_system_residence': bool(ucb_status.get('ucbsysr', False)),
+        'online': bool(ucb_status.get('ucbonli', False)),
+        'offline_pending': bool(ucb_status.get('ucbchgs', False)),
+        'mount_reserved': bool(ucb_status.get('ucbresv', False)),
+        'unload_pending': bool(ucb_status.get('ucbunld', False)),
+        'allocated': bool(ucb_status.get('ucbaloc', False)),
+        'permanently_resident': bool(ucb_status.get('ucbpres', False)),
+        'system_residence': bool(ucb_status.get('ucbsysr', False)),
+        'status_indicator': bool(ucb_status.get('ucbdadi', False)),
     }
 
 
@@ -645,10 +655,10 @@ def get_volume_info(module):
 
     Raises
     ------
-    zoau_exceptions.ZOAUException
-        Raised by ZOAU if the list_volumes() call fails.
     Exception
-        Any other unexpected error.
+        Any exception from list_volumes() that is not a BGYSC6606E not-found
+        condition (json.JSONDecodeError with BGYSC6606E or any Exception with
+        BGYSC6606E in its message) is re-raised to the caller unchanged.
     """
     logger = SingletonLogger().get_logger(module._verbosity)
 
@@ -661,131 +671,163 @@ def get_volume_info(module):
     requested_devices = [d.upper() for d in requested_devices]
 
     query_all = not requested_volsers and not requested_devices
+    unavailable_volsers = []
 
-    single_volser_lookup = len(requested_volsers) == 1 and not requested_devices
-    try:
-        if query_all:
-            # No criteria: retrieve all active DASD volumes.
-            logger.debug("Calling volumes.list_volumes() to retrieve all volumes.")
-            raw_volumes = volumes.list_volumes()
-            matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
-        elif single_volser_lookup:
-            # Single VOLSER, no devices: direct lookup.
-            # list_volumes(volume_serial=) raises ZOAUException or
-            # json.JSONDecodeError when the volume does not exist or is not
-            # active (ZOAU receives empty output, e.g. BGYSC6606E).
-            # ZOAUException is re-raised as-is; JSONDecodeError is converted
-            # to an Exception with the BGYSC6606E message.
+    if query_all:
+        # No criteria: retrieve all active DASD volumes.
+        logger.debug("Calling volumes.list_volumes() to retrieve all volumes.")
+        raw_volumes = volumes.list_volumes()
+        matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
+    elif not requested_devices:
+        # One or more VOLSERs, no devices.
+        if len(requested_volsers) == 1:
+            # For a single VOLSER, ZOAU raises a ZOAUException whose message
+            # contains BGYSC6606E when the volume is not found / not active.
+            # Older ZOAU builds may surface a raw json.JSONDecodeError instead.
+            # Only those two cases are treated as "not found" — any other
+            # exception is re-raised so run_module can fail with a proper error.
             logger.debug("Calling volumes.list_volumes(volume_serial=%r).", requested_volsers[0])
             try:
                 raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0])
                 matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
-            except zoau_exceptions.ZOAUException:
-                raise
             except json.JSONDecodeError:
-                raise VolumeUCBError(
-                    "BGYSC6606E Could not obtain UCB for volume serial {0}".format(requested_volsers[0])
+                # Old ZOAU (without VolumeInfoException fix): raw decode error
+                # means the volume is not found / not active (BGYSC6606E).
+                logger.debug(
+                    "Volume %r not found or not accessible (BGYSC6606E).",
+                    requested_volsers[0],
                 )
-        elif not requested_devices:
-            # Multiple VOLSERs, no devices: fetch all and filter by VOLSER set.
+                matched = []
+                unavailable_volsers = list(requested_volsers)
+            except Exception as err:
+                # ZOAUException and VolumeInfoException are siblings
+                # (_ZOAUExtendableException subclasses), so catching
+                # zoau_exceptions.ZOAUException alone misses VolumeInfoException.
+                # Catch all exceptions and treat only BGYSC6606E as "not found";
+                # re-raise anything else so run_module can fail properly.
+                if 'BGYSC6606E' in str(err):
+                    logger.debug(
+                        "Volume %r not found or not accessible (BGYSC6606E).",
+                        requested_volsers[0],
+                    )
+                    matched = []
+                    unavailable_volsers = list(requested_volsers)
+                else:
+                    raise
+        else:
+            # Multiple VOLSERs: fetch all and filter by requested set.
             logger.debug("Calling volumes.list_volumes() for multi-VOLSER query.")
             raw_volumes = volumes.list_volumes()
             requested_set = set(requested_volsers)
             all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
             matched = [v for v in all_dicts if v['volser'] in requested_set]
-        else:
-            # Device numbers present (VOLSERs may also be present): union match.
-            logger.debug("Calling volumes.list_volumes() for device query.")
-            raw_volumes = volumes.list_volumes()
-            requested_volser_set = set(requested_volsers)
-            requested_device_set = set(requested_devices)
-            all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
-            seen_volsers = set()
-            matched = []
-            for vol in all_dicts:
-                if vol['volser'] in requested_volser_set or vol['device_number'].upper() in requested_device_set:
-                    if vol['volser'] not in seen_volsers:
-                        seen_volsers.add(vol['volser'])
-                        matched.append(vol)
-    except zoau_exceptions.ZOAUException:
-        raise
+            found_set = {v['volser'] for v in matched}
+            unavailable_volsers = sorted(requested_set - found_set)
+    else:
+        # Device numbers present (VOLSERs may also be present): union match.
+        logger.debug("Calling volumes.list_volumes() for device query.")
+        raw_volumes = volumes.list_volumes()
+        requested_volser_set = set(requested_volsers)
+        requested_device_set = set(requested_devices)
+        all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
+        seen_volsers = set()
+        matched = []
+        for vol in all_dicts:
+            if vol['volser'] in requested_volser_set or vol['device_number'].upper() in requested_device_set:
+                if vol['volser'] not in seen_volsers:
+                    seen_volsers.add(vol['volser'])
+                    matched.append(vol)
+        found_set = {v['volser'] for v in matched}
+        unavailable_volsers = sorted(requested_volser_set - found_set)
 
     # Apply filters.
     filtered = _apply_filters(matched, filter_params)
 
-    count = len(filtered)
-    unit_word = "volume" if count == 1 else "volumes"
-    msg = "Successfully retrieved volume information for {0} {1}".format(count, unit_word)
+    # Build a consistent, informative message.
+    found = len(filtered)
+    requested_count = len(requested_volsers) + len(requested_devices)
+
+    if query_all:
+        if found == 0:
+            msg = "No matching volumes found."
+        elif found == 1:
+            msg = "Found 1 volume."
+        else:
+            msg = "Found {0} volumes.".format(found)
+    else:
+        if found == 0:
+            msg = "No matching volumes found."
+        else:
+            msg = "Found {0} of {1} requested {2}.".format(
+                found,
+                requested_count,
+                "volume" if requested_count == 1 else "volumes",
+            )
+
+    if unavailable_volsers:
+        msg += " Unavailable or inaccessible volumes: {0}.".format(
+            ", ".join(unavailable_volsers)
+        )
 
     return filtered, msg
 
 
 def run_module():
     """Entry point for the zos_volume_free module."""
-    module_args = dict(
-        volumes=dict(type='list', elements='str', required=False, default=None),
-        device_numbers=dict(type='list', elements='str', required=False, default=None),
-        filter=dict(
-            type='dict',
-            required=False,
-            default=None,
-            options=dict(
-                status=dict(
-                    type='list',
-                    elements='str',
-                    choices=[
-                        'is_online', 'is_offline_pending', 'is_mount_reserved',
-                        'is_unload_pending', 'is_allocated', 'is_permanently_resident',
-                        'is_system_residence',
-                    ],
-                    required=False,
-                ),
-                free_space_min=dict(type='int', required=False),
-                free_space_max=dict(type='int', required=False),
-                percent_free_min=dict(type='int', required=False),
-                percent_free_max=dict(type='int', required=False),
-                vtoc_indexed=dict(type='bool', required=False),
-                unit=dict(
-                    type='str',
-                    choices=['tracks', 'cylinders'],
-                    default='tracks',
-                    required=False,
-                ),
-            ),
-        ),
-    )
-
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec={
+            'volumes': {'type': 'list', 'elements': 'str', 'required': False, 'default': None},
+            'device_numbers': {'type': 'list', 'elements': 'str', 'required': False, 'default': None},
+            'filter': {
+                'type': 'dict',
+                'required': False,
+                'default': None,
+                'options': {
+                    'status': {
+                        'type': 'list',
+                        'elements': 'str',
+                        'choices': [
+                            'online', 'offline_pending', 'mount_reserved',
+                            'unload_pending', 'allocated', 'permanently_resident',
+                            'system_residence', 'status_indicator',
+                        ],
+                        'required': False,
+                    },
+                    'free_space_min': {'type': 'int', 'required': False},
+                    'free_space_max': {'type': 'int', 'required': False},
+                    'percent_free_min': {'type': 'int', 'required': False},
+                    'percent_free_max': {'type': 'int', 'required': False},
+                    'vtoc_indexed': {'type': 'bool', 'required': False},
+                    'unit': {
+                        'type': 'str',
+                        'choices': ['tracks', 'cylinders'],
+                        'default': 'tracks',
+                        'required': False,
+                    },
+                },
+            },
+        },
         supports_check_mode=True,
     )
     validate_dependencies(module)
 
-    args_def = dict(
-        volumes=dict(
-            arg_type='list',
-            elements='volume',
-            required=False,
-        ),
-        device_numbers=dict(
-            arg_type='list',
-            elements='str',
-            required=False,
-        ),
-        filter=dict(
-            arg_type='dict',
-            required=False,
-            options=dict(
-                status=dict(arg_type='list', elements='str', required=False),
-                free_space_min=dict(arg_type='int', required=False),
-                free_space_max=dict(arg_type='int', required=False),
-                percent_free_min=dict(arg_type='int', required=False),
-                percent_free_max=dict(arg_type='int', required=False),
-                vtoc_indexed=dict(arg_type='bool', required=False),
-                unit=dict(arg_type='str', required=False),
-            ),
-        ),
-    )
+    args_def = {
+        'volumes': {'type': 'list', 'elements': 'volume', 'required': False},
+        'device_numbers': {'type': 'list', 'elements': 'str', 'required': False},
+        'filter': {
+            'type': 'dict',
+            'required': False,
+            'options': {
+                'status': {'type': 'list', 'elements': 'str', 'required': False},
+                'free_space_min': {'type': 'int', 'required': False},
+                'free_space_max': {'type': 'int', 'required': False},
+                'percent_free_min': {'type': 'int', 'required': False},
+                'percent_free_max': {'type': 'int', 'required': False},
+                'vtoc_indexed': {'type': 'bool', 'required': False},
+                'unit': {'type': 'str', 'required': False},
+            },
+        },
+    }
 
     try:
         parser = better_arg_parser.BetterArgParser(args_def)
@@ -800,7 +842,6 @@ def run_module():
             stdout='',
             stderr=str(err),
         )
-
     module_verbosity_level = module._verbosity
     SingletonLogger().get_logger(module_verbosity_level)
 
@@ -813,13 +854,11 @@ def run_module():
         stderr='',
     )
 
-    volume_list = []
-    msg = ''
     try:
-        volume_list, msg = get_volume_info(module)
+        result['volumes'], result['msg'] = get_volume_info(module)
     except zoau_exceptions.ZOAUException as err:
         result['rc'] = err.response.rc
-        result['msg'] = err.message
+        result['msg'] = str(err)
         result['stdout'] = err.response.stdout_response
         result['stderr'] = err.response.stderr_response
         module.fail_json(**result)
@@ -829,8 +868,6 @@ def run_module():
         result['stderr'] = str(err)
         module.fail_json(**result)
 
-    result['volumes'] = volume_list
-    result['msg'] = msg
     module.exit_json(**result)
 
 

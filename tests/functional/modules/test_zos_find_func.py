@@ -1111,10 +1111,15 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
     ali_name  = f"{hlq}.PDSE.ALI"
     ali_pattern = f"{hlq}.PDSE.*"
     try:
-        hosts.all.shell(cmd=f"dtouch -tpdse -l80 -rFB -s5 -e5 {pdse_name}")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM1)'\"")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM2)'\"")
-        hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM1)' (ALIAS1) ALIAS\"")
+        hosts.all.zos_data_set(name=pdse_name, type="pdse", state="present",
+                               space_primary=5, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pdse_name}(MEM1)", "type": "member", "state": "present"},
+            {"name": f"{pdse_name}(MEM2)", "type": "member", "state": "present"},
+        ])
+        rename_res = hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM1)' (ALIAS1) ALIAS\"")
+        for v in rename_res.contacted.values():
+            assert v.get("rc") == 0, f"RENAME alias failed: {v.get('stdout')} {v.get('stderr')}"
         define_res = hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=(
@@ -1130,6 +1135,7 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
             resource_type=["alias"],
             include_member_aliases=True,
         )
+        print(find_res.contacted.values())
         for val in find_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1
@@ -1152,7 +1158,7 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
         )
-        hosts.all.shell(cmd=f"drm {pdse_name}")
+        hosts.all.zos_data_set(name=pdse_name, state="absent")
 
 
 def test_find_alias_for_gdg_generation(ansible_zos_module):
@@ -1263,9 +1269,12 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
         ])
         hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR1)' (MEMALI1) ALIAS\"")
         # --- Create PDSE with MEM1 → ALIAS1 and MEM2 → ALIAS2 ---
-        hosts.all.shell(cmd=f"dtouch -tpdse -l80 -rFB -s5 -e5 {pdse_name}")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM1)'\"")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM2)'\"")
+        hosts.all.zos_data_set(name=pdse_name, type="pdse", state="present",
+                               space_primary=5, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pdse_name}(MEM1)", "type": "member", "state": "present"},
+            {"name": f"{pdse_name}(MEM2)", "type": "member", "state": "present"},
+        ])
         hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM1)' (ALIAS1) ALIAS\"")
         hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM2)' (ALIAS2) ALIAS\"")
         # --- Define catalog aliases for all three datasets ---
@@ -1326,7 +1335,7 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
             )
         hosts.all.shell(cmd=f"drm {ps_name}")
         hosts.all.zos_data_set(name=pds_name,  state="absent")
-        hosts.all.shell(cmd=f"drm {pdse_name}")
+        hosts.all.zos_data_set(name=pdse_name, state="absent")
 
 
 def test_find_alias_data_sets_no_match(ansible_zos_module):
@@ -1339,3 +1348,282 @@ def test_find_alias_data_sets_no_match(ansible_zos_module):
     for val in find_res.contacted.values():
         assert val.get("data_sets") == []
         assert val.get("matched") == 0
+
+
+def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
+    """Exclude a catalog alias entry by its dataset name using a plain regex.
+
+    Setup:
+      - PDS  ``<hlq>.PDS``  with catalog alias ``<hlq>.PDS.ALI``
+      - PDSE ``<hlq>.PDSE`` with catalog alias ``<hlq>.PDSE.ALI``
+
+    zos_find is called with:
+      patterns:  [``<hlq>.*``]        -- matches both catalog aliases
+      excludes:  [r'.*\\.PDS\\.ALI']  -- fullmatch regex; drops only the PDS alias
+
+    Expected:
+      - Only ``<hlq>.PDSE.ALI`` is returned (matched == 1).
+      - ``<hlq>.PDS.ALI`` is absent from data_sets.
+      - ``members`` key is absent (include_member_aliases defaults to False,
+        no parenthesised exclude either).
+    """
+    hosts = ansible_zos_module
+    hlq       = get_tmp_ds_name()
+    pds_name  = f"{hlq}.PDS"
+    pdse_name = f"{hlq}.PDSE"
+    pds_ali   = f"{hlq}.PDS.ALI"
+    pdse_ali  = f"{hlq}.PDSE.ALI"
+    ali_pattern = f"{hlq}.*"
+    try:
+        # --- Create PDS with two members ---
+        hosts.all.zos_data_set(name=pds_name, type="pds", state="present",
+                               space_primary=1, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pds_name}(MBR1)", "type": "member", "state": "present"},
+            {"name": f"{pds_name}(MBR2)", "type": "member", "state": "present"},
+        ])
+        # --- Create PDSE with two members ---
+        hosts.all.shell(cmd=f"dtouch -tpdse -l80 -rFB -s5 -e5 {pdse_name}")
+        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM1)'\"")
+        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM2)'\"")
+        # --- Define catalog aliases ---
+        for stdin, label in [
+            (
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({pds_ali}) -\n"
+                f"     RELATE({pds_name}))\n",
+                "PDS",
+            ),
+            (
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({pdse_ali}) -\n"
+                f"     RELATE({pdse_name}))\n",
+                "PDSE",
+            ),
+        ]:
+            res = hosts.all.shell(cmd=_IDCAMS_CMD, executable='/bin/sh', stdin=stdin)
+            for v in res.contacted.values():
+                assert v.get("rc") == 0, (
+                    f"DEFINE ALIAS for {label} failed: {v.get('stdout')} {v.get('stderr')}"
+                )
+        # --- Find: exclude the PDS catalog alias by its name ---
+        find_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            excludes=[r".*\.PDS\.ALI"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get("msg") is None
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected 1 alias (PDSE only), got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"]     == "ALIAS"
+            assert ds["name"]     == pdse_ali
+            assert ds["alias_of"] == pdse_name
+            # No parenthesised exclude and include_member_aliases is False
+            assert "members" not in ds
+            # Confirm PDS alias is absent
+            names = [d["name"] for d in data_sets]
+            assert pds_ali not in names, "PDS alias should have been excluded"
+            assert val.get("matched") == 1
+    finally:
+        for ali in (pds_ali, pdse_ali):
+            hosts.all.shell(
+                cmd=_IDCAMS_CMD, executable='/bin/sh',
+                stdin=f"  DELETE {ali} -\n    ALIAS\n",
+            )
+        hosts.all.zos_data_set(name=pds_name, state="absent")
+        hosts.all.shell(cmd=f"drm {pdse_name}")
+
+
+def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
+    """Exclude PDS members whose in-directory alias name matches a parenthesised pattern.
+
+    Setup:
+      - PDS ``<hlq>.PDS`` with:
+          MBR1  → member alias ALIAS1
+          MBR2  → member alias ALIAS2
+          MBR3  (no member alias)
+      - Catalog alias ``<hlq>.PDS.ALI`` pointing to the PDS.
+
+    zos_find is called with:
+      patterns:  [``<hlq>.PDS.*``]
+      excludes:  ['(^ALIAS.*)']   -- parenthesised regex; matches any alias name
+                                     starting with "ALIAS"
+
+    Expected:
+      - The catalog alias entry ``<hlq>.PDS.ALI`` is still returned (dataset-level
+        exclude does not apply).
+      - ``members`` key IS present (forced on whenever a parenthesised exclude is used).
+      - MBR1 and MBR2 are absent from ``members`` (their alias names matched the pattern).
+      - MBR3 is present in ``members`` with an empty ``aliases`` list (it has no
+        member alias, so it could not have matched and is kept).
+      - matched == 1.
+    """
+    hosts = ansible_zos_module
+    hlq       = get_tmp_ds_name()
+    pds_name  = f"{hlq}.PDS"
+    ali_name  = f"{hlq}.PDS.ALI"
+    ali_pattern = f"{hlq}.PDS.*"
+    try:
+        # --- Create PDS with three members ---
+        hosts.all.zos_data_set(name=pds_name, type="pds", state="present",
+                               space_primary=1, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pds_name}(MBR1)", "type": "member", "state": "present"},
+            {"name": f"{pds_name}(MBR2)", "type": "member", "state": "present"},
+            {"name": f"{pds_name}(MBR3)", "type": "member", "state": "present"},
+        ])
+        # Create in-directory member aliases: ALIAS1 → MBR1, ALIAS2 → MBR2
+        hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR1)' (ALIAS1) ALIAS\"")
+        hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR2)' (ALIAS2) ALIAS\"")
+        # --- Define catalog alias for the PDS ---
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({ali_name}) -\n"
+                f"     RELATE({pds_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+        # --- Find: parenthesised exclude removes members with alias names matching ALIAS.* ---
+        find_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            excludes=["(^ALIAS.*)"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get("msg") is None
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"catalog alias entry must still be returned, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"]     == "ALIAS"
+            assert ds["name"]     == ali_name
+            assert ds["alias_of"] == pds_name
+            # members key is forced into output by the parenthesised exclude
+            assert "members" in ds, (
+                "parenthesised exclude must force 'members' into output"
+            )
+            member_names = [m["name"] for m in ds["members"]]
+            # MBR1 and MBR2 had alias names matching ^ALIAS.* → removed
+            assert "MBR1" not in member_names, "MBR1 should be excluded (its alias ALIAS1 matched)"
+            assert "MBR2" not in member_names, "MBR2 should be excluded (its alias ALIAS2 matched)"
+            # MBR3 has no alias → cannot match the alias-name exclude → kept
+            assert "MBR3" in member_names, "MBR3 has no alias name so it must survive"
+            mbr3 = next(m for m in ds["members"] if m["name"] == "MBR3")
+            assert mbr3["aliases"] == [], "MBR3 has no member aliases"
+            assert val.get("matched") == 1
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
+        )
+        hosts.all.zos_data_set(name=pds_name, state="absent")
+
+
+def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
+    """Exclude ALL members that carry any alias using the catch-all pattern (^.*$).
+
+    Setup:
+      - PDS ``<hlq>.PDS`` with:
+          MBR1  → member alias ALIAS1
+          MBR2  → member alias ALIAS2
+          MBR3  (no member alias)
+      - Catalog alias ``<hlq>.PDS.ALI`` pointing to the PDS.
+
+    zos_find is called with:
+      patterns:  [``<hlq>.PDS.*``]
+      resource_type: [alias]
+      excludes:  ['(^.*$)']   -- parenthesised catch-all: matches any non-empty
+                                 alias name, so every member that has at least
+                                 one alias is removed.
+
+    Expected:
+      - The catalog alias entry ``<hlq>.PDS.ALI`` is still returned (dataset-level
+        exclude does not apply — the pattern is fully parenthesised with nothing
+        outside the parens).
+      - ``members`` key IS present (forced by the parenthesised exclude).
+      - MBR1 and MBR2 are absent (their alias names ALIAS1 / ALIAS2 matched ``^.*$``).
+      - MBR3 is present with ``aliases: []`` — it has no alias name so ``^.*$``
+        never runs against it; it cannot be excluded.
+      - matched == 1.
+    """
+    hosts = ansible_zos_module
+    hlq       = get_tmp_ds_name()
+    pds_name  = f"{hlq}.PDS"
+    ali_name  = f"{hlq}.PDS.ALI"
+    ali_pattern = f"{hlq}.PDS.*"
+    try:
+        # --- Create PDS with three members ---
+        hosts.all.zos_data_set(name=pds_name, type="pds", state="present",
+                               space_primary=1, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pds_name}(MBR1)", "type": "member", "state": "present"},
+            {"name": f"{pds_name}(MBR2)", "type": "member", "state": "present"},
+            {"name": f"{pds_name}(MBR3)", "type": "member", "state": "present"},
+        ])
+        # Give MBR1 and MBR2 in-directory aliases; leave MBR3 with none
+        rename1 = hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR1)' (ALIAS1) ALIAS\"")
+        for v in rename1.contacted.values():
+            assert v.get("rc") == 0, f"RENAME ALIAS1 failed: {v.get('stdout')} {v.get('stderr')}"
+        rename2 = hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR2)' (ALIAS2) ALIAS\"")
+        for v in rename2.contacted.values():
+            assert v.get("rc") == 0, f"RENAME ALIAS2 failed: {v.get('stdout')} {v.get('stderr')}"
+        # --- Define catalog alias ---
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({ali_name}) -\n"
+                f"     RELATE({pds_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+        # --- Find: catch-all exclude removes every member that has any alias ---
+        find_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            excludes=["(^.*$)"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get("msg") is None
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"catalog alias entry must still be returned, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"]     == "ALIAS"
+            assert ds["name"]     == ali_name
+            assert ds["alias_of"] == pds_name
+            # members key is forced on by the parenthesised exclude
+            assert "members" in ds, (
+                "parenthesised exclude must force 'members' into output for a PDS target"
+            )
+            member_names = [m["name"] for m in ds["members"]]
+            # MBR1 and MBR2 had aliases → matched (^.*$) → excluded
+            assert "MBR1" not in member_names, "MBR1 should be excluded (ALIAS1 matched ^.*$)"
+            assert "MBR2" not in member_names, "MBR2 should be excluded (ALIAS2 matched ^.*$)"
+            # MBR3 has no alias → (^.*$) never tested against it → always survives
+            assert "MBR3" in member_names, (
+                "MBR3 has no alias so (^.*$) is never tested; it must survive"
+            )
+            mbr3 = next(m for m in ds["members"] if m["name"] == "MBR3")
+            assert mbr3["aliases"] == [], "MBR3 carries no in-directory aliases"
+            assert val.get("matched") == 1
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
+        )
+        hosts.all.zos_data_set(name=pds_name, state="absent")

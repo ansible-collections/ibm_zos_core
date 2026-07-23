@@ -32,6 +32,7 @@ author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Fernando Flores (@fernandofloresg)"
+  - "Yogesh Rana (@yrana17)"
 options:
   age:
     description:
@@ -68,6 +69,9 @@ options:
       - If the pattern is a regular expression, it must match the full data set name.
       - To exclude members, the regular expression or pattern must be enclosed in parentheses.
         This expression can be used alongside a pattern to exclude data set names.
+      - When using C(resource_type=alias), parenthesised patterns match against
+        PDS/PDSE member alias names. Members whose alias name matches are removed
+        from the C(members) list; the alias entry itself is kept.
     aliases:
       - exclude
     type: list
@@ -224,8 +228,9 @@ notes:
   - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), C(volume),
     and C(contains) options are ignored, as aliases are catalog pointers with no
     independent attributes. Only C(patterns), C(excludes), and C(include_member_aliases) apply.
-    Member-level exclude patterns (parenthesised expressions such as C((^MEM.*))) are also
-    ignored for C(alias) resource type.
+  - Parenthesised exclude patterns (e.g. C((^ALIAS1$))) match against PDS/PDSE member alias
+    names. Members whose alias name matches the pattern are removed from the C(members) list
+    of the alias entry. The alias entry itself is kept unless all members are removed.
   - When C(include_member_aliases=true), PDS/PDSE alias entries additionally include
     a C(members) list showing each member and its in-directory alias names.
 seealso:
@@ -1294,7 +1299,7 @@ def _ds_type(ds_name):
     return None
 
 
-def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
+def alias_filter(module, patterns, excludes=None, exclude_member_aliases=None, include_member_aliases=False):
     """Return all dataset catalog alias entries that match any of the patterns.
 
     Parameters
@@ -1304,11 +1309,18 @@ def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
     patterns : list[str]
         A list of data set patterns.
     excludes : list[str], optional
-        A list of patterns. Alias names matching any of these are excluded.
+        A list of patterns. Alias dataset names matching any of these are excluded.
+    exclude_member_aliases : list[str], optional
+        A list of regex patterns (from parenthesised excludes). Members whose
+        in-directory alias name matches any of these patterns are removed from
+        the ``members`` list. The alias entry itself is kept. When this is set,
+        ``members`` is always included in the output for PDS/PDSE entries (even
+        if ``include_member_aliases=False``) so the surviving members are visible.
     include_member_aliases : bool, optional
         When True, pass ``-a`` to ``dls`` so that PDS/PDSE alias entries include
-        a ``members`` array in the JSON output. All members are returned; those
-        with no aliases have an empty ``aliases`` list.
+        a ``members`` list in the output. All surviving members are returned;
+        those with no aliases have an empty ``aliases`` list. Sequential and GDG
+        alias entries are unaffected (no ``members`` key added).
 
     Returns
     -------
@@ -1317,29 +1329,32 @@ def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
           ``name``     (str)       -- the alias name
           ``alias_of`` (str)       -- the real dataset the alias points to
           ``type``     (str)       -- always "ALIAS"
-          ``members``  (list[dict]) -- present only when
-            ``include_member_aliases=True`` and the alias points to a PDS/PDSE.
-            Each item is ``{"name": <memname>, "aliases": [<alias_name>, ...]}``.
+          ``members``  (list[dict]) -- present when ``include_member_aliases=True``
+            or ``exclude_member_aliases`` is set, and the alias points to a
+            PDS/PDSE with at least one surviving member. Each item is
+            ``{"name": <memname>, "aliases": [<alias_name>, ...]}``.
 
     Raises
     ------
     fail_json
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
+    # Fetch member info whenever we need to either expose it or filter on it.
+    need_members = include_member_aliases or bool(exclude_member_aliases)
     filtered = []
     for pattern in patterns:
         rc, out, err = _dls_wrapper(
             pattern,
             data_set_type="ALIAS",
             list_details=True,
-            members=include_member_aliases,
+            members=need_members,
             json=True,
         )
         if rc != 0:
             if "BGYSC1103E" in err:
                 # No matching datasets found -- not an error
                 continue
-            flag_str = "dls -ltALIAS -a -j" if include_member_aliases else "dls -ltALIAS -j"
+            flag_str = "dls -ltALIAS -a -j" if need_members else "dls -ltALIAS -j"
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command '{0}'".format(flag_str),
                 rc=rc, stdout=out, stderr=err
@@ -1353,6 +1368,7 @@ def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
             alias_name = ds.get("name", "")
             if not alias_name:
                 continue
+            # Dataset-level exclude (unparenthesised patterns)
             if excludes and any(_match_regex(module, ex, alias_name) for ex in excludes):
                 continue
             entry = {
@@ -1360,13 +1376,35 @@ def alias_filter(module, patterns, excludes=None, include_member_aliases=False):
                 "type": "ALIAS",
                 "alias_of": ds.get("relation", ""),
             }
-            if include_member_aliases:
+            if need_members:
+                # ``dls -a`` returns ALL members of a PDS/PDSE target in the
+                # JSON ``members`` array, including those with no in-directory
+                # aliases (those entries simply have no ``aliases`` key).
+                # The ``members`` key is present for any PDS/PDSE target and
+                # absent for PS/GDG targets.  Use its presence as the signal
+                # that this is a partitioned dataset – not the length of the
+                # filtered list, which can be zero when every aliased member
+                # was excluded.  Members with no aliases (empty list from
+                # ``.get("aliases", [])``) can never match the exclude and
+                # always survive into the output.
+                raw_members = ds.get("members")
+                is_partitioned = raw_members is not None
                 members = []
-                for mem in ds.get("members", []):
+                for mem in (raw_members or []):
                     memname = mem.get("memname", "")
-                    if memname:
-                        members.append({"name": memname, "aliases": mem.get("aliases", [])})
-                entry["members"] = members
+                    if not memname:
+                        continue
+                    # Member-alias-level exclude (parenthesised patterns):
+                    # drop this member if any of its alias names match.
+                    if exclude_member_aliases and any(
+                        _match_regex(module, ex, ali)
+                        for ex in exclude_member_aliases
+                        for ali in mem.get("aliases", [])
+                    ):
+                        continue
+                    members.append({"name": memname, "aliases": mem.get("aliases", [])})
+                if (include_member_aliases or exclude_member_aliases) and is_partitioned:
+                    entry["members"] = members
             filtered.append(entry)
     return filtered
 
@@ -1499,7 +1537,13 @@ def run_module(module):
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
         elif res_type == "ALIAS":
-            filtered_data_sets = alias_filter(module, patterns, excludes=excludes, include_member_aliases=include_member_aliases)
+            filtered_data_sets = alias_filter(
+                module,
+                patterns,
+                excludes=excludes_datasets if excludes_datasets else None,
+                exclude_member_aliases=exclude_members if exclude_members else None,
+                include_member_aliases=include_member_aliases,
+            )
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:

@@ -700,47 +700,39 @@ def test_filter_combined_status_and_vtoc(ansible_zos_module):
 # ---------------------------------------------------------------------------
 
 def test_return_msg_volume_count(ansible_zos_module, volumes_on_systems):
-    """msg should contain the correct volume count and use correct singular/plural."""
+    """msg should use singular 'matching volume' or plural 'matching volumes' correctly."""
     hosts = ansible_zos_module
 
-    # Case 1: query returning exactly one volume — expect singular "volume".
+    # Case 1: query returning exactly one volume — expect singular.
     vols = Volume_Handler(volumes_on_systems)
     vol_name = vols.get_available_vol()
     results = hosts.all.zos_volume_free(volumes=[vol_name])
     for result in results.contacted.values():
         assert result.get('failed') is not True
-        count = len(result.get('volumes', []))
         msg = result.get('msg', '')
-        assert str(count) in msg, (
-            "Expected count {0} in msg '{1}'".format(count, msg)
+        assert 'Found 1 matching volume.' in msg, (
+            "Expected 'Found 1 matching volume.' in msg, got: {0!r}".format(msg)
         )
-        if count == 1:
-            assert 'volume' in msg and 'volumes' not in msg, (
-                "Expected singular 'volume' in msg '{0}'".format(msg)
-            )
     vols.free_vol(vol_name)
 
-    # Case 2: query all — expect plural "volumes" when count > 1.
+    # Case 2: query all — expect plural when count > 1.
     results = hosts.all.zos_volume_free()
     for result in results.contacted.values():
         assert result.get('failed') is not True
         count = len(result.get('volumes', []))
         msg = result.get('msg', '')
-        assert str(count) in msg, (
-            "Expected count {0} in msg '{1}'".format(count, msg)
-        )
         if count > 1:
-            assert 'volumes' in msg, (
-                "Expected plural 'volumes' in msg '{0}'".format(msg)
+            assert 'Found {0} matching volumes.'.format(count) in msg, (
+                "Expected 'Found {0} matching volumes.' in msg, got: {1!r}".format(count, msg)
             )
 
 
 # ---------------------------------------------------------------------------
-# Gap 6: consistent messaging — "Found X of Y" / "No matching volumes found."
+# Gap 6: consistent messaging — "Found N matching volume(s)" / "No matching volumes found."
 # ---------------------------------------------------------------------------
 
 def test_msg_single_existing_volser(ansible_zos_module, volumes_on_systems):
-    """Single existing VOLSER: msg should say 'Found 1 of 1 requested volume.'"""
+    """Single existing VOLSER: msg should say 'Found 1 matching volume.'"""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
     vol_name = vols.get_available_vol()
@@ -749,11 +741,11 @@ def test_msg_single_existing_volser(ansible_zos_module, volumes_on_systems):
     for result in results.contacted.values():
         assert result.get('failed') is not True
         msg = result.get('msg', '')
-        assert 'Found 1 of 1 requested volume.' in msg, (
-            "Expected 'Found 1 of 1 requested volume.' in msg, got: {0!r}".format(msg)
+        assert 'Found 1 matching volume.' in msg, (
+            "Expected 'Found 1 matching volume.' in msg, got: {0!r}".format(msg)
         )
-        assert 'Unavailable' not in msg, (
-            "Unexpected 'Unavailable' in msg for existing volume: {0!r}".format(msg)
+        assert 'not found or inaccessible' not in msg, (
+            "Unexpected unavailability notice in msg for existing volume: {0!r}".format(msg)
         )
 
     vols.free_vol(vol_name)
@@ -779,7 +771,7 @@ def test_msg_single_nonexistent_volser_no_fail(ansible_zos_module):
 
 
 def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
-    """Two VOLSERs, one exists, one does not: msg says 'Found 1 of 2' and lists missing."""
+    """Two VOLSERs, one exists, one does not: msg says 'Found 1 matching volume.' and lists missing."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
     vol_name = vols.get_available_vol()
@@ -796,13 +788,13 @@ def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
             "Expected exactly 1 volume in results, got {0}".format(len(result.get('volumes', [])))
         )
         msg = result.get('msg', '')
-        assert 'Found 1 of 2 requested volumes.' in msg, (
-            "Expected 'Found 1 of 2 requested volumes.' in msg, got: {0!r}".format(msg)
+        assert 'Found 1 matching volume.' in msg, (
+            "Expected 'Found 1 matching volume.' in msg, got: {0!r}".format(msg)
         )
         assert 'XXXXXX' in msg, (
             "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
         )
-        assert 'Unavailable or inaccessible volumes' in msg, (
+        assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
 
@@ -829,13 +821,13 @@ def test_msg_multi_volser_both_missing(ansible_zos_module):
         assert 'YYYYYY' in msg, (
             "Expected 'YYYYYY' in unavailable list in msg, got: {0!r}".format(msg)
         )
-        assert 'Unavailable or inaccessible volumes' in msg, (
+        assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
 
 
 def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
-    """Two existing VOLSERs: msg says 'Found 2 of 2 requested volumes.' with no unavailable notice."""
+    """Two existing VOLSERs: msg says 'Found 2 matching volumes.' with no unavailability notice."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
     vol_name_1 = vols.get_available_vol()
@@ -845,11 +837,11 @@ def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
     for result in results.contacted.values():
         assert result.get('failed') is not True
         msg = result.get('msg', '')
-        assert 'Found 2 of 2 requested volumes.' in msg, (
-            "Expected 'Found 2 of 2 requested volumes.' in msg, got: {0!r}".format(msg)
+        assert 'Found 2 matching volumes.' in msg, (
+            "Expected 'Found 2 matching volumes.' in msg, got: {0!r}".format(msg)
         )
-        assert 'Unavailable' not in msg, (
-            "Unexpected 'Unavailable' in msg when all volumes exist: {0!r}".format(msg)
+        assert 'not found or inaccessible' not in msg, (
+            "Unexpected unavailability notice in msg when all volumes exist: {0!r}".format(msg)
         )
 
     vols.free_vol(vol_name_1)
@@ -857,7 +849,7 @@ def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
 
 
 def test_msg_query_all_plural(ansible_zos_module):
-    """Query-all: msg should say 'Found N volumes.' (plural) when more than one volume exists."""
+    """Query-all: msg should say 'Found N matching volumes.' (plural) when more than one volume exists."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free()
     for result in results.contacted.values():
@@ -865,26 +857,26 @@ def test_msg_query_all_plural(ansible_zos_module):
         count = len(result.get('volumes', []))
         msg = result.get('msg', '')
         if count > 1:
-            assert 'Found {0} volumes.'.format(count) in msg, (
-                "Expected 'Found {0} volumes.' in msg, got: {1!r}".format(count, msg)
+            assert 'Found {0} matching volumes.'.format(count) in msg, (
+                "Expected 'Found {0} matching volumes.' in msg, got: {1!r}".format(count, msg)
             )
         elif count == 1:
-            assert 'Found 1 volume.' in msg, (
-                "Expected 'Found 1 volume.' in msg, got: {0!r}".format(msg)
+            assert 'Found 1 matching volume.' in msg, (
+                "Expected 'Found 1 matching volume.' in msg, got: {0!r}".format(msg)
             )
         else:
             assert 'No matching volumes found.' in msg
 
 
 def test_msg_nonexistent_volser_no_unavailable_when_query_all(ansible_zos_module):
-    """Query-all with no filter: msg must not contain 'Unavailable' (no specific volser requested)."""
+    """Query-all with no filter: msg must not contain unavailability notice (no specific volser requested)."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free()
     for result in results.contacted.values():
         assert result.get('failed') is not True
         msg = result.get('msg', '')
-        assert 'Unavailable' not in msg, (
-            "Unexpected 'Unavailable' in query-all msg: {0!r}".format(msg)
+        assert 'not found or inaccessible' not in msg, (
+            "Unexpected unavailability notice in query-all msg: {0!r}".format(msg)
         )
 
 

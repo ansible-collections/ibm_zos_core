@@ -407,7 +407,7 @@ msg:
   description: Message describing the result.
   returned: always
   type: str
-  sample: "Found 2 of 2 requested volumes."
+  sample: "Found 2 matching volumes."
 stdout:
   description:
     - Always an empty string on success.
@@ -672,6 +672,7 @@ def get_volume_info(module):
 
     query_all = not requested_volsers and not requested_devices
     unavailable_volsers = []
+    unavailable_devices = []
 
     if query_all:
         # No criteria: retrieve all active DASD volumes.
@@ -731,42 +732,50 @@ def get_volume_info(module):
         requested_device_set = set(requested_devices)
         all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
         seen_volsers = set()
+        matched_device_set = set()
         matched = []
         for vol in all_dicts:
-            if vol['volser'] in requested_volser_set or vol['device_number'].upper() in requested_device_set:
+            volser_hit = vol['volser'] in requested_volser_set
+            device_hit = vol['device_number'].upper() in requested_device_set
+            if volser_hit or device_hit:
                 if vol['volser'] not in seen_volsers:
                     seen_volsers.add(vol['volser'])
                     matched.append(vol)
-        found_set = {v['volser'] for v in matched}
-        unavailable_volsers = sorted(requested_volser_set - found_set)
+                if device_hit:
+                    matched_device_set.add(vol['device_number'].upper())
+        found_volser_set = {v['volser'] for v in matched}
+        unavailable_volsers = sorted(requested_volser_set - found_volser_set)
+        unavailable_devices = sorted(requested_device_set - matched_device_set)
 
     # Apply filters.
     filtered = _apply_filters(matched, filter_params)
 
     # Build a consistent, informative message.
     found = len(filtered)
-    requested_count = len(requested_volsers) + len(requested_devices)
 
     if query_all:
         if found == 0:
             msg = "No matching volumes found."
         elif found == 1:
-            msg = "Found 1 volume."
+            msg = "Found 1 matching volume."
         else:
-            msg = "Found {0} volumes.".format(found)
+            msg = "Found {0} matching volumes.".format(found)
     else:
         if found == 0:
             msg = "No matching volumes found."
+        elif found == 1:
+            msg = "Found 1 matching volume."
         else:
-            msg = "Found {0} of {1} requested {2}.".format(
-                found,
-                requested_count,
-                "volume" if requested_count == 1 else "volumes",
-            )
+            msg = "Found {0} matching volumes.".format(found)
 
     if unavailable_volsers:
-        msg += " Unavailable or inaccessible volumes: {0}.".format(
+        msg += " Volumes not found or inaccessible: {0}.".format(
             ", ".join(unavailable_volsers)
+        )
+
+    if unavailable_devices:
+        msg += " Device numbers not found or inaccessible: {0}.".format(
+            ", ".join(unavailable_devices)
         )
 
     return filtered, msg

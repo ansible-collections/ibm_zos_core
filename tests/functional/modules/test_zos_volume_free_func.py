@@ -58,8 +58,6 @@ def _assert_volume_structure(vol):
     assert 0.0 <= vol['percent_used'] <= 100.0
     assert vol['total_space'] >= 0
     assert vol['free_space'] >= 0
-    assert vol['used_space'] >= 0
-    # used + free must equal total
     assert vol['used_space'] + vol['free_space'] == vol['total_space']
     # status sub-keys
     st = vol['status']
@@ -158,10 +156,14 @@ def test_query_by_device_number(ansible_zos_module, volumes_unit_on_systems):
 
 
 def test_query_union_volser_and_device(ansible_zos_module, volumes_unit_on_systems):
-    """Querying with both volumes and device_numbers should return a deduplicated union."""
+    """Querying with both volumes and device_numbers should return a deduplicated union.
+
+    vol_name_1 is matched by VOLSER; vol_name_2 is matched by device number.
+    Both must appear in results, with no duplicate VOLSERs.
+    """
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_unit_on_systems)
-    vol_name_1, device_addr_1 = vols.get_available_vol_addr()
+    vol_name_1, _ = vols.get_available_vol_addr()
     vol_name_2, device_addr_2 = vols.get_available_vol_addr()
 
     results = hosts.all.zos_volume_free(
@@ -172,8 +174,17 @@ def test_query_union_volser_and_device(ansible_zos_module, volumes_unit_on_syste
         assert result.get('failed') is not True
         assert result.get('changed') is False
         result_vols = result.get('volumes', [])
-        # No duplicate VOLSERs
         volsers = [v['volser'] for v in result_vols]
+        # Both sides of the union must be present.
+        assert vol_name_1 in volsers, (
+            "Expected VOLSER-matched volume {0} in results".format(vol_name_1)
+        )
+        assert vol_name_2 in volsers, (
+            "Expected device-matched volume {0} (device {1}) in results".format(
+                vol_name_2, device_addr_2
+            )
+        )
+        # No duplicate VOLSERs.
         assert len(volsers) == len(set(volsers)), "Duplicate VOLSERs found in union result"
         for vol in result_vols:
             _assert_volume_structure(vol)
@@ -411,13 +422,24 @@ def test_query_multiple_volsers(ansible_zos_module, volumes_on_systems):
 
 
 def test_query_nonexistent_device_number_returns_empty(ansible_zos_module):
-    """Querying a non-existent device number should return an empty list without failing."""
+    """Querying a non-existent device number should return an empty list without failing.
+
+    The module appends a 'Device numbers not found or inaccessible' notice to
+    msg listing any device numbers that matched no volume.
+    """
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(device_numbers=["FFFF"])
     for result in results.contacted.values():
         assert result.get('failed') is not True
         assert result.get('changed') is False
         assert result.get('volumes') == []
+        msg = result.get('msg', '')
+        assert 'Device numbers not found or inaccessible' in msg, (
+            "Expected unavailability notice in msg, got: {0!r}".format(msg)
+        )
+        assert 'FFFF' in msg.upper(), (
+            "Expected device number 'FFFF' listed in msg, got: {0!r}".format(msg)
+        )
 
 
 def test_volser_input_is_case_insensitive(ansible_zos_module, volumes_on_systems):

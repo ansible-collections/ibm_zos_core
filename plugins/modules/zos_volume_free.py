@@ -277,9 +277,7 @@ volumes:
     used_space:
       description:
         - Used space on the volume in tracks.
-        - Calculated as C(total_space - free_space). Clamped to C(0) if ZOAU
-          reports C(free_tracks) greater than C(total_tracks) due to
-          corrupt or in-motion VTOC data.
+        - Calculated as C(total_space - free_space).
       type: int
       returned: always
       sample: 434713
@@ -556,8 +554,7 @@ def _volume_to_dict(vol):
 
     total_space = int(getattr(vol, 'total_tracks', 0) or 0)
     free_space = int(getattr(vol, 'free_tracks', 0) or 0)
-    # Clamp to 0: corrupt or in-motion VTOC data can report free_tracks > total_tracks.
-    used_space = max(0, total_space - free_space)
+    used_space = total_space - free_space
 
     if total_space > 0:
         percent_free = round((free_space / total_space) * 100, 1)
@@ -753,20 +750,12 @@ def get_volume_info(module):
     # Build a consistent, informative message.
     found = len(filtered)
 
-    if query_all:
-        if found == 0:
-            msg = "No matching volumes found."
-        elif found == 1:
-            msg = "Found 1 matching volume."
-        else:
-            msg = "Found {0} matching volumes.".format(found)
+    if found == 0:
+        msg = "No matching volumes found."
+    elif found == 1:
+        msg = "Found 1 matching volume."
     else:
-        if found == 0:
-            msg = "No matching volumes found."
-        elif found == 1:
-            msg = "Found 1 matching volume."
-        else:
-            msg = "Found {0} matching volumes.".format(found)
+        msg = "Found {0} matching volumes.".format(found)
 
     if unavailable_volsers:
         msg += " Volumes not found or inaccessible: {0}.".format(

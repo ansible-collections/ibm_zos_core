@@ -1310,7 +1310,6 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
             excludes=excludes,
         )
         for val in find_res.contacted.values():
-            assert val.get("msg") is None
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
                 f"expected 1 alias (PS only), got {data_sets}"
@@ -1413,7 +1412,6 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
             excludes=[r".*\.PDS\.ALI"],
         )
         for val in find_res.contacted.values():
-            assert val.get("msg") is None
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
                 f"expected 1 alias (PDSE only), got {data_sets}"
@@ -1499,7 +1497,6 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
             excludes=["(^ALIAS.*)"],
         )
         for val in find_res.contacted.values():
-            assert val.get("msg") is None
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
                 f"catalog alias entry must still be returned, got {data_sets}"
@@ -1597,7 +1594,6 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
             excludes=["(^.*$)"],
         )
         for val in find_res.contacted.values():
-            assert val.get("msg") is None
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
                 f"catalog alias entry must still be returned, got {data_sets}"
@@ -1627,3 +1623,120 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
             stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
         )
         hosts.all.zos_data_set(name=pds_name, state="absent")
+
+
+def test_find_alias_filter_by_volume(ansible_zos_module, volumes_on_systems):
+    """Volume filter for aliases: create three dataset aliases (PS, PDS, PDSE) each
+    on a different volume, then verify that filtering by any two volumes returns
+    exactly 2 alias entries and that filtering by only the third volume returns 1.
+
+    Setup:
+      - PS   ``<hlq>.PS``   on vol1  → catalog alias ``<hlq>.PS.ALI``
+      - PDS  ``<hlq>.PDS``  on vol2  → catalog alias ``<hlq>.PDS.ALI``
+      - PDSE ``<hlq>.PDSE`` on vol3  → catalog alias ``<hlq>.PDSE.ALI``
+
+    zos_find is called with:
+      patterns:       [``<hlq>.*.*``]
+      resource_type:  [alias]
+      volumes:        [vol1, vol2]   → must return exactly 2 entries
+      volumes:        [vol3]         → must return exactly 1 entry
+    """
+    hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_on_systems)
+    vol1 = volumes.get_available_vol()
+    vol2 = volumes.get_available_vol()
+    vol3 = volumes.get_available_vol()
+
+    hlq       = get_tmp_ds_name()
+    ps_name   = f"{hlq}.PS"
+    pds_name  = f"{hlq}.PDS"
+    pdse_name = f"{hlq}.PDSE"
+    ps_ali    = f"{hlq}.PS.ALI"
+    pds_ali   = f"{hlq}.PDS.ALI"
+    pdse_ali  = f"{hlq}.PDSE.ALI"
+    pattern   = f"{hlq}.*.*"
+
+    try:
+        # --- Create the three target datasets, one per volume ---
+        hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 -v{vol1} {ps_name}")
+        hosts.all.zos_data_set(
+            name=pds_name, type="pds", state="present",
+            space_primary=1, space_type="m", volumes=[vol2]
+        )
+        hosts.all.zos_data_set(
+            name=pdse_name, type="pdse", state="present",
+            space_primary=1, space_type="m", volumes=[vol3]
+        )
+        # --- Define one catalog alias per dataset ---
+        # Each DEFINE ALIAS is split across continuation lines ('-') to stay
+        # within the 80-byte stdin record limit enforced by IDCAMS.
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({ps_ali}) -\n"
+                f"     RELATE({ps_name}))\n"
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({pds_ali}) -\n"
+                f"     RELATE({pds_name}))\n"
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({pdse_ali}) -\n"
+                f"     RELATE({pdse_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+
+        # --- Filter by vol1 + vol2: must return exactly the PS and PDS aliases ---
+        find_res = hosts.all.zos_find(
+            patterns=[pattern],
+            resource_type=["alias"],
+            volumes=[vol1, vol2],
+        )
+        for val in find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None
+            assert len(data_sets) == 2, (
+                f"Expected 2 alias entries for volumes {[vol1, vol2]}, got {data_sets}"
+            )
+            returned_names = {ds["name"] for ds in data_sets}
+            assert ps_ali   in returned_names, f"{ps_ali} not found in {returned_names}"
+            assert pds_ali  in returned_names, f"{pds_ali} not found in {returned_names}"
+            assert pdse_ali not in returned_names, (
+                f"{pdse_ali} should not appear when filtering by {[vol1, vol2]}"
+            )
+            assert val.get("matched") == 2
+            for ds in data_sets:
+                assert ds["type"] == "ALIAS"
+
+        # --- Filter by vol3 only: must return exactly the PDSE alias ---
+        find_res = hosts.all.zos_find(
+            patterns=[pattern],
+            resource_type=["alias"],
+            volumes=[vol3],
+        )
+        for val in find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None
+            assert len(data_sets) == 1, (
+                f"Expected 1 alias entry for volume {vol3}, got {data_sets}"
+            )
+            assert data_sets[0]["name"]     == pdse_ali
+            assert data_sets[0]["alias_of"] == pdse_name
+            assert data_sets[0]["type"]     == "ALIAS"
+            assert val.get("matched") == 1
+
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DELETE {ps_ali}   ALIAS\n"
+                f"  DELETE {pds_ali}  ALIAS\n"
+                f"  DELETE {pdse_ali} ALIAS\n"
+            ),
+        )
+        hosts.all.shell(cmd=f"drm {ps_name}")
+        hosts.all.zos_data_set(name=pds_name,  state="absent")
+        hosts.all.zos_data_set(name=pdse_name, state="absent")

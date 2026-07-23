@@ -107,8 +107,9 @@ options:
       - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
-        real dataset name it points to (returned as C(alias_of) in each result). Only C(patterns),
-        C(excludes), and C(include_member_aliases) options are applicable when using this resource type.
+        real dataset name it points to (returned as C(alias_of) in each result). The C(patterns),
+        C(excludes), C(volume), and C(include_member_aliases) options are applicable when using
+        this resource type.
     aliases:
       - resource_types
     choices:
@@ -225,9 +226,10 @@ notes:
   - When searching for content within data sets, only non-binary content is considered.
   - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
-  - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), C(volume),
-    and C(contains) options are ignored, as aliases are catalog pointers with no
-    independent attributes. Only C(patterns), C(excludes), and C(include_member_aliases) apply.
+  - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), and C(contains)
+    options are ignored, as aliases are catalog pointers with no independent size, age, or
+    searchable content. The C(volume) option filters aliases whose target dataset resides on
+    one of the specified volumes.
   - Parenthesised exclude patterns (e.g. C((^ALIAS1$))) match against PDS/PDSE member alias
     names. Members whose alias name matches the pattern are removed from the C(members) list
     of the alias entry. The alias entry itself is kept unless all members are removed.
@@ -332,6 +334,16 @@ EXAMPLES = r"""
     resource_type:
       - alias
     include_member_aliases: true
+
+- name: Find aliases whose target dataset resides on specific volumes
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    volumes:
+      - VOL001
+      - VOL002
 """
 
 
@@ -1299,7 +1311,14 @@ def _ds_type(ds_name):
     return None
 
 
-def alias_filter(module, patterns, excludes=None, exclude_member_aliases=None, include_member_aliases=False):
+def alias_filter(
+    module,
+    patterns,
+    excludes=None,
+    exclude_member_aliases=None,
+    include_member_aliases=False,
+    volumes=None,
+):
     """Return all dataset catalog alias entries that match any of the patterns.
 
     Parameters
@@ -1321,6 +1340,10 @@ def alias_filter(module, patterns, excludes=None, exclude_member_aliases=None, i
         a ``members`` list in the output. All surviving members are returned;
         those with no aliases have an empty ``aliases`` list. Sequential and GDG
         alias entries are unaffected (no ``members`` key added).
+    volumes : list[str], optional
+        When set, only alias entries whose target dataset resides on one of the
+        specified volumes are kept. Volume information is taken from the ``volume``
+        field of the ``dls -ltALIAS -j`` JSON output.
 
     Returns
     -------
@@ -1371,10 +1394,16 @@ def alias_filter(module, patterns, excludes=None, exclude_member_aliases=None, i
             # Dataset-level exclude (unparenthesised patterns)
             if excludes and any(_match_regex(module, ex, alias_name) for ex in excludes):
                 continue
+            alias_of = ds.get("relation", "")
+            # Filter by volume: alias target dataset must reside on one of the requested volumes
+            if volumes:
+                ds_volume = ds.get("volume", "")
+                if ds_volume.upper() not in {v.upper() for v in volumes}:
+                    continue
             entry = {
                 "name": alias_name,
                 "type": "ALIAS",
-                "alias_of": ds.get("relation", ""),
+                "alias_of": alias_of,
             }
             if need_members:
                 # ``dls -a`` returns ALL members of a PDS/PDSE target in the
@@ -1543,6 +1572,7 @@ def run_module(module):
                 excludes=excludes_datasets if excludes_datasets else None,
                 exclude_member_aliases=exclude_members if exclude_members else None,
                 include_member_aliases=include_member_aliases,
+                volumes=volume if volume else None,
             )
         if filtered_data_sets:
             for ds in filtered_data_sets:

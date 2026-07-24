@@ -223,7 +223,7 @@ def test_filter_pdse_data_set(ansible_zos_module):
 
         # There are a total of 41 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
-        assert len(stat['attributes'].keys()) == 41
+        assert len(stat['attributes'].keys()) == 42
 
 
 def test_filter_vsam_data_set(ansible_zos_module):
@@ -632,3 +632,178 @@ def test_filter_nonexistent_resource(ansible_zos_module):
         assert stat.get('isaggregate') == False
         assert stat.get('isgdg') == False
 
+
+def test_filter_pds_data_set_member_details_present(ansible_zos_module):
+    """Positive: member_details key survives the filter when present in input."""
+    hosts = ansible_zos_module
+
+    # Represents zos_stat output from the PR branch where member_details
+    # is populated for a PDS with two members.
+    zos_stat_result = """{
+        "changed": true,
+        "stat": {
+            "attributes": {
+                "active_gens": null, "allocation_available": 5, "allocation_used": 1,
+                "atime": null, "audit_bits": null, "auditfid": null,
+                "bitmap_file_size": null, "block_size": 3120, "blocks_per_track": 15,
+                "charset": null, "checksum": null, "converttov5": null,
+                "creation_date": "2026-07-23", "creation_time": null, "ctime": null,
+                "data": {"avg_record_length": null, "bufspace": null, "device_type": null,
+                    "key_length": null, "key_offset": null, "max_record_length": null,
+                    "spanned": null, "total_records": null, "volser": null},
+                "dev": null, "device_type": "3390",
+                "dir_blocks_allocated": 10, "dir_blocks_used": 1,
+                "dsorg": "po", "empty": null, "encrypted": false,
+                "executable": null, "expiration_date": null, "extended": null,
+                "extended_attrs_bits": null, "extents_allocated": 1, "extents_used": 1,
+                "file_format": null, "filesystem_table_size": null,
+                "free": null, "free_1k_fragments": null, "free_8k_blocks": null,
+                "gid": null, "gr_name": null, "has_extended_attrs": false,
+                "index": {"avg_record_length": null, "bufspace": null, "device_type": null,
+                    "key_length": null, "key_offset": null, "max_record_length": null,
+                    "total_records": null, "volser": null},
+                "inode": null, "isblk": null, "ischr": null, "isdir": null,
+                "isfifo": null, "isgid": null, "islnk": null, "isreg": null,
+                "issock": null, "isuid": null,
+                "jcl_attrs": {"creation_job": null, "creation_step": null},
+                "key_label": null, "key_status": "none", "last_reference": "2026-07-23",
+                "limit": null, "lnk_source": null, "lnk_target": null,
+                "log_file_size": null, "max_pdse_generation": null,
+                "member_details": [
+                    {"name": "HELLO", "extended_attributes": null, "ispf_statistics": null},
+                    {"name": "WORLD", "extended_attributes": null, "ispf_statistics": null}
+                ],
+                "members": 2, "mimetype": null, "missing_volumes": [], "mode": null,
+                "mtime": null, "nlink": null, "num_volumes": 1, "order": null,
+                "pages_allocated": null, "pages_used": null, "pdse_version": null,
+                "perc_pages_used": null, "primary_space": 5, "purge": null,
+                "pw_name": null,
+                "quiesced": {"job": null, "system": null, "timestamp": null},
+                "racf": "none", "readable": null, "record_format": "fb",
+                "record_length": 80, "rgrp": null, "roth": null, "rusr": null,
+                "scratch": null, "secondary_space": 2, "seq_type": null,
+                "size": null, "sms_data_class": null, "sms_mgmt_class": null,
+                "sms_storage_class": null, "space_units": "track",
+                "sysplex_aware": null, "total_size": null, "tracks_per_cylinder": 15,
+                "type": "pds", "uid": null, "updated_since_backup": true,
+                "version": null, "volser": "000000", "volumes": ["000000"],
+                "wgrp": null, "woth": null, "writeable": null, "wusr": null,
+                "xgrp": null, "xoth": null, "xusr": null
+            },
+            "exists": true, "isaggregate": false, "isdataset": true,
+            "isfile": false, "isgdg": false,
+            "name": "OMVSADM.PR2518.DEMO.PDS", "resource_type": "data_set"
+        }
+    }"""
+    zos_stat_result_dict = json.loads(zos_stat_result)
+
+    hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
+    filter_results = hosts.all.debug(
+        msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
+    )
+
+    for result in filter_results.contacted.values():
+        assert result.get('msg') is not None
+        stat = result['msg']
+
+        assert stat.get('attributes') is not None
+
+        # member_details must survive the filter
+        assert 'member_details' in stat['attributes']
+        member_details = stat['attributes']['member_details']
+        assert isinstance(member_details, list)
+        assert len(member_details) == 2
+        assert member_details[0]['name'] == 'HELLO'
+        assert member_details[1]['name'] == 'WORLD'
+
+        # Sanity: other pds fields still present
+        assert 'members' in stat['attributes']
+        assert 'dir_blocks_allocated' in stat['attributes']
+        assert 'dir_blocks_used' in stat['attributes']
+
+        # Total attribute count: 41 existing pds fields + member_details = 42
+        assert len(stat['attributes'].keys()) == 42
+
+
+def test_filter_pds_data_set_member_details_absent(ansible_zos_module):
+    """Negative: member_details key is present but null when not in input
+    (e.g. output from the dev branch before PR #2518 was merged).
+    The filter must still include the key — returning null — so that
+    automation relying on the key's presence does not break.
+    """
+    hosts = ansible_zos_module
+
+    # Simulates zos_stat output from before this PR: member_details absent
+    # from the raw output. The filter should still include it as null.
+    zos_stat_result = """{
+        "changed": true,
+        "stat": {
+            "attributes": {
+                "active_gens": null, "allocation_available": 5, "allocation_used": 1,
+                "atime": null, "audit_bits": null, "auditfid": null,
+                "bitmap_file_size": null, "block_size": 3120, "blocks_per_track": 15,
+                "charset": null, "checksum": null, "converttov5": null,
+                "creation_date": "2026-07-23", "creation_time": null, "ctime": null,
+                "data": {"avg_record_length": null, "bufspace": null, "device_type": null,
+                    "key_length": null, "key_offset": null, "max_record_length": null,
+                    "spanned": null, "total_records": null, "volser": null},
+                "dev": null, "device_type": "3390",
+                "dir_blocks_allocated": 10, "dir_blocks_used": 1,
+                "dsorg": "po", "empty": null, "encrypted": false,
+                "executable": null, "expiration_date": null, "extended": null,
+                "extended_attrs_bits": null, "extents_allocated": 1, "extents_used": 1,
+                "file_format": null, "filesystem_table_size": null,
+                "free": null, "free_1k_fragments": null, "free_8k_blocks": null,
+                "gid": null, "gr_name": null, "has_extended_attrs": false,
+                "index": {"avg_record_length": null, "bufspace": null, "device_type": null,
+                    "key_length": null, "key_offset": null, "max_record_length": null,
+                    "total_records": null, "volser": null},
+                "inode": null, "isblk": null, "ischr": null, "isdir": null,
+                "isfifo": null, "isgid": null, "islnk": null, "isreg": null,
+                "issock": null, "isuid": null,
+                "jcl_attrs": {"creation_job": null, "creation_step": null},
+                "key_label": null, "key_status": "none", "last_reference": "2026-07-23",
+                "limit": null, "lnk_source": null, "lnk_target": null,
+                "log_file_size": null, "max_pdse_generation": null,
+                "members": 2, "mimetype": null, "missing_volumes": [], "mode": null,
+                "mtime": null, "nlink": null, "num_volumes": 1, "order": null,
+                "pages_allocated": null, "pages_used": null, "pdse_version": null,
+                "perc_pages_used": null, "primary_space": 5, "purge": null,
+                "pw_name": null,
+                "quiesced": {"job": null, "system": null, "timestamp": null},
+                "racf": "none", "readable": null, "record_format": "fb",
+                "record_length": 80, "rgrp": null, "roth": null, "rusr": null,
+                "scratch": null, "secondary_space": 2, "seq_type": null,
+                "size": null, "sms_data_class": null, "sms_mgmt_class": null,
+                "sms_storage_class": null, "space_units": "track",
+                "sysplex_aware": null, "total_size": null, "tracks_per_cylinder": 15,
+                "type": "pds", "uid": null, "updated_since_backup": true,
+                "version": null, "volser": "000000", "volumes": ["000000"],
+                "wgrp": null, "woth": null, "writeable": null, "wusr": null,
+                "xgrp": null, "xoth": null, "xusr": null
+            },
+            "exists": true, "isaggregate": false, "isdataset": true,
+            "isfile": false, "isgdg": false,
+            "name": "OMVSADM.PR2518.DEMO.PDS", "resource_type": "data_set"
+        }
+    }"""
+    zos_stat_result_dict = json.loads(zos_stat_result)
+
+    hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
+    filter_results = hosts.all.debug(
+        msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
+    )
+
+    for result in filter_results.contacted.values():
+        assert result.get('msg') is not None
+        stat = result['msg']
+
+        assert stat.get('attributes') is not None
+
+        # Key must be present even when absent from source — filter uses
+        # dict.get() which returns None, preserving the key for automation
+        assert 'member_details' in stat['attributes']
+        assert stat['attributes']['member_details'] is None
+
+        # Total attribute count still 42 — key present, value null
+        assert len(stat['attributes'].keys()) == 42

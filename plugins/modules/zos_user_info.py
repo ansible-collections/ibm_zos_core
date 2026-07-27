@@ -132,7 +132,7 @@ segments:
         When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA),
         C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
         The exact keys present are dynamic and depend on the profile's RACF configuration.
-        Some fields like C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are returned as lists when they contain multiple values.
+        C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are always returned as lists.
       returned: always
       type: dict
       sample:
@@ -185,7 +185,7 @@ segments:
         C(USERDATA), C(COMMAND), etc.
         The exact keys present depend on the user's TSO configuration in RACF.
         Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
-      returned: when profile_type is user and tso segment is requested
+      returned: when profile_type is user and segments specifies tso
       type: dict
       sample:
         ACCTNUM: "33000"
@@ -198,7 +198,7 @@ segments:
         Contains dynamic key-value pairs such as C(UID), C(HOME), C(PROGRAM), C(CPUTIMEMAX), C(ASSIZEMAX), C(FILEPROCMAX), C(PROCUSERMAX), etc.
         The exact keys present depend on the OMVS configuration in RACF.
         Only returned when C(omvs) is included in the I(segments) parameter.
-      returned: when omvs segment is requested
+      returned: when segments specifies omvs
       type: dict
       sample:
         UID: "0000000201"
@@ -212,7 +212,7 @@ segments:
         Contains dynamic key-value pairs related to data management such as C(MGMTCLAS), C(STORCLAS), C(DATACLAS), etc.
         The exact keys present depend on the DFP configuration in RACF.
         Only returned when C(dfp) is included in the I(segments) parameter.
-      returned: when dfp segment is requested
+      returned: when segments specifies dfp
       type: dict
       sample:
         MGMTCLAS: "STANDARD"
@@ -222,10 +222,10 @@ segments:
       description: >
         OPERPARM segment information for user profiles.
         Contains operator parameters such as C(STORAGE), C(AUTH), C(ALTGRP), C(AUTO), C(HC), C(INTIDS), C(LEVEL), C(LOGCMDRESP), C(MIGID), etc.
-        Some fields like C(MONITOR), C(MSCOPE), and C(ROUTCODE) are returned as lists when they contain multiple values.
+        C(MONITOR), C(MSCOPE), and C(ROUTCODE) are always returned as lists.
         The exact keys present depend on the operator configuration in RACF.
         Only returned when I(profile_type=user) and C(operparm) is included in the I(segments) parameter.
-      returned: when profile_type is user and operparm segment is requested
+      returned: when profile_type is user and segments specifies operparm
       type: dict
       sample:
         STORAGE: "YES"
@@ -240,7 +240,7 @@ segments:
         Contains language-related settings such as C(PRIMARY) and C(SECONDARY) language codes.
         The exact keys present depend on the language configuration in RACF.
         Only returned when I(profile_type=user) and C(lang) is included in the I(segments) parameter.
-      returned: when profile_type is user and lang segment is requested
+      returned: when profile_type is user and segments specifies lang
       type: dict
       sample:
         PRIMARY LANGUAGE: "ENU"
@@ -251,77 +251,77 @@ segments:
         Contains custom application-specific data defined in RACF.
         The exact keys present depend on what custom data has been configured for the profile.
         Only returned when C(csdata) is included in the I(segments) parameter.
-      returned: when csdata segment is requested
+      returned: when segments specifies csdata
       type: dict
     CICS:
       description: >
         CICS segment information for user profiles.
         Contains CICS-related configuration and resource limits.
         Only returned when I(profile_type=user) and C(cics) is included in the I(segments) parameter.
-      returned: when profile_type is user and cics segment is requested
+      returned: when profile_type is user and segments specifies cics
       type: dict
     DCE:
       description: >
         DCE (Distributed Computing Environment) segment information for user profiles.
         Contains DCE-related configuration and identifiers.
         Only returned when I(profile_type=user) and C(dce) is included in the I(segments) parameter.
-      returned: when profile_type is user and dce segment is requested
+      returned: when profile_type is user and segments specifies dce
       type: dict
     EIM:
       description: >
         EIM (Enterprise Identity Mapping) segment information for user profiles.
         Contains EIM-related configuration and mappings.
         Only returned when I(profile_type=user) and C(eim) is included in the I(segments) parameter.
-      returned: when profile_type is user and eim segment is requested
+      returned: when profile_type is user and segments specifies eim
       type: dict
     OVM:
       description: >
         OVM (OpenExtensions VM) segment information for user and group profiles.
         Contains OVM-related configuration and settings.
         Only returned when C(ovm) is included in the I(segments) parameter.
-      returned: when ovm segment is requested
+      returned: when segments specifies ovm
       type: dict
     NETVIEW:
       description: >
         NETVIEW segment information for user profiles.
         Contains NetView-related configuration and authorities.
         Only returned when I(profile_type=user) and C(netview) is included in the I(segments) parameter.
-      returned: when profile_type is user and netview segment is requested
+      returned: when profile_type is user and segments specifies netview
       type: dict
     NDS:
       description: >
         NDS (Network Directory Services) segment information for user profiles.
         Contains NDS-related configuration and identifiers.
         Only returned when I(profile_type=user) and C(nds) is included in the I(segments) parameter.
-      returned: when profile_type is user and nds segment is requested
+      returned: when profile_type is user and segments specifies nds
       type: dict
     LNOTES:
       description: >
         LNOTES (Lotus Notes) segment information for user profiles.
         Contains Lotus Notes-related configuration and settings.
         Only returned when I(profile_type=user) and C(lnotes) is included in the I(segments) parameter.
-      returned: when profile_type is user and lnotes segment is requested
+      returned: when profile_type is user and segments specifies lnotes
       type: dict
     WORKATTR:
       description: >
         WORKATTR (Work Attributes) segment information for user profiles.
         Contains work-related attributes and organizational information.
         Only returned when I(profile_type=user) and C(workattr) is included in the I(segments) parameter.
-      returned: when profile_type is user and workattr segment is requested
+      returned: when profile_type is user and segments specifies workattr
       type: dict
     PROXY:
       description: >
         PROXY segment information for user profiles.
         Contains proxy-related configuration and authorities.
         Only returned when I(profile_type=user) and C(proxy) is included in the I(segments) parameter.
-      returned: when profile_type is user and proxy segment is requested
+      returned: when profile_type is user and segments specifies proxy
       type: dict
     KERB:
       description: >
         KERB (Kerberos) segment information for user profiles.
         Contains Kerberos-related configuration, principals, and encryption settings.
         Only returned when I(profile_type=user) and C(kerb) is included in the I(segments) parameter.
-      returned: when profile_type is user and kerb segment is requested
+      returned: when profile_type is user and segments specifies kerb
       type: dict
 """
 

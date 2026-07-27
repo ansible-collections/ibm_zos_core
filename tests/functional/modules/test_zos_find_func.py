@@ -1222,6 +1222,7 @@ def test_find_alias_for_gdg_generation(ansible_zos_module):
             stdin=f"  DELETE {gdg_base} -\n    GDG\n",
         )
 
+
 def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
     """Aliases for PS, PDS, and PDSE created under one HLQ.
     PDS and PDSE catalog aliases are excluded by pattern; only the PS alias is returned.
@@ -1740,3 +1741,207 @@ def test_find_alias_filter_by_volume(ansible_zos_module, volumes_on_systems):
         hosts.all.shell(cmd=f"drm {ps_name}")
         hosts.all.zos_data_set(name=pds_name,  state="absent")
         hosts.all.zos_data_set(name=pdse_name, state="absent")
+
+def test_find_alias_filters_by_target_size(ansible_zos_module):
+    """Alias size filtering uses the target sequential dataset allocated size.
+
+    Creates two PS datasets and catalog aliases pointing to them:
+    - one target smaller than 2 MB
+    - one target larger than 4 MB
+
+    Verifies alias filtering by size returns the alias whose target is:
+    - > 2 MB
+    - < 2 MB
+    """
+    hosts = ansible_zos_module
+    hlq = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    small_ps_name = f"{hlq}.SMALL"
+    large_ps_name = f"{hlq}.LARGE"
+    small_ali_name = f"{hlq}.SMALL.ALI"
+    large_ali_name = f"{hlq}.LARGE.ALI"
+    alias_pattern = f"{hlq}.*"
+
+    try:
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": small_ps_name,
+                    "type": "seq",
+                    "state": "present",
+                    "space_primary": 1,
+                    "space_type": "m",
+                    "record_length": 80,
+                    "record_format": "fb",
+                },
+                {
+                    "name": large_ps_name,
+                    "type": "seq",
+                    "state": "present",
+                    "space_primary": 5,
+                    "space_type": "m",
+                    "record_length": 80,
+                    "record_format": "fb",
+                },
+            ]
+        )
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({small_ali_name}) -\n"
+                f"     RELATE({small_ps_name}))\n"
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({large_ali_name}) -\n"
+                f"     RELATE({large_ps_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+
+        larger_find_res = hosts.all.zos_find(
+            patterns=[alias_pattern],
+            resource_type=["alias"],
+            size="2m",
+        )
+        for val in larger_find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected only alias for target > 2 MB, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"] == "ALIAS"
+            assert ds["name"] == large_ali_name
+            assert ds["alias_of"] == large_ps_name
+            assert val.get("matched") == 1
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+
+        smaller_find_res = hosts.all.zos_find(
+            patterns=[alias_pattern],
+            resource_type=["alias"],
+            size="-2m",
+        )
+        for val in smaller_find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected only alias for target < 2 MB, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"] == "ALIAS"
+            assert ds["name"] == small_ali_name
+            assert ds["alias_of"] == small_ps_name
+            assert val.get("matched") == 1
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DELETE {small_ali_name} -\n    ALIAS\n"
+                f"  DELETE {large_ali_name} -\n    ALIAS\n"
+            ),
+        )
+        hosts.all.shell(cmd=f"drm {small_ps_name}")
+        hosts.all.shell(cmd=f"drm {large_ps_name}")
+
+        def test_find_alias_filters_by_target_size(ansible_zos_module):
+    """Alias size filtering uses the target sequential dataset allocated size.
+
+    Creates two PS datasets and catalog aliases pointing to them:
+    - one target smaller than 2 MB
+    - one target larger than 4 MB
+
+    Verifies alias filtering by size returns the alias whose target is:
+    - > 2 MB
+    - < 2 MB
+    """
+    hosts = ansible_zos_module
+    hlq = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    small_ps_name = f"{hlq}.SMALL"
+    large_ps_name = f"{hlq}.LARGE"
+    small_ali_name = f"{hlq}.SMALL.ALI"
+    large_ali_name = f"{hlq}.LARGE.ALI"
+    alias_pattern = f"{hlq}.*"
+
+    try:
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": small_ps_name,
+                    "type": "seq",
+                    "state": "present",
+                    "space_primary": 1,
+                    "space_type": "m",
+                    "record_length": 80,
+                    "record_format": "fb",
+                },
+                {
+                    "name": large_ps_name,
+                    "type": "seq",
+                    "state": "present",
+                    "space_primary": 5,
+                    "space_type": "m",
+                    "record_length": 80,
+                    "record_format": "fb",
+                },
+            ]
+        )
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({small_ali_name}) -\n"
+                f"     RELATE({small_ps_name}))\n"
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({large_ali_name}) -\n"
+                f"     RELATE({large_ps_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+
+        larger_find_res = hosts.all.zos_find(
+            patterns=[alias_pattern],
+            resource_type=["alias"],
+            size="2m",
+        )
+        for val in larger_find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected only alias for target > 2 MB, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"] == "ALIAS"
+            assert ds["name"] == large_ali_name
+            assert ds["alias_of"] == large_ps_name
+            assert val.get("matched") == 1
+
+        smaller_find_res = hosts.all.zos_find(
+            patterns=[alias_pattern],
+            resource_type=["alias"],
+            size="-2m",
+        )
+        for val in smaller_find_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected only alias for target < 2 MB, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"] == "ALIAS"
+            assert ds["name"] == small_ali_name
+            assert ds["alias_of"] == small_ps_name
+            assert val.get("matched") == 1
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DELETE {small_ali_name} -\n    ALIAS\n"
+                f"  DELETE {large_ali_name} -\n    ALIAS\n"
+            ),
+        )
+        hosts.all.shell(cmd=f"drm {small_ps_name}")
+        hosts.all.shell(cmd=f"drm {large_ps_name}")

@@ -108,8 +108,10 @@ options:
         with this option. The module only searches based on dataset patterns.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
         real dataset name it points to (returned as C(alias_of) in each result). The C(patterns),
-        C(excludes), C(volume), and C(include_member_aliases) options are applicable when using
-        this resource type.
+        C(excludes), C(volume), C(age), C(age_stamp), C(size), and C(include_member_aliases)
+        options are applicable when using this resource type. The C(age), C(age_stamp), and
+        C(size) filters are applied against the target dataset (C(alias_of)), not the alias
+        entry itself.
     aliases:
       - resource_types
     choices:
@@ -226,10 +228,10 @@ notes:
   - When searching for content within data sets, only non-binary content is considered.
   - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
-  - When using C(resource_type=alias), the C(age), C(age_stamp), C(size), and C(contains)
-    options are ignored, as aliases are catalog pointers with no independent size, age, or
-    searchable content. The C(volume) option filters aliases whose target dataset resides on
-    one of the specified volumes.
+  - When using C(resource_type=alias), the C(contains) option is ignored, as aliases are
+    catalog pointers with no searchable content. The C(age), C(age_stamp), C(size), and
+    C(volume) options are supported and are applied against the target dataset C(alias_of),
+    only alias entries whose target dataset satisfies the criteria are returned.
   - Parenthesised exclude patterns (e.g. C((^ALIAS1$))) match against PDS/PDSE member alias
     names. Members whose alias name matches the pattern are removed from the C(members) list
     of the alias entry. The alias entry itself is kept unless all members are removed.
@@ -344,6 +346,23 @@ EXAMPLES = r"""
     volumes:
       - VOL001
       - VOL002
+
+- name: Find aliases whose target dataset was created within the last 30 days
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    age: -30d
+    age_stamp: creation_date
+
+- name: Find aliases whose target dataset is larger than 1MB
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    size: 1m
 """
 
 
@@ -1574,6 +1593,20 @@ def run_module(module):
                 include_member_aliases=include_member_aliases,
                 volumes=volume if volume else None,
             )
+            # age / age_stamp / size filter alias entries by their target dataset.
+            # data_set_attribute_filter accepts a list of ds names and returns
+            # the subset that passes; we use alias_of as the lookup key.
+            if filtered_data_sets and (age or size):
+                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                surviving_targets = set(
+                    data_set_attribute_filter(
+                        module, target_names, size=size, age=age, age_stamp=age_stamp
+                    )
+                )
+                filtered_data_sets = [
+                    ds for ds in filtered_data_sets
+                    if ds.get("alias_of") in surviving_targets
+                ]
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:

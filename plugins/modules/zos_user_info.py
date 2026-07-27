@@ -34,7 +34,7 @@ options:
       - For I(profile_type=user), this must be a single user ID.
       - For I(profile_type=group), this must be a single group name.
       - The name is case-insensitive and will be normalized to uppercase before execution.
-      - The name must be a single continuous string with no spaces or whitespace characters.
+      - The name must be a single continuous string with no spaces or blank characters.
     type: str
     required: true
   profile_type:
@@ -105,26 +105,22 @@ stdout:
   sample: "USER=TESTU01  NAME=TEST USER 01  OWNER=ADMIN01  CREATED=2025/01/10"
 stderr:
   description: >
-    Standard error from the RACF command execution.
-    TSO command output is automatically filtered out.
+    Standard error from the RACF command execution, excluding the TSO command
+    itself, which is available under C(cmd).
   returned: always
   type: str
   sample: ""
 msg:
   description: >
-    Error message describing the failure reason.
-    Only present when the module fails.
+    Error message describing the failure.
   returned: failure
   type: str
   sample: "Profile 'TESTU01' not found in RACF database"
 segments:
-  description: >
-    Dictionary containing the RACF profile information organized by segments.
-    Always includes base profile information (C(base_segment) and C(group)/C(users) sections).
-    Additional segments are only included if explicitly requested via the I(segments) parameter.
-    Each segment is a dictionary with key-value pairs extracted from RACF output.
-    The keys and values within each segment are dynamic and depend on what RACF returns.
-    Empty segments (where RACF returns "NO [SEGMENT] INFORMATION") will be empty dictionaries.
+  description:
+    - Dictionary of RACF profile information organized by segment.
+    - Always includes C(base_segment) and C(group) or C(users). Additional segments are only present if specified in the I(segments) option.
+    - Keys and values are dynamic based on RACF output. Segments with no data are returned as empty dictionaries.
   returned: success
   type: dict
   contains:
@@ -149,12 +145,12 @@ segments:
         OWNER: "ADMIN01"
         CREATED: "2025/01/10"
     group:
-      description: >
-        Group connection information for user profiles.
-        Dictionary where each key is a group name and the value contains connection attributes.
-        Contains attributes such as C(AUTH), C(CONNECT-OWNER), C(CONNECT-DATE), C(LAST-CONNECT), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
-        Only returned when I(profile_type=user).
-      returned: when profile_type is user
+      description:
+        - Group connection information for user profiles, keyed by group name.
+        - Each value contains connection attributes such as C(AUTH), C(CONNECT-OWNER), C(CONNECT-DATE), C(LAST-CONNECT),
+          C(REVOKE DATE), C(RESUME DATE), and C(CONNECT ATTRIBUTES).
+        - Only returned when I(profile_type=user).
+      returned: when profile_type=user
       type: dict
       sample:
         TSTGRP01:
@@ -164,12 +160,12 @@ segments:
           REVOKE DATE: "NONE"
           RESUME DATE: "NONE"
     users:
-      description: >
-        Connected user information for group profiles.
-        Dictionary where each key is a username and the value contains connection attributes.
-        Contains attributes such as C(ACCESS), C(ACCESS COUNT), C(UNIVERSAL ACCESS), C(REVOKE DATE), C(RESUME DATE), C(CONNECT ATTRIBUTES), etc.
-        Only returned when I(profile_type=group).
-      returned: when profile_type is group
+      description:
+        - Connected user information for group profiles, keyed by username.
+        - Each value contains connection attributes such as C(ACCESS), C(ACCESS COUNT), C(UNIVERSAL ACCESS),
+          C(REVOKE DATE), C(RESUME DATE), and C(CONNECT ATTRIBUTES).
+        - Only returned when I(profile_type=group).
+      returned: when profile_type=group
       type: dict
       sample:
         TESTU01:

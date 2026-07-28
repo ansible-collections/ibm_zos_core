@@ -1038,8 +1038,8 @@ def _age_filter(ds_date, now, age):
         Whether 'ds_date' is older than 'age'.
     """
     year, month, day = list(map(int, ds_date.split("/")))
-    if year == "0000":
-        return age >= 0
+    if year == 0:
+        return False
 
     # Seconds per day = 86400
     ds_age = datetime.datetime(year, month, day).timestamp()
@@ -1078,12 +1078,16 @@ def _get_creation_date(module, ds):
             msg="Non-zero return code received while retrieving data set age",
             rc=rc, stderr=err, stdout=out
         )
-    out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
+    # out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
+    out = re.findall(r"CREATION-*[A-Z|0-9\.]*", out.strip())
     if out:
         out = out[0]
-        date = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
+        # date = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
+        date = "".join(re.findall(r"-[A-Z|0-9\.]*", out)).replace("-", "").split(".")
         days = 1 if len(date) < 2 else int(date[1])
         years = int(date[0])
+        if years == 0:
+            return "0000/1/1"
         days_per_month = 30.4167
         return "{0}/{1}/{2}".format(
             years,
@@ -1091,8 +1095,8 @@ def _get_creation_date(module, ds):
             math.ceil(days % days_per_month)
         )
 
-    # If no creation data is found, return default "000/1/1"
-    return "000/1/1"
+    # If no creation data is found, return default "0000/1/1"
+    return "0000/1/1"
 
 
 def _size_filter(ds_size, size):

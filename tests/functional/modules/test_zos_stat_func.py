@@ -130,6 +130,16 @@ EXPECTED_ATTRS = {
             'active_gens'
         ],
         'nested': []
+    },
+
+    # member_details is present on all data_set attributes dicts but is only
+    # populated (a list) for pds and pdse types; for all other types it must
+    # be None.
+    'member_details': {
+        'flat': [
+            'member_details'
+        ],
+        'nested': []
     }
 }
 
@@ -146,6 +156,10 @@ def assert_invalid_attrs_are_none(attrs, resource_type):
         if resource_type == current_type:
             continue
         elif resource_type in ('seq', 'pds', 'pdse', 'vsam') and current_type == 'data_set':
+            continue
+        # pds and pdse both populate member_details with a list, so skip the
+        # None check for those types.
+        elif resource_type in ('pds', 'pdse') and current_type == 'member_details':
             continue
 
         for attr in EXPECTED_ATTRS[current_type]['flat']:

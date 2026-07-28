@@ -221,7 +221,7 @@ def test_filter_pdse_data_set(ansible_zos_module):
         assert 'pdse_version' in stat['attributes']
         assert 'perc_pages_used' in stat['attributes']
 
-        # There are a total of 41 attributes above, so the resulting dictionary
+        # There are a total of 42 attributes above, so the resulting dictionary
         # should not have a different number of them after the filter.
         assert len(stat['attributes'].keys()) == 42
 
@@ -670,8 +670,12 @@ def test_filter_pds_data_set_member_details_present(ansible_zos_module):
                 "limit": null, "lnk_source": null, "lnk_target": null,
                 "log_file_size": null, "max_pdse_generation": null,
                 "member_details": [
-                    {"name": "HELLO", "extended_attributes": null, "ispf_statistics": null},
-                    {"name": "WORLD", "extended_attributes": null, "ispf_statistics": null}
+                    {"extended_attributes": null, "ispf_statistics": {"changed": "2026/07/28 08:20:54",
+                    "created": "2026/07/28", "id": "OMVSADM", "init": 1, "mod": 0, "version": "01.00"},
+                    "name": "HELLO"},
+                    {"extended_attributes": null, "ispf_statistics": {"changed": "2026/07/28 08:21:20",
+                    "created": "2026/07/28", "id": "OMVSADM", "init": 1, "mod": 0, "version": "01.00"},
+                    "name": "WORLD"}
                 ],
                 "members": 2, "mimetype": null, "missing_volumes": [], "mode": null,
                 "mtime": null, "nlink": null, "num_volumes": 1, "order": null,
@@ -713,15 +717,33 @@ def test_filter_pds_data_set_member_details_present(ansible_zos_module):
         member_details = stat['attributes']['member_details']
         assert isinstance(member_details, list)
         assert len(member_details) == 2
+
         assert member_details[0]['name'] == 'HELLO'
+        assert 'extended_attributes' in member_details[0]
+        assert 'ispf_statistics' in member_details[0]
+        assert 'changed' in member_details[0]['ispf_statistics']
+        assert 'created' in member_details[0]['ispf_statistics']
+        assert 'id' in member_details[0]['ispf_statistics']
+        assert 'init' in member_details[0]['ispf_statistics']
+        assert 'mod' in member_details[0]['ispf_statistics']
+        assert 'version' in member_details[0]['ispf_statistics']
+
         assert member_details[1]['name'] == 'WORLD'
+        assert 'extended_attributes' in member_details[1]
+        assert 'ispf_statistics' in member_details[1]
+        assert 'changed' in member_details[1]['ispf_statistics']
+        assert 'created' in member_details[1]['ispf_statistics']
+        assert 'id' in member_details[1]['ispf_statistics']
+        assert 'init' in member_details[1]['ispf_statistics']
+        assert 'mod' in member_details[1]['ispf_statistics']
+        assert 'version' in member_details[1]['ispf_statistics']
 
         # Sanity: other pds fields still present
         assert 'members' in stat['attributes']
         assert 'dir_blocks_allocated' in stat['attributes']
         assert 'dir_blocks_used' in stat['attributes']
 
-        # Total attribute count: 41 existing pds fields + member_details = 42
+        # Total attribute count: 42 existing pds fields + member_details = 42
         assert len(stat['attributes'].keys()) == 42
 
 

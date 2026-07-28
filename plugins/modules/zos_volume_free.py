@@ -32,7 +32,8 @@ description:
     returns volumes that match B(either) criterion (union), with automatic
     deduplication by VOLSER.
   - Results can be filtered by volume status, free space thresholds, percentage
-    free space, and VTOC index status.
+    free space, VTOC index status, and space allocation mode (cylinder-managed
+    or track-managed).
   - This module does not make any changes to the z/OS system and always returns
     C(changed) as false.
 options:
@@ -159,27 +160,20 @@ attributes:
 notes:
   - This module is read-only and always returns C(changed) as false.
   - When a single VOLSER is specified with no I(device_numbers), the module
-    uses C(list_volumes(volume_serial=)) for an efficient direct lookup.
-  - When a single VOLSER is not found or not active (BGYSC6606E), the module
-    returns an empty C(volumes) list with C(rc=0) and the missing VOLSER
-    listed in C(msg) — consistent with multi-VOLSER queries that silently
-    exclude missing volumes.
+    performs an efficient direct lookup for that volume.
+  - When a single VOLSER is not found or not active, the module returns an
+    empty C(volumes) list with C(rc=0) and the missing VOLSER listed in C(msg).
   - When multiple VOLSERs or any I(device_numbers) are specified, all active
-    volumes are retrieved first and then filtered in Python.
-  - When both I(volumes) and I(device_numbers) are specified, the module
-    returns volumes that match either criterion with automatic deduplication
-    by VOLSER.
+    volumes are retrieved first and then filtered.
   - The I(filter.unit) parameter only affects how I(filter.free_space_min)
     and I(filter.free_space_max) are interpreted. All output space values are
     always in tracks.
   - To convert output tracks to cylinders, divide by 15 (for 3390/3380 devices).
   - Space is reported in both tracks (C(total_space), C(free_space)) and
-    kilobytes (C(total_kilobytes), C(free_kilobytes)) as provided by the
-    ZOAU API. No device type field is available from the ZOAU Volume API.
+    kilobytes (C(total_kilobytes), C(free_kilobytes)).
 
 seealso:
   - module: ibm.ibm_zos_core.zos_volume_init
-  - module: ibm.ibm_zos_core.zos_gather_facts
 """
 
 EXAMPLES = r"""
@@ -255,6 +249,20 @@ EXAMPLES = r"""
         - online
         - permanently_resident
   register: resident_volumes
+
+- name: Get cylinder-managed (EAV) volumes.
+  ibm.ibm_zos_core.zos_volume_free:
+    filter:
+      cylinder_managed: true
+  register: eav_volumes
+
+- name: Get track-managed volumes that are online.
+  ibm.ibm_zos_core.zos_volume_free:
+    filter:
+      cylinder_managed: false
+      status:
+        - online
+  register: track_managed_online_volumes
 """
 
 RETURN = r"""
@@ -302,12 +310,12 @@ volumes:
       returned: always
       sample: 93.0
     total_kilobytes:
-      description: Total space on the volume in kilobytes (derived from C(vol.total_bytes / 1024)).
+      description: Total space on the volume in kilobytes.
       type: int
       returned: always
       sample: 25867337
     free_kilobytes:
-      description: Free space on the volume in kilobytes (derived from C(vol.free_bytes / 1024)).
+      description: Free space on the volume in kilobytes.
       type: int
       returned: always
       sample: 1812085
@@ -402,13 +410,14 @@ changed:
   sample: false
 rc:
   description:
-    - The return code is C(0) when the command executes successfully, including
-      when a requested VOLSER is not found (BGYSC6606E) — that case returns
-      C(rc=0) with an empty C(volumes) list.
-    - The return code is mapped from C(ZOAUException.response.rc) when a ZOAU
-      error occurs.
-    - The return code is C(5) when parameter validation fails.
-    - The return code is C(1) when any other unexpected error occurs.
+    - C(0) when the command executes successfully, including when a requested
+      VOLSER is not found — that case returns C(rc=0) with an empty C(volumes) list.
+    - C(5) when parameter validation fails.
+    - The return code from ZOAU when a ZOAU exception is raised; this can be
+      any non-zero value returned by the underlying ZOAU utility (for example
+      C(8), C(12), C(16)).
+    - C(1) when any other unexpected error occurs and the exception carries no
+      C(rc) attribute.
   returned: always
   type: int
   sample: 0
@@ -420,15 +429,14 @@ msg:
 stdout:
   description:
     - Always an empty string on success.
-    - On a ZOAU failure, contains C(ZOAUException.response.stdout_response).
+    - On failure, contains the standard output from the failed operation.
   returned: always
   type: str
   sample: ""
 stderr:
   description:
-    - Error output returned on failure. Empty string on success.
-    - On a ZOAU failure, contains C(ZOAUException.response.stderr_response).
-    - On any other failure, contains the Python exception message.
+    - Always an empty string on success.
+    - On failure, contains the error output or exception message.
   returned: always
   type: str
   sample: ""

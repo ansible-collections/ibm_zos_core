@@ -29,6 +29,7 @@ VOLUME_RETURN_KEYS = {
     'total_space', 'free_space', 'used_space',
     'percent_free', 'percent_used',
     'total_kilobytes', 'free_kilobytes',
+    'is_cylinder_managed',
     'status', 'vtoc_info',
 }
 
@@ -37,7 +38,7 @@ STATUS_KEYS = {
     'allocated', 'permanently_resident', 'system_residence', 'status_indicator',
 }
 
-VTOC_INFO_KEYS = {'index_vtoc', 'vtoc_active', 'is_cylinder_managed'}
+VTOC_INFO_KEYS = {'index_vtoc', 'vtoc_active'}
 
 
 def _assert_volume_structure(vol):
@@ -54,6 +55,7 @@ def _assert_volume_structure(vol):
     assert isinstance(vol['percent_used'], float)
     assert isinstance(vol['total_kilobytes'], int)
     assert isinstance(vol['free_kilobytes'], int)
+    assert isinstance(vol['is_cylinder_managed'], bool)
     assert 0.0 <= vol['percent_free'] <= 100.0
     assert 0.0 <= vol['percent_used'] <= 100.0
     assert vol['total_space'] >= 0
@@ -108,13 +110,7 @@ def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
 
 
 def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
-    """A single non-existent VOLSER should return an empty list without failing.
-
-    ZOAU raises VolumeInfoException (BGYSC6606E) for a single missing volume.
-    The module treats this as "not found" — consistent with multi-volser queries
-    where missing volumes are silently excluded from results.
-    The message should note the unavailable volume and report zero found.
-    """
+    """A single non-existent VOLSER should return an empty list without failing."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
     for result in results.contacted.values():
@@ -982,9 +978,9 @@ def _assert_vol_matches_vf(mod_vol, cli_vol):
         "vtoc_active: module={0}, vf={1}".format(
             mod_vol['vtoc_info']['vtoc_active'], cli_vol['vtoc_active'])
     )
-    assert mod_vol['vtoc_info']['is_cylinder_managed'] == bool(cli_vol['is_cylinder_managed']), (
+    assert mod_vol['is_cylinder_managed'] == bool(cli_vol['is_cylinder_managed']), (
         "is_cylinder_managed: module={0}, vf={1}".format(
-            mod_vol['vtoc_info']['is_cylinder_managed'], cli_vol['is_cylinder_managed'])
+            mod_vol['is_cylinder_managed'], cli_vol['is_cylinder_managed'])
     )
     cli_status = cli_vol['status']
     for flag, ucb_key in _UCB_MAP:

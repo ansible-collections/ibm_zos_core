@@ -60,6 +60,10 @@ options:
   filter:
     description:
       - Dictionary of filter criteria to apply to the volume results.
+      - Criteria include device status flags, free space thresholds, percentage
+        free space, VTOC index status, and space allocation mode.
+      - All specified criteria are applied together (AND logic). Only volumes
+        matching every criterion are returned.
     type: dict
     required: false
     suboptions:
@@ -120,6 +124,12 @@ options:
           - Filter by VTOC index status.
           - When C(true), only volumes with an indexed VTOC are returned.
           - When C(false), only volumes without an indexed VTOC are returned.
+        type: bool
+      cylinder_managed:
+        description:
+          - Filter by space allocation mode.
+          - When C(true), only cylinder-managed volumes are returned.
+          - When C(false), only track-managed volumes are returned.
         type: bool
       unit:
         description:
@@ -363,6 +373,15 @@ volumes:
             - Derived from the z/OS UCB C(ucbdadi) flag.
           type: bool
           sample: false
+    is_cylinder_managed:
+      description:
+        - Whether the volume uses cylinder-managed space allocation.
+        - When C(true), space is allocated on cylinder boundaries rather than
+          track boundaries. Typical of Extended Address Volumes (EAV) and some
+          SMS-managed volumes.
+      type: bool
+      returned: always
+      sample: false
     vtoc_info:
       description: VTOC (Volume Table of Contents) information.
       type: dict
@@ -376,14 +395,6 @@ volumes:
           description: Whether the VTOC index is active.
           type: bool
           sample: true
-        is_cylinder_managed:
-          description:
-            - Whether the volume uses cylinder-managed space allocation.
-            - When C(true), the VTOC uses cylinder boundaries for dataset
-              allocation.
-            - Derived from the ZOAU API C(is_cylinder_managed) field.
-          type: bool
-          sample: false
 changed:
   description: Indicates whether any changes were made. Always false for this module.
   returned: always
@@ -501,7 +512,10 @@ def _build_vtoc_info(vol):
     """Extract VTOC information from a ZOAU Volume object.
 
     ZOAU 1.4.x exposes VTOC fields as direct attributes on the Volume object:
-    ``index_vtoc``, ``vtoc_active``, and ``is_cylinder_managed``.
+    ``index_vtoc`` and ``vtoc_active``.
+
+    Note: ``is_cylinder_managed`` is a volume-level space allocation attribute,
+    not a VTOC property, and is returned as a top-level field on the volume dict.
 
     Parameters
     ----------
@@ -516,7 +530,6 @@ def _build_vtoc_info(vol):
     return {
         'index_vtoc': bool(getattr(vol, 'index_vtoc', False)),
         'vtoc_active': bool(getattr(vol, 'vtoc_active', False)),
-        'is_cylinder_managed': bool(getattr(vol, 'is_cylinder_managed', False)),
     }
 
 
@@ -558,7 +571,7 @@ def _volume_to_dict(vol):
 
     if total_space > 0:
         percent_free = round((free_space / total_space) * 100, 1)
-        percent_used = round(100.0 - percent_free, 1)
+        percent_used = round((used_space / total_space) * 100, 1)
     else:
         percent_free = 0.0
         percent_used = 0.0
@@ -579,6 +592,7 @@ def _volume_to_dict(vol):
         'percent_used': percent_used,
         'total_kilobytes': total_kilobytes,
         'free_kilobytes': free_kilobytes,
+        'is_cylinder_managed': bool(getattr(vol, 'is_cylinder_managed', False)),
         'status': status,
         'vtoc_info': vtoc_info,
     }
@@ -608,6 +622,7 @@ def _apply_filters(volume_list, filter_params):
     percent_free_min = filter_params.get('percent_free_min')
     percent_free_max = filter_params.get('percent_free_max')
     vtoc_indexed = filter_params.get('vtoc_indexed')
+    cylinder_managed = filter_params.get('cylinder_managed')
     unit = filter_params.get('unit', 'tracks')
 
     # Convert cylinder thresholds to tracks for comparison.
@@ -631,6 +646,8 @@ def _apply_filters(volume_list, filter_params):
         if percent_free_max is not None and vol['percent_free'] > percent_free_max:
             continue
         if vtoc_indexed is not None and vol['vtoc_info']['index_vtoc'] != vtoc_indexed:
+            continue
+        if cylinder_managed is not None and vol['is_cylinder_managed'] != cylinder_managed:
             continue
         result.append(vol)
 
@@ -796,6 +813,7 @@ def run_module():
                     'percent_free_min': {'type': 'int', 'required': False},
                     'percent_free_max': {'type': 'int', 'required': False},
                     'vtoc_indexed': {'type': 'bool', 'required': False},
+                    'cylinder_managed': {'type': 'bool', 'required': False},
                     'unit': {
                         'type': 'str',
                         'choices': ['tracks', 'cylinders'],
@@ -822,6 +840,7 @@ def run_module():
                 'percent_free_min': {'type': 'int', 'required': False},
                 'percent_free_max': {'type': 'int', 'required': False},
                 'vtoc_indexed': {'type': 'bool', 'required': False},
+                'cylinder_managed': {'type': 'bool', 'required': False},
                 'unit': {'type': 'str', 'required': False},
             },
         },

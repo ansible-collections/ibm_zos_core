@@ -1805,6 +1805,7 @@ def test_find_alias_filters_by_target_size(ansible_zos_module):
             resource_type=["alias"],
             size="2m",
         )
+        print(larger_find_res.contacted.values())
         for val in larger_find_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
@@ -1846,102 +1847,215 @@ def test_find_alias_filters_by_target_size(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {small_ps_name}")
         hosts.all.shell(cmd=f"drm {large_ps_name}")
 
-        def test_find_alias_filters_by_target_size(ansible_zos_module):
-    """Alias size filtering uses the target sequential dataset allocated size.
 
-    Creates two PS datasets and catalog aliases pointing to them:
-    - one target smaller than 2 MB
-    - one target larger than 4 MB
-
-    Verifies alias filtering by size returns the alias whose target is:
-    - > 2 MB
-    - < 2 MB
+def test_find_alias_filters_by_target_creation_date(ansible_zos_module):
+    """Alias age filtering via creation_date uses the target sequential dataset
+    creation date.
+    Creates a PS dataset with dtouch (creation_date = today) and a catalog
+    alias pointing to it, then verifies:
+    - age="-2d" (created within last 2 days) matches the alias.
+    - age="2d"  (created more than 2 days ago) does not match.
     """
     hosts = ansible_zos_module
     hlq = get_tmp_ds_name(mlq_size=3, llq_size=3)
-    small_ps_name = f"{hlq}.SMALL"
-    large_ps_name = f"{hlq}.LARGE"
-    small_ali_name = f"{hlq}.SMALL.ALI"
-    large_ali_name = f"{hlq}.LARGE.ALI"
-    alias_pattern = f"{hlq}.*"
-
+    ps_name = f"{hlq}.SEQ"
+    ali_name = f"{hlq}.SEQ.ALI"
+    ali_pattern = f"{hlq}.SEQ.*"
     try:
-        hosts.all.zos_data_set(
-            batch=[
-                {
-                    "name": small_ps_name,
-                    "type": "seq",
-                    "state": "present",
-                    "space_primary": 1,
-                    "space_type": "m",
-                    "record_length": 80,
-                    "record_format": "fb",
-                },
-                {
-                    "name": large_ps_name,
-                    "type": "seq",
-                    "state": "present",
-                    "space_primary": 5,
-                    "space_type": "m",
-                    "record_length": 80,
-                    "record_format": "fb",
-                },
-            ]
-        )
+        hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
         define_res = hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=(
                 f"  DEFINE ALIAS -\n"
-                f"    (NAME({small_ali_name}) -\n"
-                f"     RELATE({small_ps_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({large_ali_name}) -\n"
-                f"     RELATE({large_ps_name}))\n"
+                f"    (NAME({ali_name}) -\n"
+                f"     RELATE({ps_name}))\n"
             ),
         )
         for v in define_res.contacted.values():
             assert v.get("rc") == 0, (
                 f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
             )
-
-        larger_find_res = hosts.all.zos_find(
-            patterns=[alias_pattern],
+        # creation_date is today — alias should match "newer than 2 days"
+        creation_recent_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
             resource_type=["alias"],
-            size="2m",
+            age="-2d",
+            age_stamp="creation_date",
         )
-        for val in larger_find_res.contacted.values():
+        print(creation_recent_res.contacted.values())
+
+        for val in creation_recent_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
-                f"expected only alias for target > 2 MB, got {data_sets}"
+                f"expected alias to match creation_date < 2d, got {data_sets}"
             )
             ds = data_sets[0]
             assert ds["type"] == "ALIAS"
-            assert ds["name"] == large_ali_name
-            assert ds["alias_of"] == large_ps_name
+            assert ds["name"] == ali_name
+            assert ds["alias_of"] == ps_name
             assert val.get("matched") == 1
-
-        smaller_find_res = hosts.all.zos_find(
-            patterns=[alias_pattern],
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+        # creation_date is today — alias should NOT match "older than 2 days"
+        creation_old_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
             resource_type=["alias"],
-            size="-2m",
+            age="2d",
+            age_stamp="creation_date",
         )
-        for val in smaller_find_res.contacted.values():
+        for val in creation_old_res.contacted.values():
             data_sets = val.get("data_sets")
-            assert data_sets is not None and len(data_sets) == 1, (
-                f"expected only alias for target < 2 MB, got {data_sets}"
+            assert data_sets == [], (
+                f"expected no alias to match creation_date > 2d, got {data_sets}"
             )
-            ds = data_sets[0]
-            assert ds["type"] == "ALIAS"
-            assert ds["name"] == small_ali_name
-            assert ds["alias_of"] == small_ps_name
-            assert val.get("matched") == 1
+            assert val.get("matched") == 0
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
     finally:
         hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
+        )
+        hosts.all.shell(cmd=f"drm {ps_name}")
+
+
+def test_find_alias_filters_by_target_ref_date_default(ansible_zos_module):
+    """Alias age filtering via ref_date when the target has ref_date = 0000/01/01.
+    dtouch allocates a sequential dataset without writing any data.  DFSMS
+    reports ref_date as 0000/01/01 for such a dataset (confirmed via dls -u).
+    Because ref_date has never been updated, any age filter using age_stamp=
+    ref_date cannot meaningfully compare the date, and the alias is not returned
+    for either direction:
+    Verifies:
+    - age="-2d" (newer than 2 days) returns 0 matches — ref_date 0000/01/01
+      is not a valid recent date.
+    - age="2d"  (older than 2 days) returns 0 matches — ref_date 0000/01/01
+      is not a valid historical date either.
+    """
+    hosts = ansible_zos_module
+    hlq = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    ps_name = f"{hlq}.SEQ"
+    ali_name = f"{hlq}.SEQ.ALI"
+    ali_pattern = f"{hlq}.SEQ.*"
+    try:
+        # dtouch only — leaves ref_date as 0000/01/01 (no data written)
+        hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=(
-                f"  DELETE {small_ali_name} -\n    ALIAS\n"
-                f"  DELETE {large_ali_name} -\n    ALIAS\n"
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({ali_name}) -\n"
+                f"     RELATE({ps_name}))\n"
             ),
         )
-        hosts.all.shell(cmd=f"drm {small_ps_name}")
-        hosts.all.shell(cmd=f"drm {large_ps_name}")
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+        # ref_date == 0000/01/01 — not a valid recent date, should not match
+        ref_default_recent_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            age="-2d",
+            age_stamp="ref_date",
+        )
+        print(ref_default_recent_res.contacted.values())
+        for val in ref_default_recent_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets == [], (
+                f"expected no alias to match ref_date 0000/01/01 with age='-2d', got {data_sets}"
+            )
+            assert val.get("matched") == 0
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+        # ref_date == 0000/01/01 — not a valid historical date, should not match
+        ref_default_old_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            age="2d",
+            age_stamp="ref_date",
+        )
+        for val in ref_default_old_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets == [], (
+                f"expected no alias to match ref_date 0000/01/01 with age='2d', got {data_sets}"
+            )
+            assert val.get("matched") == 0
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
+        )
+        hosts.all.shell(cmd=f"drm {ps_name}")
+
+def test_find_alias_filters_by_target_ref_date_current(ansible_zos_module):
+    """Alias age filtering via ref_date after the target dataset has been written.
+    Writing a record to the target PS with decho updates ref_date to today.
+    With ref_date == today:
+    - age="-2d" (newer than 2 days) matches the alias.
+    - age="2d"  (older than 2 days) does not match.
+    """
+    hosts = ansible_zos_module
+    hlq = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    ps_name = f"{hlq}.SEQ"
+    ali_name = f"{hlq}.SEQ.ALI"
+    ali_pattern = f"{hlq}.SEQ.*"
+    try:
+        hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
+        # Write a record so ref_date is updated to today
+        hosts.all.shell(cmd=f"decho 'alias ref_date test record' '{ps_name}'")
+        hosts.all.shell(cmd=f"dcat '{ps_name}'")
+        define_res = hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=(
+                f"  DEFINE ALIAS -\n"
+                f"    (NAME({ali_name}) -\n"
+                f"     RELATE({ps_name}))\n"
+            ),
+        )
+        for v in define_res.contacted.values():
+            assert v.get("rc") == 0, (
+                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+            )
+        # ref_date == today — alias should match "newer than 2 days"
+        ref_recent_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            age="-2d",
+            age_stamp="ref_date",
+        )
+        for val in ref_recent_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets is not None and len(data_sets) == 1, (
+                f"expected alias to match ref_date < 2d after write, got {data_sets}"
+            )
+            ds = data_sets[0]
+            assert ds["type"] == "ALIAS"
+            assert ds["name"] == ali_name
+            assert ds["alias_of"] == ps_name
+            assert val.get("matched") == 1
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+        # ref_date == today — alias should NOT match "older than 2 days"
+        ref_old_res = hosts.all.zos_find(
+            patterns=[ali_pattern],
+            resource_type=["alias"],
+            age="2d",
+            age_stamp="ref_date",
+        )
+        for val in ref_old_res.contacted.values():
+            data_sets = val.get("data_sets")
+            assert data_sets == [], (
+                f"expected no alias to match ref_date > 2d after write, got {data_sets}"
+            )
+            assert val.get("matched") == 0
+            assert val.get("examined") is not None
+            assert val.get("msg") is None
+    finally:
+        hosts.all.shell(
+            cmd=_IDCAMS_CMD, executable='/bin/sh',
+            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
+        )
+        hosts.all.shell(cmd=f"drm {ps_name}")

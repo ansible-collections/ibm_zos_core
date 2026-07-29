@@ -40,7 +40,7 @@ options:
       - Use a negative age to find data sets equal to or less than the specified time.
       - You can choose days, weeks, months or years by specifying the first letter of
         any of those words (e.g., "1w"). The default is days.
-      - Age is determined by using the 'referenced date' of the data set.
+      - Age is determined by the date selected with C(age_stamp) (default C(creation_date)).
     type: str
     required: false
   age_stamp:
@@ -108,10 +108,10 @@ options:
         with this option. The module only searches based on dataset patterns.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
         real dataset name it points to (returned as C(alias_of) in each result). The C(patterns),
-        C(excludes), C(volume), C(age), C(age_stamp), C(size), and C(include_member_aliases)
-        options are applicable when using this resource type. The C(age), C(age_stamp), and
-        C(size) filters are applied against the target dataset (C(alias_of)), not the alias
-        entry itself.
+        C(excludes), C(volume), C(age), C(age_stamp), C(size), C(contains), and
+        C(include_member_aliases) options are applicable when using this resource type.
+        The C(age), C(age_stamp), C(size), and C(contains) filters are applied against
+        the target dataset (C(alias_of)), not the alias entry itself.
     aliases:
       - resource_types
     choices:
@@ -228,10 +228,10 @@ notes:
   - When searching for content within data sets, only non-binary content is considered.
   - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
-  - When using C(resource_type=alias), the C(contains) option is ignored, as aliases are
-    catalog pointers with no searchable content. The C(age), C(age_stamp), C(size), and
-    C(volume) options are supported and are applied against the target dataset C(alias_of),
-    only alias entries whose target dataset satisfies the criteria are returned.
+  - When using C(resource_type=alias), the C(contains) option searches the content of the
+    target dataset (C(alias_of)). Only alias entries whose target dataset contains the
+    specified string are returned. The C(age), C(age_stamp), C(size), and C(volume) options
+    are also supported and are applied against the target dataset.
   - Parenthesised exclude patterns (e.g. C((^ALIAS1$))) match against PDS/PDSE member alias
     names. Members whose alias name matches the pattern are removed from the C(members) list
     of the alias entry. The alias entry itself is kept unless all members are removed.
@@ -363,6 +363,14 @@ EXAMPLES = r"""
     resource_type:
       - alias
     size: 1m
+
+- name: Find aliases whose target dataset contains the string 'hello'
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    contains: 'hello'
 """
 
 
@@ -1078,11 +1086,9 @@ def _get_creation_date(module, ds):
             msg="Non-zero return code received while retrieving data set age",
             rc=rc, stderr=err, stdout=out
         )
-    # out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
     out = re.findall(r"CREATION-*[A-Z|0-9\.]*", out.strip())
     if out:
         out = out[0]
-        # date = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
         date = "".join(re.findall(r"-[A-Z|0-9\.]*", out)).replace("-", "").split(".")
         days = 1 if len(date) < 2 else int(date[1])
         years = int(date[0])
@@ -1597,6 +1603,36 @@ def run_module(module):
                 include_member_aliases=include_member_aliases,
                 volumes=volume if volume else None,
             )
+            # contains: search the target dataset content via dgrep.
+            # Aliases are catalog pointers with no searchable content of their
+            # own; the string must be present in the target dataset (alias_of).
+            if filtered_data_sets and contains:
+                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                content_results = content_filter(module, target_names, contains)
+                pds_hits = content_results.get("pds", {})
+                ps_hits = content_results.get("ps", set())
+                surviving = []
+                for ds in filtered_data_sets:
+                    alias_of = ds.get("alias_of")
+                    if alias_of in ps_hits:
+                        # Sequential target: alias passes as-is.
+                        surviving.append(ds)
+                    elif alias_of in pds_hits:
+                        # PDS/PDSE target: alias passes; if a members list is
+                        # present (include_member_aliases=True or a parenthesised
+                        # exclude was used), prune it to only the members whose
+                        # content matched the search string.
+                        if "members" in ds:
+                            matching_members = pds_hits[alias_of]
+                            ds = dict(ds)
+                            ds["members"] = [
+                                m for m in ds["members"]
+                                if m.get("name", "").upper() in {
+                                    n.upper() for n in matching_members
+                                }
+                            ]
+                        surviving.append(ds)
+                filtered_data_sets = surviving
             # age / age_stamp / size filter alias entries by their target dataset.
             # data_set_attribute_filter accepts a list of ds names and returns
             # the subset that passes; we use alias_of as the lookup key.

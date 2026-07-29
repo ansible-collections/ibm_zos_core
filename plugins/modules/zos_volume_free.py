@@ -519,12 +519,6 @@ def _build_device_status(ucb_status):
 def _build_vtoc_info(vol):
     """Extract VTOC information from a ZOAU Volume object.
 
-    ZOAU 1.4.x exposes VTOC fields as direct attributes on the Volume object:
-    ``index_vtoc`` and ``vtoc_active``.
-
-    Note: ``is_cylinder_managed`` is a volume-level space allocation attribute,
-    not a VTOC property, and is returned as a top-level field on the volume dict.
-
     Parameters
     ----------
     vol : object
@@ -714,8 +708,7 @@ def get_volume_info(module):
                 raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0])
                 matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
             except json.JSONDecodeError:
-                # Old ZOAU (without VolumeInfoException fix): raw decode error
-                # means the volume is not found / not active (BGYSC6606E).
+                # This exception is being handled here because of ZOAU issue NAZARE-11323
                 logger.debug(
                     "Volume %r not found or not accessible (BGYSC6606E).",
                     requested_volsers[0],

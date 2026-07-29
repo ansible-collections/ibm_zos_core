@@ -3181,6 +3181,10 @@ def allocate_destination_data_set(
         results = gdgs.list_gdg_names(dest)
         if len(results) == 0:
             raise CopyOperationError(msg=f"Error while allocating GDG {dest}.")
+    else:
+        # The destination PDS/PDSE already exists. Since adding a member does not require a new dataset allocation,
+        # dest_created is set to False.
+        return False, dest_params, dest
 
     if is_gds and not is_active_gds:
         gdg_name = data_set.extract_dsname(dest)
@@ -3270,22 +3274,85 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def remote_cleanup(module):
+def remote_cleanup(module, dest_exists=None, dest_created=None, dest_name="",
+                   dest_ds_type=""):
     """Remove all files or data sets pointed to by 'dest' on the remote
     z/OS system. The idea behind this cleanup step is that if, for some
     reason, the module fails after copying the data, we want to return the
     remote system to its original state. Which means deleting any newly
     created files or data sets.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The module object.
+    dest_exists : bool, optional
+        Whether the destination existed before the copy operation.
+        None means unknown — the fallback infers from dest_exists.
+    dest_created : bool, optional
+        Whether the destination was newly created by this copy operation.
+        When True the destination must be deleted on failure. When False
+        the destination pre-existed and should not be deleted.
+        When None the value is inferred from dest_exists.
+    dest_name : str
+        The resolved destination name (may differ from module.params['dest']
+        after alias/GDS resolution).
+    dest_ds_type : str
+        The resolved destination data-set type (e.g. 'USS', 'SEQ', 'PDSE',
+        'GDG', 'VSAM'). Used to choose the correct cleanup path instead of
+        re-deriving it from the dest string.
     """
-    dest = module.params.get('dest')
-    if "/" in dest:
-        if os.path.isfile(dest):
-            os.remove(dest)
-        else:
-            shutil.rmtree(dest)
-    else:
-        dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+    dest = dest_name
+
+    # dest_created is the authoritative signal: it is set to True/False
+    # by run_module after allocation. Fall back to inferring from dest_exists
+    # only when dest_created was not yet recorded (error before allocation).
+    if dest_created is None:
+        # Conservative fallback: only clean up when we are certain dest
+        # did not exist before (i.e. we must have created it).
+        dest_created = (dest_exists is False)
+
+    # USS file/directory cleanup
+    if dest_ds_type == "USS":
+        if dest_created:
+            if os.path.isfile(dest):
+                os.remove(dest)
+            elif os.path.isdir(dest):
+                shutil.rmtree(dest)
+
+    # GDG base or GDS cleanup
+    elif dest_ds_type == "GDG":
+        if dest_created:
+            dest_base = data_set.extract_dsname(dest)
+            # The newly created generation is now at relative offset (0).
+            actual_dest = dest_base + "(0)"
+            data_set.DataSet.ensure_absent(name=actual_dest)
+            # Attempt to remove the GDG base only if we also created it.
+            try:
+                data_set.DataSet.ensure_absent(name=dest_base)
+            except Exception as e:
+                module.debug("Could not delete GDG base {0}: {1}".format(dest_base, str(e)))
+
+    # PDS/PDSE with a member target — two sub-cases
+    elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+        dest_base = data_set.extract_dsname(dest)
+
+        if dest_created:
+            # The whole PDS was newly created by us — delete the entire data set.
+            try:
+                data_set.DataSet.ensure_absent(name=dest_base)
+            except Exception as e:
+                # PDS might be in use or already deleted, ignore
+                module.debug("Could not delete PDS {0}: {1}".format(dest_base, str(e)))
+        # else: PDS existed before copy, don't delete anything
+
+    # Sequential, VSAM and any other MVS data sets
+    elif dest_created:
+        dest_base = data_set.extract_dsname(dest)
+        try:
+            data_set.DataSet.ensure_absent(name=dest_base)
+        except Exception as e:
+            module.debug("Could not delete data set {0}: {1}".format(dest_base, str(e)))
 
 
 def update_result(res_args, original_args):
@@ -4010,6 +4077,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
+        err.json_args["dest_exists"] = dest_exists
+        err.json_args["dest_created"] = res_args.get("dest_created")
+        err.json_args["dest_name"] = dest
+        err.json_args["dest_ds_type"] = dest_ds_type
+        err.json_args["dest_member_exists"] = dest_member_exists
         raise err
 
     res_args.update(
@@ -4254,8 +4326,19 @@ def main():
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
-        remote_cleanup(module=module)
-        module.fail_json(**(err.json_args))
+        remote_cleanup(
+            module=module,
+            dest_exists=err.json_args.get("dest_exists"),
+            dest_created=err.json_args.get("dest_created"),
+            dest_name=err.json_args.get("dest_name"),
+            dest_ds_type=err.json_args.get("dest_ds_type")
+        )
+
+        # Strip internal cleanup fields — they are not part of the
+        # module's public return contract.
+        fail_args = {k: v for k, v in err.json_args.items()
+                     if k not in ("dest_created", "dest_name", "dest_ds_type", "dest_member_exists")}
+        module.fail_json(**fail_args)
     finally:
         cleanup([conv_path])
 

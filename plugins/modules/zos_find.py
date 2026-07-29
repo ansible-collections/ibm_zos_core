@@ -457,7 +457,6 @@ rc:
 import re
 import time
 import datetime
-import math
 import json
 
 from re import match as fullmatch
@@ -1090,16 +1089,13 @@ def _get_creation_date(module, ds):
     if out:
         out = out[0]
         date = "".join(re.findall(r"-[A-Z|0-9\.]*", out)).replace("-", "").split(".")
-        days = 1 if len(date) < 2 else int(date[1])
         years = int(date[0])
         if years == 0:
             return "0000/1/1"
-        days_per_month = 30.4167
-        return "{0}/{1}/{2}".format(
-            years,
-            math.ceil(days / days_per_month),
-            math.ceil(days % days_per_month)
-        )
+        days = 1 if len(date) < 2 else int(date[1])
+        return datetime.datetime.strptime(
+            "{0}.{1}".format(years, days), "%Y.%j"
+        ).strftime("%Y/%m/%d")
 
     # If no creation data is found, return default "0000/1/1"
     return "0000/1/1"

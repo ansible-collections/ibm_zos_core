@@ -516,6 +516,63 @@ stat:
           returned: success
           type: int
           sample: 3
+        member_details:
+          description: >
+            Details for each member in a partitioned data set including extended
+            attributes and ISPF statistics. Set to null for non-PDS/PDSE types
+            (sequential, VSAM, GDG) where member details do not apply.
+          returned: success
+          type: raw
+          elements: dict
+          contains:
+            name:
+              description: Member name
+              type: str
+              sample: MEMBER1
+            extended_attributes:
+              description: SMDE extended attributes for the member
+              type: dict
+              contains:
+                user:
+                  description: Last user that modified the member
+                  type: str
+                  sample: USER01
+                codeset:
+                  description: Coded character set identifier (CCSID).
+                  type: int
+                  sample: 1047
+                modified_time:
+                  description: Last time the member was modified (YYYY/MM/DD HH:MM:SS).
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+            ispf_statistics:
+              description: ISPF member statistics
+              type: dict
+              contains:
+                version:
+                  description: Version and modification level (VV.MM format)
+                  type: str
+                  sample: "01.05"
+                created:
+                  description: Creation date (YYYY/MM/DD)
+                  type: str
+                  sample: "2024/01/15"
+                changed:
+                  description: Last change date and time (YYYY/MM/DD HH:MM:SS)
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+                init:
+                  description: Initial size (number of lines)
+                  type: int
+                  sample: 95
+                mod:
+                  description: Number of lines modified since the last full save.
+                  type: int
+                  sample: 3
+                id:
+                  description: User ID who last modified the member
+                  type: str
+                  sample: USER01
         pages_allocated:
           description: Number of pages allocated to a PDSE.
           returned: success
@@ -1641,7 +1698,7 @@ class NonVSAMDataSetHandler(DataSetHandler):
             'encrypted', 'key_status', 'racf', 'key_label',
             'dir_blocks_allocated', 'dir_blocks_used',
             'pages_allocated', 'pages_used', 'perc_pages_used',
-            'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
+            'members', 'member_details', 'pdse_version', 'max_pdse_generation', 'seq_type'
         ],
         'nested': [
             ['jcl_attrs', ['creation_job', 'creation_step']]
@@ -1864,6 +1921,23 @@ return 0"""
             self._parse_attributes(attributes),
             self.expected_attrs
         )
+
+        # Populate member_details for PDS/PDSE; it is already None for all
+        # other types via fill_missing_attrs above.
+        if self.data_set_type in DataSet.MVS_PARTITIONED and not self.module.check_mode:
+            try:
+                data['attributes']['member_details'] = DataSet.get_member_details(self.name)
+            except zoau_exceptions.MemberFetchException as e:
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}.",
+                    rc=e.response.rc,
+                    stdout=e.response.stdout_response,
+                    stderr=e.response.stderr_response
+                )
+            except Exception as e:
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}."
+                )
 
         return data
 
@@ -2678,13 +2752,13 @@ def run_module():
     except QueryException as err:
         module.fail_json(**err.json_args)
     except zoau_exceptions.ZOAUException as err:
-        result['msg'] = 'An error ocurred during removal of a temp data set.'
+        result['msg'] = 'An error occurred during removal of a temp data set.'
         result['rc'] = err.rc
         result['stdout'] = err.stdout_response
         result['stderr'] = err.stderr_response
         module.fail_json(**result)
     except Exception as err:
-        result['msg'] = f'An unexpected error ocurred while querying a resource: {str(err)}.'
+        result['msg'] = f'An unexpected error occurred while querying a resource: {str(err)}.'
         module.fail_json(**result)
 
     result['stat'] = fill_return_json(data)

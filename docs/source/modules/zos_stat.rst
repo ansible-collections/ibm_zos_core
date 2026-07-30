@@ -4,7 +4,7 @@
 .. _ibm.ibm_zos_core.zos_stat_module:
 
 
-zos_stat -- Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
+zos_stat -- Retrieve facts from MVS datasets, USS files, aggregates and generation data groups
 ===============================================================================================
 
 
@@ -17,7 +17,7 @@ zos_stat -- Retrieve facts from MVS data sets, USS files, aggregates and generat
 Synopsis
 --------
 - The `zos_stat <./zos_stat.html>`_ module retrieves facts from resources stored in a z/OS system.
-- Resources that can be queried are UNIX System Services files, data sets, generation data groups and aggregates.
+- Resources that can be queried are UNIX System Services files, datasets, generation data groups, and aggregates.
 
 
 
@@ -28,9 +28,9 @@ Parameters
 
 
 name
-  Name of a data set, generation data group (GDG), aggregate, or a UNIX System Services file path, to query.
+  Name of a dataset, generation data group (GDG), aggregate, or UNIX System Services file path to query.
 
-  Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
+  Datasets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs, or generation datasets (GDS).
 
   This option doesn't accept the use of wildcards (\? and \*).
 
@@ -39,11 +39,11 @@ name
 
 
 volumes
-  Name(s) of the volume(s) where the data set will be searched on.
+  Name(s) of the volume(s) where the dataset is searched on.
 
-  If omitted, the module will look up the master catalog to find all volumes where a data set is allocated.
+  If omitted, the module looks up the master catalog to find all volumes where a dataset is allocated.
 
-  When used, if the data set is not found in at least one volume from the list, the module will fail with a "data set not found" message.
+  When used, if the dataset is not found in at least one volume from the list, the module fails with a "dataset not found" message.
 
   | **required**: False
   | **type**: list
@@ -60,13 +60,13 @@ type
 
 
 sms_managed
-  Whether the data set is managed by the Storage Management Subsystem.
+  Whether the dataset is managed by the Storage Management Subsystem.
 
-  It will cause the module to retrieve additional information, may take longer to query all attributes of a data set.
+  It causes the module to retrieve additional information, may take longer to query all attributes of a dataset.
 
-  If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information will update the last referenced date of the data set.
+  If the dataset is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information updates the last referenced date of the dataset.
 
-  If the system finds the data set is not actually managed by SMS, the rest of the attributes will still be queried and this will be noted in the output from the task.
+  If the system finds the dataset is not actually managed by SMS, the rest of the attributes are still queried and this is noted in the output from the task.
 
   | **required**: False
   | **type**: bool
@@ -74,17 +74,17 @@ sms_managed
 
 
 recall
-  Whether to recall a migrated data set to fully query its attributes.
+  Whether to recall a migrated dataset to fully query its attributes.
 
-  If set to ``false``, the module will return a limited amount of information for a migrated data set.
+  If set to ``false``, the module returns a limited amount of information for a migrated dataset.
 
-  Recalling a data set will make the module take longer to execute.
+  Recalling a dataset makes the module take longer to run.
 
-  Ignored when the data set is not found to be migrated.
+  Ignored when the dataset is not found to be migrated.
 
-  The data set will not be migrated again afterwards.
+  The dataset is not migrated again afterwards.
 
-  The data set will not get recalled when running the module in check mode.
+  The dataset is not recalled when the module runs in check mode.
 
   | **required**: False
   | **type**: bool
@@ -92,9 +92,9 @@ recall
 
 
 tmp_hlq
-  Override the default high level qualifier (HLQ) for temporary data sets.
+  Override the default high-level qualifier (HLQ) for temporary datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to run the module. If that is not available, the value of the ``TMPHLQ`` environment variable is used.
 
   | **required**: False
   | **type**: str
@@ -127,7 +127,7 @@ get_checksum
 checksum_algorithm
   Algorithm used to compute a file's checksum.
 
-  Will throw an error if the managed node is unable to use the specified algorithm.
+  Returns an error if the managed node is unable to use the specified algorithm.
 
   | **required**: False
   | **type**: str
@@ -157,18 +157,18 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Get the attributes of a sequential data set.
+   - name: Get the attributes of a sequential dataset.
      zos_stat:
        name: USER.SEQ.DATA
        type: data_set
 
-   - name: Get the attributes of a sequential data set on volume '000000'.
+   - name: Get the attributes of a sequential dataset on volume '000000'.
      zos_stat:
        name: USER.SEQ.DATA
        type: data_set
        volume: "000000"
 
-   - name: Get the attributes of a sequential data set allocated on multiple volumes.
+   - name: Get the attributes of a sequential dataset allocated on multiple volumes.
      zos_stat:
        name: USER.SEQ.DATA
        type: data_set
@@ -182,7 +182,7 @@ Examples
        type: data_set
        sms_managed: true
 
-   - name: Get the attributes of a sequential data set with a non-default temporary HLQ.
+   - name: Get the attributes of a sequential dataset with a non-default temporary HLQ.
      zos_stat:
        name: USER.SEQ.DATA
        type: data_set
@@ -193,7 +193,7 @@ Examples
        name: "USER.GDG.DATA"
        type: gdg
 
-   - name: Get the attributes of a generation data set.
+   - name: Get the attributes of a generation dataset.
      zos_stat:
        name: "USER.GDG.DATA(-1)"
        type: data_set
@@ -203,7 +203,7 @@ Examples
        name: "HLQ.USER.ZFS.DATA"
        type: aggregate
 
-   - name: Get the attributes of a file inside Unix System Services.
+   - name: Get the attributes of a file inside UNIX System Services.
      zos_stat:
        name: "/u/user/file.txt"
        type: file
@@ -216,11 +216,11 @@ Notes
 -----
 
 .. note::
-   When querying data sets, the module will create two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets will be removed before the module finishes execution.
+   When querying datasets, the module creates two temporary datasets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both datasets are removed before the module finishes execution.
 
-   Sometimes, the system could be unable to properly determine the organization or record format of the data set or the space units used to represent its allocation. When this happens, the values for these fields will be null.
+   Sometimes the system cannot determine the organization, record format, or space allocation units for the dataset. When this happens, these fields are reported as not available.
 
-   When querying a partitioned data set (PDS), if the Ansible user has RACF READ authority on it, the last referenced date will be updated by the query operation.
+   When querying a partitioned dataset (PDS), if the Ansible user has RACF READ authority on it, the query operation updates the last referenced date.
 
    If you need to filter the output from the module by resource type, you can use the zos_stat_by_type filter inside of a playbook.
 
@@ -245,15 +245,14 @@ Return Values
 stat
   Dictionary containing information about the resource.
 
-  Attributes that don't apply to the current resource will still be present on the dictionary with null values, so as to not break automation that relies on certain fields to be available.
-
+  Attributes that do not apply to the current resource are still present in the dictionary as empty values, so that automation relying on certain fields remains functional.
   | **returned**: success
   | **type**: dict
 
   name
     Name of the resource queried.
 
-    For Generation Data Sets (GDSs), this will be the absolute name.
+    For Generation Data Sets (GDSs), this is the absolute name.
 
     | **returned**: success
     | **type**: str
@@ -278,7 +277,7 @@ stat
           true
 
   isfile
-    Whether name is a Unix System Services file.
+    Whether name is a UNIX System Services file.
 
     | **returned**: success
     | **type**: bool
@@ -289,7 +288,7 @@ stat
           true
 
   isdataset
-    Whether name is a data set.
+    Whether name is a dataset.
 
     | **returned**: success
     | **type**: bool
@@ -335,35 +334,35 @@ stat
       | **sample**: ps
 
     type
-      Type of the data set.
+      Type of the dataset.
 
       | **returned**: success
       | **type**: str
       | **sample**: library
 
     record_format
-      Record format of a data set.
+      Record format of a dataset.
 
       | **returned**: success
       | **type**: str
       | **sample**: vb
 
     record_length
-      Record length of a data set.
+      Record length of a dataset.
 
       | **returned**: success
       | **type**: int
       | **sample**: 80
 
     block_size
-      Block size of a data set.
+      Block size of a dataset.
 
       | **returned**: success
       | **type**: int
       | **sample**: 27920
 
     has_extended_attrs
-      Whether a data set has extended attributes set.
+      Whether a dataset has extended attributes set.
 
       | **returned**: success
       | **type**: bool
@@ -374,7 +373,7 @@ stat
             true
 
     extended_attrs_bits
-      Current values of the EATTR bits for a data set.
+      Current values of the EATTR bits for a dataset.
 
       For files, it shows the current values of the extended attributes bits as a group of 4 characters.
 
@@ -383,58 +382,58 @@ stat
       | **sample**: opt
 
     creation_date
-      Date a data set was created.
+      Date a dataset was created.
 
       | **returned**: success
       | **type**: str
       | **sample**: 2025-01-27
 
     creation_time
-      Time at which a data set was created.
+      Time at which a dataset was created.
 
-      Only available when a data set has extended attributes.
+      Only available when a dataset has extended attributes.
 
       | **returned**: success
       | **type**: str
       | **sample**: 11:25:52
 
     expiration_date
-      Expiration date of a data set.
+      Expiration date of a dataset.
 
       | **returned**: success
       | **type**: str
       | **sample**: 2030-12-31
 
     last_reference
-      Date where the data set was last referenced.
+      Date where the dataset was last referenced.
 
       | **returned**: success
       | **type**: str
       | **sample**: 2025-01-28
 
     updated_since_backup
-      Whether the data set has been updated since its last backup.
+      Whether the dataset has been updated since its last backup.
 
       | **returned**: success
       | **type**: bool
 
     jcl_attrs
-      Dictionary containing the names of the JCL job and step that created a data set.
+      Dictionary containing the names of the JCL job and step that created a dataset.
 
-      Only available for data sets with extended attributes.
+      Only available for datasets with extended attributes.
 
       | **returned**: success
       | **type**: dict
 
       creation_job
-        JCL job that created the data set.
+        JCL job that created the dataset.
 
         | **returned**: success
         | **type**: str
         | **sample**: DSALLOC
 
       creation_step
-        JCL job step that created the data set.
+        JCL job step that created the dataset.
 
         | **returned**: success
         | **type**: str
@@ -442,21 +441,21 @@ stat
 
 
     volser
-      Name of the volume containing the data set.
+      Name of the volume that contains the dataset.
 
       | **returned**: success
       | **type**: str
       | **sample**: 000000
 
     num_volumes
-      Number of volumes where the data set resides.
+      Number of volumes where the dataset resides.
 
       | **returned**: success
       | **type**: int
       | **sample**: 1
 
     volumes
-      Names of the volumes where the data set resides.
+      Names of the volumes where the dataset resides.
 
       | **returned**: success
       | **type**: list
@@ -471,7 +470,7 @@ stat
             ]
 
     missing_volumes
-      When using the ``volumes`` option, this field will contain every volume specified in a task where the data set was missing. Will be an empty list in any other case.
+      When using the ``volumes`` option, this field contains every volume specified in a task where the dataset was missing. It is an empty list in any other case.
 
       | **returned**: success
       | **type**: list
@@ -486,14 +485,14 @@ stat
             ]
 
     device_type
-      Generic device type where the data set resides.
+      Generic device type where the dataset resides.
 
       | **returned**: success
       | **type**: str
       | **sample**: 3390
 
     space_units
-      Units used to describe sizes for the data set.
+      Units used to describe sizes for the dataset.
 
       | **returned**: success
       | **type**: str
@@ -518,7 +517,7 @@ stat
       | **sample**: 56
 
     allocation_available
-      Total allocation of the data set.
+      Total allocation of the dataset.
 
       Uses the space units defined in space_units.
 
@@ -527,7 +526,7 @@ stat
       | **sample**: 93
 
     allocation_used
-      Total allocation used by the data set.
+      Total allocation used by the dataset.
 
       Uses the space units defined in space_units.
 
@@ -535,16 +534,16 @@ stat
       | **type**: int
 
     extents_allocated
-      Number of extents allocated for the data set.
+      Number of extents allocated for the dataset.
 
       | **returned**: success
       | **type**: int
       | **sample**: 1
 
     extents_used
-      Number of extents used by the data set.
+      Number of extents used by the dataset.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
@@ -567,7 +566,7 @@ stat
     sms_data_class
       The SMS data class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the dataset is managed by SMS and sms_managed is set to true.
 
       | **returned**: success
       | **type**: str
@@ -576,7 +575,7 @@ stat
     sms_mgmt_class
       The SMS management class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the dataset is managed by SMS and sms_managed is set to true.
 
       | **returned**: success
       | **type**: str
@@ -585,20 +584,20 @@ stat
     sms_storage_class
       The SMS storage class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the dataset is managed by SMS and sms_managed is set to true.
 
       | **returned**: success
       | **type**: str
       | **sample**: fast
 
     encrypted
-      Whether the data set is encrypted.
+      Whether the dataset is encrypted.
 
       | **returned**: success
       | **type**: bool
 
     key_status
-      Whether the data set has a password set to read/write.
+      Whether the dataset has a password set to read/write.
 
       Value can be either one of 'none', 'read' or 'write'.
 
@@ -609,9 +608,9 @@ stat
       | **sample**: none
 
     racf
-      Whether there is RACF protection set on the data set.
+      Whether there is RACF protection set on the dataset.
 
-      Value can be either one of 'none', 'generic' or 'discrete' for non-VSAM data sets.
+      Value can be either one of 'none', 'generic' or 'discrete' for non-VSAM datasets.
 
       For VSAMs, the value can be either 'yes' or 'no'.
 
@@ -620,7 +619,7 @@ stat
       | **sample**: none
 
     key_label
-      The encryption key label for an encrypted data set.
+      The encryption key label for an encrypted dataset.
 
       | **returned**: success
       | **type**: str
@@ -629,7 +628,7 @@ stat
     dir_blocks_allocated
       Number of directory blocks allocated for a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
@@ -638,14 +637,14 @@ stat
     dir_blocks_used
       Number of directory blocks used by a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
       | **sample**: 2
 
     members
-      Number of members inside a partitioned data set.
+      Number of members inside a partitioned dataset.
 
       | **returned**: success
       | **type**: int
@@ -675,7 +674,7 @@ stat
       | **sample**: 10
 
     pdse_version
-      PDSE data set version.
+      PDSE dataset version.
 
       | **returned**: success
       | **type**: int
@@ -688,7 +687,7 @@ stat
       | **type**: int
 
     seq_type
-      Type of sequential data set (when it applies).
+      Type of sequential dataset (when it applies).
 
       Value can be either one of 'basic', 'large' or 'extended'.
 
@@ -699,7 +698,7 @@ stat
     data
       Dictionary containing attributes for the DATA component of a VSAM.
 
-      For the rest of the attributes of this data set, query it directly with this module.
+      For the rest of the attributes of this dataset, query it directly with this module.
 
       | **returned**: success
       | **type**: dict
@@ -747,7 +746,7 @@ stat
         | **sample**: 50
 
       spanned
-        Whether the data set allows records to be spanned across control intervals.
+        Whether the dataset allows records to be spanned across control intervals.
 
         | **returned**: success
         | **type**: bool
@@ -770,7 +769,7 @@ stat
     index
       Dictionary containing attributes for the INDEX component of a VSAM.
 
-      For the rest of the attributes of this data set, query it directly with this module.
+      For the rest of the attributes of this dataset, query it directly with this module.
 
       | **returned**: success
       | **type**: dict
@@ -1023,7 +1022,7 @@ stat
     checksum
       Checksum of the file computed by the hashing algorithm specified in ``checksum_algorithm``.
 
-      Will be null if ``get_checksum=false``.
+      Not available when ``get_checksum=false``.
 
       | **returned**: success
       | **type**: str
@@ -1208,7 +1207,7 @@ stat
             true
 
     xoth
-      Whether others have execute permission over the file.
+      Whether others have run permission over the file.
 
       | **returned**: success
       | **type**: bool
@@ -1236,7 +1235,7 @@ stat
             true
 
     executable
-      Whether the Ansible user can execute the path.
+      Whether the Ansible user can run the path.
 
       | **returned**: success
       | **type**: bool
@@ -1288,7 +1287,7 @@ stat
     mimetype
       Output from the file utility describing the content.
 
-      Will be null if ``get_mime=false``.
+      Not available when ``get_mime=false``.
 
       | **returned**: success
       | **type**: str
@@ -1323,6 +1322,3 @@ stat
       | **returned**: success
       | **type**: str
       | **sample**: bin
-
-
-

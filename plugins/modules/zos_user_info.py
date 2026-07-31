@@ -25,16 +25,16 @@ author:
 short_description: Retrieve user and group profile information from RACF
 description:
   - Retrieve detailed information about RACF user and group profiles.
-  - The module executes RACF LISTUSER or LISTGRP TSO commands and parses the output into structured data.
-  - This is an info module that does not make any changes to the system.
+  - The module runs the RACF LISTUSER or LISTGRP TSO commands and parses the output into structured data.
+  - This module does not make any changes to the system.
 options:
   name:
     description:
       - The RACF profile name to retrieve.
       - For I(profile_type=user), this must be a single user ID.
       - For I(profile_type=group), this must be a single group name.
-      - The name is case-insensitive and will be normalized to uppercase before execution.
-      - The name must be a single continuous string with no spaces or blank characters.
+      - The name is case-insensitive and is normalized to uppercase before execution.
+      - The name is a single continuous string with no spaces or blank characters.
     type: str
     required: true
   profile_type:
@@ -81,20 +81,20 @@ options:
 
 RETURN = r"""
 changed:
-  description: Indicates whether any changes were made to the system (always false for info modules).
+  description: Indicates whether any changes were made to the system. Always C(false) for info modules.
   returned: always
   type: bool
   sample: false
 cmd:
-  description: The RACF command that was executed with tsocmd.
+  description: The RACF command that was run with the tsocmd command.
   returned: always
   type: str
   sample: "LISTUSER TESTU01 TSO OMVS"
 rc:
   description: >
     Return code from the RACF command execution.
-    Returns 0 on success.
-    Returns non-zero on failure (e.g., 8 when profile not found).
+    Returns 0 on success,
+    or a non-zero value on failure (for example, 8 when the profile is not found).
   returned: always
   type: int
   sample: 0
@@ -105,8 +105,8 @@ stdout:
   sample: "USER=TESTU01  NAME=TEST USER 01  OWNER=ADMIN01  CREATED=2025/01/10"
 stderr:
   description: >
-    Standard error from the RACF command execution, excluding the TSO command
-    itself, which is available under C(cmd).
+    Standard error from the RACF command execution. The TSO command itself
+    is not included; it is available in the C(cmd) field.
   returned: always
   type: str
   sample: ""
@@ -126,12 +126,12 @@ segments:
   contains:
     base_segment:
       description: >
-        Base profile information that is always returned regardless of the I(segments) parameter.
+        Base profile information, always returned regardless of the I(segments) parameter.
         When I(profile_type=user), contains user attributes such as C(USER-ID), C(NAME), C(DEFAULT-GROUP), C(OWNER), C(CREATED),
-        C(PASSDATE), C(PASS-INTERVAL), C(ATTRIBUTES), etc.
+        C(PASSDATE), C(PASS-INTERVAL), and C(ATTRIBUTES).
         When I(profile_type=group), contains group attributes such as C(OWNER), C(CREATED), C(SUPERIOR GROUP), C(INSTALLATION DATA),
-        C(SUBGROUP(S)), C(TERMUACC), C(UNIVERSAL), etc.
-        The exact keys present are dynamic and depend on the profile's RACF configuration.
+        C(SUBGROUP(S)), C(TERMUACC), and C(UNIVERSAL).
+        The exact keys present depend on the profile's RACF configuration.
         C(ATTRIBUTES) and C(CLASS AUTHORIZATIONS) are always returned as lists.
       returned: always
       type: dict

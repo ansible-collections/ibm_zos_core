@@ -17,8 +17,8 @@ zos_user_info -- Retrieve user and group profile information from RACF
 Synopsis
 --------
 - Retrieve detailed information about RACF user and group profiles.
-- The module executes RACF LISTUSER or LISTGRP TSO commands and parses the output into structured data.
-- This is an info module that does not make any changes to the system.
+- The module runs the RACF LISTUSER or LISTGRP TSO commands and parses the output into structured data.
+- This module does not make any changes to the system.
 
 
 
@@ -35,9 +35,9 @@ name
 
   For :emphasis:`profile\_type=group`\ , this must be a single group name.
 
-  The name is case\-insensitive and will be normalized to uppercase before execution.
+  The name is case\-insensitive and is normalized to uppercase before execution.
 
-  The name must be a single continuous string with no spaces or blank characters.
+  The name is a single continuous string with no spaces or blank characters.
 
   | **required**: True
   | **type**: str
@@ -161,20 +161,20 @@ Return Values
 
 
 changed
-  Indicates whether any changes were made to the system (always false for info modules).
+  Indicates whether any changes were made to the system. Always :literal:`false` for info modules.
 
   | **returned**: always
   | **type**: bool
 
 cmd
-  The RACF command that was executed with tsocmd.
+  The RACF command that was run with the tsocmd command.
 
   | **returned**: always
   | **type**: str
   | **sample**: LISTUSER TESTU01 TSO OMVS
 
 rc
-  Return code from the RACF command execution. Returns 0 on success. Returns non\-zero on failure (e.g., 8 when profile not found).
+  Return code from the RACF command execution. Returns 0 on success, or a non\-zero value on failure (for example, 8 when the profile is not found).
 
   | **returned**: always
   | **type**: int
@@ -187,7 +187,7 @@ stdout
   | **sample**: USER=TESTU01  NAME=TEST USER 01  OWNER=ADMIN01  CREATED=2025/01/10
 
 stderr
-  Standard error from the RACF command execution, excluding the TSO command itself, which is available under :literal:`cmd`.
+  Standard error from the RACF command execution. The TSO command itself is not included; it is available in the :literal:`cmd` field.
 
   | **returned**: always
   | **type**: str
@@ -210,7 +210,7 @@ segments
   | **type**: dict
 
   base_segment
-    Base profile information that is always returned regardless of the :emphasis:`segments` parameter. When :emphasis:`profile\_type=user`\ , contains user attributes such as :literal:`USER\-ID`\ , :literal:`NAME`\ , :literal:`DEFAULT\-GROUP`\ , :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`PASSDATE`\ , :literal:`PASS\-INTERVAL`\ , :literal:`ATTRIBUTES`\ , etc. When :emphasis:`profile\_type=group`\ , contains group attributes such as :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`SUPERIOR GROUP`\ , :literal:`INSTALLATION DATA`\ , :literal:`SUBGROUP(S`\ ), :literal:`TERMUACC`\ , :literal:`UNIVERSAL`\ , etc. The exact keys present are dynamic and depend on the profile's RACF configuration. :literal:`ATTRIBUTES` and :literal:`CLASS AUTHORIZATIONS` are always returned as lists.
+    Base profile information, always returned regardless of the :emphasis:`segments` parameter. When :emphasis:`profile\_type=user`\ , contains user attributes such as :literal:`USER\-ID`\ , :literal:`NAME`\ , :literal:`DEFAULT\-GROUP`\ , :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`PASSDATE`\ , :literal:`PASS\-INTERVAL`\ , and :literal:`ATTRIBUTES`. When :emphasis:`profile\_type=group`\ , contains group attributes such as :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`SUPERIOR GROUP`\ , :literal:`INSTALLATION DATA`\ , :literal:`SUBGROUP(S`\ ), :literal:`TERMUACC`\ , and :literal:`UNIVERSAL`. The exact keys present depend on the profile's RACF configuration. :literal:`ATTRIBUTES` and :literal:`CLASS AUTHORIZATIONS` are always returned as lists.
 
     | **returned**: always
     | **type**: dict

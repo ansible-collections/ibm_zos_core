@@ -46,6 +46,43 @@ except ImportError:
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
 
 
+# ---------------------------------------------------------------------------
+# Diagnostic helper — zos_copy catalog tracing (build 1.16.0-diag1)
+#
+# Writes one JSON-lines record per call to /tmp/ibm_zos_core_diag.log on the
+# managed node.  The file is capped at 50 MB so it cannot fill /tmp.
+# All fields are pure ASCII; no exceptions are raised on write failure.
+# REMOVE BEFORE MERGING TO MAIN.
+# ---------------------------------------------------------------------------
+import datetime as _diag_dt
+import json as _diag_json
+import os as _diag_os
+import threading as _diag_th
+
+_DIAG_LOG = "/tmp/ibm_zos_core_diag.log"
+_DIAG_MAX_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def _zos_copy_diag_log(event, **fields):
+    """Append one JSON-lines record to the diagnostic log."""
+    try:
+        if _diag_os.path.exists(_DIAG_LOG) and _diag_os.path.getsize(_DIAG_LOG) >= _DIAG_MAX_BYTES:
+            return
+        record = {
+            "event": event,
+            "ts": _diag_dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z",
+            "pid": _diag_os.getpid(),
+            "tid": _diag_th.get_ident(),
+        }
+        record.update(fields)
+        line = _diag_json.dumps(record, default=str) + "\n"
+        with open(_DIAG_LOG, "a") as _f:
+            _f.write(line)
+    except Exception:
+        pass
+# ---------------------------------------------------------------------------
+
+
 class DataSet(object):
     """Perform various data set operations such as creation, deletion and cataloging."""
 
@@ -560,12 +597,24 @@ class DataSet(object):
         if rc > 4:
             raise MVSCmdExecError(rc, stdout, stderr)
 
+        in_cat_match = bool(re.search(r"-\s" + re.escape(name) + r"\s*\n\s+IN-CAT", stdout))
+        _zos_copy_diag_log(
+            "CATALOGED",
+            name=name,
+            rc=rc,
+            stdout_len=len(stdout),
+            stderr_len=len(stderr),
+            in_cat_match=in_cat_match,
+            stdout_head=stdout[:600],
+            stderr_head=stderr[:200] if stderr else "",
+        )
+
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
-            if re.search(r"-\s" + re.escape(name) + r"\s*\n\s+IN-CAT", stdout):
+            if in_cat_match:
                 return True
 
         return False
@@ -661,9 +710,17 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command(
             "head \"//'{0}'\"".format(name), errors='replace')
-        if rc != 0 or (stderr and "EDC5067I" in stderr):
-            return False
-        return True
+        result = not (rc != 0 or (stderr and "EDC5067I" in stderr))
+        _zos_copy_diag_log(
+            "MEMBER_EXISTS",
+            name=name,
+            rc=rc,
+            stdout_len=len(stdout),
+            stderr_len=len(stderr),
+            result=result,
+            stderr_head=stderr[:200] if stderr else "",
+        )
+        return result
 
     @staticmethod
     def data_set_shared_members(src, dest):
@@ -809,6 +866,7 @@ class DataSet(object):
 
         """
         if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+            _zos_copy_diag_log("DS_TYPE", name=name, method="data_set_exists", result=None)
             return None
 
         data_sets_found = datasets.list_datasets(name)
@@ -816,11 +874,14 @@ class DataSet(object):
         # Using the organization property when it's a sequential or partitioned
         # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
-            return data_sets_found[0].organization
+            result = data_sets_found[0].organization
+            _zos_copy_diag_log("DS_TYPE", name=name, method="list_datasets", result=result)
+            return result
 
         # Now trying to list GDGs through gdgs.
         data_sets_found = gdgs.list_gdg_names(name)
         if len(data_sets_found) > 0:
+            _zos_copy_diag_log("DS_TYPE", name=name, method="list_gdg_names", result="GDG")
             return "GDG"
 
         # Next, trying to get the DATA information of a VSAM through
@@ -831,18 +892,21 @@ class DataSet(object):
         data_set_attributes = re.findall(
             r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
         if len(data_set_attributes) == 0:
+            _zos_copy_diag_log("DS_TYPE", name=name, method="listcat_data_all", result=None)
             return None
 
         if re.search(r"\bINDEXED\b", data_set_attributes[0]):
-            return "KSDS"
+            result = "KSDS"
         elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
-            return "ESDS"
+            result = "ESDS"
         elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
-            return "LDS"
+            result = "LDS"
         elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
-            return "RRDS"
+            result = "RRDS"
         else:
-            return None
+            result = None
+        _zos_copy_diag_log("DS_TYPE", name=name, method="listcat_data_all", result=result)
+        return result
 
     @staticmethod
     def _get_listcat_data(name, tmphlq=None):

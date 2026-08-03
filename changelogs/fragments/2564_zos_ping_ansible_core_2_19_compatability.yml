@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_ping - Fixed an unpack error introduced by ansible-core 2.19, which
+    changed the return format of the internal module configuration step, breaking
+    the shebang injection required for REXX modules on z/OS.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2356).

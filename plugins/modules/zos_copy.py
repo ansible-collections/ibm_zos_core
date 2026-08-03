@@ -3803,17 +3803,24 @@ def run_module(module, arg_def):
                     + "for USS sources (src) or targets (dest). "
                     + "Try setting executable=True or aliases=False."
             )
-
+    
     # ********************************************************************
-    # Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+    # Handle partitioned data set to USS copy missing destination directory
     # ********************************************************************
+    # Verify destination is a partitioned data set and is not a PDS member, 
+    # the destination type is USS, and the destination does not exist:
     if (
         src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
         and dest_ds_type == 'USS' and not os.path.isdir(dest)
     ):
-        module.fail_json(
-            msg="Cannot write a partitioned data set (PDS) to a USS file."
-        )
+        # Scenario 1: Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+        if os.path.isfile(dest):
+            module.fail_json(
+                msg="Cannot write a partitioned data set (PDS) to a USS file."
+            )
+        # Scenario 2: Destination directory is missing and needs to be created
+        else:
+            os.makedirs(dest, exist_ok=True)
 
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or

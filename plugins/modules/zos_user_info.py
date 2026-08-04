@@ -183,7 +183,7 @@ segments:
         - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS),
           C(USERDATA), C(COMMAND), etc.
         - The exact keys present depend on the user's TSO configuration in RACF.
-        - Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(tso) are included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies tso
       type: dict
       sample:
@@ -907,9 +907,8 @@ def run_module():
             # Only include segments that were explicitly requested
             if filtered_segments:
                 for seg in filtered_segments:
-                    if seg in SEGMENT_NAME_MAP:
-                        segment_name = SEGMENT_NAME_MAP[seg]
-                        final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
+                    segment_name = SEGMENT_NAME_MAP[seg]
+                    final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
 
         else:  # profile_type == 'group'
             base_data = parse_base_group_info(stdout)
@@ -918,9 +917,8 @@ def run_module():
             # Only include segments that were explicitly requested
             if filtered_segments:
                 for seg in filtered_segments:
-                    if seg in VALID_GROUP_SEGMENTS:
-                        segment_name = SEGMENT_NAME_MAP[seg]
-                        final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
+                    segment_name = SEGMENT_NAME_MAP[seg]
+                    final_user_profile[segment_name] = extract_generic_segment(stdout, segment_name)
 
         result['segments'] = final_user_profile
 

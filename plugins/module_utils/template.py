@@ -246,7 +246,7 @@ class TemplateRenderer:
         else:
             self.templating_env = jinja2.Environment(autoescape=jinja2.select_autoescape(), **environment_args)
 
-    def _prepare_template_variables(self, variables, templar=None):
+    def _prepare_template_variables(self, variables, templar=None, display=None):
         """Prepare variables for template rendering by optionally resolving
         them using Ansible's templar.
 
@@ -313,9 +313,16 @@ class TemplateRenderer:
                 if isinstance(value, str):
                     try:
                         resolved_vars[key] = templar.template(value)
-                    except (jinja2.TemplateError, TypeError, AttributeError):
+                    except Exception as err:
                         # Fall back to the original value when templating fails
-                        # (e.g. undefined variables, circular references).
+                        # (e.g. AnsibleUndefinedVariable, jinja2.TemplateError).
+                        # Log at vvvv via the caller-supplied display instance
+                        # so the user can diagnose with -vvvv.
+                        if display is not None:
+                            display.vvvv(
+                                "ibm_zos_core template.py: could not resolve variable "
+                                "'{0}' (value: {1!r}): {2}".format(key, value, to_native(err))
+                            )
                         resolved_vars[key] = value
                 else:
                     resolved_vars[key] = value
@@ -323,7 +330,7 @@ class TemplateRenderer:
 
         return variables
 
-    def render_file_template(self, file_path, variables, templar=None):
+    def render_file_template(self, file_path, variables, templar=None, display=None):
         """Loads a template from the templates directory and renders
         it using the Jinja2 environment configured in the object.
 
@@ -365,7 +372,7 @@ class TemplateRenderer:
             When there is an error writing the rendered template.
         """
         # Prepare variables by resolving nested expressions with templar
-        prepared_vars = self._prepare_template_variables(variables, templar)
+        prepared_vars = self._prepare_template_variables(variables, templar, display)
         try:
             template = self.templating_env.get_template(file_path)
             rendered_contents = template.render(prepared_vars)
@@ -409,7 +416,7 @@ class TemplateRenderer:
 
         return temp_template_dir, template_file_path
 
-    def render_dir_template(self, variables, templar=None):
+    def render_dir_template(self, variables, templar=None, display=None):
         """Loads all templates from a directory and renders
         them using the Jinja2 environment configured in the object.
 
@@ -451,7 +458,7 @@ class TemplateRenderer:
             When there is an error writing the rendered template.
         """
         # Prepare variables by resolving nested expressions with templar
-        prepared_vars = self._prepare_template_variables(variables, templar)
+        prepared_vars = self._prepare_template_variables(variables, templar, display)
         try:
             temp_parent_dir = tempfile.mkdtemp()
             last_dir = os.path.basename(self.template_dir)

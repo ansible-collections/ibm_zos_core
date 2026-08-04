@@ -126,7 +126,8 @@ class ActionModule(ActionBase):
                     template_dir, rendered_file = renderer.render_file_template(
                         os.path.basename(source_full),
                         task_vars,
-                        templar=self._templar
+                        templar=self._templar,
+                        display=display
                     )
 
                 except Exception as err:

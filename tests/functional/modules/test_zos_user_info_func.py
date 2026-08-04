@@ -36,7 +36,7 @@ def test_name_with_whitespace_user(ansible_zos_module):
         assert result.get("changed") is False
         assert "Invalid value for parameter 'name'" in result.get("msg", "")
         assert "Hello User" in result.get("msg", "")
-        assert "Expected a single RACF profile name with no spaces or whitespace characters" in result.get("msg", "")
+        assert "Expected a single RACF profile name with no spaces or blank characters" in result.get("msg", "")
 
 def test_name_with_whitespace_group(ansible_zos_module):
     results = ansible_zos_module.all.zos_user_info(
@@ -49,7 +49,7 @@ def test_name_with_whitespace_group(ansible_zos_module):
         assert result.get("changed") is False
         assert "Invalid value for parameter 'name'" in result.get("msg", "")
         assert "Hello Group" in result.get("msg", "")
-        assert "Expected a single RACF profile name with no spaces or whitespace characters" in result.get("msg", "")
+        assert "Expected a single RACF profile name with no spaces or blank characters" in result.get("msg", "")
 
 def test_invalid_profile_type(ansible_zos_module):
     results = ansible_zos_module.all.zos_user_info(
@@ -275,7 +275,7 @@ def test_group_dfp_csdata_omvs_segments(ansible_zos_module):
         _run_tso_command(
             hosts,
             "ADDGROUP ({0}) DATA('Complete group profile with all attributes') "
-            "OWNER(USRT001) "
+            "OWNER(SYS1) "
             "DFP( DATAAPPL(TESTAPP) DATACLAS(DCLAS001) MGMTCLAS(MCLAS001) STORCLAS(SCLAS001) ) "
             "OMVS(AUTOGID) ".format(test_group)
         )
@@ -307,7 +307,7 @@ def test_group_ignores_user_only_segments(ansible_zos_module):
         _run_tso_command(
             hosts,
             "ADDGROUP ({0}) DATA('Group profile for ignored segment validation') "
-            "OWNER(USRT001) "
+            "OWNER(SYS1) "
             "DFP( DATAAPPL(TESTAPP) DATACLAS(DCLAS001) MGMTCLAS(MCLAS001) STORCLAS(SCLAS001) )".format(test_group)
         )
 
@@ -329,3 +329,31 @@ def test_group_ignores_user_only_segments(ansible_zos_module):
             assert len(returned_segments) == 3
     finally:
         hosts.all.shell(cmd='tsocmd "DELGROUP {0}"'.format(test_group))
+
+def test_user_missing_segment_returns_empty_dict(ansible_zos_module):
+      hosts = ansible_zos_module
+      test_group = _get_random_racf_name("TG")
+      test_user = _get_random_racf_name("TU")
+
+      try:
+          _run_tso_command(hosts, "ADDGROUP {0}".format(test_group))
+          _run_tso_command(
+              hosts,
+              "ADDUSER {0} DFLTGRP({1}) OWNER({1})".format(test_user, test_group)
+          )
+
+          results = hosts.all.zos_user_info(
+              name=test_user,
+              profile_type="user",
+              segments=["tso"]
+          )
+
+          for result in results.contacted.values():
+              assert result.get("rc") == 0
+              assert result.get("changed") is False
+              returned_segments = result.get("segments", {})
+              assert "TSO" in returned_segments
+              assert returned_segments["TSO"] == {}
+      finally:
+          hosts.all.shell(cmd='tsocmd "DELUSER {0}"'.format(test_user))
+          hosts.all.shell(cmd='tsocmd "DELGROUP {0}"'.format(test_group))        

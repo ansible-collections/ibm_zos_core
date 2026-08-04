@@ -1,0 +1,3 @@
+minor_changes:
+   - zos_stat - Adds support for retrieving and exposing VSAM data set statistics and extended listing attributes.
+     (https://github.com/ansible-collections/ibm_zos_core/issues/2344).

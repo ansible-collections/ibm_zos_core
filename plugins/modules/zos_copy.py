@@ -105,6 +105,8 @@ options:
       - C(dest) can be a USS file, directory or MVS data set name.
       - C(dest) can be a alias name of a PS, PDS or PDSE data set.
       - If C(dest) has missing parent directories, they will be created.
+      - If C(dest) is a non-existent USS directory path and the C(src) is a partitioned data set, 
+        the C(dest) is created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
         either the system's default locale or the encoding option defined. If the USS file is
@@ -3805,9 +3807,10 @@ def run_module(module, arg_def):
             )
     
     # ********************************************************************
-    # Handle partitioned data set to USS copy missing destination directory
+    # Handle partitioned data set to USS directory copy when destination
+    # does not exist
     # ********************************************************************
-    # Verify destination is a partitioned data set and is not a PDS member, 
+    # Verify source is a partitioned data set and is not a PDS member, 
     # the destination type is USS, and the destination does not exist:
     if (
         src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
@@ -3820,7 +3823,16 @@ def run_module(module, arg_def):
             )
         # Scenario 2: Destination directory is missing and needs to be created
         else:
-            os.makedirs(dest, exist_ok=True)
+            try:
+                # Will also create nonexistent parent directories in dest path
+                os.makedirs(dest, exist_ok=True)
+                res_args["dest_created"] = True
+                dest_exists = True
+            except Exception as err:
+                module.fail_json(
+                    msg="Unable to allocate destination data set: {0}".format(str(err)),
+                    dest_exists=dest_exists
+                )
 
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
@@ -3845,8 +3857,9 @@ def run_module(module, arg_def):
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
 
     # ********************************************************************
-    # If destination does not exist, it must be created. To determine
-    # what type of data set destination must be, a couple of simple checks
+    # If destination does not exist, it must be created. To be created,
+    # the destination data set type is required. To determine
+    # what type a data set destination must be, a couple of simple checks
     # can be done. For example:
     # 1. Destination must be a PDS/PDSE if:
     #   - The source is a local directory
@@ -3861,6 +3874,7 @@ def run_module(module, arg_def):
     # is a data set (is_src_dir and is_mvs_dest are true)
     # ********************************************************************
     else:
+        # Set destination data set type
         if not dest_ds_type:
             if (
                 is_pds
@@ -3905,7 +3919,8 @@ def run_module(module, arg_def):
     if converted_src:
         original_src = src
         src = converted_src
-
+        
+    # Allocate destination data set
     try:
         if not is_uss:
             res_args["changed"], res_args["dest_data_set_attrs"], resolved_dest = allocate_destination_data_set(
@@ -3988,7 +4003,7 @@ def run_module(module, arg_def):
 
             original_checksum = None
             if dest_exists:
-                res_args["dest_created"] = False
+                res_args.setdefault("dest_created", False)
                 original_checksum = get_file_checksum(dest)
             else:
                 res_args["dest_created"] = True

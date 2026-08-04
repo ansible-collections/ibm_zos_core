@@ -110,11 +110,15 @@ EXPECTED_ATTRS = {
         'nested': [
             ['data', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'spanned', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]],
             ['index', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]]
         ]
     },
@@ -192,7 +196,9 @@ def assert_vsam_component(component, *, has_key: bool = False, has_spanned: bool
         component (dict) -- attrs['data'] or attrs['index'].
         has_key (bool) -- True when the component is expected to carry key
             length / key offset (KSDS data component only).
-        has_spanned (bool) -- True for data components; False for index.
+        has_spanned (bool) -- True for all component types (data and index both
+            expose spanned per the ZOAU VsamComponent API). Pass False only
+            when explicitly not asserting the field (e.g. future API change).
     """
     assert component is not None
 
@@ -1053,8 +1059,8 @@ def test_query_data_set_vsam_ksds_statistics(ansible_zos_module):
             # DATA component — statistics sub-dict.
             assert_vsam_component(attrs['data'], has_key=True, has_spanned=True)
 
-            # INDEX component — statistics sub-dict (no key/spanned fields).
-            assert_vsam_component(attrs['index'], has_key=False, has_spanned=False)
+            # INDEX component — spanned is present (VsamComponent always has it).
+            assert_vsam_component(attrs['index'], has_key=False, has_spanned=True)
 
             # For a brand-new, empty KSDS the counters should all be 0 or None.
             data_stats = attrs['data']['statistics']
@@ -1195,7 +1201,7 @@ def test_query_data_set_vsam_rrds(ansible_zos_module):
             )
 
             # DATA component with statistics.
-            assert_vsam_component(attrs['data'], has_key=False, has_spanned=False)
+            assert_vsam_component(attrs['data'], has_key=False, has_spanned=True)
 
             assert_invalid_attrs_are_none(attrs, 'vsam')
     finally:

@@ -859,6 +859,13 @@ stat:
                   returned: success
                   type: int
                   sample: 0
+            spanned:
+              description:
+                - Whether the index component allows records to be spanned
+                  across control intervals.
+              returned: success
+              type: bool
+              sample: false
             volser:
               description: Name of the volume containing the INDEX component.
               returned: success
@@ -2241,7 +2248,7 @@ class VSAMDataSetHandler(DataSetHandler):
             ]],
             ['index', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'volser', 'device_type',
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
                 'control_interval_size', 'share_option_region', 'share_option_system',
                 'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]]

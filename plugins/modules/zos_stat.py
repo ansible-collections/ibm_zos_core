@@ -652,8 +652,7 @@ stat:
               sample: 50
             statistics:
               description:
-                - Runtime statistics for the DATA component fetched via
-                  C(VsamComponent.fetch_statistics()).
+                - Runtime statistics for the DATA component.
               returned: success
               type: dict
               contains:
@@ -804,8 +803,7 @@ stat:
               sample: 0
             statistics:
               description:
-                - Runtime statistics for the INDEX component fetched via
-                  C(VsamComponent.fetch_statistics()).
+                - Runtime statistics for the INDEX component.
               returned: success
               type: dict
               contains:

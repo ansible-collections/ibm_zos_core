@@ -7756,3 +7756,238 @@ def test_copy_pds_members_bulk_with_partial_failure_cleanup(ansible_zos_module):
         # Cleanup
         hosts.all.zos_data_set(name=source_pds, state="absent")
         hosts.all.zos_data_set(name=dest_pds, state="absent")
+
+
+PLAYBOOK_COPY_TEMPLATE_CUSTOM_LOOP_VAR = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Copy template for each item using a custom loop variable name.
+      ibm.ibm_zos_core.zos_copy:
+        src: {3}
+        dest: "/tmp/copy_custom_loop_{{{{ my_item.idx }}}}.txt"
+        use_template: true
+        replace: true
+        template_parameters:
+          autoescape: false
+      loop:
+        - idx: 1
+          greeting: hello
+        - idx: 2
+          greeting: world
+      loop_control:
+        loop_var: my_item
+      register: loop_result
+
+    - name: Verify item 1 resolved greeting via custom loop var.
+      ansible.builtin.shell:
+        cmd: "grep hello /tmp/copy_custom_loop_1.txt"
+
+    - name: Verify item 2 resolved greeting via custom loop var.
+      ansible.builtin.shell:
+        cmd: "grep world /tmp/copy_custom_loop_2.txt"
+
+    - name: Clean up output files.
+      ansible.builtin.file:
+        path: "/tmp/copy_custom_loop_{{{{ item }}}}.txt"
+        state: absent
+      loop:
+        - 1
+        - 2
+      ignore_errors: true
+"""
+
+# This test is added to validate the fix for GitHub issue #1499 and #1071.
+@pytest.mark.template
+def test_copy_template_custom_loop_var(get_config):
+    """Verify zos_copy unpacks loop dict items when loop_control: loop_var: is used.
+
+    When a playbook sets loop_control: loop_var: my_item, Ansible stores the
+    current iteration dict under 'my_item' in task_vars and advertises the
+    custom name via ansible_loop_var='my_item'. _prepare_template_variables()
+    reads ansible_loop_var to find the correct key. Without this, the loop
+    item dict would not be found and {{ greeting }} would be undefined.
+    """
+    try:
+        tmp_template = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".j2", delete=False, encoding="utf-8"
+        )
+        tmp_template.write(TEMPLATE_CONTENT_GREETING)
+        tmp_template.close()
+        template_path = tmp_template.name
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key         = environment["ssh_key"]
+        hosts_str       = environment["host"].upper()
+        user            = environment["user"].upper()
+        python_path     = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau            = environment["environment"]["ZOAU_ROOT"]
+        python_version  = cut_python_path.split("/")[2]
+
+        playbook  = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_COPY_TEMPLATE_CUSTOM_LOOP_VAR.format(
+                zoau, cut_python_path, python_version, template_path,
+            )), playbook.name,
+        ))
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts_str, ssh_key, user, python_path,
+            )), inventory.name,
+        ))
+
+        result = subprocess.run(
+            "ansible-playbook -i {0} {1}".format(inventory.name, playbook.name),
+            capture_output=True, shell=True, timeout=120, encoding="utf-8",
+        )
+
+        # ok=4 / changed=4 → copy-loop, grep-1, grep-2, cleanup-loop
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr)
+        )
+        assert "ok=4" in result.stdout
+        assert "changed=4" in result.stdout
+    finally:
+        if os.path.exists(template_path):
+            os.remove(template_path)
+
+
+# Single-line template used in the directory-template loop test.
+TEMPLATE_CONTENT_DIR_GREETING = "Rendered: {{ greeting }}\n"
+
+# Playbook that exercises render_dir_template() (src: is a directory) inside
+# a loop. Validates _prepare_template_variables() is called correctly from
+# render_dir_template(), not just render_file_template().
+PLAYBOOK_COPY_TEMPLATE_DIR_LOOP = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Copy template directory for each loop item.
+      ibm.ibm_zos_core.zos_copy:
+        src: "{3}"
+        dest: "/tmp/copy_dir_loop_{{{{ item.idx }}}}/"
+        use_template: true
+        replace: true
+        template_parameters:
+          autoescape: false
+      loop:
+        - idx: 1
+          greeting: hello
+        - idx: 2
+          greeting: world
+      register: loop_result
+
+    - name: Verify item 1 dir render resolved greeting.
+      ansible.builtin.shell:
+        cmd: "grep hello /tmp/copy_dir_loop_1/greeting.txt"
+
+    - name: Verify item 2 dir render resolved greeting.
+      ansible.builtin.shell:
+        cmd: "grep world /tmp/copy_dir_loop_2/greeting.txt"
+
+    - name: Clean up rendered directories.
+      ansible.builtin.file:
+        path: "/tmp/copy_dir_loop_{{{{ item }}}}/"
+        state: absent
+      loop:
+        - 1
+        - 2
+      ignore_errors: true
+"""
+
+# This test is added to validate the fix for GitHub issue #1499 and #1071.
+@pytest.mark.template
+def test_copy_template_dir_loop_item_dict_unpacking(get_config):
+    """Verify render_dir_template() unpacks loop dict items correctly.
+
+    When src: is a directory, zos_copy calls render_dir_template() rather than
+    render_file_template(). Both delegate to _prepare_template_variables(), but
+    only the file path is covered by the existing loop test. This test ensures
+    a regression removing templar= from render_dir_template() specifically
+    would be caught.
+    """
+    template_dir = None
+    try:
+        template_dir = tempfile.mkdtemp()
+        with open(os.path.join(template_dir, "greeting.txt"), "w", encoding="utf-8") as fh:
+            fh.write(TEMPLATE_CONTENT_DIR_GREETING)
+        # Trailing slash → zos_copy copies directory *contents* into dest/,
+        # which is the trigger for render_dir_template().
+        src_dir = template_dir + "/"
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key         = environment["ssh_key"]
+        hosts_str       = environment["host"].upper()
+        user            = environment["user"].upper()
+        python_path     = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau            = environment["environment"]["ZOAU_ROOT"]
+        python_version  = cut_python_path.split("/")[2]
+
+        playbook  = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_COPY_TEMPLATE_DIR_LOOP.format(
+                zoau, cut_python_path, python_version, src_dir,
+            )), playbook.name,
+        ))
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts_str, ssh_key, user, python_path,
+            )), inventory.name,
+        ))
+
+        result = subprocess.run(
+            "ansible-playbook -i {0} {1}".format(inventory.name, playbook.name),
+            capture_output=True, shell=True, timeout=120, encoding="utf-8",
+        )
+
+        # ok=4 / changed=4 → copy-loop, grep-1, grep-2, cleanup-loop
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr)
+        )
+        assert "ok=4" in result.stdout
+        assert "changed=4" in result.stdout
+    finally:
+        if template_dir and os.path.exists(template_dir):
+            shutil.rmtree(template_dir)

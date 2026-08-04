@@ -320,7 +320,7 @@ class TemplateRenderer:
                         # so the user can diagnose with -vvvv.
                         if display is not None:
                             display.vvvv(
-                                "ibm_zos_core template.py: could not resolve variable "
+                                "Failed to resolve variable "
                                 "'{0}' (value: {1!r}): {2}".format(key, value, to_native(err))
                             )
                         resolved_vars[key] = value

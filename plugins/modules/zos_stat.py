@@ -2377,20 +2377,20 @@ class VSAMDataSetHandler(DataSetHandler):
             len(listcat_lines)
         )
         vsam_general_info = ' '.join(listcat_lines[0:gen_info_limit])
-        data_section      = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
-        index_section     = ' '.join(listcat_lines[data_info_limit:])
+        data_section = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
+        index_section = ' '.join(listcat_lines[data_info_limit:])
 
         general_info_regex_searches = [
             ('extended_attrs_bits', r'(EATTR-+\(?)([0-9a-zA-Z]+)'),
-            ('creation_date',       r'(CREATION-+)(\d{4}\.\d{3})'),
-            ('expiration_date',     r'(EXPIRATION-+)(\d{4}\.\d{3})'),
-            ('sms_mgmt_class',      r'(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
-            ('sms_storage_class',   r'(STORAGECLASS-+)([0-9a-zA-Z]+)'),
-            ('sms_data_class',      r'(DATACLASS-+)([0-9a-zA-Z]+)'),
-            ('encrypted',           r'(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
-            ('key_label',           r'(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
-            ('key_status',          r'(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
-            ('racf',                r'(RACF-+\()([a-zA-Z]{2,3})')
+            ('creation_date', r'(CREATION-+)(\d{4}\.\d{3})'),
+            ('expiration_date', r'(EXPIRATION-+)(\d{4}\.\d{3})'),
+            ('sms_mgmt_class', r'(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_storage_class', r'(STORAGECLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_data_class', r'(DATACLASS-+)([0-9a-zA-Z]+)'),
+            ('encrypted', r'(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
+            ('key_label', r'(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
+            ('key_status', r'(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
+            ('racf', r'(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
         for key, pattern in general_info_regex_searches:
@@ -2409,10 +2409,10 @@ class VSAMDataSetHandler(DataSetHandler):
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 
         # volser and device_type are not on VsamComponent — fill from LISTCAT.
-        volser_pattern      = r'(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})'
-        devtype_pattern     = r"(DEVTYPE-+X')(\d{7}[0-9A-F])"
+        volser_pattern = r'(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})'
+        devtype_pattern = r"(DEVTYPE-+X')(\d{7}[0-9A-F])"
 
-        data_volser  = re.search(volser_pattern,  data_section)
+        data_volser = re.search(volser_pattern, data_section)
         data_devtype = re.search(devtype_pattern, data_section)
         if data_volser:
             attributes['data']['volser'] = data_volser.group(2)
@@ -2421,7 +2421,7 @@ class VSAMDataSetHandler(DataSetHandler):
             attributes['data']['device_type'] = self.dev_type_translation_table.get(hex_code, hex_code)
 
         if 'index' in attributes:
-            idx_volser  = re.search(volser_pattern,  index_section)
+            idx_volser = re.search(volser_pattern, index_section)
             idx_devtype = re.search(devtype_pattern, index_section)
             if idx_volser:
                 attributes['index']['volser'] = idx_volser.group(2)
@@ -2449,16 +2449,16 @@ class VSAMDataSetHandler(DataSetHandler):
         try:
             stats = component.fetch_statistics()
             statistics = {
-                'total_records':           stats.total_records,
-                'deleted_records':         stats.deleted_records,
-                'inserted_records':        stats.inserted_records,
-                'updated_records':         stats.updated_records,
-                'retrieved_records':       stats.retrieved_records,
+                'total_records': stats.total_records,
+                'deleted_records': stats.deleted_records,
+                'inserted_records': stats.inserted_records,
+                'updated_records': stats.updated_records,
+                'retrieved_records': stats.retrieved_records,
                 'control_interval_splits': stats.control_interval_splits,
-                'control_area_splits':     stats.control_area_splits,
+                'control_area_splits': stats.control_area_splits,
                 'free_space_percentage_ci': stats.free_space_percentage_ci,
                 'free_space_percentage_ca': stats.free_space_percentage_ca,
-                'free_space':              stats.free_space,
+                'free_space': stats.free_space,
             }
         except Exception:
             statistics = {field: None for field in self.statistics_fields}

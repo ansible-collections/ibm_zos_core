@@ -183,7 +183,7 @@ segments:
         - Contains dynamic key-value pairs such as C(ACCTNUM), C(PROC), C(SIZE), C(MAXSIZE), C(JOBCLASS), C(MSGCLASS), C(SYSOUTCLASS),
           C(USERDATA), C(COMMAND), etc.
         - The exact keys present depend on the user's TSO configuration in RACF.
-        - Only returned when I(profile_type=user) and C(tso) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(tso) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies tso
       type: dict
       sample:
@@ -223,7 +223,7 @@ segments:
         - Contains operator parameters such as C(STORAGE), C(AUTH), C(ALTGRP), C(AUTO), C(HC), C(INTIDS), C(LEVEL), C(LOGCMDRESP), C(MIGID), etc.
         - C(MONITOR), C(MSCOPE), C(MFORM), and C(ROUTCODE) are always returned as lists.
         - The exact keys present depend on the operator configuration in RACF.
-        - Only returned when I(profile_type=user) and C(operparm) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(operparm) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies operparm
       type: dict
       sample:
@@ -239,7 +239,7 @@ segments:
         - LANGUAGE segment information for user profiles.
         - Contains language-related settings such as C(PRIMARY) and C(SECONDARY) language codes.
         - The exact keys present depend on the language configuration in RACF.
-        - Only returned when I(profile_type=user) and C(lang) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(lang) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies lang
       type: dict
       sample:
@@ -257,21 +257,21 @@ segments:
       description:
         - CICS segment information for user profiles.
         - Contains CICS-related configuration and resource limits.
-        - Only returned when I(profile_type=user) and C(cics) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(cics) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies cics
       type: dict
     DCE:
       description:
         - DCE (Distributed Computing Environment) segment information for user profiles.
         - Contains DCE-related configuration and identifiers.
-        - Only returned when I(profile_type=user) and C(dce) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(dce) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies dce
       type: dict
     EIM:
       description:
         - EIM (Enterprise Identity Mapping) segment information for user profiles.
         - Contains EIM-related configuration and mappings.
-        - Only returned when I(profile_type=user) and C(eim) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(eim) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies eim
       type: dict
     OVM:
@@ -285,42 +285,42 @@ segments:
       description:
         - NETVIEW segment information for user profiles.
         - Contains NetView-related configuration and authorities.
-        - Only returned when I(profile_type=user) and C(netview) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(netview) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies netview
       type: dict
     NDS:
       description:
         - NDS (Network Directory Services) segment information for user profiles.
         - Contains NDS-related configuration and identifiers.
-        - Only returned when I(profile_type=user) and C(nds) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(nds) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies nds
       type: dict
     LNOTES:
       description:
         - LNOTES (Lotus Notes) segment information for user profiles.
         - Contains Lotus Notes-related configuration and settings.
-        - Only returned when I(profile_type=user) and C(lnotes) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(lnotes) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies lnotes
       type: dict
     WORKATTR:
       description:
         - WORKATTR (Work Attributes) segment information for user profiles.
         - Contains work-related attributes and organizational information.
-        - Only returned when I(profile_type=user) and C(workattr) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(workattr) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies workattr
       type: dict
     PROXY:
       description:
         - PROXY segment information for user profiles.
         - Contains proxy-related configuration and authorities.
-        - Only returned when I(profile_type=user) and C(proxy) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(proxy) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies proxy
       type: dict
     KERB:
       description:
         - KERB (Kerberos) segment information for user profiles.
         - Contains Kerberos-related configuration, principals, and encryption settings.
-        - Only returned when I(profile_type=user) and C(kerb) are included in the I(segments) parameter.
+        - Only returned when I(profile_type=user) and C(kerb) is included in the I(segments) parameter.
       returned: when profile_type is user and segments specifies kerb
       type: dict
 """

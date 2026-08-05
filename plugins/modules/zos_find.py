@@ -107,10 +107,10 @@ options:
       - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
-        real dataset name it points to (returned as C(alias_of) in each result). The C(patterns),
-        C(excludes), C(volume), C(age), C(age_stamp), C(size), C(contains), and
-        C(include_member_aliases) options are applicable when using this resource type.
-        The C(age), C(age_stamp), C(size), and C(contains) filters are applied against
+        real dataset name it points to (returned as C(alias_of) in each result).
+      - The C(patterns), C(excludes), C(volume), C(age), C(age_stamp), C(size), C(contains), and
+        C(include_member_aliases) options are applicable when using C(alias) resource type.
+        The C(volume), C(age), C(age_stamp), C(size), and C(contains) filters are applied against
         the target dataset (C(alias_of)), not the alias entry itself.
     aliases:
       - resource_types

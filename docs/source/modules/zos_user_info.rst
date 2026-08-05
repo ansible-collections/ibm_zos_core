@@ -360,7 +360,9 @@ segments
   OPERPARM
     OPERPARM segment information for user profiles.
 
-    Contains operator parameters such as :literal:`STORAGE`\ , :literal:`AUTH`\ , :literal:`ALTGRP`\ , :literal:`AUTO`\ , :literal:`HC`\ , :literal:`INTIDS`\ , :literal:`LEVEL`\ , :literal:`LOGCMDRESP`\ , :literal:`MIGID`\ , etc. :literal:`MONITOR`\ , :literal:`MSCOPE`\ , and :literal:`ROUTCODE` are always returned as lists.
+    Contains operator parameters such as :literal:`STORAGE`\ , :literal:`AUTH`\ , :literal:`ALTGRP`\ , :literal:`AUTO`\ , :literal:`HC`\ , :literal:`INTIDS`\ , :literal:`LEVEL`\ , :literal:`LOGCMDRESP`\ , :literal:`MIGID`\ , etc.
+
+    :literal:`MONITOR`\ , :literal:`MSCOPE`\ , :literal:`MFORM`\ , and :literal:`ROUTCODE` are always returned as lists.
 
     The exact keys present depend on the operator configuration in RACF.
 
@@ -374,6 +376,10 @@ segments
 
           {
               "ALTGRP": "YES",
+              "MFORM": [
+                  "M",
+                  "T"
+              ],
               "MIGID": "NO",
               "MONITOR": [
                   "JOBNAMES",

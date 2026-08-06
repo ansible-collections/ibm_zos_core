@@ -102,12 +102,13 @@ options:
   dest:
     description:
       - The remote absolute path or data set where the content should be copied to.
-      - C(dest) can be a USS file, directory or MVS data set name.
-      - C(dest) can be a alias name of a PS, PDS or PDSE data set.
+      - C(dest) can be a USS file, USS directory, or MVS data set name.
+      - C(dest) can be an alias name of a PS, PDS, or PDSE data set.
       - If C(dest) has missing parent directories, they will be created.
-      - If C(dest) is a non-existent USS directory path and the C(src) is a partitioned data set, 
-        the C(dest) is created.
-      - If C(dest) is a nonexistent USS file, it will be created.
+      - If C(dest) is a USS path that does not exist and the C(src) is a PDS, PDSE, or
+        GDG, then the C(dest) will be created as a USS directory. 
+      - If C(dest) is a USS path that does not exist and the C(src) is a PS, PDS member, GDS,
+        or USS file, then the C(dest) will be created as a USS file.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
         either the system's default locale or the encoding option defined. If the USS file is
         a replacement, the user must have write authority to the file either through ownership,
@@ -1957,6 +1958,11 @@ class USSCopyHandler(CopyHandler):
         CopyOperationError
             When copying the data set into USS fails.
         """
+
+        # Ensure parent directories of the destination exist.
+        dest_parent = os.path.dirname(os.path.normpath(dest))
+        if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
+            os.makedirs(dest_parent)
 
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have

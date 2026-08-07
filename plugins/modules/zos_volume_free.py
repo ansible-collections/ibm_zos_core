@@ -571,16 +571,10 @@ def _volume_to_dict(vol):
     free_space = int(getattr(vol, 'free_tracks', 0) or 0)
     used_space = total_space - free_space
 
-    if total_space > 0:
-        percent_free = round((free_space / total_space) * 100, 1)
-        percent_used = round((used_space / total_space) * 100, 1)
-    else:
-        percent_free = 0.0
-        percent_used = 0.0
+    percent_used = float(getattr(vol, 'percentage_used', 0) or 0)
+    percent_free = round(100.0 - percent_used, 2)
 
     # ZOAU stores space in bytes as vol.free_bytes / vol.total_bytes.
-    # The constructor parameter names (free_kilobytes, total_kilobytes) differ
-    # from the live attribute names confirmed by debug output. Divide by 1024.
     total_kilobytes = int(getattr(vol, 'total_bytes', 0) or 0) // 1024
     free_kilobytes = int(getattr(vol, 'free_bytes', 0) or 0) // 1024
 

@@ -39,7 +39,7 @@ Minor Changes
 Breaking Changes / Porting Guide
 --------------------------------
 
-* For a comprehensive guide on migrating playbooks and roles from v1.x to v2.0.0, see :ref:`migration`.
+* For a comprehensive guide on migrating from v1.x to v2.0.0, see :ref:`migration <../z_ansible_collections_doc/source/migration>
 
 * ``zos_apf``
 

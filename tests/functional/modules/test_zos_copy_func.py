@@ -3009,7 +3009,71 @@ def test_copy_pds_to_non_existing_uss_dir_missing_parents(ansible_zos_module):
             assert result.get("stat").get("exists") is True
         for v_res in verify_dest.contacted.values():
             assert v_res.get("rc") == 0
-            assert len(v_res.get("stdout_lines", [])) > 0
+            files = v_res.get("stdout_lines", [])
+            assert len(files) == 1, f"Expected 1 member, found: {files}"
+
+    finally:
+        hosts.all.file(path=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.pds
+def test_copy_pdse_to_non_existing_uss_dir_missing_parents(ansible_zos_module):
+    """
+    Copy a PDSE to a USS path whose parent directories do not exist.
+
+    src:    Partitioned data set with member.
+    dest:   /tmp/test/newdir/<random> (parent dirs absent).
+    assert: Copy succeeds, dest directory is created, all members are present as files.
+    """
+    hosts = ansible_zos_module
+    src_ds = get_tmp_ds_name()
+    src_ds_mem = f"{src_ds}(MEM1)"
+    parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
+    dest = get_random_file_name(dir=parent_dir)
+
+    try:
+        ds_creation_result = hosts.all.zos_data_set(
+            name=src_ds,
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+            replace=True,
+            state="present"
+        )
+        for result in ds_creation_result.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        member_creation_result = hosts.all.zos_data_set(
+            name=src_ds_mem,
+            state="present",
+            type="member",
+            replace=True
+        )
+        for result in member_creation_result.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
+        stat_res = hosts.all.stat(path=dest)
+        verify_dest = hosts.all.shell(cmd=f"ls {dest}/{src_ds}")
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+            assert result.get("dest_created") is True
+            assert result.get("src") is not None
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+        for v_res in verify_dest.contacted.values():
+            assert v_res.get("rc") == 0
+            files = v_res.get("stdout_lines", [])
+            assert len(files) == 1, f"Expected 1 member, found: {files}"
 
     finally:
         hosts.all.file(path=dest, state="absent")

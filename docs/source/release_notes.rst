@@ -39,7 +39,7 @@ Minor Changes
 Breaking Changes / Porting Guide
 --------------------------------
 
-* For a comprehensive guide on migrating from v1.x to v2.0.0, see :ref:`migration <../z_ansible_collections_doc/source/migration>
+* For a comprehensive guide on migrating from v1.x to v2.0.0, see `Migration`_.
 
 * ``zos_apf``
 
@@ -705,7 +705,8 @@ Known Issues
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
-
+.. _Migration:
+   https://ibm.github.io/z_ansible_collections_doc/source/migration.html
 .. .............................................................................
 .. Playbook Links
 .. .............................................................................

@@ -106,7 +106,7 @@ options:
       - C(dest) can be an alias name of a PS, PDS, or PDSE data set.
       - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a USS path that does not exist and the C(src) is a PDS, PDSE, or
-        GDG, then the C(dest) will be created as a USS directory. 
+        GDG, then the C(dest) will be created as a USS directory.
       - If C(dest) is a USS path that does not exist and the C(src) is a PS, PDS member, GDS,
         or USS file, then the C(dest) will be created as a USS file.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
@@ -3811,12 +3811,12 @@ def run_module(module, arg_def):
                     + "for USS sources (src) or targets (dest). "
                     + "Try setting executable=True or aliases=False."
             )
-    
+
     # ********************************************************************
     # Handle partitioned data set to USS directory copy when destination
     # does not exist
     # ********************************************************************
-    # Verify source is a partitioned data set and is not a PDS member, 
+    # Verify source is a partitioned data set and is not a PDS member,
     # the destination type is USS, and the destination does not exist:
     if (
         src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
@@ -3925,7 +3925,7 @@ def run_module(module, arg_def):
     if converted_src:
         original_src = src
         src = converted_src
-        
+
     # Allocate destination data set
     try:
         if not is_uss:

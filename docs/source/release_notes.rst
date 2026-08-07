@@ -706,7 +706,7 @@ Known Issues
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 .. _Migration:
-   https://ibm.github.io/z_ansible_collections_doc/source/migration.html
+   https://ibm.github.io/z_ansible_collections_doc/source/migration/migration-core.html
 .. .............................................................................
 .. Playbook Links
 .. .............................................................................

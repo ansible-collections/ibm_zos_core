@@ -2,6 +2,7 @@
 .. © Copyright IBM Corporation 2020, 2026                                    .
 .. ...........................................................................
 
+
 ========
 Releases
 ========
@@ -39,7 +40,7 @@ Minor Changes
 Breaking Changes / Porting Guide
 --------------------------------
 
-* For a comprehensive guide on migrating from v1.x to v2.0.0, see `Migration`_.
+* For a comprehensive guide on migrating from v1.x to v2.0.0, see :ref:`migration`.
 
 * ``zos_apf``
 

@@ -104,11 +104,18 @@ options:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, USS directory, or MVS data set name.
       - C(dest) can be an alias name of a PS, PDS, or PDSE data set.
-      - If C(dest) has missing parent directories, they will be created.
-      - If C(dest) is a USS path that does not exist and the C(src) is a PDS, PDSE, or
-        GDG, then the C(dest) will be created as a USS directory.
-      - If C(dest) is a USS path that does not exist and the C(src) is a PS, PDS member, GDS,
-        or USS file, then the C(dest) will be created as a USS file.
+      - If C(dest) has a trailing slash, it will be interpreted as a USS directory.
+      - If C(dest) is a USS path with no trailing slash and the C(src) is a PDS, PDSE, or
+        GDG, then the C(src) will be copied to the C(dest) as a USS directory.
+      - If C(dest) is a USS path with no trailing slash and the C(src) is a PS, PDS member, GDS,
+        or USS file, then the C(src) will be copied to the C(dest) as a USS file.
+      - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
+      - If C(dest) is a USS file with nonexistent parent directories, the module will fail unless
+        the C(src) is also a USS path. The user must create the C(dest) parent directories for a USS 
+        file prior to running the zos_copy module if the user is not copying from a USS C(src).
+      - If C(src) and C(dest) are USS paths, any nonexistent C(dest) parent directories will be created.
+      - If the C(dest) has a trailing slash and the C(src) produces a USS file,
+        then the C(src) will be copied as a USS file to the user-specified C(dest) USS directory.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
         either the system's default locale or the encoding option defined. If the USS file is
         a replacement, the user must have write authority to the file either through ownership,
@@ -1959,10 +1966,12 @@ class USSCopyHandler(CopyHandler):
             When copying the data set into USS fails.
         """
 
-        # Ensure parent directories of the destination exist.
         dest_parent = os.path.dirname(os.path.normpath(dest))
         if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
-            os.makedirs(dest_parent)
+            raise CopyOperationError(
+                msg="Destination parent directory {0} does not exist. "
+                    "Create the parent directories before running zos_copy.".format(dest_parent)
+            )
 
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have
@@ -3606,6 +3615,16 @@ def run_module(module, arg_def):
     # characters. We'll only update these variables when they are
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
+
+    # Determine whether this copy produces a USS file (vs. a USS directory).
+    src_produces_uss_file = (
+        (src_ds_type == "USS" and not is_src_dir)          # USS file
+        or (src_ds_type in data_set.DataSet.MVS_SEQ)        # PS / SEQ
+        or (src_member)                                     # PDS member
+        or (is_src_gds)                                     # GDS
+        or (content)                                        # inline content
+    )
+
     try:
         if "/" in src:
             src_ds_type = "USS"
@@ -3674,8 +3693,14 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
-                src_basename = os.path.basename(src) if not content else "inline_copy"
+            # If the source produces a USS file, create a source basename.
+            if src_produces_uss_file and (dest.endswith("/") or os.path.isdir(dest)):
+                if src_ds_type == "USS" or content:
+                    src_basename = os.path.basename(src) if not content else "inline_copy"
+                else:
+                    # For MVS sources (SEQ, member, GDS), derive the basename from the data set name.
+                    # For SEQ or GDS source, use last qualifier for output file name.
+                    src_basename = data_set.extract_member_name(src) if src_member else data_set.extract_dsname(src).split(".")[-1]
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")
@@ -3819,10 +3844,15 @@ def run_module(module, arg_def):
     # Verify source is a partitioned data set and is not a PDS member,
     # the destination type is USS, and the destination does not exist:
     if (
-        src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
-        and dest_ds_type == 'USS' and not os.path.isdir(dest)
+        dest_ds_type == 'USS' and not os.path.isdir(dest)
+        and (
+            (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
+            or raw_dest.endswith('/')
+            or src_ds_type == "GDG"
+        )
     ):
-        # Scenario 1: Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+        # Scenario 1: Module fails if user attempts to write PDS (not member) to 
+        # USS file (i.e. a non-directory)
         if os.path.isfile(dest):
             module.fail_json(
                 msg="Cannot write a partitioned data set (PDS) to a USS file."
@@ -3830,13 +3860,20 @@ def run_module(module, arg_def):
         # Scenario 2: Destination directory is missing and needs to be created
         else:
             try:
+                dir_to_create = dest if not src_produces_uss_file else os.path.dirname(dest)
                 # Will also create nonexistent parent directories in dest path
-                os.makedirs(dest, exist_ok=True)
+                os.makedirs(dir_to_create, exist_ok=True)
                 res_args["dest_created"] = True
                 dest_exists = True
-            except Exception as err:
+            except PermissionError:
                 module.fail_json(
-                    msg="Unable to allocate destination data set: {0}".format(str(err)),
+                    msg="Unable to create USS directory '{0}': permission denied. "
+                        "Verify the Ansible user has write access to the parent directory.".format(dir_to_create),
+                    dest_exists=dest_exists
+                )
+            except OSError as err:
+                module.fail_json(
+                    msg="Unable to create USS directory '{0}': {1}".format(dir_to_create, str(err)),
                     dest_exists=dest_exists
                 )
 

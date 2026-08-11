@@ -439,8 +439,8 @@ def run_module():
 
         if script_rc != 0 or stderr:
             result['msg'] = 'The script terminated with an error'
-            if temp_file is not None:
-                os.remove(temp_file)
+            # if temp_file is not None:
+            #     os.remove(temp_file)
             module.fail_json(
                 **result
             )

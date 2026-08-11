@@ -122,6 +122,7 @@ def test_zos_operator_action_query_option_system_and_msg_id(
     msg_id
 ):
     hosts = ansible_zos_module
+    hosts.all.zos_operator(cmd="DUMP COMM=('test dump')")
     sysinfo = hosts.all.shell(cmd="uname -n")
     system_name = ""
     for result in sysinfo.contacted.values():
@@ -129,8 +130,17 @@ def test_zos_operator_action_query_option_system_and_msg_id(
     results = hosts.all.zos_operator_action_query(
         system=system_name, msg_id=msg_id
     )
+    try:
+        for action in results.get("actions"):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
+                hosts.all.zos_operator(
+                    cmd="{0}cancel".format(action.get("number")))
+    except Exception:
+        pass
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_option_system_regex(ansible_zos_module):
     hosts = ansible_zos_module

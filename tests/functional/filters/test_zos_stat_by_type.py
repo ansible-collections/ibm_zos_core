@@ -17,6 +17,15 @@ from __future__ import absolute_import, division, print_function
 import json
 import pytest
 
+# trust_as_template was introduced in Ansible Core 2.19 to satisfy its new
+# template-trust security model. On 2.18 and earlier the function does not
+# exist and is not needed — a plain string is templated unconditionally.
+try:
+    from ansible.template import trust_as_template
+except ImportError:
+    def trust_as_template(value):  # type: ignore[misc]
+        return value
+
 __metaclass__ = type
 
 # The following tests are for the stat filter found in plugins/filter/stat.py.
@@ -57,8 +66,17 @@ def test_filter_seq_data_set(ansible_zos_module):
     "isfile": false, "isgdg": false, "name": "omvsadm.stat.test.seq", "resource_type": "data_set"}}"""
     zos_stat_result_dict = json.loads(zos_stat_result)
 
+    # hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
+    # filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+
+    # hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
+    # hosts.all.set_fact(zos_stat_filtered="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    # filter_results = hosts.all.debug(var="zos_stat_filtered")
+
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -159,7 +177,9 @@ def test_filter_pdse_data_set(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -267,7 +287,9 @@ def test_filter_vsam_data_set(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -343,7 +365,9 @@ def test_filter_data_set_option_no_data_set_output(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -409,7 +433,9 @@ def test_filter_file(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('file') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('file') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -504,7 +530,9 @@ def test_filter_aggregate(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('aggregate') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('aggregate') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -570,7 +598,9 @@ def test_filter_gdg(ansible_zos_module):
     zos_stat_result_dict = json.loads(zos_stat_result)
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('gdg') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('gdg') }}")
+    )
 
     for result in filter_results.contacted.values():
         assert result.get('msg') is not None
@@ -618,7 +648,9 @@ def test_filter_nonexistent_resource(ansible_zos_module):
     }"""
     zos_stat_result_dict = json.loads(zos_stat_result)
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
-    filter_results = hosts.all.debug(msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    filter_results = hosts.all.debug(
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
+    )
 
     for result in filter_results.contacted.values():
         stat = result['msg']
@@ -703,7 +735,7 @@ def test_filter_pds_data_set_member_details_present(ansible_zos_module):
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
     filter_results = hosts.all.debug(
-        msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
     )
 
     for result in filter_results.contacted.values():
@@ -813,7 +845,7 @@ def test_filter_pds_data_set_member_details_absent(ansible_zos_module):
 
     hosts.all.set_fact(zos_stat_output=zos_stat_result_dict)
     filter_results = hosts.all.debug(
-        msg="{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}"
+        msg=trust_as_template("{{ zos_stat_output | ibm.ibm_zos_core.zos_stat_by_type('data_set') }}")
     )
 
     for result in filter_results.contacted.values():

@@ -17,11 +17,20 @@ __metaclass__ = type
 
 import pytest
 
+# trust_as_template was introduced in Ansible Core 2.19 to satisfy its new
+# template-trust security model. On 2.18 and earlier the function does not
+# exist and is not needed — a plain string is templated unconditionally.
+try:
+    from ansible.template import trust_as_template
+except ImportError:
+    def trust_as_template(value):  # type: ignore[misc]
+        return value
+
 def test_generate_data_set_name_filter(ansible_zos_module):
     hosts = ansible_zos_module
     input_string = "OMVSADM"
     hosts.all.set_fact(input_string=input_string)
-    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
+    results = hosts.all.debug(msg=trust_as_template("{{ input_string | generate_data_set_name }}"))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -37,7 +46,7 @@ def test_generate_data_set_name_mlq_filter(ansible_zos_module):
         f"middle_level_qualifier='{mlq}'"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -56,7 +65,7 @@ def test_generate_data_set_name_mlq_multiple_generations_filter(ansible_zos_modu
         f"num_names={num_names}"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -74,7 +83,7 @@ def test_generate_data_set_name_llq_filter(ansible_zos_module):
         f"low_level_qualifier='{llq}'"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -93,7 +102,7 @@ def test_generate_data_set_name_llq_multiple_generations_filter(ansible_zos_modu
         f"num_names={num_names}"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -112,7 +121,7 @@ def test_generate_data_set_name_mlq_llq_filter(ansible_zos_module):
         f"middle_level_qualifier='{mlq}', "
         f"low_level_qualifier='{llq}') }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -134,7 +143,7 @@ def test_generate_data_set_name_mlq_llq_multiple_generations_filter(ansible_zos_
         f"num_names={num_names}"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -153,7 +162,7 @@ def test_generate_data_set_name_filter_multiple_generations(ansible_zos_module):
         f"num_names={num_names}"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('msg') is not None
@@ -164,11 +173,11 @@ def test_generate_data_set_name_filter_bad_hlq(ansible_zos_module):
     hosts = ansible_zos_module
     input_string = "OMVSADMONE"
     hosts.all.set_fact(input_string=input_string)
-    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
+    results = hosts.all.debug(msg=trust_as_template("{{ input_string | generate_data_set_name }}"))
 
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('msg') == f"The qualifier {input_string} is too long for the data set name."
+        assert f"The qualifier {input_string} is too long for the data set name." in result.get('msg')
 
 def test_generate_data_set_name_filter_bad_mlq(ansible_zos_module):
     hosts = ansible_zos_module
@@ -180,11 +189,11 @@ def test_generate_data_set_name_filter_bad_mlq(ansible_zos_module):
         f"middle_level_qualifier='{mlq}'"
         f") }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('msg') == f"The qualifier {mlq.upper()} is not following the rules for naming conventions."
+        assert f"The qualifier {mlq.upper()} is not following the rules for naming conventions." in result.get('msg')
 
 def test_generate_data_set_name_mlq_bad_llq(ansible_zos_module):
     hosts = ansible_zos_module
@@ -197,16 +206,16 @@ def test_generate_data_set_name_mlq_bad_llq(ansible_zos_module):
         f"middle_level_qualifier='{mlq}', "
         f"low_level_qualifier='{llq}') }}}}"
     )
-    results = hosts.all.debug(msg=jinja_expr)
+    results = hosts.all.debug(msg=trust_as_template(jinja_expr))
 
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('msg') == f"The qualifier {llq.upper()} is too long for the data set name."
+        assert f"The qualifier {llq.upper()} is too long for the data set name." in result.get('msg')
 
 def test_generate_data_set_name_filter_no_hlq(ansible_zos_module):
     hosts = ansible_zos_module
     input_string = "OMVSADMONE"
-    results = hosts.all.debug(msg="{{ generate_data_set_name }}")
+    results = hosts.all.debug(msg=trust_as_template("{{ generate_data_set_name }}"))
 
     for result in results.contacted.values():
         assert result.get('failed') is True
@@ -215,8 +224,8 @@ def test_generate_data_set_name_filter_bad_hlq(ansible_zos_module):
     hosts = ansible_zos_module
     input_string = ""
     hosts.all.set_fact(input_string=input_string)
-    results = hosts.all.debug(msg="{{ input_string | generate_data_set_name }}")
+    results = hosts.all.debug(msg=trust_as_template("{{ input_string | generate_data_set_name }}"))
 
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('msg') == "A High-Level Qualifier is required."
+        assert "A High-Level Qualifier is required." in result.get('msg')

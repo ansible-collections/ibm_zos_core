@@ -111,8 +111,8 @@ options:
         or USS file, then the C(src) will be copied to the C(dest) as a USS file.
       - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
       - If C(dest) is a USS file with nonexistent parent directories, the module will fail unless
-        the C(src) is also a USS path. The user must create the C(dest) parent directories for a USS 
-        file prior to running the zos_copy module if the user is not copying from a USS C(src).
+        the C(src) is a USS path or a GDS. The user must create the C(dest) parent directories for a USS 
+        file prior to running the zos_copy module if the user is not copying from a USS or GDS C(src).
       - If C(src) and C(dest) are USS paths, any nonexistent C(dest) parent directories will be created.
       - If the C(dest) has a trailing slash and the C(src) produces a USS file,
         then the C(src) will be copied as a USS file to the user-specified C(dest) USS directory.
@@ -1647,6 +1647,7 @@ class USSCopyHandler(CopyHandler):
         member_name,
         replace,
         content_copy,
+        is_src_gds
     ):
         """Copy a file or data set to a USS location.
 
@@ -1681,7 +1682,7 @@ class USSCopyHandler(CopyHandler):
 
         if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
-                src, dest, src_ds_type, src_member, member_name=member_name
+                src, dest, src_ds_type, src_member, member_name=member_name, is_src_gds=is_src_gds
             )
 
             if self.executable:
@@ -1940,7 +1941,8 @@ class USSCopyHandler(CopyHandler):
         dest,
         src_ds_type,
         src_member,
-        member_name=None
+        member_name=None,
+        is_src_gds=False
     ):
         """Helper function to copy an MVS data set src to USS dest.
 
@@ -1968,10 +1970,13 @@ class USSCopyHandler(CopyHandler):
 
         dest_parent = os.path.dirname(os.path.normpath(dest))
         if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
-            raise CopyOperationError(
-                msg="Destination parent directory {0} does not exist. "
-                    "Create the parent directories before running zos_copy.".format(dest_parent)
-            )
+            if (is_src_gds):
+                os.makedirs(dest_parent)
+            else:
+                raise CopyOperationError(
+                    msg="Destination parent directory {0} does not exist. "
+                        "Create the parent directories before running zos_copy.".format(dest_parent)
+                )
 
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have
@@ -3847,7 +3852,7 @@ def run_module(module, arg_def):
         dest_ds_type == 'USS' and not os.path.isdir(dest)
         and (
             (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
-            or raw_dest.endswith('/')
+            or (raw_dest.endswith('/') and not is_src_dir)
             or src_ds_type == "GDG"
         )
     ):
@@ -4059,7 +4064,8 @@ def run_module(module, arg_def):
                 src_member,
                 member_name,
                 replace,
-                bool(content)
+                bool(content),
+                is_src_gds
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None

@@ -58,6 +58,13 @@ options:
     type: list
     elements: str
     required: false
+  verbose:
+    description:
+      - Return additional diagnostic information for the volume query operation.
+      - This option is useful when troubleshooting volume discovery or query issues.
+    type: bool
+    required: false
+    default: false
   filter:
     description:
       - Dictionary of filter criteria to apply to the volume results.
@@ -403,6 +410,22 @@ volumes:
           description: Whether the VTOC index is active.
           type: bool
           sample: true
+skipped_volumes:
+  description:
+    - Requested volumes that were not found or were inaccessible.
+  returned: always
+  type: list
+  elements: dict
+  sample:
+    - "222224": "not found or inaccessible"
+skipped_device_numbers:
+  description:
+    - Requested device numbers that were not found or were inaccessible.
+  returned: always
+  type: list
+  elements: dict
+  sample:
+    - "0A80": "not found or inaccessible"
 changed:
   description: Indicates whether any changes were made. Always false for this module.
   returned: always
@@ -660,8 +683,8 @@ def get_volume_info(module):
 
     Returns
     -------
-    tuple[list[dict], str]
-        A tuple of (volume_list, message).
+    tuple[list[dict], list[dict], list[dict], str]
+        A tuple of (volume_list, skipped_volumes, skipped_device_numbers, message).
 
     Raises
     ------
@@ -675,6 +698,8 @@ def get_volume_info(module):
     requested_volsers = module.params.get('volumes') or []
     requested_devices = module.params.get('device_numbers') or []
     filter_params = module.params.get('filter') or {}
+    verbose = module.params.get('verbose')
+    list_volumes_kwargs = {'debug': True, 'verbose': True} if verbose else {}
 
     # Normalize inputs to uppercase for consistent matching.
     requested_volsers = [v.upper() for v in requested_volsers]
@@ -687,7 +712,7 @@ def get_volume_info(module):
     if query_all:
         # No criteria: retrieve all active DASD volumes.
         logger.debug("Calling volumes.list_volumes() to retrieve all volumes.")
-        raw_volumes = volumes.list_volumes()
+        raw_volumes = volumes.list_volumes(**list_volumes_kwargs)
         matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
     elif not requested_devices:
         # One or more VOLSERs, no devices.
@@ -699,7 +724,7 @@ def get_volume_info(module):
             # exception is re-raised so run_module can fail with a proper error.
             logger.debug("Calling volumes.list_volumes(volume_serial=%r).", requested_volsers[0])
             try:
-                raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0])
+                raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0], **list_volumes_kwargs)
                 matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
             except json.JSONDecodeError:
                 # This exception is being handled here because of ZOAU issue NAZARE-11323
@@ -727,7 +752,7 @@ def get_volume_info(module):
         else:
             # Multiple VOLSERs: fetch all and filter by requested set.
             logger.debug("Calling volumes.list_volumes() for multi-VOLSER query.")
-            raw_volumes = volumes.list_volumes()
+            raw_volumes = volumes.list_volumes(**list_volumes_kwargs)
             requested_set = set(requested_volsers)
             all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
             matched = [v for v in all_dicts if v['volser'] in requested_set]
@@ -736,7 +761,7 @@ def get_volume_info(module):
     else:
         # Device numbers present (VOLSERs may also be present): union match.
         logger.debug("Calling volumes.list_volumes() for device query.")
-        raw_volumes = volumes.list_volumes()
+        raw_volumes = volumes.list_volumes(**list_volumes_kwargs)
         requested_volser_set = set(requested_volsers)
         requested_device_set = set(requested_devices)
         all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
@@ -779,7 +804,12 @@ def get_volume_info(module):
             ", ".join(unavailable_devices)
         )
 
-    return filtered, msg
+    skipped_volumes = [{volser: 'not found or inaccessible'} for volser in unavailable_volsers]
+    skipped_device_numbers = [
+        {device_number: 'not found or inaccessible'} for device_number in unavailable_devices
+    ]
+
+    return filtered, skipped_volumes, skipped_device_numbers, msg
 
 
 def run_module():
@@ -788,6 +818,7 @@ def run_module():
         argument_spec={
             'volumes': {'type': 'list', 'elements': 'str', 'required': False, 'default': None},
             'device_numbers': {'type': 'list', 'elements': 'str', 'required': False, 'default': None},
+            'verbose': {'type': 'bool', 'required': False, 'default': False},
             'filter': {
                 'type': 'dict',
                 'required': False,
@@ -825,6 +856,7 @@ def run_module():
     args_def = {
         'volumes': {'type': 'list', 'elements': 'volume', 'required': False},
         'device_numbers': {'type': 'list', 'elements': 'str', 'required': False},
+        'verbose': {'type': 'bool', 'required': False},
         'filter': {
             'type': 'dict',
             'required': False,
@@ -860,6 +892,8 @@ def run_module():
     result = dict(
         changed=False,
         volumes=[],
+        skipped_volumes=[],
+        skipped_device_numbers=[],
         msg='',
         rc=0,
         stdout='',
@@ -867,7 +901,12 @@ def run_module():
     )
 
     try:
-        result['volumes'], result['msg'] = get_volume_info(module)
+        (
+            result['volumes'],
+            result['skipped_volumes'],
+            result['skipped_device_numbers'],
+            result['msg'],
+        ) = get_volume_info(module)
     except zoau_exceptions.ZOAUException as err:
         result['rc'] = err.response.rc
         result['msg'] = str(err)

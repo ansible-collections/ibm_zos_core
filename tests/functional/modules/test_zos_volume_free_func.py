@@ -130,6 +130,12 @@ def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
         assert 'XXXXXX' in msg, (
             "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
         )
+        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
+            "Expected skipped_volumes for missing volser, got: {0}".format(
+                result.get('skipped_volumes')
+            )
+        )
+        assert result.get('skipped_device_numbers') == []
 
 
 def test_query_by_device_number(ansible_zos_module, volumes_unit_on_systems):
@@ -786,6 +792,12 @@ def test_msg_single_nonexistent_volser_no_fail(ansible_zos_module):
         assert 'XXXXXX' in msg, (
             "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
         )
+        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
+            "Expected skipped_volumes for missing volser, got: {0}".format(
+                result.get('skipped_volumes')
+            )
+        )
+        assert result.get('skipped_device_numbers') == []
 
 
 def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
@@ -815,6 +827,12 @@ def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
         assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
+        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
+            "Expected skipped_volumes for missing volser, got: {0}".format(
+                result.get('skipped_volumes')
+            )
+        )
+        assert result.get('skipped_device_numbers') == []
 
     vols.free_vol(vol_name)
 
@@ -842,6 +860,15 @@ def test_msg_multi_volser_both_missing(ansible_zos_module):
         assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
+        assert result.get('skipped_volumes') == [
+            {'XXXXXX': 'not found or inaccessible'},
+            {'YYYYYY': 'not found or inaccessible'},
+        ], (
+            "Expected skipped_volumes for missing volsers, got: {0}".format(
+                result.get('skipped_volumes')
+            )
+        )
+        assert result.get('skipped_device_numbers') == []
 
 
 def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
@@ -907,6 +934,22 @@ def test_rc_zero_on_nonexistent_volser(ansible_zos_module):
             "Expected rc=0 for nonexistent VOLSER, got rc={0}".format(result.get('rc'))
         )
         assert result.get('failed') is not True
+
+
+def test_skipped_device_numbers_for_missing_device(ansible_zos_module):
+    """Missing device numbers should be surfaced in skipped_device_numbers."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(device_numbers=['FFFF'])
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert result.get('skipped_volumes') == []
+        assert result.get('skipped_device_numbers') == [
+            {'FFFF': 'not found or inaccessible'}
+        ], (
+            "Expected skipped_device_numbers for missing device, got: {0}".format(
+                result.get('skipped_device_numbers')
+            )
+        )
 
 
 # ---------------------------------------------------------------------------

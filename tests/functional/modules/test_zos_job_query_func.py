@@ -402,6 +402,11 @@ def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_py
         temp_path = get_random_file_name(dir=TEMP_PATH)
         create_temp_dir(hosts, data_set_name, temp_path)
 
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
             src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
@@ -419,11 +424,6 @@ def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_py
 
         # Initialize the managed user with limited job viewing permissions
         managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
-
-        # Create Ansible temp directory with permissions for managed user to create temporary files
-        ansible_tmp_dir = "/tmp/ibmz/ansible"
-        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
-        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(
@@ -616,6 +616,11 @@ def test_managed_user_query_with_wildcard_id_and_owner(ansible_zos_module, z_pyt
         temp_path = get_random_file_name(dir=TEMP_PATH)
         create_temp_dir(hosts, data_set_name, temp_path)
 
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
             src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
@@ -633,11 +638,6 @@ def test_managed_user_query_with_wildcard_id_and_owner(ansible_zos_module, z_pyt
 
         # Initialize the managed user with limited job viewing permissions
         managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
-
-        # Create Ansible temp directory with permissions for managed user to create temporary files
-        ansible_tmp_dir = "/tmp/ibmz/ansible"
-        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
-        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(
@@ -729,6 +729,11 @@ def test_managed_user_query_with_wildcard_id_and_name(ansible_zos_module, z_pyth
         temp_path = get_random_file_name(dir=TEMP_PATH)
         create_temp_dir(hosts, data_set_name, temp_path)
 
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
             src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
@@ -746,11 +751,6 @@ def test_managed_user_query_with_wildcard_id_and_name(ansible_zos_module, z_pyth
 
         # Initialize the managed user with limited job viewing permissions
         managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
-
-        # Create Ansible temp directory with permissions for managed user to create temporary files
-        ansible_tmp_dir = "/tmp/ibmz/ansible"
-        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
-        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
 
         # Execute the test with the managed user
         managed_user.execute_managed_user_test(

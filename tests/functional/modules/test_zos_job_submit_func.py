@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -437,6 +437,91 @@ INVENTORY_ASYNC_TEST = """all:
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
       ansible_python_interpreter: {3}"""
+
+# Playbook that validates nested variable resolution (templar) for zos_job_submit.
+# The JCL template uses {{ pgm_name }}, and pgm_name is composed from another
+# variable: pgm_prefix + "GENER".  Without templar pre-processing the submit
+# would receive the literal string "{{ pgm_prefix }}GENER" rather than "IEBGENER".
+PLAYBOOK_JOB_SUBMIT_NESTED_VAR = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  vars:
+    pgm_prefix: "IEBGE"
+    pgm_name: "{{{{ pgm_prefix }}}}NER"
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Submit JCL with nested variable reference resolved by templar.
+      ibm.ibm_zos_core.zos_job_submit:
+        src: {3}
+        remote_src: false
+        use_template: true
+        template_parameters:
+          autoescape: false
+      register: job_result
+
+    - name: Assert the job completed successfully.
+      ansible.builtin.assert:
+        that:
+          - job_result.changed == true
+          - job_result.jobs | length > 0
+          - job_result.jobs[0].ret_code.msg == "CC"
+          - job_result.jobs[0].ret_code.code == 0
+"""
+
+# Playbook that validates loop-item dict unpacking for zos_job_submit templates.
+# Each loop item carries a "message" key; the JCL template references
+# {{ message }} directly (flat name) instead of {{ item.message }}.
+PLAYBOOK_JOB_SUBMIT_LOOP_ITEMS = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Submit templated JCL with loop - direct var name.
+      ibm.ibm_zos_core.zos_job_submit:
+        src: {3}
+        remote_src: false
+        wait_time: 60
+        use_template: true
+      loop:
+        - ds_name: "{4}"
+          mclass: "H"
+      register: loop_result
+
+    - name: Assert job completed successfully.
+      ansible.builtin.assert:
+        that:
+          - item.changed == true
+          - item.jobs | length > 0
+          - item.jobs[0].ret_code.msg == "CC"
+          - item.jobs[0].ret_code.code == 0
+      loop: "{{{{ loop_result.results }}}}"
+"""
 
 
 @pytest.mark.parametrize(
@@ -1983,3 +2068,223 @@ def test_job_submit_async(get_config):
     # Commented this because with new alias deprecation messages those will fail the test
     # assert result.stderr == ""
 
+
+
+# JCL template used by the playbook-based template resolution tests below.
+# Uses {{ pgm_name }} (nested var test) and {{ message }} (loop-item test).
+JCL_TEMPLATE_NESTED_VAR = """//*
+//TPLTNEST JOB (T043JM,JM00,1,0,0,0),'NESTED VAR TEST',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM={{ pgm_name }}
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+HELLO, WORLD
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
+# JCL template for the loop-item dict-unpacking test.
+# Replicates the exact bug scenario from issue #1499:
+#   loop: [ { ds_name: "...", mclass: "H" } ]
+# The template references {{ ds_name }} and {{ mclass }} as flat names
+# (not {{ item.ds_name }}). Without the loop-item unpack fix these would
+# be undefined and the JCL would fail at submission.
+JCL_TEMPLATE_LOOP_DS = """//*
+//SIMPLE   JOB (T043JM,JM00,1,0,0,0),'CREATE DEL',
+//             MSGCLASS={{ mclass }},MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//CREATE   EXEC PGM=IEFBR14
+//TEMPDS   DD DSN={{ ds_name }},
+//            DISP=(NEW,CATLG,DELETE),
+//            SPACE=(TRK,(1,1)),
+//            UNIT=SYSDA,
+//            DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)
+//*
+//DELETE   EXEC PGM=IEFBR14
+//TEMPDS   DD DSN={{ ds_name }},
+//            DISP=(OLD,DELETE,DELETE)
+/*
+"""
+
+# This tests is added to validate the fix for the GitHub issue #1499 and #1071
+@pytest.mark.template
+def test_job_submit_template_nested_variable_resolution(get_config):
+    """Verify zos_job_submit resolves a nested Jinja2 variable via Ansible templar.
+
+    The playbook defines:
+        pgm_prefix: "IEBGE"
+        pgm_name:   "{{ pgm_prefix }}NER"
+
+    The JCL template contains ``{{ pgm_name }}``.  Without templar
+    pre-processing the rendered JCL would have the literal string
+    ``{{ pgm_prefix }}NER`` as the EXEC PGM= value instead of ``IEBGENER``,
+    causing a JCL error.  The fix passes ``templar`` to
+    ``render_file_template`` so nested expressions are expanded first.
+    """
+    tmp_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".jcl", delete=False, encoding="utf-8"
+    )
+    try:
+        tmp_file.write(JCL_TEMPLATE_NESTED_VAR)
+        tmp_file.close()
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key = environment["ssh_key"]
+        hosts_str = environment["host"].upper()
+        user = environment["user"].upper()
+        python_path = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau = environment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split("/")[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    PLAYBOOK_JOB_SUBMIT_NESTED_VAR.format(
+                        zoau,
+                        cut_python_path,
+                        python_version,
+                        tmp_file.name,
+                    )
+                ),
+                playbook.name,
+            )
+        )
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    INVENTORY_ASYNC_TEST.format(
+                        hosts_str,
+                        ssh_key,
+                        user,
+                        python_path,
+                    )
+                ),
+                inventory.name,
+            )
+        )
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name, playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding="utf-8",
+        )
+
+        # ok=2  → zos_job_submit task + assert task
+        # changed=1 → only the submit task
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr
+            )
+        )
+        assert "ok=2" in result.stdout
+        assert "changed=1" in result.stdout
+    finally:
+        if os.path.exists(tmp_file.name):
+            os.remove(tmp_file.name)
+
+
+# This tests is added to validate the fix for the GitHub issue #1499 and #1071:
+@pytest.mark.template
+def test_job_submit_template_loop_item_dict_unpacking(get_config):
+    """Verify zos_job_submit unpacks loop dict items so flat keys resolve in JCL.
+
+    Replicates issue #1499: the playbook loops with
+        loop: [ { ds_name: "...", mclass: "H" } ]
+    and the JCL template references ``{{ ds_name }}`` and ``{{ mclass }}``
+    as flat names (not ``{{ item.ds_name }}``).  Without the loop-item unpack
+    fix in TemplateRenderer._prepare_template_variables() those variables would
+    be undefined at render time and the submitted JCL would be malformed.
+    """
+    tmp_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".jcl", delete=False, encoding="utf-8"
+    )
+    try:
+        tmp_file.write(JCL_TEMPLATE_LOOP_DS)
+        tmp_file.close()
+
+        # Use a temporary dataset name as the loop item's ds_name value.
+        ds_name = get_tmp_ds_name()
+
+        path = get_config
+        with open(path, "r") as fh:
+            environment = yaml.safe_load(fh)
+
+        ssh_key = environment["ssh_key"]
+        hosts_str = environment["host"].upper()
+        user = environment["user"].upper()
+        python_path = environment["python_path"]
+        cut_python_path = python_path[: python_path.find("/bin")].strip()
+        zoau = environment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split("/")[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    PLAYBOOK_JOB_SUBMIT_LOOP_ITEMS.format(
+                        zoau,
+                        cut_python_path,
+                        python_version,
+                        tmp_file.name,
+                        ds_name,
+                    )
+                ),
+                playbook.name,
+            )
+        )
+
+        os.system(
+            "echo {0} > {1}".format(
+                quote(
+                    INVENTORY_ASYNC_TEST.format(
+                        hosts_str,
+                        ssh_key,
+                        user,
+                        python_path,
+                    )
+                ),
+                inventory.name,
+            )
+        )
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name, playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding="utf-8",
+        )
+
+        # ok=2  → zos_job_submit loop task (1 item) + assert loop task
+        # changed=1 → one submit task
+        assert result.returncode == 0, (
+            "Playbook failed.\nSTDOUT:\n{0}\nSTDERR:\n{1}".format(
+                result.stdout, result.stderr
+            )
+        )
+        assert "ok=2" in result.stdout
+        assert "changed=1" in result.stdout
+    finally:
+        if os.path.exists(tmp_file.name):
+            os.remove(tmp_file.name)

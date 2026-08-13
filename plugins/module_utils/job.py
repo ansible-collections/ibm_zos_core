@@ -164,14 +164,30 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
 
-    if job_id and job_name == "*":
-        job_not_found_msg = "with the job_id {0}".format(job_id.upper())
-    elif owner and job_name == "*":
-        job_not_found_msg = "owner {0}".format(owner.upper())
-    elif job_name and job_id:
-        job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
+    job_id_not_found = None if (not job_id or job_id == "*") else job_id.upper()
+    owner_not_found = None if (not owner or owner == "*") else owner.upper()
+    job_name_not_found = None if (not job_name or job_name == "*") else job_name.upper()
+
+    if job_name_not_found and job_id_not_found and owner_not_found:
+        job_not_found_msg = "{0} with job_id {1} and owner {2}".format(
+            job_name_not_found, job_id_not_found, owner_not_found)
+    elif job_id_not_found and owner_not_found:
+        job_not_found_msg = "with job_id {0} and owner {1}".format(
+            job_id_not_found, owner_not_found)
+    elif job_id_not_found and job_name_not_found:
+        job_not_found_msg = "{0} with job_id {1}".format(
+            job_name_not_found, job_id_not_found)
+    elif owner_not_found and job_name_not_found:
+        job_not_found_msg = "{0} with owner {1}".format(
+            job_name_not_found, owner_not_found)
+    elif job_id_not_found:
+        job_not_found_msg = "with job_id {0}".format(job_id_not_found)
+    elif owner_not_found:
+        job_not_found_msg = "owner {0}".format(owner_not_found)
+    elif job_name_not_found:
+        job_not_found_msg = "with name {0}".format(job_name_not_found)
     else:
-        job_not_found_msg = "with name {0}".format(job_name.upper())
+        job_not_found_msg = ""
     job = {}
 
     job["job_not_found"] = True

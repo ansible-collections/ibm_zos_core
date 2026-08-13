@@ -1060,7 +1060,7 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with the job_id {job_id} could not be found.'
+            assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
     # Job query with nonexistent job_name
@@ -1108,7 +1108,7 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with the job_id {job_id} could not be found.'
+            assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
     # Job query with nonexistent job_id and owner
@@ -1124,7 +1124,7 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with the job_id {job_id} could not be found.'
+            assert rc.get("msg_txt") == f'The job with job_id {job_id} and owner {owner} could not be found.'
             assert rc.get("code") is None
 
     # Job query with nonexistent job_name and owner
@@ -1140,5 +1140,21 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
+            assert rc.get("msg_txt") == f'The job {job_name} with owner {owner} could not be found.'
+            assert rc.get("code") is None
+
+    # Job query with nonexistent job_id, job_name, and owner
+    qresults_name_and_owner = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
+    
+    for qresult in qresults_name_and_owner.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        # Verify query fails with correct message
+        for job in qresult.get("jobs"):
+            rc = job.get("ret_code")
+            assert rc.get("msg") == 'JOB NOT FOUND'
+            assert rc.get("msg_code") is None
+            assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} and owner {owner} could not be found.'
             assert rc.get("code") is None

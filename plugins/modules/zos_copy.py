@@ -107,12 +107,12 @@ options:
       - If C(dest) has a trailing slash, it will be interpreted as a USS directory.
       - If C(dest) is a USS path with no trailing slash and the C(src) is a PDS, PDSE, or
         GDG, then the C(src) will be copied to the C(dest) as a USS directory.
-      - If C(dest) is a USS path with no trailing slash and the C(src) is a PS, PDS member, GDS,
+      - If C(dest) is a USS path with no trailing slash and the C(src) is a PS, PDS/PDSE member, GDS,
         or USS file, then the C(src) will be copied to the C(dest) as a USS file.
       - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
-      - If C(dest) is a USS file with nonexistent parent directories, the module will fail unless
-        the C(src) is a USS path or a GDS. The user must create the C(dest) parent directories for a USS 
-        file prior to running the zos_copy module if the user is not copying from a USS or GDS C(src).
+      - If C(dest) is a USS file with nonexistent parent directories, they will be created unless
+        the source is a PS data set. The user must create the C(dest) parent directories for a USS file 
+        prior to running the zos_copy module if the user is copying from a PS C(src).
       - If C(src) and C(dest) are USS paths, any nonexistent C(dest) parent directories will be created.
       - If the C(dest) has a trailing slash and the C(src) produces a USS file,
         then the C(src) will be copied as a USS file to the user-specified C(dest) USS directory.
@@ -1970,7 +1970,7 @@ class USSCopyHandler(CopyHandler):
 
         dest_parent = os.path.dirname(os.path.normpath(dest))
         if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
-            if (is_src_gds):
+            if (is_src_gds or src_member):
                 os.makedirs(dest_parent)
             else:
                 raise CopyOperationError(

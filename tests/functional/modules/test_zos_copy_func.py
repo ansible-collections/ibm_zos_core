@@ -2923,12 +2923,43 @@ def test_copy_ps_to_non_existing_uss_file_missing_parents(ansible_zos_module):
 
     src:    Sequential data set populated with special-character content.
     dest:   /tmp/test/newdir/<random> (parent dirs absent).
-    assert: Copy succeeds, dest file is created, content is readable via cat.
+    assert: Copy fails; zos_copy must not create parent directories when copying
+            from a PS source to a non-existent USS file.
     """
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
     parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
     dest = get_random_file_name(dir=parent_dir)
+
+    try:
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
+        stat_res = hosts.all.stat(path=dest)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is not None
+            assert result.get("changed") is False
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is False
+    finally:
+        hosts.all.file(path=parent_dir, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_ps_to_non_existing_uss_dir_missing_parents(ansible_zos_module):
+    """
+    Copy a sequential data set to a USS path whose parent directories do not exist.
+
+    src:    Sequential data set populated with special-character content.
+    dest:   /tmp/test/newdir/<random>/ (parent dirs absent).
+    assert: Copy succeeds, dest file is created, content is readable via cat.
+    """
+    hosts = ansible_zos_module
+    src_ds = get_tmp_ds_name()
+    parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
+    dest = get_random_file_name(dir=parent_dir, suffix='/')
 
     try:
         hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
@@ -2948,10 +2979,11 @@ def test_copy_ps_to_non_existing_uss_file_missing_parents(ansible_zos_module):
             assert result.get("stat").get("exists") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
-            assert result.get("stdout") != ""
+            assert result.get("stdout") == ""
     finally:
         hosts.all.file(path=dest, state="absent")
         hosts.all.zos_data_set(name=src_ds, state="absent")
+
 
 
 @pytest.mark.uss

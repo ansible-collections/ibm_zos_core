@@ -1968,6 +1968,7 @@ class USSCopyHandler(CopyHandler):
             When copying the data set into USS fails.
         """
 
+        # Non-existent destination parent directories created for GDS or PDS/PDSE members
         dest_parent = os.path.dirname(os.path.normpath(dest))
         if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
             if (is_src_gds or src_member):
@@ -1977,6 +1978,20 @@ class USSCopyHandler(CopyHandler):
                     msg="Destination parent directory {0} does not exist. "
                         "Create the parent directories before running zos_copy.".format(dest_parent)
                 )
+
+        # Must create destination for sequential data set copy
+        if (
+            src_ds_type in data_set.DataSet.MVS_SEQ
+            and not is_src_gds
+            and not src_member
+            and not os.path.exists(dest)
+            and not os.path.isdir(dest)
+        ):
+            raise CopyOperationError(
+                msg="Destination {0} does not exist. "
+                    "Create the destination file or its parent directories "
+                    "before copying from a sequential data set (PS).".format(dest)
+            )
 
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have

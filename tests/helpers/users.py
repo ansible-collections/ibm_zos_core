@@ -974,19 +974,19 @@ class ManagedUser:
         try:
             # Evaluate the results
             rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
-            if not rdefine_rc or int(rdefine_rc[0]) > 4:
+            if not rdefine_rc or int(rdefine_rc) > 4:
                 err_details = f"rdefine {saf_class} {saf_profile}"
                 err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
                 raise Exception(err_msg)
 
             permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
-            if not permit_rc or int(permit_rc[0]) > 4:
+            if not permit_rc or int(permit_rc) > 4:
                 err_details = f"permit {saf_profile} class {saf_class}"
                 err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
                 raise Exception(err_msg)
 
             setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
-            if not setropts_rc or int(setropts_rc[0]) > 4:
+            if not setropts_rc or int(setropts_rc) > 4:
                 err_details = f"setropts raclist {saf_class} refresh"
                 err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}], review output {results_stdout_lines}."
                 raise Exception(err_msg)

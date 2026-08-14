@@ -62,14 +62,15 @@ def get_job(hosts):
         job = job_n_info.split()
         return job
 
-def create_temp_dir(hosts, data_set_name, temp_path):
+SAMPLE_PDS_MEM = "SAMPLE"
+def create_pds_mem_for_job_submit(hosts, data_set_name, temp_path):
     hosts.all.file(path=temp_path, state="directory")
     hosts.all.shell(
-        cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+        cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
     )
     hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
     hosts.all.shell(
-        cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+        cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
     )
 
 # test to verify querying all jobs returns results with all expected fields populated
@@ -130,14 +131,14 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -225,14 +226,14 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -400,7 +401,7 @@ def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_py
         # Create temp PDS data set and copy JCL member into it
         data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TEMP_PATH)
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
 
         # Create Ansible temp directory with permissions for managed user to create temporary files
         ansible_tmp_dir = "/tmp/ibmz/ansible"
@@ -409,7 +410,7 @@ def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_py
 
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         # Verify job has run successfully
@@ -456,11 +457,11 @@ def managed_user_query_unauthorized_jobs(ansible_zos_module):
     temp_path = get_random_file_name(dir=TEMP_PATH)
 
     try:
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
         
         # Submit job as the managed user
         submit_results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         managed_user_job_id = None
@@ -542,11 +543,11 @@ def managed_user_query_no_ceedump(ansible_zos_module):
             cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
         )
 
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
 
         # Submit job as the managed user
         submit_results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
 
         managed_user_job_id = None
@@ -614,7 +615,7 @@ def test_managed_user_query_with_wildcard_id_and_owner(ansible_zos_module, z_pyt
         # Create temp PDS data set and copy JCL member into it
         data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TEMP_PATH)
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
 
         # Create Ansible temp directory with permissions for managed user to create temporary files
         ansible_tmp_dir = "/tmp/ibmz/ansible"
@@ -623,7 +624,7 @@ def test_managed_user_query_with_wildcard_id_and_owner(ansible_zos_module, z_pyt
 
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         # Verify job has run successfully
@@ -669,11 +670,11 @@ def managed_user_query_with_wildcard_id_and_owner(ansible_zos_module):
     temp_path = get_random_file_name(dir=TEMP_PATH)
 
     try:
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
         
         # Submit job as the managed user
         submit_results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         managed_user_job_id = None
@@ -727,7 +728,7 @@ def test_managed_user_query_with_wildcard_id_and_name(ansible_zos_module, z_pyth
         # Create temp PDS data set and copy JCL member into it
         data_set_name = get_tmp_ds_name()
         temp_path = get_random_file_name(dir=TEMP_PATH)
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
 
         # Create Ansible temp directory with permissions for managed user to create temporary files
         ansible_tmp_dir = "/tmp/ibmz/ansible"
@@ -736,7 +737,7 @@ def test_managed_user_query_with_wildcard_id_and_name(ansible_zos_module, z_pyth
 
         # Submit a job as the original user (with full permissions)
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         # Verify job has run successfully
@@ -782,11 +783,11 @@ def managed_user_query_with_wildcard_id_and_name(ansible_zos_module):
     temp_path = get_random_file_name(dir=TEMP_PATH)
 
     try:
-        create_temp_dir(hosts, data_set_name, temp_path)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
         
         # Submit job as the managed user
         submit_results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         managed_user_job_id = None
@@ -898,14 +899,14 @@ def test_zos_job_query_with_name_and_id(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         
         job_id = ""

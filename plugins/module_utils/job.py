@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -163,12 +163,31 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     """
     # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
-    if job_id != '*' and job_name != '*':
-        job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
-    elif job_id != '*':
-        job_not_found_msg = "with the job_id {0}".format(job_id.upper())
+
+    job_id_not_found = None if (not job_id or job_id == "*") else job_id.upper()
+    owner_not_found = None if (not owner or owner == "*") else owner.upper()
+    job_name_not_found = None if (not job_name or job_name == "*") else job_name.upper()
+
+    if job_name_not_found and job_id_not_found and owner_not_found:
+        job_not_found_msg = "{0} with job_id {1} and owner {2}".format(
+            job_name_not_found, job_id_not_found, owner_not_found)
+    elif job_id_not_found and owner_not_found:
+        job_not_found_msg = "with job_id {0} and owner {1}".format(
+            job_id_not_found, owner_not_found)
+    elif job_id_not_found and job_name_not_found:
+        job_not_found_msg = "{0} with job_id {1}".format(
+            job_name_not_found, job_id_not_found)
+    elif owner_not_found and job_name_not_found:
+        job_not_found_msg = "{0} with owner {1}".format(
+            job_name_not_found, owner_not_found)
+    elif job_id_not_found:
+        job_not_found_msg = "with job_id {0}".format(job_id_not_found)
+    elif owner_not_found:
+        job_not_found_msg = "owner {0}".format(owner_not_found)
+    elif job_name_not_found:
+        job_not_found_msg = "with name {0}".format(job_name_not_found)
     else:
-        job_not_found_msg = "with the name {0}".format(job_name.upper())
+        job_not_found_msg = ""
     job = {}
 
     job["job_not_found"] = True
@@ -251,9 +270,10 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         {"job_id": job_id, "owner": owner, "job_name": job_name}
     )
 
-    job_id = parsed_args.get("job_id") or "*"
+    job_id = parsed_args.get("job_id")
+    # Defaults to wildcard
     job_name = parsed_args.get("job_name") or "*"
-    owner = parsed_args.get("owner") or "*"
+    owner = parsed_args.get("owner")
 
     job_status_result = _get_job_status(
         job_id=job_id,
@@ -335,32 +355,32 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
         If no job status is found it will return a ret_code diction with
         parameter 'msg_txt" = "The job could not be found.
     """
-    if job_id == "*":
-        job_id_temp = None
-    else:
-        # Preserve the original job_id for the failure path
-        job_id_temp = job_id
+    # Preserve the original job_id for the failure path
+    job_id_temp = job_id
 
     final_entries = []
 
     # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    # Observation shows the job_name parameter is not being used, so we will drop that
-
-    # expanding > 1.3.0 of zoau, to include all params
-    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
+    try:
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+    except exceptions.JobFetchException:
+        entries = []
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
+        try:
+            entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
+        except exceptions.JobFetchException:
+            entries = []
 
     if entries:
         for entry in entries:
-            if owner != "*":
+            if owner != "*" and owner is not None:
                 if owner != entry.owner:
                     continue
-            if job_name != "*":
+            if job_name != "*" and job_name is not None:
                 if not fnmatch.fnmatch(entry.name, job_name):
                     continue
             if job_id_temp is not None:

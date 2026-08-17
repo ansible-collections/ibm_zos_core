@@ -35,6 +35,8 @@ Minor Changes
 Breaking Changes / Porting Guide
 --------------------------------
 
+* For a comprehensive guide on migrating from v1.x to v2.0.0, see :ref:`migration`.
+
 * ``zos_apf``
 
   * Sub-option `persistent.data_set_name` renamed to `persistent.target` (old name still accepted).
@@ -699,6 +701,8 @@ Known Issues
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+.. _Migration:
+   https://ibm.github.io/ibm_zos_core/source/migration/migration.html
 
 .. .............................................................................
 .. Playbook Links

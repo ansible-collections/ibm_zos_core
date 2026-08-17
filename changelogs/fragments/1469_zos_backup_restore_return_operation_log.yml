@@ -1,6 +1,6 @@
 minor_changes:
-   - zos_backup_restore - Added new response parameters(stdout, stderr, stdout_lines,
-     stderr_lines) to returns the ADRDSSU operation log  unconditionally so users can
-     inspect which data sets were selected, processed, or filtered during backup and
-     restore operations.
+   - zos_backup_restore - Added new response parameters (stdout, stderr, stdout_lines,
+     and stderr_lines) to return the ADRDSSU operation log, allowing users to inspect
+     which data sets were selected, processed, or filtered during backup and restore
+     operations.
      (https://github.com/ansible-collections/ibm_zos_core/issues/2579).

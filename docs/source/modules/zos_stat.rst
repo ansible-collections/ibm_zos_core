@@ -41,9 +41,9 @@ name
 volumes
   Name(s) of the volume(s) where the data set will be searched on.
 
-  If omitted, the module will look up the master catalog to find all volumes where a data set is allocated.
+  If omitted, the module looks up the master catalog to find all volumes where a data set is allocated.
 
-  When used, if the data set is not found in at least one volume from the list, the module will fail with a "data set not found" message.
+  When used, if the data set is not found in at least one volume from the list, the module fails with a "data set not found" message.
 
   | **required**: False
   | **type**: list
@@ -62,11 +62,11 @@ type
 sms_managed
   Whether the data set is managed by the Storage Management Subsystem.
 
-  It will cause the module to retrieve additional information, may take longer to query all attributes of a data set.
+  It causes the module to retrieve additional information, may take longer to query all attributes of a data set.
 
-  If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information will update the last referenced date of the data set.
+  If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information updates the last referenced date of the data set.
 
-  If the system finds the data set is not actually managed by SMS, the rest of the attributes will still be queried and this will be noted in the output from the task.
+  If the system finds the data set is not actually managed by SMS, the rest of the attributes are still queried and this is noted in the output from the task.
 
   | **required**: False
   | **type**: bool
@@ -76,15 +76,15 @@ sms_managed
 recall
   Whether to recall a migrated data set to fully query its attributes.
 
-  If set to ``false``, the module will return a limited amount of information for a migrated data set.
+  If set to ``false``, the module returns a limited amount of information for a migrated data set.
 
-  Recalling a data set will make the module take longer to execute.
+  Recalling a data set makes the module take longer to run.
 
   Ignored when the data set is not found to be migrated.
 
-  The data set will not be migrated again afterwards.
+  The data set is not migrated again afterwards.
 
-  The data set will not get recalled when running the module in check mode.
+  The data set is not recalled when the module runs in check mode.
 
   | **required**: False
   | **type**: bool
@@ -94,7 +94,7 @@ recall
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to run the module. If that is not available, the value of the ``TMPHLQ`` environment variable is used.
 
   | **required**: False
   | **type**: str
@@ -127,7 +127,7 @@ get_checksum
 checksum_algorithm
   Algorithm used to compute a file's checksum.
 
-  Will throw an error if the managed node is unable to use the specified algorithm.
+  Returns an error if the managed node is unable to use the specified algorithm.
 
   | **required**: False
   | **type**: str
@@ -216,11 +216,11 @@ Notes
 -----
 
 .. note::
-   When querying data sets, the module will create two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets will be removed before the module finishes execution.
+   When querying data sets, the module creates two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets are removed before the module finishes execution.
 
-   Sometimes, the system could be unable to properly determine the organization or record format of the data set or the space units used to represent its allocation. When this happens, the values for these fields will be null.
+   Sometimes the system cannot determine the organization, record format, or space allocation units for the data set. When this happens, these fields are reported as not available.
 
-   When querying a partitioned data set (PDS), if the Ansible user has RACF READ authority on it, the last referenced date will be updated by the query operation.
+   When querying a partitioned data set (PDS), if the Ansible user has RACF READ authority on it, the query operation updates the last referenced date.
 
    If you need to filter the output from the module by resource type, you can use the zos_stat_by_type filter inside of a playbook.
 
@@ -253,7 +253,7 @@ stat
   name
     Name of the resource queried.
 
-    For Generation Data Sets (GDSs), this will be the absolute name.
+    For Generation Data Sets (GDSs), this is the absolute name.
 
     | **returned**: success
     | **type**: str
@@ -471,7 +471,7 @@ stat
             ]
 
     missing_volumes
-      When using the ``volumes`` option, this field will contain every volume specified in a task where the data set was missing. Will be an empty list in any other case.
+      When using the ``volumes`` option, this field contains every volume specified in a task where the data set was missing. It is an empty list in any other case.
 
       | **returned**: success
       | **type**: list
@@ -544,7 +544,7 @@ stat
     extents_used
       Number of extents used by the data set.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
@@ -629,7 +629,7 @@ stat
     dir_blocks_allocated
       Number of directory blocks allocated for a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
@@ -638,7 +638,7 @@ stat
     dir_blocks_used
       Number of directory blocks used by a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value is not available. Refer to the ``pages_used`` and ``perc_pages_used`` fields instead.
 
       | **returned**: success
       | **type**: int
@@ -1104,7 +1104,7 @@ stat
     checksum
       Checksum of the file computed by the hashing algorithm specified in ``checksum_algorithm``.
 
-      Will be null if ``get_checksum=false``.
+      Not available when ``get_checksum=false``.
 
       | **returned**: success
       | **type**: str
@@ -1289,7 +1289,7 @@ stat
             true
 
     xoth
-      Whether others have execute permission over the file.
+      Whether others have run permission over the file.
 
       | **returned**: success
       | **type**: bool
@@ -1317,7 +1317,7 @@ stat
             true
 
     executable
-      Whether the Ansible user can execute the path.
+      Whether the Ansible user can run the path.
 
       | **returned**: success
       | **type**: bool
@@ -1369,7 +1369,7 @@ stat
     mimetype
       Output from the file utility describing the content.
 
-      Will be null if ``get_mime=false``.
+      Not available when ``get_mime=false``.
 
       | **returned**: success
       | **type**: str

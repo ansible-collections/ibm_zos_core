@@ -13,7 +13,6 @@
 galaxy_info:
   author: "Marcel Gutierrez (@AndreMarcel99)"
   description: Query a job for status and execution state
-  version_added: "2.0.0"
   company: IBM
   license: Apache-2.0
   min_ansible_version: "2.16"

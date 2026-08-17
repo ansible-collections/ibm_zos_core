@@ -651,6 +651,87 @@ stat
       | **type**: int
       | **sample**: 3
 
+    member_details
+      Details for each member in a partitioned data set including extended attributes and ISPF statistics. Set to null for non-PDS/PDSE types (sequential, VSAM, GDG) where member details do not apply.
+
+
+      | **returned**: success
+      | **type**: raw
+      | **elements**: dict
+
+      name
+        Member name
+
+        | **type**: str
+        | **sample**: MEMBER1
+
+      extended_attributes
+        SMDE extended attributes for the member
+
+        | **type**: dict
+
+        user
+          Last user that modified the member
+
+          | **type**: str
+          | **sample**: USER01
+
+        codeset
+          Coded character set identifier (CCSID).
+
+          | **type**: int
+          | **sample**: 1047
+
+        modified_time
+          Last time the member was modified (YYYY/MM/DD HH:MM:SS).
+
+          | **type**: str
+          | **sample**: 2024/01/15 10:30:45
+
+
+      ispf_statistics
+        ISPF member statistics
+
+        | **type**: dict
+
+        version
+          Version and modification level (VV.MM format)
+
+          | **type**: str
+          | **sample**: 01.05
+
+        created
+          Creation date (YYYY/MM/DD)
+
+          | **type**: str
+          | **sample**: 2024/01/15
+
+        changed
+          Last change date and time (YYYY/MM/DD HH:MM:SS)
+
+          | **type**: str
+          | **sample**: 2024/01/15 10:30:45
+
+        init
+          Initial size (number of lines)
+
+          | **type**: int
+          | **sample**: 95
+
+        mod
+          Number of lines modified since the last full save.
+
+          | **type**: int
+          | **sample**: 3
+
+        id
+          User ID who last modified the member
+
+          | **type**: str
+          | **sample**: USER01
+
+
+
     pages_allocated
       Number of pages allocated to a PDSE.
 

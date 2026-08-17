@@ -363,7 +363,6 @@ options:
           - If I(hlq) is not provided, the original HLQ remains unchanged.
         type: str
         required: false
-
 attributes:
   action:
     support: none
@@ -611,6 +610,40 @@ message:
   returned: always
   type: str
   sample: ""
+stdout:
+  description:
+    - The raw standard output captured from the ADRDSSU operation.
+    - When I(operation=backup), contains the output from the DZIP (ADRDSSU DUMP) operation.
+    - When I(operation=restore), contains the output from the DUNZIP (ADRDSSU RESTORE) operation.
+  returned: always
+  type: str
+  sample: "ADR454I (001)-DTDSC(01), THE FOLLOWING DATA SETS WERE SUCCESSFULLY PROCESSED\n
+           DYNATRAC.MEPCRC01.SZDTAUTH\nADR006I (001)-STEND(02), EXECUTION ENDS"
+stderr:
+  description:
+    - The raw standard error captured from the ADRDSSU operation.
+    - When I(operation=backup), contains the error output from the DZIP operation.
+    - When I(operation=restore), contains the error output from the DUNZIP operation.
+    - Populated when errors or warnings are encountered.
+  returned: always
+  type: str
+  sample: null
+stdout_lines:
+  description:
+    - The I(stdout) output split into a list of lines.
+  returned: always
+  type: list
+  elements: str
+  sample: ["ADR454I (001)-DTDSC(01), THE FOLLOWING DATA SETS WERE SUCCESSFULLY PROCESSED",
+           "DYNATRAC.MEPCRC01.SZDTAUTH", "ADR006I (001)-STEND(02), EXECUTION ENDS"]
+stderr_lines:
+  description:
+    - The I(stderr) output split into a list of lines.
+    - Populated when errors or warnings are encountered.
+  returned: always
+  type: list
+  elements: str
+  sample: null
 """
 
 import traceback
@@ -632,9 +665,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import Single
 try:
     from zoautil_py import datasets
     from zoautil_py import exceptions as zoau_exceptions
+    from zoautil_py.ztypes import ZOAUResponse
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
+    ZOAUResponse = ZOAUImportError(traceback.format_exc())
 
 
 def main():
@@ -645,7 +680,15 @@ def main():
     fail_json
         Any error ocurred during execution.
     """
-    result = dict(changed=False, message="", backup_name="")
+    result = dict(
+        changed=False,
+        message="",
+        backup_name="",
+        stdout=None,
+        stderr=None,
+        stdout_lines=None,
+        stderr_lines=None,
+    )
     module_args = dict(
         access=dict(
             type='dict',
@@ -760,7 +803,7 @@ def main():
             module.fail_json(msg="access.share cannot be used with full_volume. These options are mutually exclusive.")
 
         if operation == "backup":
-            backup(
+            zoau_response = backup(
                 backup_name=backup_name,
                 include_data_sets=resolve_gds_name_if_any(data_sets.get("include")),
                 exclude_data_sets=resolve_gds_name_if_any(data_sets.get("exclude")),
@@ -779,7 +822,7 @@ def main():
                 access=access,
             )
         else:
-            restore(
+            zoau_response = restore(
                 backup_name=backup_name,
                 include_data_sets=data_sets.get("include"),
                 exclude_data_sets=data_sets.get("exclude"),
@@ -796,6 +839,10 @@ def main():
                 sphere=sphere,
                 access=access,
             )
+        result["stdout"] = zoau_response.stdout_response
+        result["stderr"] = zoau_response.stderr_response
+        result["stdout_lines"] = zoau_response.stdout_response.splitlines() if zoau_response.stdout_response else []
+        result["stderr_lines"] = zoau_response.stderr_response.splitlines() if zoau_response.stderr_response else []
         result["backup_name"] = backup_name
         result["changed"] = True
 
@@ -968,10 +1015,17 @@ def backup(
         Specifies ADRDSSU keywords that is passed directly to the dunzip utility.
     access : dict
         Specifies keywords for share and administration permission.
+
+    Returns
+    -------
+    ZOAUResponse
+        The response object from dzip, containing stdout_response and stderr_response.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
-    datasets.dzip(**zoau_args)
+    zoau_response = ZOAUResponse(rc=0, stdout_response="", stderr_response="", command="", response_format="")
+    datasets.dzip(**zoau_args, response=zoau_response)
+    return zoau_response
 
 
 def restore(
@@ -1046,6 +1100,11 @@ def restore(
     access : dict
         Specifies keywords for share and administration permission.
 
+    Returns
+    -------
+    ZOAUResponse
+        The response object from dunzip, containing stdout_response and stderr_response.
+
     Raises
     ------
     ZOAUException
@@ -1053,13 +1112,11 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    dunzip_output = ""
+    zoau_response = ZOAUResponse(rc=0, stdout_response="", stderr_response="", command="", response_format="")
     try:
-        rc = datasets.dunzip(**zoau_args)
-    except zoau_exceptions.ZOAUException as dunzip_exception:
-        dunzip_output = dunzip_exception.response.stdout_response
-        dunzip_output = dunzip_output + dunzip_exception.response.stderr_response
-        rc = get_real_rc(dunzip_output)
+        rc = datasets.dunzip(**zoau_args, response=zoau_response)
+    except zoau_exceptions.ZOAUException:
+        rc = get_real_rc(zoau_response.stdout_response + zoau_response.stderr_response)
     failed = False
     if rc > 0 and rc <= 4:
         if recover is not True:
@@ -1068,8 +1125,11 @@ def restore(
         failed = True
     if failed:
         raise zoau_exceptions.ZOAUException(
-            "{0}, RC={1}".format(dunzip_output, rc)
+            "{0}, RC={1}".format(
+                zoau_response.stdout_response + zoau_response.stderr_response, rc
+            )
         )
+    return zoau_response
 
 
 def set_adrdssu_keywords(sphere, sms=None, access=None):

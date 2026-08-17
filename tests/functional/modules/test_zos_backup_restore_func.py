@@ -1824,3 +1824,126 @@ def test_restore_fails_when_names_is_empty_list(ansible_zos_module):
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
+
+
+# ---------------------------------------------------------------------------- #
+#              Tests for stdout / stderr return fields (issue 1469)            #
+# ---------------------------------------------------------------------------- #
+
+
+def assert_stdout_fields_present(results):
+    """Assert that stdout, stderr, stdout_lines and stderr_lines are all
+    returned in the module result and have the correct types.
+
+    ``stdout`` and ``stdout_lines`` must be non-empty because ADRDSSU always
+    writes at least one ADR* message on a successful operation.
+    ``stderr`` and ``stderr_lines`` may be empty on a clean run.
+    """
+    for result in results.contacted.values():
+        stdout = result.get("stdout")
+        stderr = result.get("stderr")
+        stdout_lines = result.get("stdout_lines")
+        stderr_lines = result.get("stderr_lines")
+
+        assert stdout is not None, "stdout must be present in module result"
+        assert stderr is not None, "stderr must be present in module result"
+        assert stdout_lines is not None, "stdout_lines must be present in module result"
+        assert stderr_lines is not None, "stderr_lines must be present in module result"
+
+        assert isinstance(stdout, str), \
+            f"stdout must be str, got {type(stdout)}"
+        assert isinstance(stderr, str), \
+            f"stderr must be str, got {type(stderr)}"
+        assert isinstance(stdout_lines, list), \
+            f"stdout_lines must be list, got {type(stdout_lines)}"
+        assert isinstance(stderr_lines, list), \
+            f"stderr_lines must be list, got {type(stderr_lines)}"
+
+        assert len(stdout) > 0, \
+            "stdout must not be empty — ADRDSSU always writes ADR* messages"
+        assert len(stdout_lines) > 0, \
+            "stdout_lines must not be empty when stdout is non-empty"
+
+        # stdout_lines must be the splitlines of stdout
+        assert stdout_lines == stdout.splitlines(), \
+            "stdout_lines must equal stdout.splitlines()"
+
+
+@pytest.mark.ds
+def test_backup_returns_stdout_fields(ansible_zos_module):
+    """Verify that a backup operation always populates stdout, stderr,
+    stdout_lines and stderr_lines in the module result, and that stdout
+    contains the ADRDSSU job log (ADR* messages).
+    """
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    backup_name = get_tmp_ds_name(1, 1)
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(hosts, data_set_name, DATA_SET_CONTENTS)
+
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(results)
+        assert_stdout_fields_present(results)
+
+        for result in results.contacted.values():
+            # ADRDSSU always writes ADR-prefixed messages in its output
+            assert search(r"ADR\d{3}I", result.get("stdout", "")) is not None, \
+                "stdout must contain at least one ADR*I message from ADRDSSU DUMP"
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts)
+
+
+@pytest.mark.ds
+def test_restore_returns_stdout_fields(ansible_zos_module):
+    """Verify that a restore operation always populates stdout, stderr,
+    stdout_lines and stderr_lines in the module result, and that stdout
+    contains the ADRDSSU job log with data set filtering results.
+    """
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    backup_name = get_tmp_ds_name(1, 1)
+    new_hlq = get_random_q()
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(hosts, data_set_name, DATA_SET_CONTENTS)
+
+        backup_results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(backup_results)
+
+        restore_results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            overwrite=True,
+            recover=True,
+            output=dict(hlq=new_hlq),
+        )
+        assert_module_did_not_fail(restore_results)
+        assert_stdout_fields_present(restore_results)
+
+        for result in restore_results.contacted.values():
+            stdout = result.get("stdout", "")
+            # ADRDSSU always writes ADR-prefixed messages in its output
+            assert search(r"ADR\d{3}I", stdout) is not None, \
+                "stdout must contain at least one ADR*I message from ADRDSSU RESTORE"
+            # ADR801I is the data set filtering completion message
+            assert search(r"ADR801I", stdout) is not None, \
+                "stdout must contain ADR801I (DATA SET FILTERING IS COMPLETE)"
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, backup_name)
+        delete_remnants(hosts, [new_hlq])

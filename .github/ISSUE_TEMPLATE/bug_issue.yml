@@ -33,6 +33,7 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
+        - v2.1.0-beta.1
         - v2.0.0
         - v1.16.0
         - v1.16.0-beta.1
@@ -48,7 +49,7 @@ body:
         - v1.12.0-beta.1
         - v1.11.1
         - v1.11.0
-      default: 3
+      default: 1
     validations:
       required: true
   - type: dropdown
@@ -147,6 +148,7 @@ body:
         - zos_tso_command
         - zos_unarchive
         - zos_user
+        - zos_user_info
         - zos_volume_init
         - zos_zfs_resize
         - filter_generate_data_set_name

@@ -19,11 +19,11 @@ Bugfixes
 --------
 
 - ``zos_copy`` - Added remote cleanup fix to properly handle resource cleanup so pre-existing data sets are not deleted on copy operation failures.
-- ``zos_copy`` - Fixed template rendering with ``use_template`` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
+- ``zos_copy`` - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
 - ``zos_encode`` - Updated error messaging to explicitly identify when a generation data set (GDS) does not exist or is not cataloged, which was not clear in previous error messages.
-- ``zos_job_query`` - Users would see RACF violations when ``job_id`` or ``owner`` were not set and the user lacked authority to view all jobs, as ``job_id`` and ``owner`` defaulted to ``*``. The fix now sets both defaults to ``None``, preventing overly broad job queries.
-- ``zos_job_submit`` - Fixed template rendering with ``use_template`` so that dict loop item keys resolve as flat variable names and nested variable references are fully evaluated before Jinja2 rendering.
-- ``zos_script`` - Fixed template rendering with ``use_template`` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
+- ``zos_job_query`` - Users would see RACF violations when `job_id` or `owner` were not set and the user lacked authority to view all jobs, as `job_id` and `owner` defaulted to `*``.The fix now sets both defaults to `None`, preventing overly broad job queries.
+- ``zos_job_submit`` - Fixed template rendering with `use_template` so that dict loop item keys resolve as flat variable names and nested variable references are fully evaluated before Jinja2 rendering.
+- ``zos_script`` - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
 
 New Modules
 -----------

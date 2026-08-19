@@ -561,12 +561,20 @@ def run_module():
     try:
         results = {}
         results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name, sysin=sysin)
+        not_found_msg = None
         for job in results["jobs"]:
             if "job_not_found" in job:
                 results["changed"] = False
+                not_found_msg = job.get("ret_code", {}).get("msg_txt")
                 del job['job_not_found']
             else:
                 results["changed"] = True
+        if not_found_msg is not None:
+            module.fail_json(
+                msg=not_found_msg,
+                stderr=not_found_msg,
+                changed=False
+            )
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
             msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",

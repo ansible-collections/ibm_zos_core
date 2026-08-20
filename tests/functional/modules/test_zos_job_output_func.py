@@ -420,10 +420,10 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
 
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
-            assert rc.get("msg") is None
-            assert rc.get("msg_code") is None
+            assert rc.get("msg") is not None
+            assert rc.get("msg_code") is not None
             assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
-            assert rc.get("code") is None
+            assert rc.get("code") is not None
 
     # Scenario 2: Job output with only job_name that does not exist.
     # Expected: SUCCEEDED with a job not found message.

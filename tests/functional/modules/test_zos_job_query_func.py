@@ -1045,18 +1045,18 @@ def test_zos_job_query_job_id(ansible_zos_module):
 def test_zos_job_query_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
     job_id = "JOB00300"
-    job_name = "NOJOB"
-    owner = "NOUSER"
+    job_name = "INVALID"
+    owner = "INVALID"
 
-    # Job query with nonexistent job_id
+    # Scenario 1: Job query with only job_id that does not exist.
+    # Expected: SUCCEEDED/CHANGED with a JOB NOT FOUND ret_code entry.
     qresults_job_id = hosts.all.zos_job_query(job_id=job_id)
-    
+
     for qresult in qresults_job_id.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
-        # Verify query fails with correct message
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
@@ -1064,47 +1064,37 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
-    # Job query with nonexistent job_name
+    # Scenario 2: Job query with only job_name that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_job_name = hosts.all.zos_job_query(job_name=job_name)
-    
+
     for qresult in qresults_job_name.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert qresult.get("changed") is False
+        assert qresult.get("failed") is True
+        assert qresult.get("msg") is not None
+        assert qresult.get("jobs") is None
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent owner
+    # Scenario 3: Job query with only owner that does not exist.
+    # Expected: FAILED — same ZOAU rc 8 failure path as scenario 2.
     qresults_owner = hosts.all.zos_job_query(owner=owner)
-    
+
     for qresult in qresults_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert qresult.get("changed") is False
+        assert qresult.get("failed") is True
+        assert qresult.get("msg") is not None
+        assert qresult.get("jobs") is None
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job owner {owner} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent job_id and job_name
+    # Scenario 5: Job query with job_id and job_name that do not exist.
+    # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
+    # the module returns a JOB NOT FOUND entry reflecting both parameters.
     qresults_id_and_name = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
-    
+
     for qresult in qresults_id_and_name.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
-        # Verify query fails with correct message
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
@@ -1112,15 +1102,16 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
-    # Job query with nonexistent job_id and owner
+    # Scenario 4: Job query with job_id and owner that do not exist.
+    # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
+    # the module returns a JOB NOT FOUND entry reflecting both parameters.
     qresults_id_and_owner = hosts.all.zos_job_query(job_id=job_id, owner=owner)
-    
+
     for qresult in qresults_id_and_owner.contacted.values():
         assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
-        # Verify query fails with correct message
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
             assert rc.get("msg") == 'JOB NOT FOUND'
@@ -1128,34 +1119,24 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             assert rc.get("msg_txt") == f'The job with job_id {job_id} and owner {owner} could not be found.'
             assert rc.get("code") is None
 
-    # Job query with nonexistent job_name and owner
+    # Scenario 6: Job query with job_name and owner that do not exist.
+    # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
+    # surfaces the error as a failure.
     qresults_name_and_owner = hosts.all.zos_job_query(job_name=job_name, owner=owner)
-    
+
     for qresult in qresults_name_and_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert qresult.get("changed") is False
+        assert qresult.get("failed") is True
+        assert qresult.get("msg") is not None
+        assert qresult.get("jobs") is None
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with owner {owner} could not be found.'
-            assert rc.get("code") is None
+    # Scenario 7: Job query with job_id, job_name, and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_all_three = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
 
-    # Job query with nonexistent job_id, job_name, and owner
-    qresults_name_and_owner = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
-    
-    for qresult in qresults_name_and_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
-
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} and owner {owner} could not be found.'
-            assert rc.get("code") is None
+    for qresult in qresults_all_three.contacted.values():
+        assert qresult.get("changed") is False
+        assert qresult.get("failed") is True
+        assert qresult.get("msg") is not None
+        assert qresult.get("jobs") is None

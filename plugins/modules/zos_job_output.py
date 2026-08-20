@@ -596,11 +596,72 @@ def run_module():
             else:
                 results["changed"] = True
     except zoau_exceptions.JobFetchException as fetch_exception:
-        module.fail_json(
-            msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
-            stderr=fetch_exception.response.stderr_response,
-            changed=False
-        )
+        # Determine if module should succeed with a not-found message
+        # or surface as a module failure.
+
+        # When job_name is provided as an explicit (non-wildcard) value and
+        # the job_name lookup returned no real job (only the synthetic _job_not_found
+        # sentinel), the combination is unresolvable — treat it as a success so the
+        # module surfaces an error consistent with v2.0.0 failure path.
+        job_name_explicit = job_name and job_name != "*"
+
+        if not job_name_explicit:
+            module.fail_json(
+                msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
+                stderr=fetch_exception.response.stderr_response,
+                changed=False
+            )
+            
+        # Not a fail scenario: treat the exception as "job not found" and return
+        # the synthetic sentinel so callers receive a success with a not-found message.
+        not_found_jobs = []
+        job = {}
+        
+        job["job_not_found"] = True
+        job["job_id"] = job_id
+        job["job_name"] = job_name
+        job["subsystem"] = None
+        job["system"] = None
+        job["owner"] = owner
+        job["cpu_time"] = None
+        job["execution_node"] = None
+        job["origin_node"] = None
+        job["content_type"] = None
+        job["creation_date"] = None
+        job["creation_time"] = None
+        job["execution_time"] = None
+        job["job_class"] = None
+        job["svc_class"] = None
+        job["priority"] = None
+        job["asid"] = None
+        job["queue_position"] = None
+        job["program_name"] = None
+    
+        job["ret_code"] = {}
+        job["ret_code"]["msg"] = None
+        job["ret_code"]["code"] = None
+        job["ret_code"]["msg_code"] = None
+        job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_name)
+        job["steps"] = []
+    
+        job["class"] = None
+    
+        job["dds"] = []
+        dd = {}
+        dd["dd_name"] = dd_name
+        dd["record_count"] = 0
+        dd["id"] = None
+        dd["stepname"] = None
+        dd["procstep"] = None
+        dd["byte_count"] = 0
+        dd["content"] = None
+        job["dds"].append(dd)
+        
+        not_found_jobs.append(job)
+        
+        for job in not_found_jobs:
+            del job["job_not_found"]
+        module.exit_json(changed=False, jobs=not_found_jobs)
     except Exception as e:
         module.fail_json(msg=repr(e), **results)
 

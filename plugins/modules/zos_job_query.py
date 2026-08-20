@@ -416,7 +416,10 @@ def run_module():
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
-            result["changed"] = True
+            result["changed"] = any(
+                (job.get("ret_code") or {}).get("msg") != "JOB NOT FOUND"
+                for job in jobs
+            )
         else:
             jobs = None
 

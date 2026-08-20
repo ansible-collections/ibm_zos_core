@@ -435,7 +435,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
             rc = job.get("ret_code")
             assert rc.get("msg") is None
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
+            assert rc.get("msg_txt") == f'The job {job_name} could not be found.'
             assert rc.get("code") is None
 
     # Scenario 3: Job output with only owner that does not exist.

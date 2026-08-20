@@ -465,7 +465,7 @@ def query_jobs(job_name, job_id, owner):
             raise RuntimeError(
                 "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
             )
-        
+
     return jobs
 
 

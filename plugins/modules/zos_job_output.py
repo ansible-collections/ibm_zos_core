@@ -566,7 +566,7 @@ def run_module():
                 results["changed"] = False
                 del job['job_not_found']
 
-                # When the following parameters are provided as an explicit (non-wildcard) 
+                # When the following parameters are provided as an explicit (non-wildcard)
                 # value and the lookup returned no real jobs (only the synthetic _job_not_found
                 # sentinel), the combination is unresolvable — treat it as a failure so the
                 # module surfaces an error consistent with v2.0.0 failure path.
@@ -611,12 +611,12 @@ def run_module():
                 stderr=fetch_exception.response.stderr_response,
                 changed=False
             )
-            
+
         # Not a fail scenario: treat the exception as "job not found" and return
         # the synthetic sentinel so callers receive a success with a not-found message.
         not_found_jobs = []
         job = {}
-        
+
         job["job_not_found"] = True
         job["job_id"] = job_id
         job["job_name"] = job_name
@@ -636,16 +636,15 @@ def run_module():
         job["asid"] = None
         job["queue_position"] = None
         job["program_name"] = None
-    
+
         job["ret_code"] = {}
         job["ret_code"]["msg"] = None
         job["ret_code"]["code"] = None
         job["ret_code"]["msg_code"] = None
         job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_name)
         job["steps"] = []
-    
         job["class"] = None
-    
+
         job["dds"] = []
         dd = {}
         dd["dd_name"] = dd_name
@@ -656,9 +655,9 @@ def run_module():
         dd["byte_count"] = 0
         dd["content"] = None
         job["dds"].append(dd)
-        
+
         not_found_jobs.append(job)
-        
+
         for job in not_found_jobs:
             del job["job_not_found"]
         module.exit_json(changed=False, jobs=not_found_jobs)

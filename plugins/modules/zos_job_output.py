@@ -565,6 +565,17 @@ def run_module():
             if "job_not_found" in job:
                 results["changed"] = False
                 del job['job_not_found']
+
+                # When owner is provided as an explicit (non-wildcard) value and
+                # the owner lookup returned no real jobs (only the synthetic _job_not_found
+                # sentinel), the combination is unresolvable — treat it as a failure so the
+                # module surfaces an error consistent with v2.0.0 failure path.
+                if owner and owner != "*" and not job_id and not job_name:
+                    module.fail_json(
+                        msg=job["ret_code"]["msg_txt"],
+                        stderr=job["ret_code"]["msg_txt"],
+                        changed=False
+                    )
             else:
                 results["changed"] = True
     except zoau_exceptions.JobFetchException as fetch_exception:

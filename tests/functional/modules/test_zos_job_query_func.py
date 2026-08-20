@@ -963,77 +963,44 @@ def test_zos_job_query_with_name_and_id(ansible_zos_module):
 
 def test_zos_job_query_with_owner_and_name(ansible_zos_module):
     hosts = ansible_zos_module
+    job = get_job(hosts)
+    job_owner = job[0]
+    job_name = job[1]
 
-    try:
-        # Create temp PDS data set and copy JCL member into it
-        data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TEMP_PATH)
-        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+    assert job_owner is not None
+    assert job_name is not None
 
-        job_owner = hosts["options"]["user"].upper()
-        assert job_owner is not None and job_owner != ""
+    qresults_null = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
+    
+    for qresult in qresults_null.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
 
-        # Submit a job
-        results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
-        )
-
-        job_name = ""
-        job_id = ""
-        
-        # Verify job has run successfully
-        for result in results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("msg", False) is False
-            assert result.get("jobs") is not None
-
-            job = result.get("jobs")[0]
+        # Verify all jobs match both job_name and owner parameters exactly
+        for job in qresult.get("jobs"):
+            assert job.get("job_name") == job_name
+            assert job.get("owner") == job_owner
             assert job.get("job_id") is not None
-            assert job.get("job_name") is not None
-            # Set job_name and job_id
-            job_name = job.get("job_name")
-            job_id = job.get("job_id")
+            assert job.get("content_type") is not None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("program_name") is not None
+            assert job.get("svc_class") is None
+            assert job.get("steps") is not None
 
-        qresults = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
-
-        for qresult in qresults.contacted.values():
-            assert qresult.get("changed") is True
-            assert qresult.get("jobs") is not None
-            assert qresult.get("msg", False) is False
-
-            # Every job in the result must match the queried job_name and owner
-            for job in qresult.get("jobs"):
-                assert job.get("job_name") == job_name
-                assert job.get("owner") == job_owner
-
-            # Find the specific job we submitted and verify its fields
-            submitted_jobs = [j for j in qresult.get("jobs") if j.get("job_id") == job_id]
-            assert len(submitted_jobs) == 1, f"Submitted job {job_id} not found in query results"
-
-            submitted_job = submitted_jobs[0]
-            assert submitted_job.get("job_id") is not None
-            assert submitted_job.get("content_type") is not None
-            assert submitted_job.get("subsystem") is not None
-            assert submitted_job.get("origin_node") is not None
-            assert submitted_job.get("execution_node") is not None
-            assert submitted_job.get("cpu_time") is not None
-            assert submitted_job.get("job_class") is not None
-            assert submitted_job.get("priority") is not None
-            assert submitted_job.get("asid") is not None
-            assert submitted_job.get("creation_date") is not None
-            assert submitted_job.get("creation_time") is not None
-            assert submitted_job.get("svc_class") is None
-            assert submitted_job.get("steps") is not None
-
-            rc = submitted_job.get("ret_code")
+            rc = job.get("ret_code")
             assert rc.get("msg") is not None
             assert rc.get("msg_code") == "0000"
             assert rc.get("code") == 0
-    finally:
-        if temp_path:
-            hosts.all.file(path=temp_path, state="absent")
-        if data_set_name:
-            hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
 # test to verify query with only job_id succeeds

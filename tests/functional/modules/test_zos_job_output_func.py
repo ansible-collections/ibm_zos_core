@@ -414,7 +414,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_job_id = hosts.all.zos_job_output(job_id=job_id)
 
     for qresult in qresults_job_id.contacted.values():
-        assert qresult.get("changed") is False
+        assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 

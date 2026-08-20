@@ -566,11 +566,28 @@ def run_module():
                 results["changed"] = False
                 del job['job_not_found']
 
-                # When owner is provided as an explicit (non-wildcard) value and
-                # the owner lookup returned no real jobs (only the synthetic _job_not_found
+                # When the following parameters are provided as an explicit (non-wildcard) 
+                # value and the lookup returned no real jobs (only the synthetic _job_not_found
                 # sentinel), the combination is unresolvable — treat it as a failure so the
                 # module surfaces an error consistent with v2.0.0 failure path.
-                if owner and owner != "*" and not job_id and not job_name:
+                #
+                # Cases that fail:
+                #   - owner only (no job_id, no job_name)
+                #   - job_name + owner (no job_id)
+                #   - job_id + job_name + owner (all three explicit and non-wildcard)
+                #
+                # Cases that succeed (return job not found message):
+                #   - job_id only
+                #   - job_name only
+                #   - job_id + job_name (no owner)
+                #   - job_id + owner (no job_name)
+                owner_explicit = owner and owner != "*"
+                job_name_explicit = job_name and job_name != "*"
+                should_fail = owner_explicit and (
+                    not job_id
+                    or (job_id and job_name_explicit)
+                )
+                if should_fail:
                     module.fail_json(
                         msg=job["ret_code"]["msg_txt"],
                         stderr=job["ret_code"]["msg_txt"],

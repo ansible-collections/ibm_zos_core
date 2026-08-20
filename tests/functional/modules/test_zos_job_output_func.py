@@ -400,43 +400,45 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
         assert dds.get("byte_count") == 0
         assert dds.get("content") is None
 
-# Get output for job that does not exist with different job parameters to verify job not found message
+
+# Get output for job that does not exist with different combinations of job parameters 
+# to verify correct job not found outcome
 def test_zos_job_output_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
     job_id = "JOB00300"
-    job_name = "INVALID"
-    owner = "INVALID"
+    job_name = "NOJOB"
+    owner = "NOUSER"
 
     # Scenario 1: Job output with only job_id that does not exist.
-    # Expected: SUCCEEDED/CHANGED with a JOB NOT FOUND ret_code entry.
+    # Expected: SUCCEEDED with a job not found message.
     qresults_job_id = hosts.all.zos_job_output(job_id=job_id)
 
     for qresult in qresults_job_id.contacted.values():
-        assert qresult.get("changed") is True
+        assert qresult.get("changed") is False
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
+            assert rc.get("msg") is None
             assert rc.get("msg_code") is None
             assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
     # Scenario 2: Job output with only job_name that does not exist.
-    # Expected: SUCCEEDED/CHANGED with a JOB NOT FOUND ret_code entry.
+    # Expected: SUCCEEDED with a job not found message.
     qresults_job_name = hosts.all.zos_job_output(job_name=job_name)
 
     for qresult in qresults_job_name.contacted.values():
-        assert qresult.get("changed") is True
+        assert qresult.get("changed") is False
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
+            assert rc.get("msg") is None
             assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
+            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
             assert rc.get("code") is None
 
     # Scenario 3: Job output with only owner that does not exist.
@@ -447,39 +449,40 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     for qresult in qresults_owner.contacted.values():
         assert qresult.get("changed") is False
         assert qresult.get("failed") is True
+        assert qresult.get("stderr") is not None
         assert qresult.get("msg") is not None
         assert qresult.get("jobs") is None
 
     # Scenario 4: Job output with job_id and job_name that do not exist.
-    # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
-    # the module returns a JOB NOT FOUND entry reflecting both parameters.
+    # Expected: SUCCEEDED — job_id lookup succeeds (not found) and
+    # the module returns a job not found message reflecting both parameters.
     qresults_id_and_name = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=None)
 
     for qresult in qresults_id_and_name.contacted.values():
-        assert qresult.get("changed") is True
+        assert qresult.get("changed") is False
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
+            assert rc.get("msg") is None
             assert rc.get("msg_code") is None
             assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
     # Scenario 5: Job output with job_id and owner that do not exist.
-    # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
-    # the module returns a JOB NOT FOUND entry reflecting both parameters.
+    # Expected: SUCCEEDED — job_id lookup succeeds (not found) and
+    # the module returns a job not found message reflecting both parameters.
     qresults_id_and_owner = hosts.all.zos_job_output(job_id=job_id, owner=owner)
 
     for qresult in qresults_id_and_owner.contacted.values():
-        assert qresult.get("changed") is True
+        assert qresult.get("changed") is False
         assert qresult.get("jobs") is not None
         assert qresult.get("msg", False) is False
 
         for job in qresult.get("jobs"):
             rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
+            assert rc.get("msg") is None
             assert rc.get("msg_code") is None
             assert rc.get("msg_txt") == f'The job with job_id {job_id} and owner {owner} could not be found.'
             assert rc.get("code") is None

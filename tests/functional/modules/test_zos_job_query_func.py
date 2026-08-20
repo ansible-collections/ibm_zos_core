@@ -1045,8 +1045,8 @@ def test_zos_job_query_job_id(ansible_zos_module):
 def test_zos_job_query_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
     job_id = "JOB00300"
-    job_name = "INVALID"
-    owner = "INVALID"
+    job_name = "NOJOB"
+    owner = "NOUSER"
 
     # Scenario 1: Job query with only job_id that does not exist.
     # Expected: SUCCEEDED/CHANGED with a JOB NOT FOUND ret_code entry.

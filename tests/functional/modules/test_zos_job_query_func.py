@@ -1085,7 +1085,7 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
         assert qresult.get("msg") is not None
         assert qresult.get("jobs") is None
 
-    # Scenario 5: Job query with job_id and job_name that do not exist.
+    # Scenario 4: Job query with job_id and job_name that do not exist.
     # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
     # the module returns a JOB NOT FOUND entry reflecting both parameters.
     qresults_id_and_name = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
@@ -1102,7 +1102,7 @@ def test_zos_job_query_job_not_found(ansible_zos_module):
             assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} could not be found.'
             assert rc.get("code") is None
 
-    # Scenario 4: Job query with job_id and owner that do not exist.
+    # Scenario 5: Job query with job_id and owner that do not exist.
     # Expected: SUCCEEDED/CHANGED — job_id lookup succeeds (not found) and
     # the module returns a JOB NOT FOUND entry reflecting both parameters.
     qresults_id_and_owner = hosts.all.zos_job_query(job_id=job_id, owner=owner)

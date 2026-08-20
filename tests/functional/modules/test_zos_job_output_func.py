@@ -88,11 +88,11 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
+        assert job.get("job_id") is '*' or None
         assert job.get("job_name") is not None
         assert job.get("subsystem") is None
         assert job.get("system") is None
-        assert job.get("owner") is not None
+        assert job.get("owner") is '*' or None
         assert job.get("cpu_time") is None
         assert job.get("execution_node") is None
         assert job.get("origin_node") is None

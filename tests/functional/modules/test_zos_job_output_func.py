@@ -47,6 +47,14 @@ JCL_FILE_CONTENTS_SYSIN = """//SYSINS  JOB (T043JM,JM00,1,0,0,0),'SYSINS - JRM',
 
 TEMP_PATH = "/tmp/jcl"
 
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("stderr") is not None
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
+
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="")
@@ -402,8 +410,7 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
         assert dds.get("content") is None
 
 
-# Get output for job that does not exist with different combinations of job parameters 
-# to verify correct job not found outcome
+# Verify correct output for combinations of invalid job parameters returning job not found
 def test_zos_job_output_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
     job_id = "JOB99999"
@@ -416,11 +423,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_job_id = hosts.all.zos_job_output(job_id=job_id)
 
     for qresult in qresults_job_id.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("stderr") is not None
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)
 
     # Scenario 2: Job output with only job_name that does not exist.
     # Expected: SUCCEEDED with a job not found message.
@@ -444,11 +447,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_owner = hosts.all.zos_job_output(owner=owner)
 
     for qresult in qresults_owner.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("stderr") is not None
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)
 
     # Scenario 4: Job output with job_id and job_name that do not exist.
     # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
@@ -456,11 +455,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_id_and_name = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=None)
 
     for qresult in qresults_id_and_name.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("stderr") is not None
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)
 
     # Scenario 5: Job output with job_id and owner that do not exist.
     # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
@@ -468,11 +463,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_id_and_owner = hosts.all.zos_job_output(job_id=job_id, owner=owner)
 
     for qresult in qresults_id_and_owner.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("stderr") is not None
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)
 
     # Scenario 6: Job output with job_name and owner that do not exist.
     # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
@@ -480,10 +471,7 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_name_and_owner = hosts.all.zos_job_output(job_name=job_name, owner=owner)
 
     for qresult in qresults_name_and_owner.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)
 
     # Scenario 7: Job output with job_id, job_name, and owner that do not exist.
     # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
@@ -491,7 +479,4 @@ def test_zos_job_output_job_not_found(ansible_zos_module):
     qresults_all_three = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=owner)
 
     for qresult in qresults_all_three.contacted.values():
-        assert qresult.get("changed") is False
-        assert qresult.get("failed") is True
-        assert qresult.get("msg") is not None
-        assert qresult.get("jobs") is None
+        assert_job_not_found_returns_fail(qresult)

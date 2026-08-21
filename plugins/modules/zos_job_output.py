@@ -568,25 +568,28 @@ def run_module():
 
                 # When the following parameters are provided as an explicit (non-wildcard)
                 # value and the lookup returned no real jobs (only the synthetic _job_not_found
-                # sentinel), the combination is unresolvable — treat it as a failure so the
+                # message), the combination is unresolvable — treat it as a failure so the
                 # module surfaces an error consistent with v2.0.0 failure path.
                 #
                 # Cases that fail:
-                #   - owner only (no job_id, no job_name)
-                #   - job_name + owner (no job_id)
-                #   - job_id + job_name + owner (all three explicit and non-wildcard)
+                #   - owner only
+                #   - job_id only
+                #   - job_name + owner
+                #   - job_id + job_name
+                #   - job_id + job_name + owner
                 #
                 # Cases that succeed (return job not found message):
-                #   - job_id only
                 #   - job_name only
-                #   - job_id + job_name (no owner)
-                #   - job_id + owner (no job_name)
+                # owner_explicit = owner and owner != "*"
+                # job_name_explicit = job_name and job_name != "*"
+                # should_fail = owner_explicit and (
+                #     not job_id
+                #     or (job_id and job_name_explicit)
+                # )
                 owner_explicit = owner and owner != "*"
+                job_id_explicit = job_id and job_id != "*"
                 job_name_explicit = job_name and job_name != "*"
-                should_fail = owner_explicit and (
-                    not job_id
-                    or (job_id and job_name_explicit)
-                )
+                should_fail = job_id_explicit or owner_explicit or not job_name_explicit
                 if should_fail:
                     module.fail_json(
                         msg=job["ret_code"]["msg_txt"],
@@ -605,15 +608,18 @@ def run_module():
         # with a not-found message.
         #
         # Cases that fail:
-        #   - owner only (no job_id, no job_name)
-        #   - job_name + owner (no job_id)
-        #   - job_id + job_name + owner (all three explicit and non-wildcard)
+        #   - owner only
+        #   - job_id only
+        #   - job_name + owner
+        #   - job_id + job_name
+        #   - job_id + job_name + owner
         #
         # Cases that succeed (return job not found message):
         #   - job_name only
         owner_explicit = owner and owner != "*"
+        job_id_explicit = job_id and job_id != "*"
         job_name_explicit = job_name and job_name != "*"
-        should_fail = not job_name_explicit or owner_explicit
+        should_fail = job_id_explicit or owner_explicit or not job_name_explicit
 
         if should_fail:
             module.fail_json(
@@ -651,7 +657,7 @@ def run_module():
         job["ret_code"]["msg"] = None
         job["ret_code"]["code"] = None
         job["ret_code"]["msg_code"] = None
-        job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_name)
+        job["ret_code"]["msg_txt"] = "The job with name {0} could not be found.".format(job_name)
         job["steps"] = []
         job["class"] = None
 

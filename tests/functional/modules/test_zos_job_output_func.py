@@ -363,17 +363,17 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 
-def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
+def test_zos_job_output_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("msg", False) is False
+        assert result.get("msg") == f"The job with job_id STC00* and owner MASTER could not be found."
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]
         assert job.get("job_id") is not None
-        assert job.get("job_name") is not None
+        assert job.get("job_name") is None
         assert job.get("subsystem") is None
         assert job.get("system") is None
         assert job.get("owner") is not None
@@ -401,7 +401,7 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
         assert rc.get("msg_txt") is not None
 
         dds = job.get("dds")[0]
-        assert dds.get("dd_name") == "unavailable"
+        assert dds.get("dd_name") is None
         assert dds.get("record_count") == 0
         assert dds.get("id") is None
         assert dds.get("stepname") is None

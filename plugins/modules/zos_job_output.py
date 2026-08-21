@@ -599,13 +599,23 @@ def run_module():
         # Determine if module should succeed with a not-found message
         # or surface as a module failure.
 
-        # When job_name is provided as an explicit (non-wildcard) value and
-        # the job_name lookup returned no real job (only the synthetic _job_not_found
-        # sentinel), the combination is unresolvable — treat it as a success so the
-        # module surfaces an error consistent with v2.0.0 failure path.
+        # Mirror the sentinel-path failure logic: fail when the combination is
+        # unresolvable (no job_id + owner explicit, or job_id + job_name + owner).
+        # Only a pure job_name-only lookup (no owner, no job_id) should succeed
+        # with a not-found message.
+        #
+        # Cases that fail:
+        #   - owner only (no job_id, no job_name)
+        #   - job_name + owner (no job_id)
+        #   - job_id + job_name + owner (all three explicit and non-wildcard)
+        #
+        # Cases that succeed (return job not found message):
+        #   - job_name only
+        owner_explicit = owner and owner != "*"
         job_name_explicit = job_name and job_name != "*"
+        should_fail = not job_name_explicit or owner_explicit
 
-        if not job_name_explicit:
+        if should_fail:
             module.fail_json(
                 msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
                 stderr=fetch_exception.response.stderr_response,

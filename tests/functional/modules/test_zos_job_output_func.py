@@ -369,45 +369,8 @@ def test_zos_job_output_job_id_and_owner_included(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg") == f"The job with job_id STC00* and owner MASTER could not be found."
-        assert result.get("jobs") is not None
-
-        job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
-        assert job.get("job_name") is None
-        assert job.get("subsystem") is None
-        assert job.get("system") is None
-        assert job.get("owner") is not None
-        assert job.get("cpu_time") is None
-        assert job.get("execution_node") is None
-        assert job.get("origin_node") is None
-        assert job.get("content_type") is None
-        assert job.get("creation_date") is None
-        assert job.get("creation_time") is None
-        assert job.get("execution_time") is None
-        assert job.get("job_class") is None
-        assert job.get("svc_class") is None
-        assert job.get("priority") is None
-        assert job.get("asid") is None
-        assert job.get("queue_position") is None
-        assert job.get("program_name") is None
-        assert job.get("class") is None
-        assert job.get("steps") is not None
-        assert job.get("dds") is not None
-
-        rc = job.get("ret_code")
-        assert rc.get("msg") is None
-        assert rc.get("code") is None
-        assert rc.get("msg_code") is None
-        assert rc.get("msg_txt") is not None
-
-        dds = job.get("dds")[0]
-        assert dds.get("dd_name") is None
-        assert dds.get("record_count") == 0
-        assert dds.get("id") is None
-        assert dds.get("stepname") is None
-        assert dds.get("procstep") is None
-        assert dds.get("byte_count") == 0
-        assert dds.get("content") is None
+        assert result.get("jobs") is None
+        assert_job_not_found_returns_fail(result)
 
 
 # Verify correct output for combinations of invalid job parameters returning job not found

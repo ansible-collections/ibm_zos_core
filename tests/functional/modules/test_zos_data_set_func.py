@@ -1303,19 +1303,89 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
 
 def test_sequential_data_set_delete_with_purge(ansible_zos_module):
     hosts = ansible_zos_module
-    data_set_name = get_tmp_ds_name()
+    data_set_name = get_tmp_ds_name(2, 2)
 
-    alloc_ds_command = f"ALLOC DATASET ({data_set_name}) NEW DSORG(PS) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
-    create_ds_results = hosts.all.zos_tso_command(command=alloc_ds_command)
-    for result in create_ds_results.contacted.values():
-        assert result.get("changed") is True
-        assert result.get("output")[0].get("rc") == 0
+    try:
+        alloc_ds_command = f"ALLOC DATASET ({data_set_name}) NEW DSORG(PS) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+        create_ps_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_ps_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
 
-    delete_ds_results = hosts.all.zos_data_set(name=data_set_name, type="seq", purge=True, state="absent")
-    for result in delete_ds_results.contacted.values():
-        assert result.get("changed") is True
-        assert result.get("module_stderr") is None
+        del_no_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent")
+        for result in del_no_purge_results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed", False) is True
+            assert "DatasetDeleteError" in result.get("msg")
 
-    verify_results = hosts.all.shell(cmd=f"dls '{data_set_name}'")
-    for result in verify_results.contacted.values():
-        assert data_set_name not in result.get("stdout")
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=True)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")
+
+def test_pds_data_set_delete_with_purge(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+
+    try:
+        alloc_ds_command = f"ALLOC DATASET ({data_set_name}) NEW DSORG(PO) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) DIR(5) EXPDT(2027/365) CATALOG"
+        create_pds_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_pds_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        del_no_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent")
+        for result in del_no_purge_results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed", False) is True
+            assert "DatasetDeleteError" in result.get("msg")
+
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=True)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")
+
+def test_gds_data_set_delete_with_purge(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+    gds_1 = f"{data_set_name}.G0001V00"
+
+    try:
+        create_gdg_results = hosts.all.zos_data_set(
+            name=data_set_name,
+            type="gdg",
+            state="present",
+            purge=True,
+            scratch=True,
+            limit=5,
+        )
+        for result in create_gdg_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        create_gds_results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", type="seq", state="present")
+        for result in create_gds_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        gds_expdt_results = hosts.all.zos_tso_command(command=f"ALTER '{gds_1}' TO(2027365)")
+        for result in gds_expdt_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        del_no_purge_results = hosts.all.zos_data_set(name=gds_1, state="absent")
+        for result in del_no_purge_results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed", False) is True
+            assert "DatasetDeleteError" in result.get("msg")
+
+        del_purge_results = hosts.all.zos_data_set(name=gds_1, state="absent", purge=True)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")

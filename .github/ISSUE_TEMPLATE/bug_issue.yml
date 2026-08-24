@@ -49,6 +49,7 @@ body:
         - v1.12.0-beta.1
         - v1.11.1
         - v1.11.0
+        - v1.11.0-beta.1
       default: 1
     validations:
       required: true
@@ -59,6 +60,7 @@ body:
       description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v1.4.2
         - v1.4.1
         - v1.4.0
         - v1.3.6
@@ -68,7 +70,7 @@ body:
         - v1.3.2
         - v1.3.1
         - v1.3.0
-      default: 3
+      default: 2
     validations:
       required: true
   - type: dropdown

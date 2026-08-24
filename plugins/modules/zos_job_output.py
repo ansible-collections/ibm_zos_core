@@ -580,12 +580,6 @@ def run_module():
                 #
                 # Cases that succeed (return job not found message):
                 #   - job_name only
-                # owner_explicit = owner and owner != "*"
-                # job_name_explicit = job_name and job_name != "*"
-                # should_fail = owner_explicit and (
-                #     not job_id
-                #     or (job_id and job_name_explicit)
-                # )
                 owner_explicit = owner and owner != "*"
                 job_id_explicit = job_id and job_id != "*"
                 job_name_explicit = job_name and job_name != "*"

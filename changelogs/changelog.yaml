@@ -2596,3 +2596,56 @@ releases:
         name: zos_stat_by_type
         namespace: null
     release_date: '2026-05-21'
+  2.1.0-beta.1:
+    changes:
+      bugfixes:
+      - zos_copy - Added remote cleanup fix to properly handle resource cleanup so
+        pre-existing data sets are not deleted on copy operation failures. (https://github.com/ansible-collections/ibm_zos_core/issues/2510)
+      - zos_copy - Fixed template rendering with ``use_template`` so that loop variables,
+        indices, dict keys, and nested references are correctly resolved before Jinja2
+        rendering. (https://github.com/ansible-collections/ibm_zos_core/issues/1499)
+        (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
+      - zos_encode - Updated error messaging to explicitly identify when a generation
+        data set (GDS) does not exist or is not cataloged, which was not clear in
+        previous error messages. (https://github.com/ansible-collections/ibm_zos_core/issues/2284).
+      - "zos_job_query \u2013 Users would see RACF violations when job_id or owner
+        were not set and the user lacked authority to view all jobs, as job_id and
+        owner defaulted to ``*``. The fix now sets both defaults to None, preventing
+        overly broad job queries. (https://github.com/ansible-collections/ibm_zos_core/issues/2367)."
+      - zos_job_submit - Fixed template rendering with ``use_template`` so that dict
+        loop item keys resolve as flat variable names and nested variable references
+        are fully evaluated before Jinja2 rendering. (https://github.com/ansible-collections/ibm_zos_core/issues/1071)
+        (https://github.com/ansible-collections/ibm_zos_core/issues/1499).
+      - zos_script - Fixed template rendering with ``use_template`` so that loop variables,
+        indices, dict keys, and nested references are correctly resolved before Jinja2
+        rendering. (https://github.com/ansible-collections/ibm_zos_core/issues/1499)
+        (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
+      minor_changes:
+      - zos_backup_restore - Adds support to rename datasets while restoring. (https://github.com/ansible-collections/ibm_zos_core/issues/2487)
+      - zos_stat - Adds support for retrieving and exposing ISPF statistics and extended
+        data set member listing attributes for z/OS data set members. (https://github.com/ansible-collections/ibm_zos_core/issues/2354)
+        (https://github.com/ansible-collections/ibm_zos_core/issues/2345) (https://github.com/ansible-collections/ibm_zos_core/issues/2346)
+      release_summary: 'Release Date: ''2026-08-17''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+        '
+    fragments:
+    - 2481-zos_encode_gds_specific-error_message.yml
+    - 2483-fixes-greedy-job-query-default-behavior.yml
+    - 2518_zos_stat_add_member_attributes.yml
+    - 2519_zos_backup_restore_add_rename_in_restore.yml
+    - 2521_zos_copy_remote_cleanup.yml
+    - 2527_fix_template_variable_resolution.yml
+    - v2.1.0-beta.1_summary.yml
+    modules:
+    - description: Retrieve user and group profile information from RACF
+      name: zos_user_info
+      namespace: ''
+    release_date: '2026-08-17'

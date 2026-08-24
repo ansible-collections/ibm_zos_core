@@ -6,6 +6,30 @@
 Releases
 ========
 
+Version 2.1.0-beta.1
+====================
+
+Minor Changes
+-------------
+
+- ``zos_backup_restore`` - Adds support to rename data sets while restoring.
+- ``zos_stat`` - Adds support for retrieving and exposing ISPF statistics and extended data set member listing attributes for z/OS data set members.
+
+Bugfixes
+--------
+
+- ``zos_copy`` - Added remote cleanup fix to properly handle resource cleanup so pre-existing data sets are not deleted on copy operation failures.
+- ``zos_copy`` - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
+- ``zos_encode`` - Updated error messaging to explicitly identify when a generation data set (GDS) does not exist or is not cataloged, which was not clear in previous error messages.
+- ``zos_job_query`` - Users would see RACF violations when `job_id` or `owner` were not set and the user lacked authority to view all jobs, as `job_id` and `owner` defaulted to `*``.The fix now sets both defaults to `None`, preventing overly broad job queries.
+- ``zos_job_submit`` - Fixed template rendering with `use_template` so that dict loop item keys resolve as flat variable names and nested variable references are fully evaluated before Jinja2 rendering.
+- ``zos_script`` - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering.
+
+New Modules
+-----------
+
+- ``zos_user_info`` - Retrieve user and group profile information from RACF.
+
 Version 2.0.0
 =============
 
@@ -34,6 +58,8 @@ Minor Changes
 
 Breaking Changes / Porting Guide
 --------------------------------
+
+* For a comprehensive guide on migrating from v1.x to v2.0.0, see :ref:`migration`.
 
 * ``zos_apf``
 
@@ -699,6 +725,8 @@ Known Issues
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+.. _Migration:
+   https://ibm.github.io/ibm_zos_core/source/migration/migration.html
 
 .. .............................................................................
 .. Playbook Links

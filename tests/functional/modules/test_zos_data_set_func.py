@@ -1300,3 +1300,22 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
                 {'name': dataset_2, 'state': 'absent', 'volumes': [volume]}
             ]
         )
+
+def test_sequential_data_set_delete_with_purge(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+
+    alloc_ds_command = f"ALLOC DATASET ({data_set_name}) NEW DSORG(PS) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+    create_ds_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+    for result in create_ds_results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("output")[0].get("rc") == 0
+
+    delete_ds_results = hosts.all.zos_data_set(name=data_set_name, type="seq", purge=True, state="absent")
+    for result in delete_ds_results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+
+    verify_results = hosts.all.shell(cmd=f"dls '{data_set_name}'")
+    for result in verify_results.contacted.values():
+        assert data_set_name not in result.get("stdout")

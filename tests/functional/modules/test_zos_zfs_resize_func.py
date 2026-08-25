@@ -176,7 +176,7 @@ def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
     else:
         bits_wr = 10000
 
-    hosts.all.command(
+    hosts.all.shell(
                 cmd="head -c {0} /dev/urandom > {1}/test.txt".format(
                     bits_wr,
                     temp_dir_name

@@ -49,11 +49,20 @@ body:
         - zos_ping
         - zos_replace
         - zos_script
+        - zos_started_task
         - zos_stat
         - zos_tso_command
         - zos_unarchive
+        - zos_user
+        - zos_user_info
         - zos_volume_init
         - zos_zfs_resize
+        - filter_generate_data_set_name
+        - filter_wtor
+        - filter_zos_stat_by_type
+        - role_gather_diagnostics
+        - role_job_status
+        - role_playbook_upgrade_validator
     validations:
       required: true
 

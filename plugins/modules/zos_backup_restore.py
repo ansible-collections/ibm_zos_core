@@ -327,9 +327,39 @@ options:
     type: dict
     required: false
     suboptions:
+      write:
+        description:
+          - Specifies how the module should write to the file system when performing a restore operation.
+          - When C(write=conditional) is used with option C(names), if a data set with the old name exists,
+            the module will allocate and restore the data set with the new name. Otherwise, the data set is
+            restored with the old name even if a new name is provided by the user.
+        required: false
+        type: str
+        choices:
+          - conditional
+      names:
+        description:
+          - Specifies the data set names to be used for both filtering and replacing during restore.
+          - Names must be a list of dictionaries where each dictionary is a C(key-value) pair with keys C(old) and C(new).
+          - Mutually exclusive with I(hlq), you can either set I(names) or I(hlq) but not both.
+        required: false
+        type: list
+        elements: dict
+        suboptions:
+          old:
+            description:
+              - The original data set name, the value must be a valid data set name or pattern.
+            type: str
+            required: true
+          new:
+            description:
+              - The new data set name or pattern to replace the matching C(old) data set.
+            type: str
+            required: true
       hlq:
         description:
           - Specifies the new HLQ to use for the data sets being restored.
+          - Mutually exclusive with I(names), you can either set I(hlq) or I(names) but not both.
           - If I(hlq) is not provided, the original HLQ remains unchanged.
         type: str
         required: false
@@ -456,7 +486,8 @@ EXAMPLES = r"""
     data_sets:
       include: "**.TEST"
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Only restore data sets whose last, or only qualifier is TEST.
@@ -467,14 +498,16 @@ EXAMPLES = r"""
       include: "**.TEST"
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore data sets from backup stored in the data set MY.BACKUP.DZP.
     Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP.DZP
-    hlq: MYHLQ
+    output:
+      hlq: MYHLQ
 
 - name: Restore volume from backup stored in the data set MY.BACKUP.DZP.
     Restore to volume MYVOL2.
@@ -539,6 +572,22 @@ EXAMPLES = r"""
     access:
       auth: true
       share: true
+
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Use option 'names' to match and rename data sets during restore.
+    If a data set with the old name exists, it will be restored with the new name.
+  zos_backup_restore:
+    operation: restore
+    backup_name: /tmp/temp_backup.dzp
+    output:
+      write: conditional
+      names:
+        - old: "SYS1.ANSIBLE.ONE.**"
+          new: "SYS1.ANSIBLE.NEW.ONE.**"
+        - old: "SYS1.ANSIBLE.TWO.**"
+          new: "SYS1.ANSIBLE.NEW.TWO.**"
+        - old: "SYS1.ANSIBLE.THREE"
+          new: "SYS1.ANSIBLE.NEW.THREE"
 """
 
 RETURN = r"""
@@ -640,6 +689,16 @@ def main():
             type='dict',
             required=False,
             options=dict(
+                write=dict(type="str", required=False, choices=["conditional"]),
+                names=dict(
+                    type="list",
+                    elements="dict",
+                    required=False,
+                    options=dict(
+                        old=dict(type="str", required=True),
+                        new=dict(type="str", required=True),
+                    )
+                ),
                 hlq=dict(type="str", required=False),
             )
         ),
@@ -659,6 +718,22 @@ def main():
         SingletonLogger().get_logger(module_verbosity_level)
 
         operation = params.get("operation")
+        output = params.get("output")
+        # Custom validation for mutually exclusive output parameters and mandate parameters.
+        # output is only meaningful for the restore operation.
+        if operation == "restore" and output:
+            if output.get('hlq') and output.get('names'):
+                module.fail_json(
+                    msg="Parameters 'hlq' and 'names' in 'output' are mutually exclusive."
+                )
+            # Treat names=None and names=[] as equivalent — both mean "not provided".
+            # write and names must either both be present (with names non-empty) or both absent.
+            if (output.get("write") is None) != (
+                    output.get("names") is None or len(output.get("names")) == 0):
+                module.fail_json(
+                    msg="Parameters 'write' and 'names' must be specified together."
+                )
+
         data_sets = params.get("data_sets", {})
         space = params.get("space")
         space_type = params.get("space_type", "m")
@@ -671,10 +746,9 @@ def main():
         compress = params.get("compress")
         terse = params.get("terse")
         sms = params.get("sms")
-        output = params.get("output")
         tmp_hlq = params.get("tmp_hlq")
         sphere = params.get("index")
-        access = params.get('access')
+        access = params.get("access")
 
         if sms and bool(sms.get("storage_class")) and sms.get("disable_automatic_storage_class"):
             module.fail_json(msg="storage_class and disable_automatic_storage_class are mutually exclusive, only one can be use by operation.")
@@ -816,6 +890,16 @@ def parse_and_validate_args(params):
             type='dict',
             required=False,
             options=dict(
+                write=dict(type="str", required=False, choices=["conditional"]),
+                names=dict(
+                    type="list",
+                    elements="dict",
+                    required=False,
+                    options=dict(
+                        old=dict(type="str", required=True),
+                        new=dict(type="str", required=True),
+                    )
+                ),
                 hlq=dict(type=hlq_type, required=False),
             )
         ),
@@ -930,8 +1014,24 @@ def restore(
         matching name on the target device.
     recover : bool
         Specifies if potentially recoverable errors should be ignored.
-    hlq : str
-        Specifies the new HLQ to use for the data sets being restored.
+    output : dict, optional
+        Controls how restored data sets are named on the target system.
+        write : str, optional
+            Determines the write behaviour for restored data sets.
+            Accepted value is ``conditional``. When set to ``conditional``
+            and *names* is provided, ADRDSSU renames each matching data set
+            to the corresponding new name instead of restoring it under its
+            original name.
+        names : list of dict, optional
+            A list of rename pairs used when *write* is ``conditional``.
+            Each entry must contain:
+            old : str
+                The original data set name as it exists in the backup.
+            new : str
+                The target data set name to restore to on the system.
+        hlq : str, optional
+            A high-level qualifier to prepend to every restored data set
+            name. Mutually exclusive with *names*.
     space : int
         Specifies the amount of space to allocate for data sets temporarily
         created during the restore process.
@@ -1389,8 +1489,19 @@ def to_dunzip_args(**kwargs):
         zoau_args["size"] = size
 
     output = kwargs.get("output")
-    if output and output.get("hlq"):
-        zoau_args["high_level_qualifier"] = output.get("hlq")
+    if output:
+        # Handle names parameter for rename functionality when write=conditional
+        names_list = output.get("names")
+        if output.get("write") == "conditional" and names_list:
+            rename_dict = {pair["old"]: pair["new"] for pair in names_list}
+            zoau_args["rename"] = rename_dict
+            # Set no_rename=False to enable the RENAME keyword in ADRDSSU
+            zoau_args["no_rename"] = False
+        # Handle hlq parameter (mutually exclusive with names)
+        elif output.get("hlq"):
+            zoau_args["high_level_qualifier"] = output.get("hlq")
+        else:
+            zoau_args["keep_original_hlq"] = True
     else:
         zoau_args["keep_original_hlq"] = True
 

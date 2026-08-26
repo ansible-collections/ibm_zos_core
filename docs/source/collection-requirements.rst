@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2025
+.. © Copyright IBM Corporation 2026
 .. This files (collections-requirements.rxt) contents should be contributed by
 .. all collections discussing their particular requirements. For the most part,
 .. I have kept this general but each team will need to identify their
@@ -100,6 +100,12 @@ Dependency Matrix
    +---------+----------------------------+-----------------------------------------------------+
    | Version | Control Node               | Managed Node                                        |
    +=========+============================+=====================================================+
+   | 2.1.x   |- `ansible-core`_ >=2.16.x  |- `z/OS`_ V2R5 - V3Rx                                |
+   |         |- `Ansible`_ >=9.0.x        |- `z/OS shell`_                                      |
+   |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |
+   |         |                            |- IBM `Open Enterprise SDK for Python`_              |
+   |         |                            |- IBM `Z Open Automation Utilities`_ >=1.4.1, <1.5.0 |
+   +---------+----------------------------+-----------------------------------------------------+
    | 2.0.x   |- `ansible-core`_ >=2.16.x  |- `z/OS`_ V2R5 - V3Rx                                |
    |         |- `Ansible`_ >=9.0.x        |- `z/OS shell`_                                      |
    |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                    |

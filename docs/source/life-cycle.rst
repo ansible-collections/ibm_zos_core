@@ -27,6 +27,8 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
+| 2.1.x      | In preview     | `2.1.x changelogs`_   | TBD              | TBD               | Beta phase              |
++------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 2.0.x      | Released       | `2.0.x changelogs`_   | May 2026         | May 2028          | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.16.x     | Released       | `1.16.x changelogs`_  | February 2026    | February 2028     | `Full support`_         |
@@ -45,6 +47,8 @@ its critical dates, and which type of support it's currently eligible for.
 .. .............................................................................
 .. Global Links
 .. .............................................................................
+.. _2.1.x changelogs:
+    https://github.com/ansible-collections/ibm_zos_core/blob/v2.1.0-beta.1/CHANGELOG.rst
 .. _2.0.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v2.0.0/CHANGELOG.rst
 .. _1.16.x changelogs:

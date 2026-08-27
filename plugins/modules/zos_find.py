@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,6 +32,7 @@ author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Fernando Flores (@fernandofloresg)"
+  - "Yogesh Rana (@yrana17)"
 options:
   age:
     description:
@@ -39,7 +40,7 @@ options:
       - Use a negative age to find data sets equal to or less than the specified time.
       - You can choose days, weeks, months or years by specifying the first letter of
         any of those words (e.g., "1w"). The default is days.
-      - Age is determined by using the 'referenced date' of the data set.
+      - Age is determined by the date selected with C(age_stamp) (default C(creation_date)).
     type: str
     required: false
   age_stamp:
@@ -68,6 +69,9 @@ options:
       - If the pattern is a regular expression, it must match the full data set name.
       - To exclude members, the regular expression or pattern must be enclosed in parentheses.
         This expression can be used alongside a pattern to exclude data set names.
+      - When using C(resource_type=alias), parenthesised patterns match against
+        PDS/PDSE member alias names. Members whose alias name matches are removed
+        from the C(members) list; the alias entry itself is kept.
     aliases:
       - exclude
     type: list
@@ -102,6 +106,12 @@ options:
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
       - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
+      - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
+        real dataset name it points to (returned as C(alias_of) in each result).
+      - The C(patterns), C(excludes), C(volume), C(age), C(age_stamp), C(size), C(contains), and
+        C(include_member_aliases) options are applicable when using C(alias) resource type.
+        The C(volume), C(age), C(age_stamp), C(size), and C(contains) filters are applied against
+        the target dataset (C(alias_of)), not the alias entry itself.
     aliases:
       - resource_types
     choices:
@@ -111,6 +121,7 @@ options:
       - index
       - gdg
       - migrated
+      - alias
     type: list
     elements: str
     required: false
@@ -175,6 +186,21 @@ options:
       - If provided, will search for data sets with I(scratch) attribute set as provided.
     type: bool
     required: false
+  include_member_aliases:
+    description:
+      - Only valid when C(resource_type=alias).
+      - When C(true), each PDS/PDSE alias entry in the results will include a
+        C(members) list. Each item in that list is a dict with two keys,
+        C(name) (the PDS/PDSE member name) and C(aliases) (a list of alias names
+        that point to that member). Members with no aliases are included with an
+        empty C(aliases) list. Sequential dataset alias entries are unaffected.
+      - When C(false) (the default), only the dataset alias name and the real
+        dataset it points to (C(alias_of)) are returned.
+      - Note that for C(alias) entries, C(members) is a list of dicts, whereas
+        for C(nonvsam) entries C(members) is a list of member name strings.
+    type: bool
+    required: false
+    default: false
 
 attributes:
   action:
@@ -202,6 +228,15 @@ notes:
   - When searching for content within data sets, only non-binary content is considered.
   - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
+  - When using C(resource_type=alias), the C(contains) option searches the content of the
+    target dataset (C(alias_of)). Only alias entries whose target dataset contains the
+    specified string are returned. The C(age), C(age_stamp), C(size), and C(volume) options
+    are also supported and are applied against the target dataset.
+  - Parenthesised exclude patterns (e.g. C((^ALIAS1$))) match against PDS/PDSE member alias
+    names. Members whose alias name matches the pattern are removed from the C(members) list
+    of the alias entry. The alias entry itself is kept unless all members are removed.
+  - When C(include_member_aliases=true), PDS/PDSE alias entries additionally include
+    a C(members) list showing each member and its in-directory alias names.
 seealso:
 - module: ibm.ibm_zos_core.zos_data_set
 """
@@ -277,12 +312,80 @@ EXAMPLES = r"""
       - 'migrated'
     migrated_type:
       - 'nonvsam'
+
+- name: Find all data set aliases starting with 'USER'
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+
+- name: Find aliases matching a pattern but excluding specific entries
+  zos_find:
+    patterns:
+      - MYHLQ.*
+    resource_type:
+      - alias
+    excludes:
+      - '.*TEMP.*'
+
+- name: Find all PDS/PDSE aliases and include their member alias detail
+  zos_find:
+    patterns:
+      - ANSIBLE.ALIAS.TEST.*
+    resource_type:
+      - alias
+    include_member_aliases: true
+
+- name: Find aliases whose target dataset resides on specific volumes
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    volumes:
+      - VOL001
+      - VOL002
+
+- name: Find aliases whose target dataset was created within the last 30 days
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    age: -30d
+    age_stamp: creation_date
+
+- name: Find aliases whose target dataset is larger than 1MB
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    size: 1m
+
+- name: Find aliases whose target dataset contains the string 'hello'
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type:
+      - alias
+    contains: 'hello'
 """
 
 
 RETURN = r"""
 data_sets:
-    description: All matches found with the specified criteria.
+    description:
+      - All matches found with the specified criteria.
+      - For C(alias) resource types, each entry includes an C(alias_of) field
+        containing the real dataset name the alias points to.
+      - When C(include_member_aliases=true), PDS/PDSE alias entries additionally
+        include a C(members) list of dicts. Each dict has a C(name) key
+        (the member name) and an C(aliases) key (a list of alias names for that member).
+        Members with no aliases are included with an empty C(aliases) list.
+        Note that for C(alias) entries C(members) is a list of dicts, whereas for
+        C(nonvsam) entries C(members) is a list of member name strings.
     returned: success
     type: list
     sample: [
@@ -302,6 +405,21 @@ data_sets:
       {
         "name": "SAMPLE.VSAM.DATA",
         "type": "DATA"
+      },
+      {
+        "name": "USER.ALIAS.NAME",
+        "alias_of": "USER.REAL.DATASET",
+        "type": "ALIAS"
+      },
+      {
+        "name": "USER.PDS.ALIAS",
+        "alias_of": "USER.REAL.PDS",
+        "type": "ALIAS",
+        "members": [
+          {"name": "MEM1", "aliases": ["ALIAS1", "ALIAS2"]},
+          {"name": "MEM2", "aliases": ["ALIAS3"]},
+          {"name": "MEM3", "aliases": []}
+        ]
       }
     ]
 matched:
@@ -339,7 +457,6 @@ rc:
 import re
 import time
 import datetime
-import math
 import json
 
 from re import match as fullmatch
@@ -750,7 +867,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, 
         except Exception as e:
             module.fail_json(repr(e))
 
-        return filtered_data_sets
+    return filtered_data_sets
 
 
 # TODO:
@@ -928,8 +1045,8 @@ def _age_filter(ds_date, now, age):
         Whether 'ds_date' is older than 'age'.
     """
     year, month, day = list(map(int, ds_date.split("/")))
-    if year == "0000":
-        return age >= 0
+    if year == 0:
+        return False
 
     # Seconds per day = 86400
     ds_age = datetime.datetime(year, month, day).timestamp()
@@ -968,21 +1085,20 @@ def _get_creation_date(module, ds):
             msg="Non-zero return code received while retrieving data set age",
             rc=rc, stderr=err, stdout=out
         )
-    out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
+    out = re.findall(r"CREATION-*[A-Z|0-9\.]*", out.strip())
     if out:
         out = out[0]
-        date = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
-        days = 1 if len(date) < 2 else int(date[1])
+        date = "".join(re.findall(r"-[A-Z|0-9\.]*", out)).replace("-", "").split(".")
         years = int(date[0])
-        days_per_month = 30.4167
-        return "{0}/{1}/{2}".format(
-            years,
-            math.ceil(days / days_per_month),
-            math.ceil(days % days_per_month)
-        )
+        if years == 0:
+            return "0000/1/1"
+        days = 1 if len(date) < 2 else int(date[1])
+        return datetime.datetime.strptime(
+            "{0}.{1}".format(years, days), "%Y.%j"
+        ).strftime("%Y/%m/%d")
 
-    # If no creation data is found, return default "000/1/1"
-    return "000/1/1"
+    # If no creation data is found, return default "0000/1/1"
+    return "0000/1/1"
 
 
 def _size_filter(ds_size, size):
@@ -1091,6 +1207,7 @@ def _dls_wrapper(
     migrated=False,
     data_set_type="",
     json=False,
+    members=False,
 ):
     """A wrapper for ZOAU 'dls' shell command.
 
@@ -1112,6 +1229,9 @@ def _dls_wrapper(
         Data set type to look for.
     json : bool
         Return content in json format.
+    members : bool
+        Enumerate PDS/PDSE members and member aliases (appends ``-a``).
+        Only meaningful when combined with ``data_set_type="ALIAS"``.
 
     Returns
     -------
@@ -1132,6 +1252,8 @@ def _dls_wrapper(
         dls_cmd += " -v"
     if data_set_type:
         dls_cmd += f" -t{data_set_type}"
+    if members:
+        dls_cmd += " -a"
     if json:
         dls_cmd += " -j"
 
@@ -1214,6 +1336,133 @@ def _ds_type(ds_name):
     return None
 
 
+def alias_filter(
+    module,
+    patterns,
+    excludes=None,
+    exclude_member_aliases=None,
+    include_member_aliases=False,
+    volumes=None,
+):
+    """Return all dataset catalog alias entries that match any of the patterns.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    patterns : list[str]
+        A list of data set patterns.
+    excludes : list[str], optional
+        A list of patterns. Alias dataset names matching any of these are excluded.
+    exclude_member_aliases : list[str], optional
+        A list of regex patterns (from parenthesised excludes). Members whose
+        in-directory alias name matches any of these patterns are removed from
+        the ``members`` list. The alias entry itself is kept. When this is set,
+        ``members`` is always included in the output for PDS/PDSE entries (even
+        if ``include_member_aliases=False``) so the surviving members are visible.
+    include_member_aliases : bool, optional
+        When True, pass ``-a`` to ``dls`` so that PDS/PDSE alias entries include
+        a ``members`` list in the output. All surviving members are returned;
+        those with no aliases have an empty ``aliases`` list. Sequential and GDG
+        alias entries are unaffected (no ``members`` key added).
+    volumes : list[str], optional
+        When set, only alias entries whose target dataset resides on one of the
+        specified volumes are kept. Volume information is taken from the ``volume``
+        field of the ``dls -ltALIAS -j`` JSON output.
+
+    Returns
+    -------
+    list[dict]
+        Each dict contains:
+          ``name``     (str)       -- the alias name
+          ``alias_of`` (str)       -- the real dataset the alias points to
+          ``type``     (str)       -- always "ALIAS"
+          ``members``  (list[dict]) -- present when ``include_member_aliases=True``
+            or ``exclude_member_aliases`` is set, and the alias points to a
+            PDS/PDSE with at least one surviving member. Each item is
+            ``{"name": <memname>, "aliases": [<alias_name>, ...]}``.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
+    """
+    # Fetch member info whenever we need to either expose it or filter on it.
+    need_members = include_member_aliases or bool(exclude_member_aliases)
+    filtered = []
+    for pattern in patterns:
+        rc, out, err = _dls_wrapper(
+            pattern,
+            data_set_type="ALIAS",
+            list_details=True,
+            members=need_members,
+            json=True,
+        )
+        if rc != 0:
+            if "BGYSC1103E" in err:
+                # No matching datasets found -- not an error
+                continue
+            flag_str = "dls -ltALIAS -a -j" if need_members else "dls -ltALIAS -j"
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command '{0}'".format(flag_str),
+                rc=rc, stdout=out, stderr=err
+            )
+        try:
+            data = json.loads(out)
+            datasets = data.get("data", {}).get("datasets", [])
+        except (ValueError, KeyError):
+            continue
+        for ds in datasets:
+            alias_name = ds.get("name", "")
+            if not alias_name:
+                continue
+            # Dataset-level exclude (unparenthesised patterns)
+            if excludes and any(_match_regex(module, ex, alias_name) for ex in excludes):
+                continue
+            alias_of = ds.get("relation", "")
+            # Filter by volume: alias target dataset must reside on one of the requested volumes
+            if volumes:
+                ds_volume = ds.get("volume", "")
+                if ds_volume.upper() not in {v.upper() for v in volumes}:
+                    continue
+            entry = {
+                "name": alias_name,
+                "type": "ALIAS",
+                "alias_of": alias_of,
+            }
+            if need_members:
+                # ``dls -a`` returns ALL members of a PDS/PDSE target in the
+                # JSON ``members`` array, including those with no in-directory
+                # aliases (those entries simply have no ``aliases`` key).
+                # The ``members`` key is present for any PDS/PDSE target and
+                # absent for PS/GDG targets.  Use its presence as the signal
+                # that this is a partitioned dataset – not the length of the
+                # filtered list, which can be zero when every aliased member
+                # was excluded.  Members with no aliases (empty list from
+                # ``.get("aliases", [])``) can never match the exclude and
+                # always survive into the output.
+                raw_members = ds.get("members")
+                is_partitioned = raw_members is not None
+                members = []
+                for mem in (raw_members or []):
+                    memname = mem.get("memname", "")
+                    if not memname:
+                        continue
+                    # Member-alias-level exclude (parenthesised patterns):
+                    # drop this member if any of its alias names match.
+                    if exclude_member_aliases and any(
+                        _match_regex(module, ex, ali)
+                        for ex in exclude_member_aliases
+                        for ali in mem.get("aliases", [])
+                    ):
+                        continue
+                    members.append({"name": memname, "aliases": mem.get("aliases", [])})
+                if (include_member_aliases or exclude_member_aliases) and is_partitioned:
+                    entry["members"] = members
+            filtered.append(entry)
+    return filtered
+
+
 def run_module(module):
     """Initialize parameters.
 
@@ -1257,6 +1506,7 @@ def run_module(module):
     extended = module.params.get('extended')
     migrated_type = module.params.get('migrated_type') or module.params.get('migrated_types')
     fifo = module.params.get('fifo')
+    include_member_aliases = module.params.get('include_member_aliases') or False
     vsam_types = {"CLUSTER", "DATA", "INDEX"}
     res_args = dict(data_sets=[])
     examined_ds = 0
@@ -1340,6 +1590,59 @@ def run_module(module):
             filtered_data_sets, examined = vsam_filter(module, patterns, vsam_resource_types, age=age, excludes=excludes)
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
+        elif res_type == "ALIAS":
+            filtered_data_sets = alias_filter(
+                module,
+                patterns,
+                excludes=excludes_datasets if excludes_datasets else None,
+                exclude_member_aliases=exclude_members if exclude_members else None,
+                include_member_aliases=include_member_aliases,
+                volumes=volume if volume else None,
+            )
+            # contains: search the target dataset content via dgrep.
+            # Aliases are catalog pointers with no searchable content of their
+            # own; the string must be present in the target dataset (alias_of).
+            if filtered_data_sets and contains:
+                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                content_results = content_filter(module, target_names, contains)
+                pds_hits = content_results.get("pds", {})
+                ps_hits = content_results.get("ps", set())
+                surviving = []
+                for ds in filtered_data_sets:
+                    alias_of = ds.get("alias_of")
+                    if alias_of in ps_hits:
+                        # Sequential target: alias passes as-is.
+                        surviving.append(ds)
+                    elif alias_of in pds_hits:
+                        # PDS/PDSE target: alias passes; if a members list is
+                        # present (include_member_aliases=True or a parenthesised
+                        # exclude was used), prune it to only the members whose
+                        # content matched the search string.
+                        if "members" in ds:
+                            matching_members = pds_hits[alias_of]
+                            ds = dict(ds)
+                            ds["members"] = [
+                                m for m in ds["members"]
+                                if m.get("name", "").upper() in {
+                                    n.upper() for n in matching_members
+                                }
+                            ]
+                        surviving.append(ds)
+                filtered_data_sets = surviving
+            # age / age_stamp / size filter alias entries by their target dataset.
+            # data_set_attribute_filter accepts a list of ds names and returns
+            # the subset that passes; we use alias_of as the lookup key.
+            if filtered_data_sets and (age or size):
+                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                surviving_targets = set(
+                    data_set_attribute_filter(
+                        module, target_names, size=size, age=age, age_stamp=age_stamp
+                    )
+                )
+                filtered_data_sets = [
+                    ds for ds in filtered_data_sets
+                    if ds.get("alias_of") in surviving_targets
+                ]
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:
@@ -1396,7 +1699,7 @@ def main():
                 elements="str",
                 required=False,
                 default=["nonvsam"],
-                choices=["cluster", "data", "index", "nonvsam", "gdg", "migrated"],
+                choices=["cluster", "data", "index", "nonvsam", "gdg", "migrated", "alias"],
                 aliases=["resource_types"]
             ),
             migrated_type=dict(
@@ -1419,6 +1722,7 @@ def main():
             scratch=dict(type="bool", required=False),
             extended=dict(type="bool", required=False),
             fifo=dict(type="bool", required=False),
+            include_member_aliases=dict(type="bool", required=False, default=False),
         )
     )
 
@@ -1453,6 +1757,7 @@ def main():
         scratch=dict(type="bool", required=False),
         extended=dict(type="bool", required=False),
         fifo=dict(type="bool", required=False),
+        include_member_aliases=dict(arg_type="bool", required=False, default=False),
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

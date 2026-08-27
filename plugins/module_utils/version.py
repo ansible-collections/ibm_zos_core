@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,6 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Update this version with each new release of the collection
 
-__version__ = "2.1.0"
+# Update this version with each new release of the collection.
+# Use the GA version number only (e.g. "2.1.0"), never include a pre-release
+# suffix such as "-beta.1". This value is used as a key into the
+# COMPATIBILITY_MATRIX in dependency_checker.py; the beta label is only
+# relevant to the published artifact version in galaxy.yml.
+
+__version__ = "2.2.0"

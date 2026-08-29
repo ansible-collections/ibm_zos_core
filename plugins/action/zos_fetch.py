@@ -19,7 +19,6 @@ import re
 from hashlib import sha256
 # from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
-from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
@@ -137,9 +136,9 @@ class ActionModule(ActionBase):
         msg = None
         if src is None or dest is None:
             msg = "Source and destination are required"
-        elif not isinstance(src, string_types):
+        elif not isinstance(src, str):
             msg = "Invalid type supplied for 'source' option, value must be a string"
-        elif not isinstance(dest, string_types):
+        elif not isinstance(dest, str):
             msg = (
                 "Invalid type supplied for 'destination' option, value must be a string"
             )

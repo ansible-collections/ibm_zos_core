@@ -111,7 +111,9 @@ options:
         as a USS file if the source is a PS, PDS member, GDS, or USS file, and it is interpreted as a USS
         directory if the source is a PDS, PDSE, GDG, or USS directory.
       - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
-      - If C(dest) is a USS file with nonexistent parent directories, copy will fail.
+      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is a USS file, the parent
+        directories will be created.
+      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is not a USS file, copy will fail.
       - If C(dest) is a USS file with existing parent directories but the destination does not exist, it
         will be created.
       - If C(dest) is a USS directory and C(src) is a PS, PDS member, GDS, or USS file, a file with the

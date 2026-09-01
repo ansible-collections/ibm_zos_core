@@ -1,6 +1,6 @@
 # (c) 2012, Michael DeHaan <michael.dehaan@gmail.com>
 # Copyright (c) 2017 Ansible Project
-# Copyright IBM Corporation 2020, 2022
+# Copyright IBM Corporation 2020, 2026
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -100,9 +100,29 @@ class ActionModule(ActionBase):
         return result
 
     def _configure_module(self, module_name, module_args, task_vars=None):
-        module_style, module_shebang, module_data, module_path = super(
-            ActionModule, self
-        )._configure_module(module_name, module_args, task_vars)
-        if not module_shebang:
-            module_shebang = " "
-        return (module_style, module_shebang, module_data, module_path)
+        # ansible-core 2.19+ changed _configure_module to return a 2-tuple of
+        # (_BuiltModule dataclass, module_path) instead of the previous flat
+        # 4-tuple (module_style, module_shebang, module_data, module_path).
+        # We detect the version and handle both shapes so the shebang override
+        # (required for REXX modules that carry no shebang line) works across
+        # all supported ansible-core releases.
+        version_inf = cli.CLI.version_info(False)
+        version_major = version_inf['major']
+        version_minor = version_inf['minor']
+
+        if version_major == 2 and version_minor >= 19:
+            import dataclasses
+            module_bits, module_path = super(
+                ActionModule, self
+            )._configure_module(module_name, module_args, task_vars)
+            if not module_bits.shebang:
+                # _BuiltModule is a frozen dataclass; use replace() to patch shebang
+                module_bits = dataclasses.replace(module_bits, shebang=" ")
+            return module_bits, module_path
+        else:
+            module_style, module_shebang, module_data, module_path = super(
+                ActionModule, self
+            )._configure_module(module_name, module_args, task_vars)
+            if not module_shebang:
+                module_shebang = " "
+            return (module_style, module_shebang, module_data, module_path)

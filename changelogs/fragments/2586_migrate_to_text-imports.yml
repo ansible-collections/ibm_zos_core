@@ -1,0 +1,6 @@
+bugfixes:
+  - zos_apf, zos_archive, zos_copy, zos_job_query, zos_job_submit, zos_operator,
+    zos_script, template - Migrated deprecated ``ansible.module_utils._to_text``, ``ansible.module_utils._to_byte``
+    and ``ansible.module_utils._to_native`` imports  to the new ``ansible.module_utils.common.text.converters`` 
+    location. The legacy import path is deprecated and will be removed in ansible-core 2.24.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2555).

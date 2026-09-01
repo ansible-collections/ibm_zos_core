@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -283,9 +283,12 @@ options:
     required: false
   purge:
     description:
-      - Sets the I(purge) attribute for Generation Data Groups.
-      - Specifies whether to override expiration dates when a generation data set (GDS)
-        is rolled off and the C(scratch) option is set.
+      - If C(state=present), the I(purge) attribute only applies to Generation Data Groups.
+      - If C(state=present) and C(type=gdg), the I(purge) attribute specifies whether to override expiration
+        dates when a generation data set (GDS) is rolled off and the C(scratch) option is set.
+      - If C(state=absent), the I(purge) attribute applies to PS, PDS, and PDSE data sets.
+      - If C(state=absent), the I(purge) attribute specifies whether a non-VSAM dataset can be deleted if
+        its retention period has not expired.
     type: bool
     required: false
     default: false
@@ -1535,7 +1538,7 @@ def get_data_set_handler(**params):
         )
 
 
-def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch):
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscratch, purge):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1550,8 +1553,11 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     tmp_hlq : str
         Temporary high level qualifier to use for temporary data sets.
     force : str
-        Whether or not the data set can be shared with others during the
-        operation.
+        Whether or not the data set can be shared with others during the operation.
+    noscratch : bool
+        If True, the data set is uncataloged but not physically removed from the volume.
+    purge : bool
+        If True, deletes the data set regardless of if the retention period has not expired.
 
     Returns
     -------
@@ -1570,7 +1576,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force, noscratch=noscratch)
     elif state == "absent":
-        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch)
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq, noscratch=noscratch, purge=purge)
     elif state == "cataloged":
         changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
@@ -2117,6 +2123,7 @@ def run_module():
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
                     noscratch=data_set_params.get("noscratch"),
+                    purge=data_set_params.get("purge"),
                 )
                 data_set_list.append(data_set)
                 result["changed"] = result["changed"] or current_changed

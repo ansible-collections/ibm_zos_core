@@ -2952,8 +2952,7 @@ def test_copy_ps_to_uss_file_missing_parent_dirs(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
-            assert result.get("dest_created") is not None
-            assert result.get("src") is not None
+            assert result.get("dest_created") is True
         for result in stat_with_parent_dirs_res.contacted.values():
             assert result.get("stat").get("exists") is True
         for result in verify_copy.contacted.values():
@@ -2980,9 +2979,7 @@ def test_copy_ps_to_uss_dir_missing_parent_dirs(ansible_zos_module):
         hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
-        verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest), executable=SHELL_EXECUTABLE
-        )
+        verify_copy = hosts.all.shell(cmd=f"ls {dest}", executable=SHELL_EXECUTABLE)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -2994,7 +2991,7 @@ def test_copy_ps_to_uss_dir_missing_parent_dirs(ansible_zos_module):
             assert result.get("stat").get("exists") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
-            assert result.get("stdout") == ""
+            assert len(result.get("stdout_lines")) == 1
     finally:
         hosts.all.file(path=os.path.join(TMP_DIRECTORY, "test"), state="absent")
         hosts.all.zos_data_set(name=src_ds, state="absent")
@@ -3002,7 +2999,8 @@ def test_copy_ps_to_uss_dir_missing_parent_dirs(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.pds
-def test_copy_pds_to_uss_dir_missing_parent_dirs(ansible_zos_module):
+@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+def test_copy_pds_to_uss_dir_missing_parent_dirs(ansible_zos_module, src_type):
     """
     Copy a partitioned data set to a USS path whose parent directories do not exist.
     """
@@ -3015,7 +3013,7 @@ def test_copy_pds_to_uss_dir_missing_parent_dirs(ansible_zos_module):
     try:
         ds_creation_result = hosts.all.zos_data_set(
             name=src_ds,
-            type="pds",
+            type=src_type,
             space_primary=5,
             space_type="m",
             record_format="fba",
@@ -3074,33 +3072,36 @@ def test_copy_gds_to_uss_file_missing_parent_dirs(ansible_zos_module):
 
         # Attempt to copy GDS to a USS path with missing parent dirs
         src_gds = f"{src_ds}.G0001V00"
-
         copy_res = hosts.all.zos_copy(
             src=src_gds,
             dest=dest,
             remote_src=True
         )
+        stat_res = hosts.all.stat(path=dest)
         # Copy fails - zos_copy cannot create parent directories for GDS to USS file copy
         for result in copy_res.contacted.values():
             assert result.get("msg") is not None
             assert result.get("changed") is False
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is False
 
+        # Create parent directories and re-attempt copy
         hosts.all.shell(cmd=f"mkdir -p {parent_dir}")
         copy_with_parent_dirs_res = hosts.all.zos_copy(
             src=src_gds,
             dest=dest,
             remote_src=True
         )
-        verify_dest = hosts.all.shell(
-            cmd=f"ls {dest}", executable=SHELL_EXECUTABLE
-        )
+        verify_copy = hosts.all.shell(cmd="cat {0}".format(dest), executable=SHELL_EXECUTABLE)
+
+        # Copy succeeds
         for cp_res in copy_with_parent_dirs_res.contacted.values():
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") is not None
             assert cp_res.get("dest_created") is True
             assert cp_res.get("src") is not None
-        for v_res in verify_dest.contacted.values():
+        for v_res in verify_copy.contacted.values():
             assert v_res.get("rc") == 0
             assert len(v_res.get("stdout_lines", [])) > 0
 
@@ -3112,9 +3113,48 @@ def test_copy_gds_to_uss_file_missing_parent_dirs(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.gdg
+def test_copy_gds_to_uss_dir_missing_parent_dirs(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = get_tmp_ds_name()
+    parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
+    dest = get_random_file_name(dir=parent_dir, suffix='/')
+
+    try:
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_ds}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_ds}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_ds}.G0001V00" """)
+
+        # Attempt to copy GDS to a USS path with missing parent dirs
+        src_gds = f"{src_ds}.G0001V00"
+        copy_res = hosts.all.zos_copy(
+            src=src_gds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_dest = hosts.all.shell(
+            cmd=f"ls {dest}", executable=SHELL_EXECUTABLE
+        )
+        for cp_res in copy_res.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") is not None
+            assert cp_res.get("dest_created") is True
+            assert cp_res.get("src") is not None
+        for v_res in verify_dest.contacted.values():
+            assert v_res.get("rc") == 0
+            assert len(v_res.get("stdout_lines", [])) == 1
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_ds}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_ds}")
+        hosts.all.file(path=os.path.join(TMP_DIRECTORY, "test"), state="absent")   
+
+
+@pytest.mark.uss
+@pytest.mark.gdg
 def test_copy_gdg_to_uss_dir_missing_parent_dirs(ansible_zos_module):
     """
-    Copy a GDS to a USS path whose parent directories do not exist.
+    Copy a GDG to a USS path whose parent directories do not exist.
     """
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
@@ -5016,20 +5056,20 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
 
 @pytest.mark.uss
 @pytest.mark.pdse
-@pytest.mark.parametrize("ds_type", ["pds", "pdse"])
-def test_copy_member_to_uss_file_missing_parent_dirs(ansible_zos_module, ds_type):
+@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+def test_copy_member_to_uss_file_missing_parent_dirs(ansible_zos_module, src_type):
     """
     Copy a PDS/PDSE member to a USS file path whose parent directories do not exist,
     with no trailing slash in the destination path.
     """
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(data_set)
+    src_data_set = get_tmp_ds_name()
+    src = "{0}(MEMBER)".format(src_data_set)
     parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
     dest = get_random_file_name(dir=parent_dir)
 
     try:
-        hosts.all.zos_data_set(name=data_set, state="present", type=ds_type)
+        hosts.all.zos_data_set(name=src_data_set, state="present", type=src_type)
         hosts.all.shell(
             cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src),
             executable=SHELL_EXECUTABLE
@@ -5069,58 +5109,53 @@ def test_copy_member_to_uss_file_missing_parent_dirs(ansible_zos_module, ds_type
             assert result.get("stdout") != ""
 
     finally:
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.file(path=os.path.join(TMP_DIRECTORY, "test"), state="absent")
-        hosts.all.file(path=parent_dir, state="absent")
 
 
 @pytest.mark.uss
 @pytest.mark.pdse
-@pytest.mark.parametrize("ds_type", ["pds", "pdse"])
-def test_copy_member_to_non_existing_uss_file_with_extension_missing_parents(ansible_zos_module, ds_type):
+@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+def test_copy_member_to_uss_dir_missing_parent_dirs(ansible_zos_module, src_type):
     """
-    Copy a PDS member to a USS file path that includes a file extension and whose
-    parent directories do not exist, with no trailing slash in the destination path.
-
-    src:    PDS member populated with dummy data.
-    dest:   /tmp/test/newdir/<random>.txt (file extension, no trailing slash, parent dirs absent).
-    assert: Content copies into dest file, dest is created as a regular file with the given extension,
-            content is readable.
+    Copy a PDS/PDSE member to a USS directory path whose parent directories do not exist,
+    with a trailing slash in the destination path.
     """
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(data_set)
+    src_data_set = get_tmp_ds_name()
+    src = "{0}(MEMBER)".format(src_data_set)
     parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
-    dest = get_random_file_name(dir=parent_dir, suffix='.txt')
+    dest = get_random_file_name(dir=parent_dir, suffix='/')
 
     try:
-        hosts.all.zos_data_set(name=data_set, state="present", type=ds_type)
+        hosts.all.zos_data_set(name=src_data_set, state="present", type=src_type)
         hosts.all.shell(
             cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src),
             executable=SHELL_EXECUTABLE
         )
 
+        # Attempt to copy member to a USS dir with missing parent dirs
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
-        verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), executable=SHELL_EXECUTABLE
-        )
+        verify_copy = hosts.all.shell(cmd="cat {0}/MEMBER".format(dest), executable=SHELL_EXECUTABLE)
 
+        member_file = os.path.join(dest, "MEMBER")
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == dest
+            assert result.get("dest") == member_file
             assert result.get("dest_created") is True
             assert result.get("src") is not None
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("isdir") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
 
     finally:
-        hosts.all.zos_data_set(name=data_set, state="absent")
-        hosts.all.file(path=dest, state="absent")
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
+        hosts.all.file(path=os.path.join(TMP_DIRECTORY, "test"), state="absent")
 
 
 @pytest.mark.uss
@@ -5217,56 +5252,6 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("stdout") != ""
     finally:
         # hosts.all.zos_data_set(name=src_ds, state="absent")
-        hosts.all.file(path=dest, state="absent")
-
-
-@pytest.mark.uss
-@pytest.mark.pdse
-@pytest.mark.parametrize("src_type", ["pds", "pdse"])
-def test_copy_member_to_uss_dir_missing_parents_trailing_slash(ansible_zos_module, src_type):
-    """
-    Copy a PDS member to a USS directory path whose parent directories do not exist,
-    using a trailing slash in the destination path.
-
-    src:    PDS member populated with dummy data.
-    dest:   /tmp/test/newdir/<random>/ (trailing slash, parent dirs absent).
-    assert: Copy succeeds, dest directory is created, member is present as a file inside it.
-    """
-    hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(src_ds)
-    parent_dir = os.path.join(TMP_DIRECTORY, "test", "newdir")
-    dest = get_random_file_name(dir=parent_dir, suffix='/')
-    dest_file = f"{dest}MEMBER"
-
-    try:
-        hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
-        hosts.all.shell(
-            cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src),
-            executable=SHELL_EXECUTABLE
-        )
-
-        copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
-        stat_res = hosts.all.stat(path=dest_file)
-        verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_file), executable=SHELL_EXECUTABLE
-        )
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") is not None
-            assert result.get("dest_created") is True
-            assert result.get("src") is not None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is False
-        for result in verify_copy.contacted.values():
-            assert result.get("rc") == 0
-            assert result.get("stdout") != ""
-
-    finally:
-        hosts.all.zos_data_set(name=src_ds, state="absent")
         hosts.all.file(path=dest, state="absent")
 
 

@@ -3427,6 +3427,26 @@ def update_result(res_args, original_args):
     return updated_result
 
 
+def _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content):
+    """Return true when the copy operation produces a single USS file as output.
+
+    A copy produces a USS file (rather than a USS directory tree) when the
+    source is one of the following:
+    - a USS file (not a directory),
+    - a sequential MVS data set,
+    - a PDS member,
+    - a Generation Data Set (GDS), or
+    - inline content supplied via the *content* parameter.
+    """
+    return bool(
+        (src_ds_type == "USS" and not is_src_dir)   # USS file
+        or (src_ds_type in data_set.DataSet.MVS_SEQ) # PS / SEQ
+        or src_member                                # PDS member
+        or is_src_gds                                # GDS
+        or content                                   # inline content
+    )
+
+
 def run_module(module, arg_def):
     """Initialize module
 
@@ -3617,15 +3637,6 @@ def run_module(module, arg_def):
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
 
-    # Determine whether this copy produces a USS file (vs. a USS directory).
-    src_produces_uss_file = (
-        (src_ds_type == "USS" and not is_src_dir)          # USS file
-        or (src_ds_type in data_set.DataSet.MVS_SEQ)        # PS / SEQ
-        or (src_member)                                     # PDS member
-        or (is_src_gds)                                     # GDS
-        or (content)                                        # inline content
-    )
-
     try:
         if "/" in src:
             src_ds_type = "USS"
@@ -3694,15 +3705,15 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            # If the source produces a USS file and destination is a directory, create a source basename
-            # to use as the file name added to the destination direcotry.
-            if src_produces_uss_file and (dest.endswith("/") or os.path.isdir(dest)):
-                if src_ds_type == "USS" or content:
-                    src_basename = os.path.basename(src) if not content else "inline_copy"
-                else:
-                    # For MVS sources (SEQ, member, GDS), derive the basename from the data set name.
-                    # For SEQ or GDS source, use last qualifier for output file name.
-                    src_basename = data_set.extract_member_name(src) if src_member else data_set.extract_dsname(src).split(".")[-1]
+
+            # Determine whether this copy produces a USS file (vs. a USS directory).
+            src_produces_uss_file = _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content)
+
+            # Only rewrite dest early for USS-to-USS or content copies.
+            # For MVS sources (SEQ, member, GDS), _mvs_copy_to_uss handles
+            # the basename derivation itself when dest is a directory.
+            if src_produces_uss_file and (src_ds_type == "USS" or content) and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if not content else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")
@@ -3852,7 +3863,8 @@ def run_module(module, arg_def):
         dest_ds_type == 'USS' and not os.path.isdir(dest)
         and (
             (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
-            or (raw_dest.endswith('/') and not is_src_dir)
+            # or (raw_dest.endswith('/') and not is_src_dir)
+            or (raw_dest.endswith('/') and not is_src_dir and src_ds_type != "USS")
             or src_ds_type == "GDG"
         )
     ):
@@ -3865,6 +3877,9 @@ def run_module(module, arg_def):
         # Scenario 2: Destination directory is missing and needs to be created
         else:
             try:
+                # Determine whether this copy produces a USS file (vs. a USS directory).
+                src_produces_uss_file = _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content)
+
                 dir_to_create = dest if not src_produces_uss_file else os.path.dirname(dest)
                 # Will also create nonexistent parent directories in dest path
                 os.makedirs(dir_to_create, exist_ok=True)

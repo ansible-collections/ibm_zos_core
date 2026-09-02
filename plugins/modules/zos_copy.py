@@ -1651,8 +1651,7 @@ class USSCopyHandler(CopyHandler):
         src_member,
         member_name,
         replace,
-        content_copy,
-        is_src_gds
+        content_copy
     ):
         """Copy a file or data set to a USS location.
 
@@ -1687,7 +1686,7 @@ class USSCopyHandler(CopyHandler):
 
         if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
-                src, dest, src_ds_type, src_member, member_name=member_name, is_src_gds=is_src_gds
+                src, dest, src_ds_type, src_member, member_name=member_name
             )
 
             if self.executable:
@@ -1947,7 +1946,6 @@ class USSCopyHandler(CopyHandler):
         src_ds_type,
         src_member,
         member_name=None,
-        is_src_gds=False
     ):
         """Helper function to copy an MVS data set src to USS dest.
 
@@ -1973,23 +1971,14 @@ class USSCopyHandler(CopyHandler):
             When copying the data set into USS fails.
         """
 
-        # Non-existent destination parent directories are created only for GDS sources.
-        # For PDS/PDSE members and all other sources, missing parent directories are an error.
-        dest_parent = os.path.dirname(os.path.normpath(dest))
-        if dest_parent and dest_parent != "/" and not os.path.exists(dest_parent):
-            if is_src_gds:
-                os.makedirs(dest_parent)
-            else:
-                raise CopyOperationError(
-                    msg="Destination parent directory {0} does not exist. "
-                        "Create the parent directories before running zos_copy.".format(dest_parent)
-                )
-
+        # Create copy targets inside destination directory
         if os.path.isdir(dest):
-            # If source is a data set member, destination file should have
-            # the same name as the member.
+            # Build final destination path
+            #   Member name as file name if source is a PDSE/PDSE member
+            #   Source data set name as file name if source is PDS/PDSE/GDG
             dest = "{0}/{1}".format(dest, member_name or src)
 
+            # Construct new directory if PDS/PDSE/GDG is copied
             if (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
                 try:
                     os.mkdir(dest)
@@ -3705,7 +3694,8 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            # If the source produces a USS file, create a source basename.
+            # If the source produces a USS file and destination is a directory, create a source basename
+            # to use as the file name added to the destination direcotry.
             if src_produces_uss_file and (dest.endswith("/") or os.path.isdir(dest)):
                 if src_ds_type == "USS" or content:
                     src_basename = os.path.basename(src) if not content else "inline_copy"
@@ -3850,11 +3840,14 @@ def run_module(module, arg_def):
             )
 
     # ********************************************************************
-    # Handle partitioned data set to USS directory copy when destination
+    # Handle PDS/PDSE/GDG to USS directory copy when destination
     # does not exist
     # ********************************************************************
-    # Verify source is a partitioned data set and is not a PDS member,
-    # the destination type is USS, and the destination does not exist:
+    # Verify the destination type is USS and the destination does not exist.
+    # Verify one of the following:
+    #    The source is a partitioned data set 
+    #    The source ends with a trailing slash and is intended to be a directory
+    #    The source is a GDG
     if (
         dest_ds_type == 'USS' and not os.path.isdir(dest)
         and (
@@ -3863,7 +3856,7 @@ def run_module(module, arg_def):
             or src_ds_type == "GDG"
         )
     ):
-        # Scenario 1: Module fails if user attempts to write PDS (not member) to 
+        # Scenario 1: Module fails if user attempts to write data set (not member) to 
         # USS file (i.e. a non-directory)
         if os.path.isfile(dest):
             module.fail_json(
@@ -4071,8 +4064,7 @@ def run_module(module, arg_def):
                 src_member,
                 member_name,
                 replace,
-                bool(content),
-                is_src_gds
+                bool(content)
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None

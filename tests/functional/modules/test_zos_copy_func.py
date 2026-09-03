@@ -5002,19 +5002,23 @@ def test_copy_member_to_uss_dir_missing_parent_dirs(ansible_zos_module, src_type
 
         # Attempt to copy member to a USS dir with missing parent dirs
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
-        stat_res = hosts.all.stat(path=dest)
-        verify_copy = hosts.all.shell(cmd="cat {0}/MEMBER".format(dest), executable=SHELL_EXECUTABLE)
-
         member_file = os.path.join(dest, "MEMBER")
+        stat_dest = hosts.all.stat(path=dest)
+        stat_member = hosts.all.stat(path=member_file)
+        verify_copy = hosts.all.shell(cmd="cat {0}".format(member_file), executable=SHELL_EXECUTABLE)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == member_file
+            assert result.get("dest") == dest
             assert result.get("dest_created") is True
             assert result.get("src") is not None
-        for result in stat_res.contacted.values():
+        for result in stat_dest.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is True
+        for result in stat_member.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isreg") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""

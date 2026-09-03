@@ -607,6 +607,7 @@ def run_module():
         #   - job_name + owner
         #   - job_id + job_name
         #   - job_id + job_name + owner
+        #   - job_id + owner - fails with sentinel not-found message instead of ZOAU error
         #
         # Cases that succeed (return job not found message):
         #   - job_name only
@@ -616,11 +617,22 @@ def run_module():
         should_fail = job_id_explicit or owner_explicit or not job_name_explicit
 
         if should_fail:
-            module.fail_json(
-                msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
-                stderr=fetch_exception.response.stderr_response,
-                changed=False
-            )
+            if (job_id_explicit and owner_explicit):
+              parts = []
+              parts.append(f"job_id {job_id}")
+              parts.append(f"owner {owner}")
+              not_found_msg = "The job with {0} could not be found.".format(" and ".join(parts))
+              module.fail_json(
+                  msg=not_found_msg,
+                  stderr=not_found_msg,
+                  changed=False
+              )
+            else:
+              module.fail_json(
+                  msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
+                  stderr=fetch_exception.response.stderr_response,
+                  changed=False
+              )
 
         # Not a fail scenario: treat the exception as "job not found" and return
         # the synthetic sentinel so callers receive a success with a not-found message.

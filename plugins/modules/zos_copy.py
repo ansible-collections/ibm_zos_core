@@ -1945,7 +1945,7 @@ class USSCopyHandler(CopyHandler):
         dest,
         src_ds_type,
         src_member,
-        member_name=None,
+        member_name=None
     ):
         """Helper function to copy an MVS data set src to USS dest.
 
@@ -3863,7 +3863,6 @@ def run_module(module, arg_def):
         dest_ds_type == 'USS' and not os.path.isdir(dest)
         and (
             (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
-            # or (raw_dest.endswith('/') and not is_src_dir)
             or (raw_dest.endswith('/') and not is_src_dir and src_ds_type != "USS")
             or src_ds_type == "GDG"
         )
@@ -3879,7 +3878,6 @@ def run_module(module, arg_def):
             try:
                 # Determine whether this copy produces a USS file (vs. a USS directory).
                 src_produces_uss_file = _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content)
-
                 dir_to_create = dest if not src_produces_uss_file else os.path.dirname(dest)
                 # Will also create nonexistent parent directories in dest path
                 os.makedirs(dir_to_create, exist_ok=True)

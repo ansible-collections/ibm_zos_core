@@ -4772,7 +4772,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 
 
 @pytest.mark.uss
-@pytest.mark.pds
+@pytest.mark.pdse
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_pds_to_uss_dir_missing_parent_dirs(ansible_zos_module, src_type):
     """
@@ -7093,7 +7093,7 @@ def test_copy_file_to_seq_data_set_max_name_length(ansible_zos_module):
 
 
 # This test is added to validate the fix for the GitHub issue #2510
-@pytest.mark.pds
+@pytest.mark.pdse
 def test_copy_file_to_pds_member_with_lrecl_mismatch_cleanup(ansible_zos_module):
     """
     Test remote cleanup functionality when copy fails due to LRECL mismatch.
@@ -7646,8 +7646,7 @@ def test_copy_file_to_new_gds_with_lrecl_mismatch_cleanup(ansible_zos_module):
         hosts.all.zos_data_set(name=gdg_base, state="absent")
 
 
-
-@pytest.mark.pds
+@pytest.mark.pdse
 def test_copy_pds_members_bulk_with_partial_failure_cleanup(ansible_zos_module):
     """
     Test remote cleanup functionality for bulk PDS member copy with partial failures.

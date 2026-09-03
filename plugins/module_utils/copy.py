@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
+import os
 import traceback
 from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -157,6 +158,11 @@ def copy_gdg2uss(src, dest, binary=False, asa_text=False):
 
     if binary or asa_text:
         copy_args["options"] = "-B"
+
+    # dest must exist as a directory before any copy call because
+    # datasets.copy (dcp) writes each generation as a file inside it
+    if not path.exists(dest):
+        os.makedirs(dest)
 
     for gds in generations:
         dest_file = path.join(dest, gds.name)

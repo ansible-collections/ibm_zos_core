@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_copy - Added fix to enable MVS data sets (sequential, PDS, PDSE, and GDS), PDS members, and GDGs to
+    successfully copy to a non-existent USS directory.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2525)

@@ -102,10 +102,25 @@ options:
   dest:
     description:
       - The remote absolute path or data set where the content should be copied to.
-      - C(dest) can be a USS file, directory or MVS data set name.
-      - C(dest) can be a alias name of a PS, PDS or PDSE data set.
-      - If C(dest) has missing parent directories, they will be created.
-      - If C(dest) is a nonexistent USS file, it will be created.
+      - C(dest) can be a USS file, USS directory, or MVS data set name.
+      - C(dest) can be an alias name of a PS, PDS, or PDSE data set.
+      - If C(dest) is a USS path with a trailing slash, it will always be interpreted as a USS directory.
+      - If C(dest) is has a USS path with no trailing slash but the C(dest) exists on the system,
+        the existing destination type is used to determine whether the destination is a USS file or directory.
+      - If C(dest) is a USS path with no trailing slash and the C(dest) does not exist, it is interpreted
+        as a USS file if the source is a PS, PDS member, GDS, or USS file, and it is interpreted as a USS
+        directory if the source is a PDS, PDSE, GDG, or USS directory.
+      - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
+      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is a USS file, the parent
+        directories will be created.
+      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is not a USS file, copy will fail.
+      - If C(dest) is a USS file with existing parent directories but the destination does not exist, it
+        will be created.
+      - If C(dest) is a USS directory and C(src) is a PS, PDS member, GDS, or USS file, a file with the
+        name of the C(src) will be copied into the C(dest).
+      - If C(dest) is a USS directory and C(src) is a PDSE, PDSE, GDG, or USS directory, a directory with
+        the name of the source will be copied into the C(dest).
+      - If C(dest) is a USS file, the C(source) contents will be copied into the C(dest).
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
         either the system's default locale or the encoding option defined. If the USS file is
         a replacement, the user must have write authority to the file either through ownership,
@@ -1636,7 +1651,7 @@ class USSCopyHandler(CopyHandler):
         src_member,
         member_name,
         replace,
-        content_copy,
+        content_copy
     ):
         """Copy a file or data set to a USS location.
 
@@ -1956,11 +1971,14 @@ class USSCopyHandler(CopyHandler):
             When copying the data set into USS fails.
         """
 
+        # Create copy targets inside destination directory
         if os.path.isdir(dest):
-            # If source is a data set member, destination file should have
-            # the same name as the member.
+            # Build final destination path
+            #   Member name as file name if source is a PDSE/PDSE member
+            #   Source data set name as file name if source is PDS/PDSE/GDG
             dest = "{0}/{1}".format(dest, member_name or src)
 
+            # Construct new directory if PDS/PDSE/GDG is copied
             if (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
                 try:
                     os.mkdir(dest)
@@ -3409,6 +3427,26 @@ def update_result(res_args, original_args):
     return updated_result
 
 
+def _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content):
+    """Return true when the copy operation produces a single USS file as output.
+
+    A copy produces a USS file (rather than a USS directory tree) when the
+    source is one of the following:
+    - a USS file (not a directory),
+    - a sequential MVS data set,
+    - a PDS member,
+    - a Generation Data Set (GDS), or
+    - inline content supplied via the *content* parameter.
+    """
+    return bool(
+        (src_ds_type == "USS" and not is_src_dir)   # USS file
+        or (src_ds_type in data_set.DataSet.MVS_SEQ) # PS / SEQ
+        or src_member                                # PDS member
+        or is_src_gds                                # GDS
+        or content                                   # inline content
+    )
+
+
 def run_module(module, arg_def):
     """Initialize module
 
@@ -3598,6 +3636,7 @@ def run_module(module, arg_def):
     # characters. We'll only update these variables when they are
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
+
     try:
         if "/" in src:
             src_ds_type = "USS"
@@ -3666,7 +3705,14 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+
+            # Determine whether this copy produces a USS file (vs. a USS directory).
+            src_produces_uss_file = _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content)
+
+            # Only rewrite dest early for USS-to-USS or content copies.
+            # For MVS sources (SEQ, member, GDS), _mvs_copy_to_uss handles
+            # the basename derivation itself when dest is a directory.
+            if src_produces_uss_file and (src_ds_type == "USS" or content) and (dest.endswith("/") or os.path.isdir(dest)):
                 src_basename = os.path.basename(src) if not content else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
                 if dest.startswith("//"):
@@ -3805,15 +3851,49 @@ def run_module(module, arg_def):
             )
 
     # ********************************************************************
-    # Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+    # Handle PDS/PDSE/GDG to USS directory copy when destination
+    # does not exist
     # ********************************************************************
+    # Verify the destination type is USS and the destination does not exist.
+    # Verify one of the following:
+    #    The source is a partitioned data set 
+    #    The source ends with a trailing slash and is intended to be a directory
+    #    The source is a GDG
     if (
-        src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
-        and dest_ds_type == 'USS' and not os.path.isdir(dest)
-    ):
-        module.fail_json(
-            msg="Cannot write a partitioned data set (PDS) to a USS file."
+        dest_ds_type == 'USS' and not os.path.isdir(dest)
+        and (
+            (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
+            or (raw_dest.endswith('/') and not is_src_dir and src_ds_type != "USS")
+            or src_ds_type == "GDG"
         )
+    ):
+        # Scenario 1: Module fails if user attempts to write data set (not member) to 
+        # USS file (i.e. a non-directory)
+        if os.path.isfile(dest):
+            module.fail_json(
+                msg="Cannot write a partitioned data set (PDS) to a USS file."
+            )
+        # Scenario 2: Destination directory is missing and needs to be created
+        else:
+            try:
+                # Determine whether this copy produces a USS file (vs. a USS directory).
+                src_produces_uss_file = _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, content)
+                dir_to_create = dest if not src_produces_uss_file else os.path.dirname(dest)
+                # Will also create nonexistent parent directories in dest path
+                os.makedirs(dir_to_create, exist_ok=True)
+                res_args["dest_created"] = True
+                dest_exists = True
+            except PermissionError:
+                module.fail_json(
+                    msg="Unable to create USS directory '{0}': permission denied. "
+                        "Verify the Ansible user has write access to the parent directory.".format(dir_to_create),
+                    dest_exists=dest_exists
+                )
+            except OSError as err:
+                module.fail_json(
+                    msg="Unable to create USS directory '{0}': {1}".format(dir_to_create, str(err)),
+                    dest_exists=dest_exists
+                )
 
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
@@ -3838,8 +3918,9 @@ def run_module(module, arg_def):
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
 
     # ********************************************************************
-    # If destination does not exist, it must be created. To determine
-    # what type of data set destination must be, a couple of simple checks
+    # If destination does not exist, it must be created. To be created,
+    # the destination data set type is required. To determine
+    # what type a data set destination must be, a couple of simple checks
     # can be done. For example:
     # 1. Destination must be a PDS/PDSE if:
     #   - The source is a local directory
@@ -3854,6 +3935,7 @@ def run_module(module, arg_def):
     # is a data set (is_src_dir and is_mvs_dest are true)
     # ********************************************************************
     else:
+        # Set destination data set type
         if not dest_ds_type:
             if (
                 is_pds
@@ -3899,6 +3981,7 @@ def run_module(module, arg_def):
         original_src = src
         src = converted_src
 
+    # Allocate destination data set
     try:
         if not is_uss:
             res_args["changed"], res_args["dest_data_set_attrs"], resolved_dest = allocate_destination_data_set(
@@ -3981,7 +4064,7 @@ def run_module(module, arg_def):
 
             original_checksum = None
             if dest_exists:
-                res_args["dest_created"] = False
+                res_args.setdefault("dest_created", False)
                 original_checksum = get_file_checksum(dest)
             else:
                 res_args["dest_created"] = True

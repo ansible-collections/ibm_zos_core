@@ -1,0 +1,16 @@
+bugfixes:
+  - zos_job_submit - Fixed template rendering with ``use_template`` so that
+    dict loop item keys resolve as flat variable names and nested variable 
+    references are fully evaluated before Jinja2 rendering.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1071)
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1499).
+  - zos_copy - Fixed template rendering with ``use_template`` so that loop
+    variables, indices, dict keys, and nested references are correctly
+    resolved before Jinja2 rendering.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1499)
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
+  - zos_script - Fixed template rendering with ``use_template`` so that loop
+    variables, indices, dict keys, and nested references are correctly
+    resolved before Jinja2 rendering.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1499)
+    (https://github.com/ansible-collections/ibm_zos_core/issues/1071).

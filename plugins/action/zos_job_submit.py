@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,7 +16,6 @@ __metaclass__ = type
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.utils.display import Display
-# from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
@@ -25,6 +24,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 from datetime import datetime
 from os import path
+
 
 display = Display()
 
@@ -122,10 +122,14 @@ class ActionModule(ActionBase):
                         source_full,
                         encoding.get("from", None)
                     )
+
                     template_dir, rendered_file = renderer.render_file_template(
                         os.path.basename(source_full),
-                        task_vars
+                        task_vars,
+                        templar=self._templar,
+                        display=display
                     )
+
                 except Exception as err:
                     result["msg"] = to_text(err)
                     result["failed"] = True

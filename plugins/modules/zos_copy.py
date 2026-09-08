@@ -105,16 +105,12 @@ options:
       - C(dest) can be a USS file, USS directory, or MVS data set name.
       - C(dest) can be an alias name of a PS, PDS, or PDSE data set.
       - If C(dest) is a USS path with a trailing slash, it will always be interpreted as a USS directory.
-      - If C(dest) is has a USS path with no trailing slash but the C(dest) exists on the system,
-        the existing destination type is used to determine whether the destination is a USS file or directory.
       - If C(dest) is a USS path with no trailing slash and the C(dest) does not exist, it is interpreted
         as a USS file if the source is a PS, PDS member, GDS, or USS file, and it is interpreted as a USS
         directory if the source is a PDS, PDSE, GDG, or USS directory.
       - If C(dest) is a USS directory with nonexistent parent directories, they will be created.
-      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is a USS file, the parent
-        directories will be created.
-      - If C(dest) is a USS file with nonexistent parent directories and the C(src) is not a USS file, copy will fail.
-      - If C(dest) is a USS file with existing parent directories but the destination does not exist, it
+      - If C(dest) is a USS file, the parent directories specified in the C(dest) path must exist for copy
+        to succeed. However, if both the C(src) and C(dest) is a USS file, nonexistent parent directories
         will be created.
       - If C(dest) is a USS directory and C(src) is a PS, PDS member, GDS, or USS file, a file with the
         name of the C(src) will be copied into the C(dest).
@@ -1974,7 +1970,7 @@ class USSCopyHandler(CopyHandler):
         # Create copy targets inside destination directory
         if os.path.isdir(dest):
             # Build final destination path
-            #   Member name as file name if source is a PDSE/PDSE member
+            #   Member name as file name if source is a PDS/PDSE member
             #   Source data set name as file name if source is PDS/PDSE/GDG
             dest = "{0}/{1}".format(dest, member_name or src)
 
@@ -3439,11 +3435,11 @@ def _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, cont
     - inline content supplied via the *content* parameter.
     """
     return bool(
-        (src_ds_type == "USS" and not is_src_dir)   # USS file
-        or (src_ds_type in data_set.DataSet.MVS_SEQ) # PS / SEQ
-        or src_member                                # PDS member
-        or is_src_gds                                # GDS
-        or content                                   # inline content
+        (src_ds_type == "USS" and not is_src_dir)     # USS file
+        or (src_ds_type in data_set.DataSet.MVS_SEQ)  # PS / SEQ
+        or src_member                                 # PDS member
+        or is_src_gds                                 # GDS
+        or content                                    # inline content
     )
 
 
@@ -3856,7 +3852,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     # Verify the destination type is USS and the destination does not exist.
     # Verify one of the following:
-    #    The source is a partitioned data set 
+    #    The source is a partitioned data set
     #    The source ends with a trailing slash and is intended to be a directory
     #    The source is a GDG
     if (
@@ -3867,7 +3863,7 @@ def run_module(module, arg_def):
             or src_ds_type == "GDG"
         )
     ):
-        # Scenario 1: Module fails if user attempts to write data set (not member) to 
+        # Scenario 1: Module fails if user attempts to write data set (not member) to
         # USS file (i.e. a non-directory)
         if os.path.isfile(dest):
             module.fail_json(

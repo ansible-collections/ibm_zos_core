@@ -162,7 +162,7 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining primary and secondary space.
-      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
     type: str
     choices:
       - k
@@ -170,6 +170,7 @@ options:
       - g
       - cyl
       - trk
+      - blk
     required: false
     default: m
   record_format:
@@ -484,7 +485,7 @@ options:
       space_type:
         description:
           - The unit of measurement to use when defining primary and secondary space.
-          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
         type: str
         choices:
           - k
@@ -492,6 +493,7 @@ options:
           - g
           - cyl
           - trk
+          - blk
         required: false
         default: m
       record_format:
@@ -1132,10 +1134,10 @@ def space_type(contents, dependencies):
         return "m"
     if contents is None:
         return None
-    match = re.fullmatch(r"(m|g|k|trk|cyl)", contents, re.IGNORECASE)
+    match = re.fullmatch(r"(m|g|k|trk|cyl|blk)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk", "cyl" or "blk".'.format(
                 contents
             )
         )
@@ -1618,7 +1620,7 @@ def parse_and_validate_args(params):
                     type=space_type,
                     required=False,
                     dependencies=["state"],
-                    choices=["k", "m", "g", "cyl", "trk"],
+                    choices=["k", "m", "g", "cyl", "trk", "blk"],
                     default="m",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
@@ -1735,7 +1737,7 @@ def parse_and_validate_args(params):
             type=space_type,
             required=False,
             dependencies=["state"],
-            choices=["k", "m", "g", "cyl", "trk"],
+            choices=["k", "m", "g", "cyl", "trk", "blk"],
             default="m",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
@@ -1925,7 +1927,7 @@ def run_module():
                     type="str",
                     required=False,
                     default="m",
-                    choices=["k", "m", "g", "cyl", "trk"],
+                    choices=["k", "m", "g", "cyl", "trk", "blk"],
                 ),
                 space_primary=dict(type="int", required=False, default=5),
                 space_secondary=dict(type="int", required=False, default=3),
@@ -1997,7 +1999,7 @@ def run_module():
             type="str",
             required=False,
             default="m",
-            choices=["k", "m", "g", "cyl", "trk"],
+            choices=["k", "m", "g", "cyl", "trk", "blk"],
         ),
         space_primary=dict(type="int", required=False, default=5),
         space_secondary=dict(type="int", required=False, default=3),

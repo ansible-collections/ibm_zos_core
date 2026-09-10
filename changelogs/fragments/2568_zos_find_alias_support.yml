@@ -1,0 +1,22 @@
+minor_changes:
+  - zos_find - Added ``alias`` as a ``resource_type`` option to discover
+    catalog alias entries. Returned aliases include an ``alias_of`` field that
+    identifies the associated target data set. When searching aliases, the
+    ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` filters are
+    applied to the target data set rather than the alias entry itself
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+  - zos_find - Added the ``include_member_aliases`` option to return PDS/PDSE
+    member alias information when searching for catalog alias entries
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+bugfixes:
+  - zos_find - Updated the ``age`` parameter documentation for accuracy and
+    clarity to correctly describe how positive and negative values select data
+    sets older than or younger than the specified threshold.
+  - zos_find - Corrected the ``creation_date`` parsing and calculation logic
+    to properly handle Julian-date-to-calendar-date conversion when retrieving
+    data set age from IDCAMS LISTCAT output.
+  - zos_find - Resolved a ``year 0 is out of range`` module failure that
+    occurred when a data set's ``creation_date`` was reported as year zero by
+    the catalog; such entries are now safely handled and excluded from age
+    comparisons.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2446).

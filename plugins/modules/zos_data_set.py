@@ -286,7 +286,7 @@ options:
       - If C(state=present), the I(purge) attribute only applies to Generation Data Groups.
       - If C(state=present) and C(type=gdg), the I(purge) attribute specifies whether to override expiration
         dates when a generation data set (GDS) is rolled off and the C(scratch) option is set.
-      - If C(state=absent), the I(purge) attribute applies to PS, PDS, and PDSE data sets.
+      - If C(state=absent), the I(purge) attribute only applies to PS, PDS, and PDSE data sets.
       - If C(state=absent), the I(purge) attribute specifies whether to override a non-VSAM dataset expiration
         date to physically delete the data set from the volume.
     type: bool
@@ -680,7 +680,12 @@ attributes:
   check_mode:
     support: full
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+notes:
+  - When C(state=absent), if C(purge=false) and C(scratch=true), a data set with an unreached expiration date is not removed from the catalog or physically deleted from the volume.
+  - When C(state=absent) and C(scratch=false), the data set is always removed from the catalog but not physically deleted from the volume.
 """
+
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist
   zos_data_set:

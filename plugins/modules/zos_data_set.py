@@ -1552,7 +1552,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force, noscra
         Whether or not replace an existing data set if it has the same name.
     tmp_hlq : str
         Temporary high level qualifier to use for temporary data sets.
-    force : str
+    force : bool
         Whether or not the data set can be shared with others during the operation.
     noscratch : bool
         If True, the data set is uncataloged but not physically removed from the volume.

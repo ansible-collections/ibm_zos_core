@@ -1,7 +1,8 @@
 objects:
   role:
     gather_diagnostics:
-      description: Gathers diagnostic data from z/OS managed nodes and the control node
+      description: Gathers diagnostic data from z/OS managed nodes and the control
+        node
       name: gather_diagnostics
       version_added: 2.0.0
     job_status:
@@ -9,7 +10,7 @@ objects:
       name: job_status
       version_added: 2.0.0
     playbook_upgrade_validator:
-      description: Validate playbooks for IBM z/OS Core migration changes
+      description: Build a report to migrate playbooks to v2.0.0
       name: playbook_upgrade_validator
       version_added: 2.0.0
 plugins:
@@ -166,6 +167,11 @@ plugins:
       name: zos_user
       namespace: ''
       version_added: 2.0.0
+    zos_user_info:
+      description: Retrieve user and group profile information from RACF
+      name: zos_user_info
+      namespace: ''
+      version_added: 2.1.0
     zos_volume_init:
       description: Initialize volumes or minidisks.
       name: zos_volume_init
@@ -181,4 +187,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 2.0.0
+version: 2.1.0-beta.1

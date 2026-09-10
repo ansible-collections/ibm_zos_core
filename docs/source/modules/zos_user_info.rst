@@ -31,11 +31,11 @@ Parameters
 name
   The RACF profile name to retrieve.
 
-  For :emphasis:`profile\_type=user`\ , this must be a single user ID.
+  For *profile_type=user*, this must be a single user ID.
 
-  For :emphasis:`profile\_type=group`\ , this must be a single group name.
+  For *profile_type=group*, this must be a single group name.
 
-  The name is case\-insensitive and is normalized to uppercase before execution.
+  The name is case-insensitive and is normalized to uppercase before execution.
 
   The name is a single continuous string with no spaces or blank characters.
 
@@ -46,9 +46,9 @@ name
 profile_type
   Specifies the type of RACF profile to retrieve information about.
 
-  When :emphasis:`profile\_type=user`\ , retrieves user profile information using the LISTUSER command.
+  When *profile_type=user*, retrieves user profile information using the LISTUSER command.
 
-  When :emphasis:`profile\_type=group`\ , retrieves group profile information using the LISTGRP command.
+  When *profile_type=group*, retrieves group profile information using the LISTGRP command.
 
   | **required**: True
   | **type**: str
@@ -58,17 +58,17 @@ profile_type
 segments
   List of RACF segments to retrieve from the profile.
 
-  If not specified, only the base profile information (\ :literal:`base\_segment`\ ) is retrieved.
+  If not specified, only the base profile information (``base_segment``) is retrieved.
 
-  When :emphasis:`profile\_type=user`\ , valid segments are :literal:`dfp`\ , :literal:`tso`\ , :literal:`omvs`\ , :literal:`operparm`\ , :literal:`lang`\ , :literal:`csdata`\ , :literal:`cics`\ , :literal:`dce`\ , :literal:`eim`\ , :literal:`ovm`\ , :literal:`netview`\ , :literal:`nds`\ , :literal:`lnotes`\ , :literal:`workattr`\ , :literal:`proxy`\ , and :literal:`kerb`.
+  When *profile_type=user*, valid segments are ``dfp``, ``tso``, ``omvs``, ``operparm``, ``lang``, ``csdata``, ``cics``, ``dce``, ``eim``, ``ovm``, ``netview``, ``nds``, ``lnotes``, ``workattr``, ``proxy``, and ``kerb``.
 
-  When :emphasis:`profile\_type=group`\ , valid segments are :literal:`dfp`\ , :literal:`omvs`\ , :literal:`ovm`\ , and :literal:`csdata`.
+  When *profile_type=group*, valid segments are ``dfp``, ``omvs``, ``ovm``, and ``csdata``.
 
-  The :literal:`base\_segment` section is always retrieved regardless of this parameter.
+  The ``base_segment`` section is always retrieved regardless of this parameter.
 
-  Segments that do not apply to the requested :emphasis:`profile\_type` are ignored.
+  Segments that do not apply to the requested *profile_type* are ignored.
 
-  For example, user\-only segments are ignored for group profiles.
+  For example, user-only segments are ignored for group profiles.
 
   | **required**: False
   | **type**: list
@@ -161,7 +161,7 @@ Return Values
 
 
 changed
-  Indicates whether any changes were made to the system. Always :literal:`false` for info modules.
+  Indicates whether any changes were made to the system. Always ``false`` for info modules.
 
   | **returned**: always
   | **type**: bool
@@ -174,7 +174,8 @@ cmd
   | **sample**: LISTUSER TESTU01 TSO OMVS
 
 rc
-  Return code from the RACF command execution. Returns 0 on success, or a non\-zero value on failure (for example, 8 when the profile is not found).
+  Return code from the RACF command execution. Returns 0 on success, or a non-zero value on failure (for example, 8 when the profile is not found).
+
 
   | **returned**: always
   | **type**: int
@@ -187,13 +188,15 @@ stdout
   | **sample**: USER=TESTU01  NAME=TEST USER 01  OWNER=ADMIN01  CREATED=2025/01/10
 
 stderr
-  Standard error from the RACF command execution. The TSO command itself is not included; it is available in the :literal:`cmd` field.
+  Standard error from the RACF command execution. The TSO command itself is not included; it is available in the ``cmd`` field.
+
 
   | **returned**: always
   | **type**: str
 
 msg
   Error message describing the failure.
+
 
   | **returned**: failure
   | **type**: str
@@ -202,7 +205,7 @@ msg
 segments
   Dictionary of RACF profile information organized by segment.
 
-  Always includes :literal:`base\_segment` and :literal:`group` or :literal:`users`. Additional segments are only present if specified in the :emphasis:`segments` option.
+  Always includes ``base_segment`` and ``group`` or ``users``. Additional segments are only present if specified in the *segments* option.
 
   Keys and values are dynamic based on RACF output. Segments with no data are returned as empty dictionaries.
 
@@ -210,15 +213,15 @@ segments
   | **type**: dict
 
   base_segment
-    Base profile information, always returned regardless of the :emphasis:`segments` parameter.
+    Base profile information, always returned regardless of the *segments* parameter.
 
-    When :emphasis:`profile\_type=user`\ , contains user attributes such as :literal:`USER\-ID`\ , :literal:`NAME`\ , :literal:`DEFAULT\-GROUP`\ , :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`PASSDATE`\ , :literal:`PASS\-INTERVAL`\ , and :literal:`ATTRIBUTES`.
+    When *profile_type=user*, contains user attributes such as ``USER-ID``, ``NAME``, ``DEFAULT-GROUP``, ``OWNER``, ``CREATED``, ``PASSDATE``, ``PASS-INTERVAL``, and ``ATTRIBUTES``.
 
-    When :emphasis:`profile\_type=group`\ , contains group attributes such as :literal:`OWNER`\ , :literal:`CREATED`\ , :literal:`SUPERIOR GROUP`\ , :literal:`INSTALLATION DATA`\ , :literal:`SUBGROUP(S`\ ), :literal:`TERMUACC`\ , and :literal:`UNIVERSAL`.
+    When *profile_type=group*, contains group attributes such as ``OWNER``, ``CREATED``, ``SUPERIOR GROUP``, ``INSTALLATION DATA``, ``SUBGROUP(S``), ``TERMUACC``, and ``UNIVERSAL``.
 
     The exact keys present depend on the profile's RACF configuration.
 
-    :literal:`ATTRIBUTES` and :literal:`CLASS AUTHORIZATIONS` are always returned as lists.
+    ``ATTRIBUTES`` and ``CLASS AUTHORIZATIONS`` are always returned as lists.
 
     | **returned**: always
     | **type**: dict
@@ -243,9 +246,9 @@ segments
   group
     Group connection information for user profiles, keyed by group name.
 
-    Each value contains connection attributes such as :literal:`AUTH`\ , :literal:`CONNECT\-OWNER`\ , :literal:`CONNECT\-DATE`\ , :literal:`LAST\-CONNECT`\ , :literal:`REVOKE DATE`\ , :literal:`RESUME DATE`\ , and :literal:`CONNECT ATTRIBUTES`.
+    Each value contains connection attributes such as ``AUTH``, ``CONNECT-OWNER``, ``CONNECT-DATE``, ``LAST-CONNECT``, ``REVOKE DATE``, ``RESUME DATE``, and ``CONNECT ATTRIBUTES``.
 
-    Only returned when :emphasis:`profile\_type=user`.
+    Only returned when *profile_type=user*.
 
     | **returned**: when profile_type=user
     | **type**: dict
@@ -266,9 +269,9 @@ segments
   users
     Connected user information for group profiles, keyed by username.
 
-    Each value contains connection attributes such as :literal:`ACCESS`\ , :literal:`ACCESS COUNT`\ , :literal:`UNIVERSAL ACCESS`\ , :literal:`REVOKE DATE`\ , :literal:`RESUME DATE`\ , and :literal:`CONNECT ATTRIBUTES`.
+    Each value contains connection attributes such as ``ACCESS``, ``ACCESS COUNT``, ``UNIVERSAL ACCESS``, ``REVOKE DATE``, ``RESUME DATE``, and ``CONNECT ATTRIBUTES``.
 
-    Only returned when :emphasis:`profile\_type=group`.
+    Only returned when *profile_type=group*.
 
     | **returned**: when profile_type=group
     | **type**: dict
@@ -294,11 +297,11 @@ segments
   TSO
     TSO segment information for user profiles.
 
-    Contains dynamic key\-value pairs such as :literal:`ACCTNUM`\ , :literal:`PROC`\ , :literal:`SIZE`\ , :literal:`MAXSIZE`\ , :literal:`JOBCLASS`\ , :literal:`MSGCLASS`\ , :literal:`SYSOUTCLASS`\ , :literal:`USERDATA`\ , :literal:`COMMAND`\ , etc.
+    Contains dynamic key-value pairs such as ``ACCTNUM``, ``PROC``, ``SIZE``, ``MAXSIZE``, ``JOBCLASS``, ``MSGCLASS``, ``SYSOUTCLASS``, ``USERDATA``, ``COMMAND``, etc.
 
     The exact keys present depend on the user's TSO configuration in RACF.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`tso` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``tso`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies tso
     | **type**: dict
@@ -316,11 +319,11 @@ segments
   OMVS
     OMVS segment information for user and group profiles.
 
-    Contains dynamic key\-value pairs such as :literal:`UID`\ , :literal:`HOME`\ , :literal:`PROGRAM`\ , :literal:`CPUTIMEMAX`\ , :literal:`ASSIZEMAX`\ , :literal:`FILEPROCMAX`\ , :literal:`PROCUSERMAX`\ , etc.
+    Contains dynamic key-value pairs such as ``UID``, ``HOME``, ``PROGRAM``, ``CPUTIMEMAX``, ``ASSIZEMAX``, ``FILEPROCMAX``, ``PROCUSERMAX``, etc.
 
     The exact keys present depend on the OMVS configuration in RACF.
 
-    Only returned when :literal:`omvs` is included in the :emphasis:`segments` parameter.
+    Only returned when ``omvs`` is included in the *segments* parameter.
 
     | **returned**: when segments specifies omvs
     | **type**: dict
@@ -339,11 +342,11 @@ segments
   DFP
     DFP (Data Facility Product) segment information for user and group profiles.
 
-    Contains dynamic key\-value pairs related to data management such as :literal:`MGMTCLAS`\ , :literal:`STORCLAS`\ , :literal:`DATACLAS`\ , etc.
+    Contains dynamic key-value pairs related to data management such as ``MGMTCLAS``, ``STORCLAS``, ``DATACLAS``, etc.
 
     The exact keys present depend on the DFP configuration in RACF.
 
-    Only returned when :literal:`dfp` is included in the :emphasis:`segments` parameter.
+    Only returned when ``dfp`` is included in the *segments* parameter.
 
     | **returned**: when segments specifies dfp
     | **type**: dict
@@ -360,13 +363,13 @@ segments
   OPERPARM
     OPERPARM segment information for user profiles.
 
-    Contains operator parameters such as :literal:`STORAGE`\ , :literal:`AUTH`\ , :literal:`ALTGRP`\ , :literal:`AUTO`\ , :literal:`HC`\ , :literal:`INTIDS`\ , :literal:`LEVEL`\ , :literal:`LOGCMDRESP`\ , :literal:`MIGID`\ , etc.
+    Contains operator parameters such as ``STORAGE``, ``AUTH``, ``ALTGRP``, ``AUTO``, ``HC``, ``INTIDS``, ``LEVEL``, ``LOGCMDRESP``, ``MIGID``, etc.
 
-    :literal:`MONITOR`\ , :literal:`MSCOPE`\ , :literal:`MFORM`\ , and :literal:`ROUTCODE` are always returned as lists.
+    ``MONITOR``, ``MSCOPE``, ``MFORM``, and ``ROUTCODE`` are always returned as lists.
 
     The exact keys present depend on the operator configuration in RACF.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`operparm` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``operparm`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies operparm
     | **type**: dict
@@ -398,11 +401,11 @@ segments
   LANGUAGE
     LANGUAGE segment information for user profiles.
 
-    Contains language\-related settings such as :literal:`PRIMARY` and :literal:`SECONDARY` language codes.
+    Contains language-related settings such as ``PRIMARY`` and ``SECONDARY`` language codes.
 
     The exact keys present depend on the language configuration in RACF.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`lang` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``lang`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies lang
     | **type**: dict
@@ -418,11 +421,11 @@ segments
   CSDATA
     CSDATA (Custom Data) segment information for user and group profiles.
 
-    Contains custom application\-specific data defined in RACF.
+    Contains custom application-specific data defined in RACF.
 
     The exact keys present depend on what custom data has been configured for the profile.
 
-    Only returned when :literal:`csdata` is included in the :emphasis:`segments` parameter.
+    Only returned when ``csdata`` is included in the *segments* parameter.
 
     | **returned**: when segments specifies csdata
     | **type**: dict
@@ -430,9 +433,9 @@ segments
   CICS
     CICS segment information for user profiles.
 
-    Contains CICS\-related configuration and resource limits.
+    Contains CICS-related configuration and resource limits.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`cics` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``cics`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies cics
     | **type**: dict
@@ -440,9 +443,9 @@ segments
   DCE
     DCE (Distributed Computing Environment) segment information for user profiles.
 
-    Contains DCE\-related configuration and identifiers.
+    Contains DCE-related configuration and identifiers.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`dce` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``dce`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies dce
     | **type**: dict
@@ -450,9 +453,9 @@ segments
   EIM
     EIM (Enterprise Identity Mapping) segment information for user profiles.
 
-    Contains EIM\-related configuration and mappings.
+    Contains EIM-related configuration and mappings.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`eim` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``eim`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies eim
     | **type**: dict
@@ -460,9 +463,9 @@ segments
   OVM
     OVM (OpenExtensions VM) segment information for user and group profiles.
 
-    Contains OVM\-related configuration and settings.
+    Contains OVM-related configuration and settings.
 
-    Only returned when :literal:`ovm` is included in the :emphasis:`segments` parameter.
+    Only returned when ``ovm`` is included in the *segments* parameter.
 
     | **returned**: when segments specifies ovm
     | **type**: dict
@@ -470,9 +473,9 @@ segments
   NETVIEW
     NETVIEW segment information for user profiles.
 
-    Contains NetView\-related configuration and authorities.
+    Contains NetView-related configuration and authorities.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`netview` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``netview`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies netview
     | **type**: dict
@@ -480,9 +483,9 @@ segments
   NDS
     NDS (Network Directory Services) segment information for user profiles.
 
-    Contains NDS\-related configuration and identifiers.
+    Contains NDS-related configuration and identifiers.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`nds` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``nds`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies nds
     | **type**: dict
@@ -490,9 +493,9 @@ segments
   LNOTES
     LNOTES (Lotus Notes) segment information for user profiles.
 
-    Contains Lotus Notes\-related configuration and settings.
+    Contains Lotus Notes-related configuration and settings.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`lnotes` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``lnotes`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies lnotes
     | **type**: dict
@@ -500,9 +503,9 @@ segments
   WORKATTR
     WORKATTR (Work Attributes) segment information for user profiles.
 
-    Contains work\-related attributes and organizational information.
+    Contains work-related attributes and organizational information.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`workattr` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``workattr`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies workattr
     | **type**: dict
@@ -510,9 +513,9 @@ segments
   PROXY
     PROXY segment information for user profiles.
 
-    Contains proxy\-related configuration and authorities.
+    Contains proxy-related configuration and authorities.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`proxy` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``proxy`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies proxy
     | **type**: dict
@@ -520,9 +523,9 @@ segments
   KERB
     KERB (Kerberos) segment information for user profiles.
 
-    Contains Kerberos\-related configuration, principals, and encryption settings.
+    Contains Kerberos-related configuration, principals, and encryption settings.
 
-    Only returned when :emphasis:`profile\_type=user` and :literal:`kerb` is included in the :emphasis:`segments` parameter.
+    Only returned when *profile_type=user* and ``kerb`` is included in the *segments* parameter.
 
     | **returned**: when profile_type is user and segments specifies kerb
     | **type**: dict

@@ -351,8 +351,47 @@ output
   | **type**: dict
 
 
+  write
+    Specifies how the module should write to the file system when performing a restore operation.
+
+    When ``write=conditional`` is used with option ``names``, if a data set with the old name exists, the module will allocate and restore the data set with the new name. Otherwise, the data set is restored with the old name even if a new name is provided by the user.
+
+    | **required**: False
+    | **type**: str
+    | **choices**: conditional
+
+
+  names
+    Specifies the data set names to be used for both filtering and replacing during restore.
+
+    Names must be a list of dictionaries where each dictionary is a ``key-value`` pair with keys ``old`` and ``new``.
+
+    Mutually exclusive with *hlq*, you can either set *names* or *hlq* but not both.
+
+    | **required**: False
+    | **type**: list
+    | **elements**: dict
+
+
+    old
+      The original data set name, the value must be a valid data set name or pattern.
+
+      | **required**: True
+      | **type**: str
+
+
+    new
+      The new data set name or pattern to replace the matching ``old`` data set.
+
+      | **required**: True
+      | **type**: str
+
+
+
   hlq
     Specifies the new HLQ to use for the data sets being restored.
+
+    Mutually exclusive with *names*, you can either set *hlq* or *names* but not both.
 
     If *hlq* is not provided, the original HLQ remains unchanged.
 
@@ -473,7 +512,8 @@ Examples
        data_sets:
          include: "**.TEST"
        backup_name: /tmp/temp_backup.dzp
-       hlq: MYHLQ
+       output:
+         hlq: MYHLQ
 
    - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
        Only restore data sets whose last, or only qualifier is TEST.
@@ -484,14 +524,16 @@ Examples
          include: "**.TEST"
        volume: MYVOL2
        backup_name: /tmp/temp_backup.dzp
-       hlq: MYHLQ
+       output:
+         hlq: MYHLQ
 
    - name: Restore data sets from backup stored in the data set MY.BACKUP.DZP.
        Use MYHLQ as the new HLQ for restored data sets.
      zos_backup_restore:
        operation: restore
        backup_name: MY.BACKUP.DZP
-       hlq: MYHLQ
+       output:
+         hlq: MYHLQ
 
    - name: Restore volume from backup stored in the data set MY.BACKUP.DZP.
        Restore to volume MYVOL2.
@@ -556,6 +598,22 @@ Examples
        access:
          auth: true
          share: true
+
+   - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
+       Use option 'names' to match and rename data sets during restore.
+       If a data set with the old name exists, it will be restored with the new name.
+     zos_backup_restore:
+       operation: restore
+       backup_name: /tmp/temp_backup.dzp
+       output:
+         write: conditional
+         names:
+           - old: "SYS1.ANSIBLE.ONE.**"
+             new: "SYS1.ANSIBLE.NEW.ONE.**"
+           - old: "SYS1.ANSIBLE.TWO.**"
+             new: "SYS1.ANSIBLE.NEW.TWO.**"
+           - old: "SYS1.ANSIBLE.THREE"
+             new: "SYS1.ANSIBLE.NEW.THREE"
 
 
 

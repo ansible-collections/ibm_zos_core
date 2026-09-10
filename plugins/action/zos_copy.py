@@ -22,7 +22,6 @@ from tempfile import mkstemp
 
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_text
-from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
@@ -72,7 +71,7 @@ class ActionModule(ActionBase):
         self.tmp_dir = None
 
         if dest:
-            if not isinstance(dest, string_types):
+            if not isinstance(dest, str):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
                 return self._exit_action(result, msg, failed=True)
             else:
@@ -86,7 +85,7 @@ class ActionModule(ActionBase):
                 msg = "Either 'src' or 'content' can be provided; not both."
                 return self._exit_action(result, msg, failed=True)
 
-            elif not isinstance(src, string_types):
+            elif not isinstance(src, str):
                 msg = "Invalid type supplied for 'src' option, it must be a string"
                 return self._exit_action(result, msg, failed=True)
 

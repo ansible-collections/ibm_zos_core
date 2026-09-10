@@ -947,10 +947,11 @@ import tempfile
 import traceback
 from hashlib import sha256
 from re import IGNORECASE
+import pathlib
+from re import fullmatch
 
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup, better_arg_parser, copy, data_set, encode, validation)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
@@ -968,12 +969,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
-
-if PY3:
-    import pathlib
-    from re import fullmatch
-else:
-    from re import match as fullmatch
 
 try:
     from zoautil_py import datasets, gdgs
@@ -1680,22 +1675,9 @@ class USSCopyHandler(CopyHandler):
         else:
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
-            if PY3:
-                path_helper = pathlib.Path(dest_parent_dir)
-                if dest_parent_dir != "/" and not path_helper.exists():
-                    path_helper.mkdir(parents=True, exist_ok=True)
-            else:
-                # When using Python 2, instead of using pathlib, we'll use os.makedirs.
-                # pathlib is not available in Python 2.
-                try:
-                    if dest_parent_dir != "/" and not os.path.exists(dest_parent_dir):
-                        os.makedirs(dest_parent_dir)
-                except os.error as err:
-                    # os.makedirs throws an error whether the directories were already
-                    # present or their creation failed. There's no exist_ok to tell it
-                    # to ignore the first case, so we ignore it manually.
-                    if "File exists" not in err:
-                        raise CopyOperationError(msg=to_native(err))
+            path_helper = pathlib.Path(dest_parent_dir)
+            if dest_parent_dir != "/" and not path_helper.exists():
+                path_helper.mkdir(parents=True, exist_ok=True)
 
             if os.path.isfile(conv_path or src):
                 dest = self._copy_to_file(src, dest, content_copy, conv_path)

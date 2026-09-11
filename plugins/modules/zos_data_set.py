@@ -682,7 +682,8 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - When C(state=absent), if C(purge=false) and C(scratch=true), a data set with an unreached expiration date is not removed from the catalog or physically deleted from the volume.
+  - When C(state=absent), if C(purge=false) and C(scratch=true), a data set with an unreached expiration date is not removed from the
+    catalog or physically deleted from the volume.
   - When C(state=absent) and C(scratch=false), the data set is always removed from the catalog but not physically deleted from the volume.
 """
 

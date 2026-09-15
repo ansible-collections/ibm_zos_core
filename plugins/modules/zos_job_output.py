@@ -679,6 +679,7 @@ def run_module():
 
     module.exit_json(**results)
 
+
 def main():
     run_module()
 

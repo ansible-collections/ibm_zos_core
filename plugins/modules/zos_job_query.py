@@ -459,9 +459,9 @@ def query_jobs(job_name, job_id, owner):
     # sentinel), the combination is unresolvable — treat it as a failure so the
     # module surfaces an error consistent with v2.0.0 failure path.
     if jobs and jobs[0].get("job_not_found"):
-      raise RuntimeError(
-          "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
-      )
+        raise RuntimeError(
+            "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
+        )
     return jobs
 
 

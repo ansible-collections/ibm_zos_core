@@ -413,6 +413,14 @@ def run_module():
         name = module.params.get("job_name")
         id = module.params.get("job_id")
         owner = module.params.get("owner")
+
+        if owner:
+            owner = owner.upper()
+        if name:
+            name = name.upper()
+        if id:
+            id = id.upper()
+
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)

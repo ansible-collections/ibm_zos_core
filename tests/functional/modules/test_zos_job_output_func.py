@@ -515,5 +515,18 @@ def test_zos_job_output_lowercase_input_normalisation(ansible_zos_module):
             for job in result.get("jobs"):
                 assert job.get("job_id") == job_id
 
+        # ---- Scenario 4: lowercase wildcard job_name (fnmatch case) --------
+        # Exercises fnmatch.fnmatch(entry.name, job_name) case-sensitivity.
+        # "hell*" must match "HELLO" after normalisation.
+        wildcard_name = job_name[:4].lower() + "*"   # e.g. "hell*"
+        results = hosts.all.zos_job_output(job_name=wildcard_name)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            matched = [j for j in result.get("jobs") if j.get("job_id") == job_id]
+            assert len(matched) >= 1, (
+                f"Expected job {job_id} ({job_name}) to match wildcard '{wildcard_name}'"
+            )
+
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")

@@ -17,6 +17,7 @@ __metaclass__ = type
 
 from shellescape import quote
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -45,6 +46,14 @@ JCL_FILE_CONTENTS_SYSIN = """//SYSINS  JOB (T043JM,JM00,1,0,0,0),'SYSINS - JRM',
 """
 
 TEMP_PATH = "/tmp/jcl"
+
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("stderr") is not None
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -88,11 +97,11 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
+        assert job.get("job_id") is None
         assert job.get("job_name") is not None
         assert job.get("subsystem") is None
         assert job.get("system") is None
-        assert job.get("owner") is not None
+        assert job.get("owner") is None
         assert job.get("cpu_time") is None
         assert job.get("execution_node") is None
         assert job.get("origin_node") is None
@@ -117,7 +126,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
         assert rc.get("msg_txt") is not None
 
         dds = job.get("dds")[0]
-        assert dds.get("dd_name") == "unavailable"
+        assert dds.get("dd_name") is None
         assert dds.get("record_count") == 0
         assert dds.get("id") is None
         assert dds.get("stepname") is None
@@ -354,48 +363,83 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 
-def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
+def test_zos_job_output_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("msg", False) is False
-        assert result.get("jobs") is not None
+        assert result.get("msg") == f"The job with job_id STC00* and owner MASTER could not be found."
+        assert result.get("jobs") is None
+        assert_job_not_found_returns_fail(result)
 
-        job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
-        assert job.get("job_name") is not None
-        assert job.get("subsystem") is None
-        assert job.get("system") is None
-        assert job.get("owner") is not None
-        assert job.get("cpu_time") is None
-        assert job.get("execution_node") is None
-        assert job.get("origin_node") is None
-        assert job.get("content_type") is None
-        assert job.get("creation_date") is None
-        assert job.get("creation_time") is None
-        assert job.get("execution_time") is None
-        assert job.get("job_class") is None
-        assert job.get("svc_class") is None
-        assert job.get("priority") is None
-        assert job.get("asid") is None
-        assert job.get("queue_position") is None
-        assert job.get("program_name") is None
-        assert job.get("class") is None
-        assert job.get("steps") is not None
-        assert job.get("dds") is not None
 
-        rc = job.get("ret_code")
-        assert rc.get("msg") is None
-        assert rc.get("code") is None
-        assert rc.get("msg_code") is None
-        assert rc.get("msg_txt") is not None
+# Verify correct output for combinations of invalid job parameters returning job not found
+def test_zos_job_output_job_not_found(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_id = "JOB99999"
+    job_name = "NOJOB"
+    owner = "NOUSER"
 
-        dds = job.get("dds")[0]
-        assert dds.get("dd_name") == "unavailable"
-        assert dds.get("record_count") == 0
-        assert dds.get("id") is None
-        assert dds.get("stepname") is None
-        assert dds.get("procstep") is None
-        assert dds.get("byte_count") == 0
-        assert dds.get("content") is None
+    # Scenario 1: Job output with only job_id that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_job_id = hosts.all.zos_job_output(job_id=job_id)
+
+    for qresult in qresults_job_id.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 2: Job output with only job_name that does not exist.
+    # Expected: SUCCEEDED with a job not found message.
+    qresults_job_name = hosts.all.zos_job_output(job_name=job_name)
+
+    for qresult in qresults_job_name.contacted.values():
+        assert qresult.get("changed") is False
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        for job in qresult.get("jobs"):
+            rc = job.get("ret_code")
+            assert rc.get("msg") is None
+            assert rc.get("msg_code") is None
+            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
+            assert rc.get("code") is None
+
+    # Scenario 3: Job output with only owner that does not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_owner = hosts.all.zos_job_output(owner=owner)
+
+    for qresult in qresults_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 4: Job output with job_id and job_name that do not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_id_and_name = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=None)
+
+    for qresult in qresults_id_and_name.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 5: Job output with job_id and owner that do not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_id_and_owner = hosts.all.zos_job_output(job_id=job_id, owner=owner)
+
+    for qresult in qresults_id_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 6: Job output with job_name and owner that do not exist.
+    # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
+    # surfaces the error as a failure.
+    qresults_name_and_owner = hosts.all.zos_job_output(job_name=job_name, owner=owner)
+
+    for qresult in qresults_name_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 7: Job output with job_id, job_name, and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_all_three = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=owner)
+
+    for qresult in qresults_all_three.contacted.values():
+        assert_job_not_found_returns_fail(qresult)

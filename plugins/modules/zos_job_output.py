@@ -52,7 +52,7 @@ options:
       - The name of the batch job. (e.g "TCPIP", "C*")
     type: str
     required: false
-    default: "*"
+    default: null
   owner:
     description:
       - The owner who ran the job. (e.g "IBMUSER", "*")
@@ -514,7 +514,7 @@ def run_module():
     """
     module_args = dict(
         job_id=dict(type="str", required=False, default=None),
-        job_name=dict(type="str", required=False, default="*"),
+        job_name=dict(type="str", required=False, default=None),
         owner=dict(type="str", required=False, default=None),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
         sysin_dd=dict(type="bool", required=False, default=False),
@@ -660,7 +660,7 @@ def run_module():
 
         job["dds"] = []
         dd = {}
-        dd["dd_name"] = dd_name
+        dd["dd_name"] = "unavailable"
         dd["record_count"] = 0
         dd["id"] = None
         dd["stepname"] = None

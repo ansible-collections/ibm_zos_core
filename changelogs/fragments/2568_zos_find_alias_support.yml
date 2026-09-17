@@ -1,9 +1,7 @@
 minor_changes:
   - zos_find - Added ``alias`` as a ``resource_type`` option to discover
     catalog alias entries. Returned aliases include an ``alias_of`` field that
-    identifies the associated target data set. When searching aliases, the
-    ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` filters are
-    applied to the target data set rather than the alias entry itself
+    identifies the associated target data set.
     (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
   - zos_find - Added the ``include_member_aliases`` option to return PDS/PDSE
     member alias information when searching for catalog alias entries

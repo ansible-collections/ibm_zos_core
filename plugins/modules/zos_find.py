@@ -69,9 +69,12 @@ options:
       - If the pattern is a regular expression, it must match the full data set name.
       - To exclude members, the regular expression or pattern must be enclosed in parentheses.
         This expression can be used alongside a pattern to exclude data set names.
-      - When using C(resource_type=alias), parenthesised patterns match against
-        PDS/PDSE member alias names. Members whose alias name matches are removed
-        from the C(members) list; the alias entry itself is kept.
+      - When using C(resource_type=alias), non-parenthesised patterns match against
+        the ALIAS data set name itself and remove the entire alias entry from the
+        results. Parenthesised patterns match against PDS/PDSE member alias names;
+        if a member has at least one alias name that matches the pattern, that member
+        (and all its aliases) is removed from the returned C(members) list. The actual
+        alias entries on the z/OS system are not deleted; only the result set is filtered.
     aliases:
       - exclude
     type: list
@@ -997,19 +1000,19 @@ def exclude_data_sets(module, data_set_list, excludes):
 
 
 def get_members_to_exclude(excludes):
-    """Get from the excludes str any subject that is isndie () to get members to exclude
+    """Get from the excludes list any subject that is inside () to get members to exclude
 
     Args
     ----
-    excludes : str
-        String of exlucions of the find operation including members
+    excludes : list[str]
+        List of exclusions of the find operation including members
 
     Returns
     -------
     members_to_exclude [list]
-        The patters of members to be exlude from the list
+        The patterns of members to be excluded from the list
     datasets_to_exclude [list]
-        The patters of datasets to be exlude from the list
+        The patterns of datasets to be excluded from the list
     """
     members_to_exclude = []
     datasets_to_exclude = []
@@ -1594,8 +1597,8 @@ def run_module(module):
             filtered_data_sets = alias_filter(
                 module,
                 patterns,
-                excludes=excludes_datasets if excludes_datasets else None,
-                exclude_member_aliases=exclude_members if exclude_members else None,
+                excludes=excludes_datasets or None,
+                exclude_member_aliases=exclude_members or None,
                 include_member_aliases=include_member_aliases,
                 volumes=volume if volume else None,
             )
@@ -1603,7 +1606,7 @@ def run_module(module):
             # Aliases are catalog pointers with no searchable content of their
             # own; the string must be present in the target dataset (alias_of).
             if filtered_data_sets and contains:
-                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                target_names = list({ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")})
                 content_results = content_filter(module, target_names, contains)
                 pds_hits = content_results.get("pds", {})
                 ps_hits = content_results.get("ps", set())
@@ -1633,7 +1636,7 @@ def run_module(module):
             # data_set_attribute_filter accepts a list of ds names and returns
             # the subset that passes; we use alias_of as the lookup key.
             if filtered_data_sets and (age or size):
-                target_names = [ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")]
+                target_names = list({ds["alias_of"] for ds in filtered_data_sets if ds.get("alias_of")})
                 surviving_targets = set(
                     data_set_attribute_filter(
                         module, target_names, size=size, age=age, age_stamp=age_stamp

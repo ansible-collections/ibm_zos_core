@@ -949,7 +949,6 @@ def test_find_alias_for_ps(ansible_zos_module):
             patterns=[ali_pattern],
             resource_type=["alias"],
         )
-        print(find_res.contacted.values())
         for val in find_res.contacted.values():
             assert val.get("msg") is None
             data_sets = val.get("data_sets")
@@ -1135,7 +1134,6 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
             resource_type=["alias"],
             include_member_aliases=True,
         )
-        print(find_res.contacted.values())
         for val in find_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1
@@ -1798,7 +1796,6 @@ def test_find_alias_filters_by_target_size(ansible_zos_module):
             resource_type=["alias"],
             size="2m",
         )
-        print(larger_find_res.contacted.values())
         for val in larger_find_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets is not None and len(data_sets) == 1, (
@@ -1875,7 +1872,6 @@ def test_find_alias_filters_by_target_creation_date(ansible_zos_module):
             age="-2d",
             age_stamp="creation_date",
         )
-        print(creation_recent_res.contacted.values())
 
         for val in creation_recent_res.contacted.values():
             data_sets = val.get("data_sets")
@@ -1952,7 +1948,6 @@ def test_find_alias_filters_by_target_ref_date_default(ansible_zos_module):
             age="-2d",
             age_stamp="ref_date",
         )
-        print(ref_default_recent_res.contacted.values())
         for val in ref_default_recent_res.contacted.values():
             data_sets = val.get("data_sets")
             assert data_sets == [], (
@@ -1999,7 +1994,6 @@ def test_find_alias_filters_by_target_ref_date_current(ansible_zos_module):
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
         # Write a record so ref_date is updated to today
         hosts.all.shell(cmd=f"decho 'alias ref_date test record' '{ps_name}'")
-        hosts.all.shell(cmd=f"dcat '{ps_name}'")
         define_res = hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=(

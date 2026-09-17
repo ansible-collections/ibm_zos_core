@@ -230,6 +230,16 @@ options:
       - The block size to use for the data set.
     type: int
     required: false
+  average_block_length:
+    description:
+      - The estimated average size, in bytes, of the data blocks to be stored
+        in the data set.
+      - I(average_block_length) is used by ZOAU during space allocation to calculate
+        how much disk space the data set requires when I(space_type=blk) is specified.
+      - I(average_block_length) helps z/OS determine how many primary and secondary blocks
+        fit on a physical track so that the correct amount of storage volume is reserved.
+    type: int
+    required: false
   directory_blocks:
     description:
       - The number of directory blocks to allocate to the data set.
@@ -553,6 +563,16 @@ options:
           - The block size to use for the data set.
         type: int
         required: false
+      average_block_length:
+        description:
+          - The estimated average size, in bytes, of the data blocks to be stored
+            in the data set.
+          - I(average_block_length) is used by ZOAU during space allocation to calculate
+            how much disk space the data set requires when I(space_type=blk) is specified.
+          - I(average_block_length) helps z/OS determine how many primary and secondary blocks
+            fit on a physical track so that the correct amount of storage volume is reserved.
+        type: int
+        required: false
       directory_blocks:
         description:
           - The number of directory blocks to allocate to the data set.
@@ -873,6 +893,10 @@ data_sets:
       returned: always
     block_size:
       description: The block size used for the data set.
+      type: int
+      returned: always
+    average_block_length:
+      description: The estimated average size, in bytes, of the data blocks stored in the data set.
       type: int
       returned: always
     directory_blocks:
@@ -1524,6 +1548,7 @@ def get_data_set_handler(**params):
             volumes=params.get("volumes", None),
             data_set_type=params.get("type", None),
             block_size=params.get("block_size", None),
+            average_block_length=params.get("average_block_length", None),
             record_length=params.get("record_length", None),
             space_primary=params.get("space_primary", None),
             space_secondary=params.get("space_secondary", None),
@@ -1655,6 +1680,11 @@ def parse_and_validate_args(params):
                     required=False,
                     dependencies=["state"],
                 ),
+                average_block_length=dict(
+                    type=valid_when_state_present,
+                    required=False,
+                    dependencies=["state"],
+                ),
                 directory_blocks=dict(
                     type=valid_when_state_present,
                     required=False,
@@ -1768,6 +1798,11 @@ def parse_and_validate_args(params):
             required=False,
             dependencies=["state"],
         ),
+        average_block_length=dict(
+            type=valid_when_state_present,
+            required=False,
+            dependencies=["state"],
+        ),
         directory_blocks=dict(
             type=valid_when_state_present,
             required=False,
@@ -1825,6 +1860,7 @@ def parse_and_validate_args(params):
             # ["batch", "replace"],
             ["batch", "volumes"],
             # ["batch", "force"],
+            ["batch", "average_block_length"]
         ],
     )
     parser = BetterArgParser(arg_defs)
@@ -1871,6 +1907,7 @@ def build_return_schema(data_set_list):
         "sms_management_class": "",
         "record_length": "",
         "block_size": "",
+        "average_block_length": "",
         "directory_blocks": "",
         "key_offset": "",
         "key_length": "",
@@ -1950,6 +1987,10 @@ def run_module():
                     type="int",
                     required=False,
                 ),
+                average_block_length=dict(
+                    type="int",
+                    required=False,
+                ),
                 directory_blocks=dict(
                     type="int",
                     required=False,
@@ -2017,6 +2058,10 @@ def run_module():
         sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
         block_size=dict(
+            type="int",
+            required=False,
+        ),
+        average_block_length=dict(
             type="int",
             required=False,
         ),

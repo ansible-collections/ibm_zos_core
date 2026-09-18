@@ -46,16 +46,19 @@ options:
         (e.g "STC02560", "STC*")
     type: str
     required: false
+    default: null
   job_name:
     description:
       - The name of the batch job. (e.g "TCPIP", "C*")
     type: str
     required: false
+    default: null
   owner:
     description:
       - The owner who ran the job. (e.g "IBMUSER", "*")
     type: str
     required: false
+    default: null
   dd_name:
     description:
       - Data definition name (show only this DD on a found job).
@@ -510,9 +513,9 @@ def run_module():
         Any exception while fetching jobs.
     """
     module_args = dict(
-        job_id=dict(type="str", required=False),
-        job_name=dict(type="str", required=False),
-        owner=dict(type="str", required=False),
+        job_id=dict(type="str", required=False, default=None),
+        job_name=dict(type="str", required=False, default=None),
+        owner=dict(type="str", required=False, default=None),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
@@ -657,7 +660,7 @@ def run_module():
 
         job["dds"] = []
         dd = {}
-        dd["dd_name"] = dd_name
+        dd["dd_name"] = "unavailable"
         dd["record_count"] = 0
         dd["id"] = None
         dd["stepname"] = None

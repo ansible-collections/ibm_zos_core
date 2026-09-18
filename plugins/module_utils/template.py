@@ -17,7 +17,7 @@ import os
 import tempfile
 from os import path
 
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.parsing.convert_bool import boolean
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (

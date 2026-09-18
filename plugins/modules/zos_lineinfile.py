@@ -125,16 +125,12 @@ options:
     aliases: [ before ]
   backup:
     description:
-      - Creates a backup file or backup data set for I(src) before making modifications.
+      - Specifies whether to create a backup file or backup data set for I(src) before making modifications.
       - If I(backup=true), the backup file or data set name is returned in the module result
         under C(backup_name) regardless of whether execution succeeded or failed.
-      - For MVS data sets, backup data set attributes (such as record format, logical record
-        length, and space allocation) are automatically cloned from the source data set.
-      - If I(src) is a data set member and I(backup_name) is not provided, the member is backed
-        up to the same partitioned data set under a randomly generated member name.
-      - To backup to a Generation Data Group (GDG), specify a positive relative generation
-        in I(backup_name), for example C(HLQ.BACKUP.GDG(+1)).
-      - For USS files, creates a backup copy of the target file while preserving its original permissions.
+      - When I(src) is an MVS data set, the backup inherits the source data set attributes
+        such as record format, logical record length, and space allocation.
+      - When I(src) is a USS file, the backup preserves the original file permissions.
     required: false
     type: bool
     default: false
@@ -144,6 +140,10 @@ options:
       - If I(src) is a USS file or path, I(backup_name) must be an absolute USS file path.
       - If I(src) is an MVS data set, I(backup_name) must be a valid, unallocated MVS data set name,
         an existing PDS/PDSE member, or a positive relative GDG name.
+      - If I(src) is a data set member and I(backup_name) is not provided, the member is backed
+        up to the same partitioned data set under a randomly generated member name.
+      - To backup to a Generation Data Group (GDG), specify a positive relative generation
+        in I(backup_name), for example C(HLQ.BACKUP.GDG(+1)).
       - If I(backup_name) is not provided, defaults vary by source type.
         For USS files, the backup name defaults to the source path appended with a timestamp,
         e.g., C(/path/file_name@2020-04-23-08-32-29-bak).

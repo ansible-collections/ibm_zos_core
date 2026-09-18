@@ -1,0 +1,4 @@
+minor_changes:
+   - zos_data_set - Add additional behavior to purge parameter that enables user to override
+     expiration dates for non-VSAM data set deletion.
+     (https://github.com/ansible-collections/ibm_zos_core/issues/2246)

@@ -143,6 +143,19 @@ def print_results(results):
     for result in results.contacted.values():
         pprint(result)
 
+def get_data_set_volume(results, data_set_name):
+    # Get the volume the data set is physically stored on
+    # `dls -l` output columns: dsname ... volser — volser is the last field
+    ds_volume = None
+    for result in results.contacted.values():
+        assert data_set_name in result.get("stdout")
+        for line in result.get("stdout_lines", []):
+            if line.strip() and data_set_name.upper() in line.upper():
+                ds_volume = line.split()[-1].strip()
+    assert ds_volume is not None, "Could not determine volume for data set"
+    return ds_volume
+
+
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
@@ -1162,6 +1175,7 @@ def test_gdg_create_and_replace(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")
 
+
 def test_gdg_deletion_when_absent(ansible_zos_module):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
@@ -1171,6 +1185,7 @@ def test_gdg_deletion_when_absent(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
         assert result.get("failed") is None
+
 
 def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
     """
@@ -1236,6 +1251,7 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
             volumes=[volume]
         )
 
+
 def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on_systems):
     """
     Tests that the 'scratch: False' (noscratch=True) sub-option works correctly when used inside a
@@ -1300,3 +1316,159 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
                 {'name': dataset_2, 'state': 'absent', 'volumes': [volume]}
             ]
         )
+
+
+@pytest.mark.parametrize("dsorg_type", ["PS", "PO"])
+def test_data_set_delete_with_scratch_and_purge(ansible_zos_module, dsorg_type):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+
+    try:
+        alloc_ds_command = f"ALLOC DATASET ('{data_set_name}') NEW DSORG({dsorg_type}) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+        create_ps_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_ps_results.contacted.values():
+            print(result.get("output")) 
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        dls_volume_results = hosts.all.shell(cmd=f"dls -l '{data_set_name}'")
+        ds_volume = get_data_set_volume(dls_volume_results, data_set_name)
+
+        del_no_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent")
+        for result in del_no_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        find_ds_no_purge_results = hosts.all.shell(f"dls -l '{data_set_name}'")
+        for result in find_ds_no_purge_results.contacted.values():
+            assert data_set_name in result.get("stdout")
+
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=True, scratch=True)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        # Verify the data set has been removed from the catalog
+        find_ds_catalog_results = hosts.all.shell(f"dls -l '{data_set_name}'")
+        for result in find_ds_catalog_results.contacted.values():
+            assert data_set_name not in result.get("stdout")
+
+        # Verify the data set has been physically removed from its volume
+        # vtocls returns rc=0 if found; rc!=0 means the entry is gone
+        find_ds_volume_results = hosts.all.shell(cmd=f"vtocls {ds_volume} '{data_set_name}'")
+        for result in find_ds_volume_results.contacted.values():
+            assert result.get("rc") != 0, (
+                f"Data set {data_set_name} was still found on volume {ds_volume}."
+            )
+
+    finally:
+        hosts.all.shell(cmd=f"drm -p '{data_set_name}' ")
+
+
+@pytest.mark.parametrize("dsorg_type", ["PS", "PO"])
+def test_data_set_delete_with_purge_only(ansible_zos_module, dsorg_type):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+
+    try:
+        alloc_ds_command = f"ALLOC DATASET ('{data_set_name}') NEW DSORG({dsorg_type}) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+        create_ps_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_ps_results.contacted.values():
+            print(result.get("output")) 
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        dls_volume_results = hosts.all.shell(cmd=f"dls -l '{data_set_name}'")
+        ds_volume = get_data_set_volume(dls_volume_results, data_set_name)
+
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=True, scratch=False)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        find_ds_purge_results = hosts.all.shell(f"dls -l '{data_set_name}'")
+        for result in find_ds_purge_results.contacted.values():
+            assert data_set_name not in result.get("stdout")
+
+        find_ds_volume_results = hosts.all.shell(cmd=f"vtocls {ds_volume} '{data_set_name}'")
+        for result in find_ds_volume_results.contacted.values():
+            assert result.get("rc") == 0, (
+                f"Data set {data_set_name} was not found on volume {ds_volume}."
+            )
+
+    finally:
+        hosts.all.shell(cmd=f"drm -p '{data_set_name}' ")
+
+
+@pytest.mark.parametrize("dsorg_type", ["PS", "PO"])
+def test_data_set_delete_with_scratch_only(ansible_zos_module, dsorg_type):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+
+    try:
+        alloc_ds_command = f"ALLOC DATASET ('{data_set_name}') NEW DSORG({dsorg_type}) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+        create_ps_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_ps_results.contacted.values():
+            print(result.get("output")) 
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        dls_volume_results = hosts.all.shell(cmd=f"dls -l '{data_set_name}'")
+        ds_volume = get_data_set_volume(dls_volume_results, data_set_name)
+
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=False, scratch=True)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        find_ds_purge_results = hosts.all.shell(f"dls -l '{data_set_name}'")
+        for result in find_ds_purge_results.contacted.values():
+            assert data_set_name in result.get("stdout")
+
+        find_ds_volume_results = hosts.all.shell(cmd=f"vtocls {ds_volume} '{data_set_name}'")
+        for result in find_ds_volume_results.contacted.values():
+            assert result.get("rc") == 0, (
+                f"Data set {data_set_name} was not found on volume {ds_volume}."
+            )
+
+    finally:
+        hosts.all.shell(cmd=f"drm -p '{data_set_name}' ")
+
+
+@pytest.mark.parametrize("dsorg_type", ["PS", "PO"])
+def test_data_set_delete_with_no_scratch_or_purge(ansible_zos_module, dsorg_type):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(2, 2)
+
+    try:
+        alloc_ds_command = f"ALLOC DATASET ('{data_set_name}') NEW DSORG({dsorg_type}) RECFM(F,B) LRECL(80) TRACKS SPACE(5,2) EXPDT(2027/365) CATALOG"
+        create_ps_results = hosts.all.zos_tso_command(command=alloc_ds_command)
+        for result in create_ps_results.contacted.values():
+            print(result.get("output")) 
+            assert result.get("changed") is True
+            assert result.get("output")[0].get("rc") == 0
+
+        dls_volume_results = hosts.all.shell(cmd=f"dls -l '{data_set_name}'")
+        ds_volume = get_data_set_volume(dls_volume_results, data_set_name)
+
+        alloc_ds_results = hosts.all.shell(cmd=f"dls '{data_set_name}'")
+        for result in alloc_ds_results.contacted.values():
+            assert data_set_name in result.get("stdout")
+
+        del_purge_results = hosts.all.zos_data_set(name=data_set_name, state="absent", purge=False, scratch=False)
+        for result in del_purge_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        find_ds_purge_results = hosts.all.shell(f"dls -l '{data_set_name}'")
+        for result in find_ds_purge_results.contacted.values():
+            assert data_set_name not in result.get("stdout")
+
+        find_ds_volume_results = hosts.all.shell(cmd=f"vtocls {ds_volume} '{data_set_name}'")
+        for result in find_ds_volume_results.contacted.values():
+            assert result.get("rc") == 0, (
+                f"Data set {data_set_name} was not found on volume {ds_volume}."
+            )
+
+    finally:
+        hosts.all.shell(cmd=f"drm -p '{data_set_name}' ")

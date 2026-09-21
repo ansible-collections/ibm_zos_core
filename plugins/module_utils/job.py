@@ -547,7 +547,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
 
             final_entries.append(job)
     if not final_entries:
-        final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
+        final_entries = _job_not_found(job_id, owner, job_name, None)
     return final_entries
 
 

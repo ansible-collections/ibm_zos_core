@@ -660,7 +660,7 @@ def run_module():
 
         job["dds"] = []
         dd = {}
-        dd["dd_name"] = "unavailable"
+        dd["dd_name"] = dd_name
         dd["record_count"] = 0
         dd["id"] = None
         dd["stepname"] = None

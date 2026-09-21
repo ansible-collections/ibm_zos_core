@@ -192,11 +192,11 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job = {}
 
     job["job_not_found"] = True
-    job["job_id"] = job_id
-    job["job_name"] = job_name
+    job["job_id"] = job_id_not_found
+    job["job_name"] = job_name_not_found
     job["subsystem"] = None
     job["system"] = None
-    job["owner"] = owner
+    job["owner"] = owner_not_found
     job["cpu_time"] = None
     job["execution_node"] = None
     job["origin_node"] = None

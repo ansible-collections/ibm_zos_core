@@ -617,11 +617,6 @@ def run_module():
         owner_explicit = owner and owner != "*"
         job_id_explicit = job_id and job_id != "*"
         job_name_explicit = job_name and job_name != "*"
-        if not job_id_explicit:
-            job["job_id"] = None
-        if not owner_explicit:
-            job["owner"] = None
-
         should_fail = job_id_explicit or owner_explicit or not job_name_explicit
 
         if should_fail:

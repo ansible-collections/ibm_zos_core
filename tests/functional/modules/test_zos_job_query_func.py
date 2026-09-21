@@ -1050,7 +1050,7 @@ def test_zos_job_query_job_id(ansible_zos_module):
 # Query job that does not exist with different job parameters to verify job not found message
 def test_zos_job_query_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
-    job_id = "JOB99999"
+    job_id = "NOJID"
     job_name = "NOJOB"
     owner = "NOUSER"
 

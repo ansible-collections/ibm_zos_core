@@ -1,7 +1,7 @@
 bugfixes:
   - zos_job_query - Fixed an issue where jobs were not found when owner, job_name,
     or job_id were provided in lowercase or mixed case. Parameters are now accepted
-    in any case, including wildcard patterns such as ``hell*`` matching ``HELLO``.
+    in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``.
     (https://github.com/ansible-collections/ibm_zos_core/issues/2609).
   - zos_job_output - Fixed an issue where job output was not returned when owner,
     job_name, or job_id were provided in lowercase or mixed case. Parameters are

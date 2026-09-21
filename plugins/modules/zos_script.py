@@ -241,7 +241,7 @@ stderr_lines:
 import os
 import stat
 import shlex
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (

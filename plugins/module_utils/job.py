@@ -104,7 +104,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False
         "dd_name": dd_name
     })
     job_id = parsed_args.get("job_id")
-    # Defaults to wildcard
     job_name = parsed_args.get("job_name")
     owner = parsed_args.get("owner")
     dd_name = parsed_args.get("dd_name") or ""

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,16 +46,19 @@ options:
         (e.g "STC02560", "STC*")
     type: str
     required: false
+    default: null
   job_name:
     description:
       - The name of the batch job. (e.g "TCPIP", "C*")
     type: str
     required: false
+    default: null
   owner:
     description:
       - The owner who ran the job. (e.g "IBMUSER", "*")
     type: str
     required: false
+    default: null
   dd_name:
     description:
       - Data definition name (show only this DD on a found job).
@@ -510,9 +513,9 @@ def run_module():
         Any exception while fetching jobs.
     """
     module_args = dict(
-        job_id=dict(type="str", required=False),
-        job_name=dict(type="str", required=False),
-        owner=dict(type="str", required=False),
+        job_id=dict(type="str", required=False, default=None),
+        job_name=dict(type="str", required=False, default=None),
+        owner=dict(type="str", required=False, default=None),
         dd_name=dict(type="str", required=False, aliases=['ddname']),
         sysin_dd=dict(type="bool", required=False, default=False),
     )
@@ -583,6 +586,7 @@ def run_module():
                 owner_explicit = owner and owner != "*"
                 job_id_explicit = job_id and job_id != "*"
                 job_name_explicit = job_name and job_name != "*"
+
                 should_fail = job_id_explicit or owner_explicit or not job_name_explicit
                 if should_fail:
                     module.fail_json(

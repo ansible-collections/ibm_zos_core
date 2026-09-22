@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -94,6 +94,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg", False) is False
+        assert result.get("failed", False) is False
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]

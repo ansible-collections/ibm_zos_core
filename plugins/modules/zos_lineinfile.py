@@ -143,6 +143,8 @@ options:
         GDG name.
       - If I(backup_name) specifies a member whose parent PDS or PDSE does not
         exist, the parent data set will be automatically allocated on the system.
+        When I(src) is a PDS or PDSE member, I(backup_name) must include a member
+        name in parentheses (e.g., C(SOME.PDS(BKMEM))).
       - If I(src) is a GDS (e.g., C(SOME.GDG(0))), I(backup_name) must be a positive relative
         GDG name (e.g., C(SOME.GDG(+1))). The module returns the relative name as-is in the result
         (e.g., C(SOME.GDG(+1))), not the resolved absolute generation name.

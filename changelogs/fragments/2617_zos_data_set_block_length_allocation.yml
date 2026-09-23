@@ -1,0 +1,4 @@
+minor_changes:
+   - zos_data_set - Adds support for users to request block space when allocating data sets with
+     new ``average_block_length`` parameter and block unit for ``space_type`` parameter. 
+     (https://github.com/ansible-collections/ibm_zos_core/issues/2400)

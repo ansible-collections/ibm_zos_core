@@ -137,18 +137,19 @@ options:
   backup_name:
     description:
       - Specify a custom destination file or data set name for the backup.
-      - If I(src) is a USS file or path, I(backup_name) must be an absolute USS file path.
-      - If I(src) is an MVS data set, I(backup_name) must be a valid, unallocated MVS data set name,
-        an existing PDS/PDSE member, or a positive relative GDG name.
-      - If I(src) is a data set member and I(backup_name) is not provided, the member is backed
-        up to the same partitioned data set under a randomly generated member name.
-      - To backup to a Generation Data Group (GDG), specify a positive relative generation
-        in I(backup_name), for example C(HLQ.BACKUP.GDG(+1)).
+      - If I(src) is a USS file, I(backup_name) must be an absolute USS file path.
+      - If I(src) is an MVS data set, I(backup_name) must be a valid, unallocated MVS
+        data set name, an existing or non-existing PDS/PDSE member, or a positive relative
+        GDG name. If I(backup_name) specifies a member whose parent PDS or PDSE does not
+        exist, the parent data set will be automatically allocated on the system.
+      - If I(src) is a GDS (e.g., C(SOME.GDG(0))), I(backup_name) must be a positive relative
+        GDG name (e.g., C(SOME.GDG(+1))). The module returns the relative name as-is in the result
+        (e.g., C(SOME.GDG(+1))), not the resolved absolute generation name.
       - If I(backup_name) is not provided, defaults vary by source type.
         For USS files, the backup name defaults to the source path appended with a timestamp,
         e.g., C(/path/file_name@2020-04-23-08-32-29-bak).
-        For MVS data sets, a unique data set name is automatically generated using the
-        active HLQ (or I(tmp_hlq)).
+        For MVS data sets and GDS sources, a unique data set name is automatically generated
+        using the active HLQ (or I(tmp_hlq)), e.g., C(HLQ.PxxxxxxxT.xxxxxxxx.Cxxxxxxx).
         For PDS/PDSE members, a random member name is created within the same partitioned data set.
     required: false
     type: str

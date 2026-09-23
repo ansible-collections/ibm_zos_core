@@ -138,9 +138,10 @@ options:
     description:
       - Specify a custom destination file or data set name for the backup.
       - If I(src) is a USS file, I(backup_name) must be an absolute USS file path.
-      - If I(src) is an MVS data set, I(backup_name) must be a valid, unallocated MVS
+      - If I(src) is an MVS data set, I(backup_name) must be a valid MVS
         data set name, an existing or non-existing PDS/PDSE member, or a positive relative
-        GDG name. If I(backup_name) specifies a member whose parent PDS or PDSE does not
+        GDG name.
+      - If I(backup_name) specifies a member whose parent PDS or PDSE does not
         exist, the parent data set will be automatically allocated on the system.
       - If I(src) is a GDS (e.g., C(SOME.GDG(0))), I(backup_name) must be a positive relative
         GDG name (e.g., C(SOME.GDG(+1))). The module returns the relative name as-is in the result
@@ -149,7 +150,7 @@ options:
         For USS files, the backup name defaults to the source path appended with a timestamp,
         e.g., C(/path/file_name@2020-04-23-08-32-29-bak).
         For MVS data sets and GDS sources, a unique data set name is automatically generated
-        using the active HLQ (or I(tmp_hlq)), e.g., C(HLQ.PxxxxxxxT.xxxxxxxx.Cxxxxxxx).
+        using the active HLQ (or I(tmp_hlq)), e.g., C(HLQ.Pxxxxxxx.Txxxxxxx.Cxxxxxxx).
         For PDS/PDSE members, a random member name is created within the same partitioned data set.
     required: false
     type: str

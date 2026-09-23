@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -163,6 +163,8 @@ options:
     description:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
+      - If C(space_type=blk), C(average_block_length) must be specified. For all
+        other space types, I(average_block_length) should not be specified.
     type: str
     choices:
       - k
@@ -234,10 +236,11 @@ options:
     description:
       - The estimated average size, in bytes, of the data blocks to be stored
         in the data set.
-      - I(average_block_length) is used by ZOAU during space allocation to calculate
-        how much disk space the data set requires when I(space_type=blk) is specified.
-      - I(average_block_length) helps z/OS determine how many primary and secondary blocks
-        fit on a physical track so that the correct amount of storage volume is reserved.
+      - I(average_block_length) must be specified when I(space_type=blk). For all other
+        space types, I(average_block_length) should not be specified.
+      - C(average_block_length) is used during space allocation to calculate
+        how many primary and secondary blocks fit on a physical track so that the
+        correct amount of storage volume is reserved.
     type: int
     required: false
   directory_blocks:
@@ -496,6 +499,8 @@ options:
         description:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
+          - If C(space_type=blk), C(average_block_length) must be specified. For all
+            other space types, I(average_block_length) should not be specified.
         type: str
         choices:
           - k
@@ -567,6 +572,8 @@ options:
         description:
           - The estimated average size, in bytes, of the data blocks to be stored
             in the data set.
+          - I(average_block_length) must be specified when I(space_type=blk). For all other
+            space types, I(average_block_length) should not be specified.
           - I(average_block_length) is used by ZOAU during space allocation to calculate
             how much disk space the data set requires when I(space_type=blk) is specified.
           - I(average_block_length) helps z/OS determine how many primary and secondary blocks
@@ -2138,6 +2145,20 @@ def run_module():
                 del module.params["record_format"]
 
     data_set_list = []
+
+    # Validate blk/average_block_length are both supplied if at least one of the options is passed
+    _entries_to_validate = module.params.get("batch") or ([module.params] if module.params.get("name") else [])
+    for _entry in _entries_to_validate:
+        if _entry.get("space_type") == "blk" and not _entry.get("average_block_length"):
+            module.fail_json(
+                msg="average_block_length is required when space_type is 'blk'.",
+                **result
+            )
+        if _entry.get("average_block_length") and _entry.get("space_type") != "blk":
+            module.fail_json(
+                msg="average_block_length is only valid when space_type is 'blk'.",
+                **result
+            )
 
     if not module.check_mode:
         try:

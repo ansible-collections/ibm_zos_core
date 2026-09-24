@@ -881,6 +881,37 @@ def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
 # ---------------------------------------------------------------------------
 _IDCAMS_CMD = "mvscmdauth --pgm=IDCAMS --sysprint=* --sysin=stdin"
 
+
+def define_alias(hosts, alias_name, related_name):
+    """Execute IDCAMS DEFINE ALIAS command and assert successful execution.
+
+    :param hosts: Ansible hosts object (ansible_zos_module).
+    :param str alias_name: Fully qualified dataset alias name.
+    :param str related_name: Fully qualified target/related dataset name.
+    """
+    define_res = hosts.all.shell(
+        cmd=_IDCAMS_CMD,
+        executable='/bin/sh',
+        stdin=(
+            f"  DEFINE ALIAS -\n"
+            f"    (NAME({alias_name}) -\n"
+            f"     RELATE({related_name}))\n"
+        ),
+    )
+    for v in define_res.contacted.values():
+        assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+    return define_res
+
+
+def delete_alias(hosts, alias_name):
+    """Delete catalog ALIAS entry via IDCAMS."""
+    return hosts.all.shell(
+        cmd=_IDCAMS_CMD,
+        executable='/bin/sh',
+        stdin=f"  DELETE {alias_name} -\n    ALIAS\n",
+    )
+
+
 def test_find_two_gdg_bases(ansible_zos_module):
     """Create two GDG bases with limit=5 and verify both are returned by zos_find
     with resource_type=gdg and matched==2."""
@@ -935,16 +966,7 @@ def test_find_alias_for_ps(ansible_zos_module):
     ali_pattern = f"{hlq}.SEQ.*"
     try:
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({ps_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+        define_alias(hosts, ali_name, ps_name)
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -961,10 +983,7 @@ def test_find_alias_for_ps(ansible_zos_module):
             assert val.get("matched") == 1
             assert val.get("examined") is not None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.shell(cmd=f"drm {ps_name}")
 
 
@@ -988,16 +1007,7 @@ def test_find_alias_for_pds(ansible_zos_module):
             {"name": f"{pds_name}(MBR1)", "type": "member", "state": "present"},
             {"name": f"{pds_name}(MBR2)", "type": "member", "state": "present"},
         ])
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+        define_alias(hosts, ali_name, pds_name)
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -1012,10 +1022,7 @@ def test_find_alias_for_pds(ansible_zos_module):
             assert "members" not in ds
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
@@ -1046,16 +1053,7 @@ def test_find_alias_for_pds_include_member_aliases(ansible_zos_module):
         hosts.all.shell(
             cmd=f"tso \"RENAME '{pds_name}(MBR1)' (MALIAS1) ALIAS\""
         )
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+        define_alias(hosts, ali_name, pds_name)
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -1086,10 +1084,7 @@ def test_find_alias_for_pds_include_member_aliases(ansible_zos_module):
                     )
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
@@ -1119,16 +1114,7 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
         rename_res = hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM1)' (ALIAS1) ALIAS\"")
         for v in rename_res.contacted.values():
             assert v.get("rc") == 0, f"RENAME alias failed: {v.get('stdout')} {v.get('stderr')}"
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pdse_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+        define_alias(hosts, ali_name, pdse_name)
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -1152,10 +1138,7 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
             assert mem2["aliases"] == [], "MEM2 has no aliases; list must be empty"
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pdse_name, state="absent")
 
 
@@ -1187,16 +1170,7 @@ def test_find_alias_for_gdg_generation(ansible_zos_module):
             ),
         )
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 '{gdg_base}(+1)'")
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({gdg_gen}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
+        define_alias(hosts, ali_name, gdg_gen)
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -1211,10 +1185,7 @@ def test_find_alias_for_gdg_generation(ansible_zos_module):
             assert "members" not in ds
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=f"  DELETE {gdg_base} -\n    GDG\n",
@@ -1277,31 +1248,9 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
         hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM1)' (ALIAS1) ALIAS\"")
         hosts.all.shell(cmd=f"tso \"RENAME '{pdse_name}(MEM2)' (ALIAS2) ALIAS\"")
         # --- Define catalog aliases for all three datasets ---
-        for define_stdin, label in [
-            (
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ps_ali}) -\n"
-                f"     RELATE({ps_name}))\n",
-                "PS"
-            ),
-            (
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n",
-                "PDS"
-            ),
-            (
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pdse_ali}) -\n"
-                f"     RELATE({pdse_name}))\n",
-                "PDSE"
-            ),
-        ]:
-            res = hosts.all.shell(cmd=_IDCAMS_CMD, executable='/bin/sh', stdin=define_stdin)
-            for v in res.contacted.values():
-                assert v.get("rc") == 0, (
-                    f"DEFINE ALIAS for {label} failed: {v.get('stdout')} {v.get('stderr')}"
-                )
+        define_alias(hosts, ps_ali, ps_name)
+        define_alias(hosts, pds_ali, pds_name)
+        define_alias(hosts, pdse_ali, pdse_name)
         # --- Find with excludes ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1327,10 +1276,7 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
             assert pdse_ali not in names, "PDSE alias should have been excluded"
     finally:
         for ali in (ps_ali, pds_ali, pdse_ali):
-            hosts.all.shell(
-                cmd=_IDCAMS_CMD, executable='/bin/sh',
-                stdin=f"  DELETE {ali} -\n    ALIAS\n",
-            )
+            delete_alias(hosts, ali)
         hosts.all.shell(cmd=f"drm {ps_name}")
         hosts.all.zos_data_set(name=pds_name,  state="absent")
         hosts.all.zos_data_set(name=pdse_name, state="absent")
@@ -1385,25 +1331,8 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
         hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM1)'\"")
         hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM2)'\"")
         # --- Define catalog aliases ---
-        for stdin, label in [
-            (
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n",
-                "PDS",
-            ),
-            (
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pdse_ali}) -\n"
-                f"     RELATE({pdse_name}))\n",
-                "PDSE",
-            ),
-        ]:
-            res = hosts.all.shell(cmd=_IDCAMS_CMD, executable='/bin/sh', stdin=stdin)
-            for v in res.contacted.values():
-                assert v.get("rc") == 0, (
-                    f"DEFINE ALIAS for {label} failed: {v.get('stdout')} {v.get('stderr')}"
-                )
+        define_alias(hosts, pds_ali, pds_name)
+        define_alias(hosts, pdse_ali, pdse_name)
         # --- Find: exclude the PDS catalog alias by its name ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1427,10 +1356,7 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
             assert val.get("matched") == 1
     finally:
         for ali in (pds_ali, pdse_ali):
-            hosts.all.shell(
-                cmd=_IDCAMS_CMD, executable='/bin/sh',
-                stdin=f"  DELETE {ali} -\n    ALIAS\n",
-            )
+            delete_alias(hosts, ali)
         hosts.all.zos_data_set(name=pds_name, state="absent")
         hosts.all.shell(cmd=f"drm {pdse_name}")
 
@@ -1477,18 +1403,7 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
         hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR1)' (ALIAS1) ALIAS\"")
         hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR2)' (ALIAS2) ALIAS\"")
         # --- Define catalog alias for the PDS ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, pds_name)
         # --- Find: parenthesised exclude removes members with alias names matching ALIAS.* ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1518,10 +1433,7 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
             assert mbr3["aliases"] == [], "MBR3 has no member aliases"
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
@@ -1574,18 +1486,7 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
         for v in rename2.contacted.values():
             assert v.get("rc") == 0, f"RENAME ALIAS2 failed: {v.get('stdout')} {v.get('stderr')}"
         # --- Define catalog alias ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, pds_name)
         # --- Find: catch-all exclude removes every member that has any alias ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1617,10 +1518,7 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
             assert mbr3["aliases"] == [], "MBR3 carries no in-directory aliases"
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
@@ -1670,21 +1568,8 @@ def test_find_alias_filter_by_volume(ansible_zos_module, volumes_on_systems):
         # --- Define one catalog alias per dataset ---
         # Each DEFINE ALIAS is split across continuation lines ('-') to stay
         # within the 80-byte stdin record limit enforced by IDCAMS.
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ps_ali}) -\n"
-                f"     RELATE({ps_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ps_ali, ps_name)
+        define_alias(hosts, pds_ali, pds_name)
 
         # --- Filter by vol1 only: must return exactly the PS alias ---
         find_res = hosts.all.zos_find(
@@ -1723,13 +1608,8 @@ def test_find_alias_filter_by_volume(ansible_zos_module, volumes_on_systems):
                 assert ds["type"] == "ALIAS"
 
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {ps_ali}  ALIAS\n"
-                f"  DELETE {pds_ali} ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, ps_ali)
+        delete_alias(hosts, pds_ali)
         hosts.all.shell(cmd=f"drm {ps_name}")
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
@@ -1775,21 +1655,8 @@ def test_find_alias_filters_by_target_size(ansible_zos_module):
                 },
             ]
         )
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({small_ali_name}) -\n"
-                f"     RELATE({small_ps_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({large_ali_name}) -\n"
-                f"     RELATE({large_ps_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, small_ali_name, small_ps_name)
+        define_alias(hosts, large_ali_name, large_ps_name)
 
         larger_find_res = hosts.all.zos_find(
             patterns=[alias_pattern],
@@ -1827,13 +1694,8 @@ def test_find_alias_filters_by_target_size(ansible_zos_module):
             assert val.get("examined") is not None
             assert val.get("msg") is None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {small_ali_name} -\n    ALIAS\n"
-                f"  DELETE {large_ali_name} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, small_ali_name)
+        delete_alias(hosts, large_ali_name)
         hosts.all.shell(cmd=f"drm {small_ps_name}")
         hosts.all.shell(cmd=f"drm {large_ps_name}")
 
@@ -1853,18 +1715,7 @@ def test_find_alias_filters_by_target_creation_date(ansible_zos_module):
     ali_pattern = f"{hlq}.SEQ.*"
     try:
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({ps_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, ps_name)
         # creation_date is today — alias should match "newer than 2 days"
         creation_recent_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1901,10 +1752,7 @@ def test_find_alias_filters_by_target_creation_date(ansible_zos_module):
             assert val.get("examined") is not None
             assert val.get("msg") is None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.shell(cmd=f"drm {ps_name}")
 
 
@@ -1929,18 +1777,7 @@ def test_find_alias_filters_by_target_ref_date_default(ansible_zos_module):
     try:
         # dtouch only — leaves ref_date as 0000/01/01 (no data written)
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({ps_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, ps_name)
         # ref_date == 0000/01/01 — not a valid recent date, should not match
         ref_default_recent_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -1972,10 +1809,7 @@ def test_find_alias_filters_by_target_ref_date_default(ansible_zos_module):
             assert val.get("examined") is not None
             assert val.get("msg") is None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.shell(cmd=f"drm {ps_name}")
 
 def test_find_alias_filters_by_target_ref_date_current(ansible_zos_module):
@@ -1994,18 +1828,7 @@ def test_find_alias_filters_by_target_ref_date_current(ansible_zos_module):
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 {ps_name}")
         # Write a record so ref_date is updated to today
         hosts.all.shell(cmd=f"decho 'alias ref_date test record' '{ps_name}'")
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({ps_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, ps_name)
         # ref_date == today — alias should match "newer than 2 days"
         ref_recent_res = hosts.all.zos_find(
             patterns=[ali_pattern],
@@ -2041,10 +1864,7 @@ def test_find_alias_filters_by_target_ref_date_current(ansible_zos_module):
             assert val.get("examined") is not None
             assert val.get("msg") is None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.shell(cmd=f"drm {ps_name}")
 
 
@@ -2102,21 +1922,8 @@ def test_find_alias_contains_filters_by_target_ps_content(ansible_zos_module):
         hosts.all.shell(cmd=f"decho '{search_str}' '{match_ps}'")
         hosts.all.shell(cmd=f"decho 'no match here' '{nomatch_ps}'")
         # --- Define one catalog alias per target ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({match_ali}) -\n"
-                f"     RELATE({match_ps}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({nomatch_ali}) -\n"
-                f"     RELATE({nomatch_ps}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, match_ali, match_ps)
+        define_alias(hosts, nomatch_ali, nomatch_ps)
         # --- Find: only the alias whose target contains the search string ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2135,13 +1942,8 @@ def test_find_alias_contains_filters_by_target_ps_content(ansible_zos_module):
             assert val.get("matched") == 1
             assert val.get("msg") is None
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {match_ali}   -\n    ALIAS\n"
-                f"  DELETE {nomatch_ali} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, match_ali)
+        delete_alias(hosts, nomatch_ali)
         hosts.all.shell(cmd=f"drm {match_ps}")
         hosts.all.shell(cmd=f"drm {nomatch_ps}")
 
@@ -2212,21 +2014,8 @@ def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_
         hosts.all.shell(cmd=f"decho '{search}' \"{pdse_name}({mem_match})\"")
         hosts.all.shell(cmd=f"decho 'no match' \"{pdse_name}({mem_no_match})\"")
         # --- Define catalog aliases ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pdse_ali}) -\n"
-                f"     RELATE({pdse_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, pds_ali, pds_name)
+        define_alias(hosts, pdse_ali, pdse_name)
         # --- Find ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2257,13 +2046,8 @@ def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_
                 )
             assert val.get("matched") == 2
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {pds_ali}  -\n    ALIAS\n"
-                f"  DELETE {pdse_ali} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, pds_ali)
+        delete_alias(hosts, pdse_ali)
         hosts.all.zos_data_set(
             batch=[
                 {"name": pds_name,  "state": "absent"},
@@ -2333,21 +2117,8 @@ def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
         hosts.all.shell(cmd=f"decho 'haystack' \"{pdse_name}(MEM1)\"")
         hosts.all.shell(cmd=f"decho 'haystack' \"{pdse_name}(MEM2)\"")
         # --- Define catalog aliases ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pdse_ali}) -\n"
-                f"     RELATE({pdse_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, pds_ali, pds_name)
+        define_alias(hosts, pdse_ali, pdse_name)
         # --- Find: include_member_aliases not set (defaults to False) ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2374,13 +2145,8 @@ def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
             )
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {pds_ali}  -\n    ALIAS\n"
-                f"  DELETE {pdse_ali} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, pds_ali)
+        delete_alias(hosts, pdse_ali)
         hosts.all.zos_data_set(
             batch=[
                 {"name": pds_name,  "state": "absent"},
@@ -2439,21 +2205,8 @@ def test_find_alias_contains_gdg_generation(ansible_zos_module):
         hosts.all.shell(cmd=f"dtouch -tseq -l80 -rFB -s1 -e1 '{gdg_base}(+1)'")
         hosts.all.shell(cmd=f"decho 'different content' '{gen2}'")
         # --- Define one catalog alias per generation ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({match_ali}) -\n"
-                f"     RELATE({gen1}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({nomatch_ali}) -\n"
-                f"     RELATE({gen2}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, match_ali, gen1)
+        define_alias(hosts, nomatch_ali, gen2)
         # --- Find: only the alias whose target generation contains the string ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2476,13 +2229,8 @@ def test_find_alias_contains_gdg_generation(ansible_zos_module):
             )
             assert val.get("matched") == 1
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {match_ali}   -\n    ALIAS\n"
-                f"  DELETE {nomatch_ali} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, match_ali)
+        delete_alias(hosts, nomatch_ali)
         hosts.all.shell(
             cmd=_IDCAMS_CMD, executable='/bin/sh',
             stdin=f"  DELETE {gdg_base} -\n    GDG\n",
@@ -2527,18 +2275,7 @@ def test_find_alias_contains_no_match_returns_empty(ansible_zos_module):
         hosts.all.shell(cmd=f"decho 'irrelevant' \"{pdse_name}(MEM1)\"")
         hosts.all.shell(cmd=f"decho 'irrelevant' \"{pdse_name}(MEM2)\"")
         # --- Define catalog alias ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ali_name}) -\n"
-                f"     RELATE({pdse_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ali_name, pdse_name)
         # --- Find ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2553,10 +2290,7 @@ def test_find_alias_contains_no_match_returns_empty(ansible_zos_module):
             )
             assert val.get("matched") == 0
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=f"  DELETE {ali_name} -\n    ALIAS\n",
-        )
+        delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pdse_name, state="absent")
 
 
@@ -2614,21 +2348,8 @@ def test_find_alias_contains_mixed_ps_and_pds(ansible_zos_module):
         hosts.all.shell(cmd=f"decho '{search}' \"{pds_name}(MEM1)\"")
         hosts.all.shell(cmd=f"decho 'other content' \"{pds_name}(MEM2)\"")
         # --- Define catalog aliases ---
-        define_res = hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({ps_ali}) -\n"
-                f"     RELATE({ps_name}))\n"
-                f"  DEFINE ALIAS -\n"
-                f"    (NAME({pds_ali}) -\n"
-                f"     RELATE({pds_name}))\n"
-            ),
-        )
-        for v in define_res.contacted.values():
-            assert v.get("rc") == 0, (
-                f"DEFINE ALIAS failed: {v.get('stdout')} {v.get('stderr')}"
-            )
+        define_alias(hosts, ps_ali, ps_name)
+        define_alias(hosts, pds_ali, pds_name)
         # --- Find ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
@@ -2664,13 +2385,8 @@ def test_find_alias_contains_mixed_ps_and_pds(ansible_zos_module):
             assert "MEM2" not in returned
             assert val.get("matched") == 2
     finally:
-        hosts.all.shell(
-            cmd=_IDCAMS_CMD, executable='/bin/sh',
-            stdin=(
-                f"  DELETE {ps_ali}  -\n    ALIAS\n"
-                f"  DELETE {pds_ali} -\n    ALIAS\n"
-            ),
-        )
+        delete_alias(hosts, ps_ali)
+        delete_alias(hosts, pds_ali)
         hosts.all.zos_data_set(
             batch=[
                 {"name": ps_name,  "state": "absent"},

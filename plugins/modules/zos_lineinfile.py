@@ -148,6 +148,10 @@ options:
       - If I(src) is a GDS (e.g., C(SOME.GDG(0))), I(backup_name) must be a positive relative
         GDG name (e.g., C(SOME.GDG(+1))). The module returns the relative name as-is in the result
         (e.g., C(SOME.GDG(+1))), not the resolved absolute generation name.
+      - If a pre-existing target is specified in I(backup_name), it can be overwritten only
+        when it is a USS file, a positive relative GDG generation, or a member within the same
+        PDS/PDSE as I(src). Pre-existing sequential data sets, PDS/PDSEs, existing GDG generations,
+        or members in a different PDS/PDSE cannot be overwritten.
       - If I(backup_name) is not provided, defaults vary by source type.
         For USS files, the backup name defaults to the source path appended with a timestamp,
         e.g., C(/path/file_name@2020-04-23-08-32-29-bak).

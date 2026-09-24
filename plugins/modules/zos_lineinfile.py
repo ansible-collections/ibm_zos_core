@@ -139,19 +139,18 @@ options:
       - Specify a custom destination file or data set name for the backup.
       - If I(src) is a USS file, I(backup_name) must be an absolute USS file path.
       - If I(src) is an MVS data set, I(backup_name) must be a valid MVS
-        data set name, an existing or non-existing PDS/PDSE member, or a positive relative
-        GDG name.
-      - If I(backup_name) specifies a member whose parent PDS or PDSE does not
-        exist, the parent data set will be automatically allocated on the system.
-        When I(src) is a PDS or PDSE member, I(backup_name) must include a member
-        name in parentheses (e.g., C(SOME.PDS(BKMEM))).
+        data set name, a PDS/PDSE member, or a positive relative GDG name.
+      - When I(src) is a PDS or PDSE member, I(backup_name) must include a member name in
+        parentheses (e.g., C(SOME.PDS(BKMEM))). If the parent PDS or PDSE does not exist,
+        it will be automatically allocated.
       - If I(src) is a GDS (e.g., C(SOME.GDG(0))), I(backup_name) must be a positive relative
         GDG name (e.g., C(SOME.GDG(+1))). The module returns the relative name as-is in the result
         (e.g., C(SOME.GDG(+1))), not the resolved absolute generation name.
       - If a pre-existing target is specified in I(backup_name), it can be overwritten only
-        when it is a USS file, a positive relative GDG generation, or a member within the same
-        PDS/PDSE as I(src). Pre-existing sequential data sets, PDS/PDSEs, existing GDG generations,
-        or members in a different PDS/PDSE cannot be overwritten.
+        when it is a USS file, a positive relative GDG generation (e.g., C(SOME.GDG(+1))),
+        or a PDS/PDSE member. Pre-existing sequential data sets, partitioned data sets
+        (PDS/PDSE without a member specified), or existing GDG generations (e.g., C(SOME.GDG(0)))
+        cannot be overwritten.
       - If I(backup_name) is not provided, defaults vary by source type.
         For USS files, the backup name defaults to the source path appended with a timestamp,
         e.g., C(/path/file_name@2020-04-23-08-32-29-bak).

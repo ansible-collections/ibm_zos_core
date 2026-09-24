@@ -499,7 +499,7 @@ options:
         description:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
-          - If C(space_type=blk), C(average_block_length) must be specified. For all
+          - If I(space_type=blk), I(average_block_length) must be specified. For all
             other space types, I(average_block_length) should not be specified.
         type: str
         choices:
@@ -571,13 +571,12 @@ options:
       average_block_length:
         description:
           - The estimated average size, in bytes, of the data blocks to be stored
-            in the data set.
+            in the data set when I(state=present).
           - I(average_block_length) must be specified when I(space_type=blk). For all other
             space types, I(average_block_length) should not be specified.
-          - I(average_block_length) is used by ZOAU during space allocation to calculate
-            how much disk space the data set requires when I(space_type=blk) is specified.
-          - I(average_block_length) helps z/OS determine how many primary and secondary blocks
-            fit on a physical track so that the correct amount of storage volume is reserved.
+          - I(average_block_length) is used during space allocation to calculate
+            how many primary and secondary blocks fit on a physical track so that the
+            correct amount of storage volume is reserved.
         type: int
         required: false
       directory_blocks:
@@ -839,6 +838,16 @@ EXAMPLES = r"""
     volumes:
       - "000000"
       - "222222"
+  
+- name: Create a sequential data set with block space allocation
+  zos_data_set:
+    name: someds.name.here
+    state: present
+    type: seq
+    space_type: blk
+    space_primary: 25
+    space_secondary: 2
+    average_block_length: 240
 """
 RETURN = r"""
 data_sets:
@@ -1526,8 +1535,8 @@ def key_offset(contents, dependencies):
 # * dependent on state
 # * dependent on space_type
 def average_block_length_required(contents, dependencies):
-    """Returns True when space_type is 'blk' and state is 'present', causing
-    BetterArgParser to enforce that average_block_length must be supplied.
+    """When space_type is 'blk' and state is 'present', enforces that average_block_length 
+        must be supplied or else error is raised.
 
     Parameters
     ----------
@@ -1539,7 +1548,8 @@ def average_block_length_required(contents, dependencies):
     Returns
     -------
     bool
-        True when average_block_length is required, False otherwise.
+        Return False when average_block_length is not required or is correctly supplied 
+        with other dependent parameters.
 
     Raises
     ------

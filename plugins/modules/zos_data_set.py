@@ -163,7 +163,7 @@ options:
     description:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
-      - If C(space_type=blk), C(average_block_length) must be specified. For all
+      - If I(space_type=blk), I(average_block_length) must be specified. For all
         other space types, I(average_block_length) should not be specified.
     type: str
     choices:
@@ -235,10 +235,10 @@ options:
   average_block_length:
     description:
       - The estimated average size, in bytes, of the data blocks to be stored
-        in the data set.
+        in the data set when I(state=present).
       - I(average_block_length) must be specified when I(space_type=blk). For all other
         space types, I(average_block_length) should not be specified.
-      - C(average_block_length) is used during space allocation to calculate
+      - I(average_block_length) is used during space allocation to calculate
         how many primary and secondary blocks fit on a physical track so that the
         correct amount of storage volume is reserved.
     type: int
@@ -259,7 +259,7 @@ options:
     description:
       - The key length to use when creating a KSDS data set.
       - I(key_length) is required when I(type=ksds).
-      - I(key_length) should only be provided when I(type=ksds)
+      - I(key_length) should only be provided when I(type=ksds).
     type: int
     required: false
   empty:
@@ -1523,6 +1523,72 @@ def key_offset(contents, dependencies):
     return contents
 
 
+# * dependent on state
+# * dependent on space_type
+def average_block_length_required(contents, dependencies):
+    """Returns True when space_type is 'blk' and state is 'present', causing
+    BetterArgParser to enforce that average_block_length must be supplied.
+
+    Parameters
+    ----------
+    contents : int
+        average_block_length (may be None when not provided).
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    bool
+        True when average_block_length is required, False otherwise.
+
+    Raises
+    ------
+    ValueError
+        average_block_length was not provided when space_type is 'blk'.
+    """
+    if (
+        dependencies.get("state") == "present"
+        and dependencies.get("space_type") == "blk"
+        and contents is None
+    ):
+        raise ValueError("average_block_length is required when space_type is 'blk'.")
+    return False
+
+
+# * dependent on state
+# * dependent on space_type
+def average_block_length(contents, dependencies):
+    """Validates average block length is valid when space_type is 'blk'.
+    Returns average block length as integer.
+
+    Parameters
+    ----------
+    contents : int
+        average_block_length.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is None.
+    int
+        average_block_length.
+
+    Raises
+    ------
+    ValueError
+        average_block_length can not be provided when space_type is not 'blk'.
+    """
+    if dependencies.get("state") != "present":
+        return None
+    if dependencies.get("space_type") != "blk" and contents is not None:
+        raise ValueError("average_block_length is only valid when space_type is 'blk'.")
+    if contents is None:
+        return None
+    return int(contents)
+
+
 def get_data_set_handler(**params):
     """Get object initialized based on parameters.
     Parameters
@@ -1688,9 +1754,9 @@ def parse_and_validate_args(params):
                     dependencies=["state"],
                 ),
                 average_block_length=dict(
-                    type=valid_when_state_present,
-                    required=False,
-                    dependencies=["state"],
+                    type=average_block_length,
+                    required=average_block_length_required,
+                    dependencies=["state", "space_type"],
                 ),
                 directory_blocks=dict(
                     type=valid_when_state_present,
@@ -1806,9 +1872,9 @@ def parse_and_validate_args(params):
             dependencies=["state"],
         ),
         average_block_length=dict(
-            type=valid_when_state_present,
-            required=False,
-            dependencies=["state"],
+            type=average_block_length,
+            required=average_block_length_required,
+            dependencies=["state", "space_type"],
         ),
         directory_blocks=dict(
             type=valid_when_state_present,
@@ -2145,20 +2211,6 @@ def run_module():
                 del module.params["record_format"]
 
     data_set_list = []
-
-    # Validate blk/average_block_length are both supplied if at least one of the options is passed
-    _entries_to_validate = module.params.get("batch") or ([module.params] if module.params.get("name") else [])
-    for _entry in _entries_to_validate:
-        if _entry.get("space_type") == "blk" and not _entry.get("average_block_length"):
-            module.fail_json(
-                msg="average_block_length is required when space_type is 'blk'.",
-                **result
-            )
-        if _entry.get("average_block_length") and _entry.get("space_type") != "blk":
-            module.fail_json(
-                msg="average_block_length is only valid when space_type is 'blk'.",
-                **result
-            )
 
     if not module.check_mode:
         try:

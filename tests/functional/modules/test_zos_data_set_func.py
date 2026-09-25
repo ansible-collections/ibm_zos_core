@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1300,3 +1300,175 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
                 {'name': dataset_2, 'state': 'absent', 'volumes': [volume]}
             ]
         )
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds"])
+def test_data_set_creation_with_block_space_units(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    default_block_size = 27920
+    avg_block_length = 240
+    space_type = "blk"
+    primary_space = 25
+    secondary_space = 2
+
+    one_track_in_bytes = 56664
+    # Tracks needed = ceil( N_blocks * avg_block_len / default_block_size )
+    #               = ceil( 25 blocks * 240 bytes / 27920 bytes )
+    #               = ceil( 6000 bytes / 27920 bytes )
+    #               = ceil( 0.215 )
+    #               = 1 -> integer ceiling rounds up to 1 track
+
+    try:
+        results = hosts.all.zos_data_set(
+            name=data_set_name, 
+            state="present", 
+            type=dstype, 
+            space_primary=primary_space,
+            space_secondary=secondary_space,
+            space_type=space_type,
+            average_block_length=avg_block_length
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+            assert len(result.get("data_sets")) > 0
+            assert result.get("data_sets")[0].get("average_block_length") == avg_block_length
+            assert result.get("data_sets")[0].get("block_size") == default_block_size
+            assert result.get("data_sets")[0].get("name") == data_set_name
+            assert result.get("data_sets")[0].get("type") == dstype
+            assert result.get("data_sets")[0].get("space_type") == space_type
+
+        dls_results = hosts.all.shell(cmd=f"dls -Hls {data_set_name}")
+        for result in dls_results.contacted.values():
+            assert data_set_name in result.get("stdout")
+            stdout_lines = result.get("stdout_lines")
+            headers = stdout_lines[0].split()
+            values = stdout_lines[1].split()
+            dls = dict(zip(headers, values))
+            # 25 primary blocks * 240 bytes = 6000 bytes
+            # alloc = 56,664 bytes = 1 track -> primary extent space collapsed to minimum
+            assert dls["alloc"] == str(one_track_in_bytes)
+            assert dls["firstext"] == str(one_track_in_bytes)
+            secondary_extent_size = secondary_space * avg_block_length
+            assert dls["secondary"] == str(secondary_extent_size)
+
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)
+
+
+def test_batch_data_set_creation_with_block_space_units(ansible_zos_module):
+    hosts = ansible_zos_module
+    seq_data_set_name = get_tmp_ds_name()
+    pds_data_set_name = get_tmp_ds_name()
+    default_block_size = 27920
+    avg_block_length = 240
+    space_type = "blk"
+    primary_space = 25
+    secondary_space = 2
+    one_track_in_bytes = 56664
+    secondary_extent_size = secondary_space * avg_block_length
+    
+    try:
+        results = hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": seq_data_set_name, 
+                    "type": "seq", 
+                    "state": "present", 
+                    "space_primary": primary_space, 
+                    "space_secondary": secondary_space, 
+                    "space_type": space_type, 
+                    "average_block_length": avg_block_length
+                },
+                {
+                    "name": pds_data_set_name, 
+                    "type": "pds", 
+                    "state": "present", 
+                    "space_primary": primary_space, 
+                    "space_secondary": secondary_space, 
+                    "space_type": space_type, 
+                    "average_block_length": avg_block_length
+                },
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+            assert len(result.get("data_sets")) == 2
+            # seq is index 0 (first in batch)
+            assert result.get("data_sets")[0].get("average_block_length") == avg_block_length
+            assert result.get("data_sets")[0].get("block_size") == default_block_size
+            assert result.get("data_sets")[0].get("name") == seq_data_set_name
+            assert result.get("data_sets")[0].get("type") == "seq"
+            assert result.get("data_sets")[0].get("space_type") == space_type
+            # pds is index 1 (second in batch)
+            assert result.get("data_sets")[1].get("average_block_length") == avg_block_length
+            assert result.get("data_sets")[1].get("block_size") == default_block_size
+            assert result.get("data_sets")[1].get("name") == pds_data_set_name
+            assert result.get("data_sets")[1].get("type") == "pds"
+            assert result.get("data_sets")[1].get("space_type") == space_type
+
+        seq_dls_results = hosts.all.shell(cmd=f"dls -Hls {seq_data_set_name}")
+        for result in seq_dls_results.contacted.values():
+            assert seq_data_set_name in result.get("stdout")
+            stdout_lines = result.get("stdout_lines")
+            headers = stdout_lines[0].split()
+            values = stdout_lines[1].split()
+            dls = dict(zip(headers, values))
+            assert dls["alloc"] == str(one_track_in_bytes)
+            assert dls["firstext"] == str(one_track_in_bytes)
+            assert dls["secondary"] == str(secondary_extent_size)
+
+        pds_dls_results = hosts.all.shell(cmd=f"dls -Hls {pds_data_set_name}")
+        for result in pds_dls_results.contacted.values():
+            assert pds_data_set_name in result.get("stdout")
+            stdout_lines = result.get("stdout_lines")
+            headers = stdout_lines[0].split()
+            values = stdout_lines[1].split()
+            dls = dict(zip(headers, values))
+            assert dls["alloc"] == str(one_track_in_bytes)
+            assert dls["firstext"] == str(one_track_in_bytes)
+            assert dls["secondary"] == str(secondary_extent_size)
+    finally:
+        hosts.all.zos_data_set(name=seq_data_set_name, state="absent", force=True)
+        hosts.all.zos_data_set(name=pds_data_set_name, state="absent", force=True)
+
+
+def test_data_set_block_space_unit_missing_average_block_length_failure(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    try:
+        results = hosts.all.zos_data_set(
+            name=data_set_name,
+            state="present",
+            type="seq",
+            space_primary=25,
+            space_secondary=2,
+            space_type="blk",
+        )
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "average_block_length is required when space_type is 'blk'." in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)
+
+
+def test_data_set_average_block_length_without_block_space_type_failure(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    try:
+        results = hosts.all.zos_data_set(
+            name=data_set_name,
+            state="present",
+            type="seq",
+            space_primary=25,
+            space_secondary=2,
+            space_type="trk",
+            average_block_length=240,
+        )
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "average_block_length is only valid when space_type is 'blk'." in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)

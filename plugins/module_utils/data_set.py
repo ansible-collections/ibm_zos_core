@@ -67,6 +67,7 @@ class DataSet(object):
         "block_size": "block_size",
         "directory_blocks": "directory_blocks",
         "volumes": "volumes",
+        "average_block_length": "average_block_length",
     }
 
     _VSAM_CATALOG_COMMAND_NOT_INDEXED = """ DEFINE CLUSTER -
@@ -105,6 +106,7 @@ class DataSet(object):
         record_length=None,
         block_size=None,
         directory_blocks=None,
+        average_block_length=None,
         key_length=None,
         key_offset=None,
         sms_storage_class=None,
@@ -150,6 +152,9 @@ class DataSet(object):
         directory_blocks : int, optional
             The number of directory blocks to allocate to the data set.
             Defaults to None.
+        average_block_length: int, optional
+            The estimated average size, in bytes, of the data blocks stored
+            in the data set.
         key_length : int, optional
             The key length of a record.
             Required for Key Sequenced Datasets (KSDS).
@@ -1257,6 +1262,7 @@ class DataSet(object):
         record_format=None,
         record_length=None,
         block_size=None,
+        average_block_length=None,
         directory_blocks=None,
         key_length=None,
         key_offset=None,
@@ -1294,6 +1300,9 @@ class DataSet(object):
         record_length : int, optional
             The length, in bytes, of each record in the data set.
             Defaults to None.
+        average_block_length: int, optional
+            The estimated average size, in bytes, of the data blocks stored
+            in the data set.
         block_size : int, optional
             The block size to use for the data set.
             Defaults to None.
@@ -1405,6 +1414,7 @@ class DataSet(object):
         record_format=None,
         record_length=None,
         block_size=None,
+        average_block_length=None,
         directory_blocks=None,
         key_length=None,
         key_offset=None,
@@ -1448,6 +1458,9 @@ class DataSet(object):
         block_size : int, optional
             The block size to use for the data set.
             Defaults to None.
+        average_block_length: int, optional
+            The estimated average size, in bytes, of the data blocks stored
+            in the data set.
         directory_blocks : int, optional
             The number of directory blocks to allocate to the data set.
             Defaults to None.
@@ -2704,6 +2717,7 @@ class MVSDataSet():
         record_format=None,
         volumes=None,
         block_size=None,
+        average_block_length=None,
         record_length=None,
         space_primary=None,
         space_secondary=None,
@@ -2726,6 +2740,7 @@ class MVSDataSet():
         self.record_format = record_format
         self.volumes = volumes
         self.block_size = block_size
+        self.average_block_length = average_block_length
         self.record_length = record_length
         self.total_space = total_space
         self.used_space = used_space
@@ -2779,6 +2794,7 @@ class MVSDataSet():
             "record_format": self.record_format,
             "record_length": self.record_length,
             "block_size": self.block_size,
+            "average_block_length": self.average_block_length,
             "directory_blocks": self.directory_blocks,
             "key_length": self.key_length,
             "key_offset": self.key_offset,
@@ -2828,6 +2844,7 @@ class MVSDataSet():
             "record_format": self.record_format,
             "record_length": self.record_length,
             "block_size": self.block_size,
+            "average_block_length": self.average_block_length,
             "directory_blocks": self.directory_blocks,
             "key_length": self.key_length,
             "key_offset": self.key_offset,
@@ -2984,6 +3001,7 @@ class MVSDataSet():
             "sms_management_class": self.sms_management_class,
             "record_length": self.record_length,
             "block_size": self.block_size,
+            "average_block_length": self.average_block_length,
             "directory_blocks": self.directory_blocks,
             "key_offset": self.key_offset,
             "key_length": self.key_length,

@@ -229,7 +229,9 @@ options:
     required: false
   block_size:
     description:
-      - The block size to use for the data set.
+      - The block size, in bytes, of each physical I/O block in the data set.
+      - I(block_size) is a persistent characteristic of the data set that determines
+        the size of the block written to or read from disk by DSCB (data set control block).
     type: int
     required: false
   average_block_length:
@@ -238,7 +240,7 @@ options:
         in the data set when I(state=present).
       - I(average_block_length) must be specified when I(space_type=blk). For all other
         space types, I(average_block_length) should not be specified.
-      - I(average_block_length) is used during space allocation to calculate
+      - I(average_block_length) is used only during space allocation to calculate
         how many primary and secondary blocks fit on a physical track so that the
         correct amount of storage volume is reserved.
     type: int
@@ -565,7 +567,9 @@ options:
         required: false
       block_size:
         description:
-          - The block size to use for the data set.
+          - The block size, in bytes, of each physical I/O block in the data set.
+          - I(block_size) is a persistent characteristic of the data set that determines
+            the size of the block written to or read from disk by DSCB (data set control block).
         type: int
         required: false
       average_block_length:
@@ -574,7 +578,7 @@ options:
             in the data set when I(state=present).
           - I(average_block_length) must be specified when I(space_type=blk). For all other
             space types, I(average_block_length) should not be specified.
-          - I(average_block_length) is used during space allocation to calculate
+          - I(average_block_length) is used only during space allocation to calculate
             how many primary and secondary blocks fit on a physical track so that the
             correct amount of storage volume is reserved.
         type: int
@@ -838,7 +842,7 @@ EXAMPLES = r"""
     volumes:
       - "000000"
       - "222222"
-  
+
 - name: Create a sequential data set with block space allocation
   zos_data_set:
     name: someds.name.here
@@ -1535,7 +1539,7 @@ def key_offset(contents, dependencies):
 # * dependent on state
 # * dependent on space_type
 def average_block_length_required(contents, dependencies):
-    """When space_type is 'blk' and state is 'present', enforces that average_block_length 
+    """When space_type is 'blk' and state is 'present', enforces that average_block_length
         must be supplied or else error is raised.
 
     Parameters
@@ -1548,7 +1552,7 @@ def average_block_length_required(contents, dependencies):
     Returns
     -------
     bool
-        Return False when average_block_length is not required or is correctly supplied 
+        Return False when average_block_length is not required or is correctly supplied
         with other dependent parameters.
 
     Raises

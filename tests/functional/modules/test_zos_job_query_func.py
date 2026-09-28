@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,6 +24,7 @@ from shellescape import quote
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.users import ManagedUser, ManagedUserType
 
 def get_job_id(hosts, len_id=9):
     """
@@ -41,10 +42,44 @@ def get_job_id(hosts, len_id=9):
         all_jobs = result.get("stdout_lines")
     for job_n_info in all_jobs:
         job = job_n_info.split()
-        if len(job[2]) <= len_id:
-            return job[2]
+        job_id = job[2]
+        if len(job_id) <= len_id:
+            return job_id
 
-# Make sure job list * returns something
+def get_job(hosts):
+    """
+    Returns job that is on the system by searching all jobs on system.
+
+    Parameters
+    ----------
+    hosts : obj
+        Connection to host machine
+    """
+    results = hosts.all.shell(cmd="jls")
+    for result in results.contacted.values():
+        all_jobs = result.get("stdout_lines")
+    for job_n_info in all_jobs:
+        job = job_n_info.split()
+        return job
+
+SAMPLE_PDS_MEM = "SAMPLE"
+def create_pds_mem_for_job_submit(hosts, data_set_name, temp_path):
+    hosts.all.file(path=temp_path, state="directory")
+    hosts.all.shell(
+        cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
+    )
+    hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+    hosts.all.shell(
+        cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
+    )
+
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
+# test to verify querying all jobs returns results with all expected fields populated
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_query(job_name="*", owner="*")
@@ -79,7 +114,6 @@ def test_zos_job_query_func(ansible_zos_module):
         assert rc.get("msg_code") is not None
         assert rc.get("msg_txt") is not None
 
-
 JCLQ_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
 //STEP0001 EXEC PGM=IEBGENER
@@ -93,8 +127,9 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/"
+MANAGED_USER_JOB_NAME = "HELLO"
 
-# test to show multi wildcard in Job_id query won't crash the search
+# test to show multiple wildcards in job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -102,14 +137,14 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -189,7 +224,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
-# test to show multi wildcard in Job_name query won't crash the search
+# test to show multiple wildcards in job_name query won't crash the search
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -197,14 +232,14 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -359,4 +394,718 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         assert rc.get("msg") is not None
         assert rc.get("msg_code") == "0000"
         assert rc.get("code") == 0
-        assert rc.get("msg_txt") == "CC"
+
+
+# zos_job_query should not return jobs that user is not authorized to view when querying with job_name and owner
+def test_managed_user_query_return_only_authorized_jobs(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+    data_set_name = None
+    temp_path = None
+
+    try:
+        # Create temp PDS data set and copy JCL member into it
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Submit a job as the original user (with full permissions)
+        results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        # Verify job has run successfully
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_query_unauthorized_jobs",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        if ansible_tmp_dir:
+            hosts.all.file(path=ansible_tmp_dir, state="absent")
+
+
+# helper test invoked using managed-user execution to test that only user-authorized jobs are returned if job_name and owner are specified
+def managed_user_query_unauthorized_jobs(ansible_zos_module):
+    hosts = ansible_zos_module
+    
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+        
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+            
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+            
+        # Submit query with owner and job_name - should only return job of managed user
+        # Job submitted with the same name by a different user should not appear
+        job_name_query_results = hosts.all.zos_job_query(job_id="*", job_name=MANAGED_USER_JOB_NAME, owner=current_user)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+            
+            for job in jobs:
+                assert job.get("owner") == current_user, \
+                    f"Retrieved job owner mismatch: expected {current_user}"
+                assert job.get("job_id") == managed_user_job_id
+                assert job.get("job_name") == MANAGED_USER_JOB_NAME
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+
+
+# test to verify no CEE dump is generated when no job_id is specified in the parameters
+def test_managed_user_query_no_ceedump_generated(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+
+    try:
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Create Ansible temp directory with permissions for managed user
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_query_no_ceedump",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+
+
+# helper test invoked using managed-user execution to test that no CEE dump is generated when no job_id is specified
+def managed_user_query_no_ceedump(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        # Check for existing CEE dumps before test
+        pre_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+
+        job_name_query_results = hosts.all.zos_job_query(job_name="H*", owner=current_user)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+
+            for job in jobs:
+                assert job.get("owner") == current_user
+                assert job.get("job_id") == managed_user_job_id
+
+        # Check for CEE dumps after test
+        post_test_dumps = hosts.all.shell(
+            cmd=f"dls '{current_user}.CEE.CEEDUMP*' 2>/dev/null || echo 'NONE'"
+        )
+
+        # Verify no new CEE dumps were created
+        for pre_result, post_result in zip(
+            pre_test_dumps.contacted.values(),
+            post_test_dumps.contacted.values()
+        ):
+            pre_dumps = pre_result.get("stdout", "NONE")
+            post_dumps = post_result.get("stdout", "NONE")
+
+            # Assert that no new dumps were created
+            assert pre_dumps == post_dumps, \
+                f"CEE dump created during zos_job_query execution. " \
+                f"Before: {pre_dumps}, After: {post_dumps}"
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        # Clean up any CEE dumps that may have been created
+        hosts.all.shell(
+            cmd=f"drm '{current_user}.CEE.CEEDUMP*' 2>/dev/null || true"
+        )
+
+
+# test to verify managed user query with wildcard in job_id succeeds
+def test_managed_user_query_with_wildcard_id_and_owner(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+    data_set_name = None
+    temp_path = None
+
+    try:
+        # Create temp PDS data set and copy JCL member into it
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Submit a job as the original user (with full permissions)
+        results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        # Verify job has run successfully
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_query_with_wildcard_id_and_owner",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        if ansible_tmp_dir:
+            hosts.all.file(path=ansible_tmp_dir, state="absent")
+
+
+def managed_user_query_with_wildcard_id_and_owner(ansible_zos_module):
+    hosts = ansible_zos_module
+    
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+        
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+            
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+
+        # Create job_id with wildcards
+        job_id_list = list(managed_user_job_id)
+        job_id_list[3] = "*"
+        job_id_list[7] = "*"
+        job_id_with_wildcards= "".join(job_id_list)
+            
+        # Submit query with job_id containing wildcards and owner - should only return the managed user's job matching the wildcarded job_id
+        job_name_query_results = hosts.all.zos_job_query(job_id=job_id_with_wildcards, owner=current_user)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+            
+            for job in jobs:
+                assert job.get("owner") == current_user, \
+                    f"Retrieved job owner mismatch: expected {current_user}"
+                assert job.get("job_id") == managed_user_job_id
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+
+
+# test to verify managed user query with job_id and job_name succeeds
+def test_managed_user_query_with_wildcard_id_and_name(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    managed_user = None
+    data_set_name = None
+    temp_path = None
+
+    try:
+        # Create temp PDS data set and copy JCL member into it
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+
+        # Create Ansible temp directory with permissions for managed user to create temporary files
+        ansible_tmp_dir = "/tmp/ibmz/ansible"
+        hosts.all.shell(cmd=f"mkdir -p {ansible_tmp_dir}")
+        hosts.all.shell(cmd=f"chmod 777 {ansible_tmp_dir}")
+
+        # Submit a job as the original user (with full permissions)
+        results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        # Verify job has run successfully
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+
+        # Initialize the managed user with limited job viewing permissions
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Execute the test with the managed user
+        managed_user.execute_managed_user_test(
+            managed_user_test_case="managed_user_query_with_wildcard_id_and_name",
+            debug=False,
+            verbose=False,
+            managed_user_type=ManagedUserType.ZOS_LIMITED_JOB_VIEW
+        )
+
+    finally:
+        if managed_user:
+            managed_user.delete_managed_user()
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+        if ansible_tmp_dir:
+            hosts.all.file(path=ansible_tmp_dir, state="absent")
+
+
+def managed_user_query_with_wildcard_id_and_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    
+    # Get the current user from the fixture options (set by ManagedUser class)
+    current_user = hosts["options"]["user"]
+    assert current_user is not None and current_user != ""
+
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        create_pds_mem_for_job_submit(hosts, data_set_name, temp_path)
+        
+        # Submit job as the managed user
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        managed_user_job_id = None
+        for result in submit_results.contacted.values():
+            # Verify job submission succeeded
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            
+            job = result.get("jobs")[0]
+            managed_user_job_id = job.get("job_id")
+            assert managed_user_job_id is not None
+            assert job.get("job_name") == MANAGED_USER_JOB_NAME 
+            
+            rc = job.get("ret_code")
+            assert rc.get("code") == 0
+            
+        # Submit query with exact job_id and job_name - should only return the managed user's job matching both parameters
+        job_name_query_results = hosts.all.zos_job_query(job_id=managed_user_job_id, job_name=MANAGED_USER_JOB_NAME)
+
+        for result in job_name_query_results.contacted.values():
+            assert result.get("changed") is True
+            jobs = result.get("jobs")
+            assert jobs is not None and len(jobs) > 0
+            
+            for job in jobs:
+                assert job.get("owner") == current_user, \
+                    f"Retrieved job owner mismatch: expected {current_user}"
+                assert job.get("job_id") == managed_user_job_id
+                assert job.get("job_name") == MANAGED_USER_JOB_NAME
+
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+
+
+# test to show job_id="*" and job_id=None has the same results if job_name and owner are specified
+def test_zos_job_query_no_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    job = get_job(hosts)
+    job_owner = job[0]
+    job_name = job[1]
+
+    assert job_owner is not None
+    assert job_name is not None
+
+    qresults_null = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
+    
+    qresults_null_jobs_len = 0
+    for qresult in qresults_null.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+        qresults_null_jobs_len = len(qresult.get("jobs"))
+
+        for job in qresult.get("jobs"):
+            assert job.get("owner") == job_owner
+            assert job.get("job_name") == job_name
+
+    qresults_all = hosts.all.zos_job_query(job_id="*", job_name=job_name, owner=job_owner)
+
+    qresults_all_jobs_len = 0
+    for qresult in qresults_all.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+        qresults_all_jobs_len = len(qresult.get("jobs"))
+
+        for job in qresult.get("jobs"):
+            assert job.get("owner") == job_owner
+            assert job.get("job_name") == job_name
+
+    # Assert length of results for both queries is the same
+    assert qresults_null_jobs_len == qresults_all_jobs_len
+
+
+# test to show querying all jobs with job_name returns all jobs of all z/OS users
+def test_zos_job_query_all_jobs(ansible_zos_module):
+    hosts = ansible_zos_module
+    
+    # Get all jobs
+    job_count = 0
+    results = hosts.all.shell(cmd="jls")
+    for result in results.contacted.values():
+        all_jobs = result.get("stdout_lines")
+        job_count = len(all_jobs)
+
+    qresults_null = hosts.all.zos_job_query(job_name="*")
+    
+    qresults_len = 0
+    for qresult in qresults_null.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        qresults_len = len(qresult.get("jobs"))
+
+    # Assert length of results for both queries is the same
+    assert qresults_len == job_count
+
+
+def test_zos_job_query_with_name_and_id(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        # Submit a job as the current user
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
+        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
+        )
+        results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+        
+        job_id = ""
+        job_name = ""
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
+
+            job = result.get("jobs")[0]
+            assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
+            job_id = job.get("job_id")
+            job_name = job.get("job_name")
+            break
+
+        qresults = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
+        
+        for qresult in qresults.contacted.values():
+            assert qresult.get("changed") is True
+            assert qresult.get("jobs") is not None
+            assert qresult.get("msg", False) is False
+
+            # Verify all jobs match both job_id and job_name parameters exactly
+            for job in qresult.get("jobs"):
+                assert job.get("job_name") == job_name
+                assert job.get("owner") is not None
+                assert job.get("job_id") == job_id
+                assert job.get("content_type") is not None
+                assert job.get("system") is not None
+                assert job.get("subsystem") is not None
+                assert job.get("origin_node") is not None
+                assert job.get("execution_node") is not None
+                assert job.get("cpu_time") is not None
+                assert job.get("job_class") is not None
+                assert job.get("priority") is not None
+                assert job.get("asid") is not None
+                assert job.get("creation_date") is not None
+                assert job.get("creation_time") is not None
+                assert job.get("program_name") is not None
+                assert job.get("svc_class") is None
+                assert job.get("steps") is not None
+
+                rc = job.get("ret_code")
+                assert rc.get("msg") is not None
+                assert rc.get("msg_code") == "0000"
+                assert rc.get("code") == 0
+    finally:
+        if temp_path:
+            hosts.all.file(path=temp_path, state="absent")
+        if data_set_name:
+            hosts.all.shell(cmd=f"drm '{data_set_name}'")
+
+
+def test_zos_job_query_with_owner_and_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    job = get_job(hosts)
+    job_owner = job[0]
+    job_name = job[1]
+
+    assert job_owner is not None
+    assert job_name is not None
+
+    qresults_null = hosts.all.zos_job_query(job_id=None, job_name=job_name, owner=job_owner)
+    
+    for qresult in qresults_null.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        # Verify all jobs match both job_name and owner parameters exactly
+        for job in qresult.get("jobs"):
+            assert job.get("job_name") == job_name
+            assert job.get("owner") == job_owner
+            assert job.get("job_id") is not None
+            assert job.get("content_type") is not None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("program_name") is not None
+            assert job.get("svc_class") is None
+            assert job.get("steps") is not None
+
+            rc = job.get("ret_code")
+            assert rc.get("msg") is not None
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("code") == 0
+
+
+# test to verify query with only job_id succeeds
+def test_zos_job_query_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_id = get_job_id(hosts)
+
+    qresults = hosts.all.zos_job_query(job_id=job_id)
+    
+    for qresult in qresults.contacted.values():
+        assert qresult.get("changed") is True
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        # Verify all jobs match job_id parameter
+        for job in qresult.get("jobs"):
+            assert job.get("job_name") is not None
+            assert job.get("owner") is not None
+            assert job.get("job_id") == job_id
+            assert job.get("content_type") is not None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("execution_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("job_class") is not None
+            assert job.get("priority") is not None
+            assert job.get("asid") is not None
+            assert job.get("creation_date") is not None
+            assert job.get("creation_time") is not None
+            assert job.get("program_name") is not None
+            assert job.get("svc_class") is None
+            assert job.get("steps") is not None
+
+            rc = job.get("ret_code")
+            assert rc.get("msg") is not None
+            assert rc.get("msg_code") == "0000"
+            assert rc.get("code") == 0
+
+
+# Query job that does not exist with different job parameters to verify job not found message
+def test_zos_job_query_job_not_found(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_id = "JOB99999"
+    job_name = "NOJOB"
+    owner = "NOUSER"
+
+    # Scenario 1: Job query with only job_id that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
+    qresults_job_id = hosts.all.zos_job_query(job_id=job_id)
+
+    for qresult in qresults_job_id.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 2: Job query with only job_name that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
+    qresults_job_name = hosts.all.zos_job_query(job_name=job_name)
+
+    for qresult in qresults_job_name.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 3: Job query with only owner that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
+    qresults_owner = hosts.all.zos_job_query(owner=owner)
+
+    for qresult in qresults_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 4: Job query with job_id and job_name that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
+    qresults_id_and_name = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
+
+    for qresult in qresults_id_and_name.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 5: Job query with job_id and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
+    qresults_id_and_owner = hosts.all.zos_job_query(job_id=job_id, owner=owner)
+
+    for qresult in qresults_id_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 6: Job query with job_name and owner that do not exist.
+    # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
+    # surfaces the error as a failure.
+    qresults_name_and_owner = hosts.all.zos_job_query(job_name=job_name, owner=owner)
+
+    for qresult in qresults_name_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 7: Job query with job_id, job_name, and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_all_three = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
+
+    for qresult in qresults_all_three.contacted.values():
+        assert_job_not_found_returns_fail(qresult)

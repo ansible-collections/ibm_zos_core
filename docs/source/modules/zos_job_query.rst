@@ -35,7 +35,7 @@ job_name
 
   A job name can be up to 8 characters long.
 
-  The *job_name* can contain include multiple wildcards.
+  The *job_name* can contain multiple wildcards.
 
   The asterisk (`*`) wildcard will match zero or more specified characters.
 
@@ -51,7 +51,7 @@ job_name
 owner
   Identifies the owner of the job.
 
-  If no owner is set, the default set is 'none' and all jobs will be queried.
+  If no owner is set, all owners will be queried. This may lead to security issues if there are read-access limitations on some users or jobs.
 
   | **required**: False
   | **type**: str
@@ -64,9 +64,11 @@ job_id
 
   When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
 
-  The *job_id* can contain include multiple wildcards.
+  The *job_id* can contain multiple wildcards.
 
   The asterisk (`*`) wildcard will match zero or more specified characters.
+
+  If no job_id is set, the parameter will not be used for job querying.
 
   | **required**: False
   | **type**: str
@@ -98,19 +100,19 @@ Examples
      zos_job_query:
        job_name: "JOB12345"
 
-   - name: Query jobs using a wildcard to match any job id begging with 'JOB12'
+   - name: Query jobs using a wildcard to match any job id beginning with 'JOB12'
      zos_job_query:
        job_id: "JOB12*"
 
-   - name: Query jobs using wildcards to match any job name begging with 'H' and ending in 'O'.
+   - name: Query jobs using wildcards to match any job name beginning with 'H' and ending in 'O'.
      zos_job_query:
        job_name: "H*O"
 
-   - name: Query jobs using a wildcards to match a range of job id(s) that include 'JOB' and '014'.
+   - name: Query jobs using wildcards to match a range of job id(s) that include 'JOB' and '014'.
      zos_job_query:
        job_id: JOB*014*
 
-   - name: Query all job names beginning wih 'H' that match job id that includes '14'.
+   - name: Query all job names beginning with 'H' that match job id that includes '14'.
      zos_job_query:
        job_name: "H*"
        job_id: "JOB*14*"
@@ -407,7 +409,7 @@ jobs
     | **sample**: 14:15:00
 
   queue_position
-    The position within the job queue where the jobs resides.
+    The position within the job queue where the job resides.
 
     | **type**: int
     | **sample**: 3

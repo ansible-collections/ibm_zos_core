@@ -42,6 +42,7 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
+        - v2.1.0-beta.1
         - v2.0.0
         - v1.16.0
         - v1.16.0-beta.1
@@ -57,7 +58,7 @@ body:
         - v1.12.0-beta.1
         - v1.11.1
         - v1.11.0-beta.1
-      default: 6
+      default: 1
     validations:
       required: false
   - type: dropdown
@@ -67,6 +68,7 @@ body:
       description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v1.4.2
         - v1.4.1
         - v1.4.0
         - v1.3.6
@@ -76,7 +78,7 @@ body:
         - v1.3.2
         - v1.3.1
         - v1.3.0
-      default: 5
+      default: 2
     validations:
       required: false
   - type: dropdown
@@ -156,6 +158,7 @@ body:
         - zos_tso_command
         - zos_unarchive
         - zos_user
+        - zos_user_info
         - zos_volume_init
         - zos_zfs_resize
         - filter_generate_data_set_name

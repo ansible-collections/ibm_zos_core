@@ -152,7 +152,7 @@ class DataSet(object):
         directory_blocks : int, optional
             The number of directory blocks to allocate to the data set.
             Defaults to None.
-        average_block_length: int, optional
+        average_block_length : int, optional
             The estimated average size, in bytes, of the data blocks stored
             in the data set.
         key_length : int, optional
@@ -1300,7 +1300,7 @@ class DataSet(object):
         record_length : int, optional
             The length, in bytes, of each record in the data set.
             Defaults to None.
-        average_block_length: int, optional
+        average_block_length : int, optional
             The estimated average size, in bytes, of the data blocks stored
             in the data set.
         block_size : int, optional
@@ -1458,7 +1458,7 @@ class DataSet(object):
         block_size : int, optional
             The block size to use for the data set.
             Defaults to None.
-        average_block_length: int, optional
+        average_block_length : int, optional
             The estimated average size, in bytes, of the data blocks stored
             in the data set.
         directory_blocks : int, optional

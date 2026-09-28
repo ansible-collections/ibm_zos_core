@@ -1454,6 +1454,25 @@ def test_data_set_block_space_unit_missing_average_block_length_failure(ansible_
         hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)
 
 
+def test_data_set_average_block_length_invalid_argument(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    try:
+        results = hosts.all.zos_data_set(
+            name=data_set_name,
+            state="present",
+            type="seq",
+            space_primary=25,
+            space_secondary=2,
+            space_type="blk",
+            average_block_length=0,
+        )
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "Value 0 is invalid for average_block_length argument" in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)
+
 def test_data_set_average_block_length_without_block_space_type_failure(ansible_zos_module):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()

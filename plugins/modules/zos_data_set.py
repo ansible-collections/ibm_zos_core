@@ -1593,6 +1593,8 @@ def average_block_length(contents, dependencies):
     ------
     ValueError
         average_block_length can not be provided when space_type is not 'blk'.
+    ValueError
+        average_block_length must be a positive integer greater than 0.
     """
     if dependencies.get("state") != "present":
         return None
@@ -1600,6 +1602,10 @@ def average_block_length(contents, dependencies):
         raise ValueError("average_block_length is only valid when space_type is 'blk'.")
     if contents is None:
         return None
+    contents = int(contents)
+    if contents <= 0:
+        raise ValueError("Value {0} is invalid for average_block_length argument. "
+                         "average_block_length must be a positive integer greater than 0.".format(contents))
     return int(contents)
 
 

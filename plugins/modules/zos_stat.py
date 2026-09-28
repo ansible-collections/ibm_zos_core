@@ -762,7 +762,7 @@ stat:
         index:
           description:
             - Dictionary containing attributes for the INDEX component of a VSAM.
-            - Only present for KSDS clusters. Null for ESDS, RRDS and LDS.
+            - Only populated for KSDS clusters. Null for ESDS, RRDS and LDS.
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success
@@ -2344,9 +2344,8 @@ class VSAMDataSetHandler(DataSetHandler):
         # Build DATA component dict; fetch_statistics() provides total_records.
         attributes['data'] = self._component_to_dict(cluster.data)
 
-        # INDEX is None for ESDS / RRDS / LDS clusters.
-        if cluster.index is not None:
-            attributes['index'] = self._component_to_dict(cluster.index)
+        # INDEX is None for ESDS / RRDS / LDS clusters
+        attributes['index'] = self._component_to_dict(cluster.index) if cluster.index is not None else None
 
         # ------------------------------------------------------------------ #
         # 2. Fetch cluster-level fields via LISTCAT (not in ZOAU API):        #
@@ -2419,7 +2418,7 @@ class VSAMDataSetHandler(DataSetHandler):
             hex_code = data_devtype.group(2)
             attributes['data']['device_type'] = self.dev_type_translation_table.get(hex_code, hex_code)
 
-        if 'index' in attributes:
+        if attributes.get('index') is not None:
             idx_volser = re.search(volser_pattern, index_section)
             idx_devtype = re.search(devtype_pattern, index_section)
             if idx_volser:

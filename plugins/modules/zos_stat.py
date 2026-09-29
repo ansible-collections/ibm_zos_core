@@ -2217,7 +2217,7 @@ return 0"""
 
 
 class VSAMDataSetHandler(DataSetHandler):
-    """Class that can query VSAM data sets using LISTCAT.
+    """Class that can query VSAM data sets using zoau_vsam.fetch_cluster and LISTCAT.
     """
 
     expected_attrs = {

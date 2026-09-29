@@ -30,7 +30,7 @@ author:
 options:
   name:
     description:
-      - The name of the data set being managed. (e.g C(USER.TEST))
+      - The name of the data set being managed (e.g C(USER.TEST)).
       - If I(name) is not provided, a randomized data set name will be generated
         with the HLQ matching the module-runners username.
       - Required if I(type=member) or I(state!=present) and not using I(batch).

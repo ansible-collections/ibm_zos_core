@@ -41,9 +41,9 @@ name
 volumes
   Name(s) of the volume(s) where the dataset is searched on.
 
-  If omitted, the module looks up the master catalog to find all volumes where a dataset is allocated.
+  If omitted, the module looks up the master catalog to find all volumes where a data set is allocated.
 
-  When used, if the dataset is not found in at least one volume from the list, the module fails with a "dataset not found" message.
+  When used, if the data set is not found in at least one volume from the list, the module fails with a "data set not found" message.
 
   | **required**: False
   | **type**: list
@@ -62,11 +62,11 @@ type
 sms_managed
   Whether the dataset is managed by the Storage Management Subsystem.
 
-  It causes the module to retrieve additional information, may take longer to query all attributes of a dataset.
+  It causes the module to retrieve additional information, may take longer to query all attributes of a data set.
 
-  If the dataset is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information updates the last referenced date of the dataset.
+  If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information updates the last referenced date of the data set.
 
-  If the system finds the dataset is not actually managed by SMS, the rest of the attributes are still queried and this is noted in the output from the task.
+  If the system finds the data set is not actually managed by SMS, the rest of the attributes are still queried and this is noted in the output from the task.
 
   | **required**: False
   | **type**: bool
@@ -76,15 +76,15 @@ sms_managed
 recall
   Whether to recall a migrated dataset to fully query its attributes.
 
-  If set to ``false``, the module returns a limited amount of information for a migrated dataset.
+  If set to ``false``, the module returns a limited amount of information for a migrated data set.
 
-  Recalling a dataset makes the module take longer to run.
+  Recalling a data set makes the module take longer to run.
 
   Ignored when the dataset is not found to be migrated.
 
-  The dataset is not migrated again afterwards.
+  The data set is not migrated again afterwards.
 
-  The dataset is not recalled when the module runs in check mode.
+  The data set is not recalled when the module runs in check mode.
 
   | **required**: False
   | **type**: bool
@@ -216,11 +216,11 @@ Notes
 -----
 
 .. note::
-   When querying datasets, the module creates two temporary datasets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both datasets are removed before the module finishes execution.
+   When querying data sets, the module creates two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets are removed before the module finishes execution.
 
-   Sometimes the system cannot determine the organization, record format, or space allocation units for the dataset. When this happens, these fields are reported as not available.
+   Sometimes the system cannot determine the organization, record format, or space allocation units for the data set. When this happens, these fields are reported as not available.
 
-   When querying a partitioned dataset (PDS), if the Ansible user has RACF READ authority on it, the query operation updates the last referenced date.
+   When querying a partitioned data set (PDS), if the Ansible user has RACF READ authority on it, the query operation updates the last referenced date.
 
    If you need to filter the output from the module by resource type, you can use the zos_stat_by_type filter inside of a playbook.
 
@@ -470,7 +470,7 @@ stat
             ]
 
     missing_volumes
-      When using the ``volumes`` option, this field contains every volume specified in a task where the dataset was missing. It is an empty list in any other case.
+      When using the ``volumes`` option, this field contains every volume specified in a task where the data set was missing. It is an empty list in any other case.
 
       | **returned**: success
       | **type**: list
@@ -649,6 +649,87 @@ stat
       | **returned**: success
       | **type**: int
       | **sample**: 3
+
+    member_details
+      Details for each member in a partitioned data set including extended attributes and ISPF statistics. Set to null for non-PDS/PDSE types (sequential, VSAM, GDG) where member details do not apply.
+
+
+      | **returned**: success
+      | **type**: raw
+      | **elements**: dict
+
+      name
+        Member name
+
+        | **type**: str
+        | **sample**: MEMBER1
+
+      extended_attributes
+        SMDE extended attributes for the member
+
+        | **type**: dict
+
+        user
+          Last user that modified the member
+
+          | **type**: str
+          | **sample**: USER01
+
+        codeset
+          Coded character set identifier (CCSID).
+
+          | **type**: int
+          | **sample**: 1047
+
+        modified_time
+          Last time the member was modified (YYYY/MM/DD HH:MM:SS).
+
+          | **type**: str
+          | **sample**: 2024/01/15 10:30:45
+
+
+      ispf_statistics
+        ISPF member statistics
+
+        | **type**: dict
+
+        version
+          Version and modification level (VV.MM format)
+
+          | **type**: str
+          | **sample**: 01.05
+
+        created
+          Creation date (YYYY/MM/DD)
+
+          | **type**: str
+          | **sample**: 2024/01/15
+
+        changed
+          Last change date and time (YYYY/MM/DD HH:MM:SS)
+
+          | **type**: str
+          | **sample**: 2024/01/15 10:30:45
+
+        init
+          Initial size (number of lines)
+
+          | **type**: int
+          | **sample**: 95
+
+        mod
+          Number of lines modified since the last full save.
+
+          | **type**: int
+          | **sample**: 3
+
+        id
+          User ID who last modified the member
+
+          | **type**: str
+          | **sample**: USER01
+
+
 
     pages_allocated
       Number of pages allocated to a PDSE.

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2022, 2024
+# Copyright (c) IBM Corporation 2022, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -246,7 +246,91 @@ class TemplateRenderer:
         else:
             self.templating_env = jinja2.Environment(autoescape=jinja2.select_autoescape(), **environment_args)
 
-    def render_file_template(self, file_path, variables):
+    def _prepare_template_variables(self, variables, templar=None, display=None):
+        """Prepare variables for template rendering by optionally resolving
+        them using Ansible's templar.
+
+        This method ensures that nested variables and Jinja2 expressions in
+        variable values are properly resolved before template rendering.
+        It also unpacks dict loop items so that flat variable names like
+        ``{{ ds_name }}`` resolve without requiring ``{{ item.ds_name }}``
+        in the template, mirroring the behaviour of Ansible's own template
+        module.
+
+        Parameters
+        ----------
+        variables : dict
+            Dictionary containing all variables including task context,
+            loop variables, and user-defined variables.
+        templar : ansible.template.Templar, optional
+            Ansible's templar instance for resolving nested variables.
+            If provided, string variables will be templated before rendering.
+
+        Returns
+        -------
+        dict
+            Variables ready for template rendering, with loop items merged
+            and nested expressions resolved if templar was provided.
+
+        Raises
+        ------
+        TypeError
+            If variables is not a dict type.
+
+        Notes
+        -----
+        - Only string values are passed to the templar; non-string values
+          (dicts, lists, booleans, integers, etc.) are carried over as-is
+          since they cannot contain Jinja2 expressions and templating them
+          would be unnecessarily expensive.
+        - Templating failures for individual variables are handled gracefully,
+          falling back to the original value.
+        - Jinja2 template errors and common Python type/attribute errors are
+          caught per-variable, falling back to the original value. Other
+          exceptions propagate normally.
+        """
+        # Validate input
+        if not isinstance(variables, dict):
+            raise TypeError("variables must be a dict, got {0}".format(type(variables).__name__))
+
+        # Unpack dict loop items into the top-level namespace so flat variable
+        # names like {{ ds_name }} resolve without requiring {{ item.ds_name }}
+        # in the template. This mirrors the behaviour of Ansible's own template
+        # module.
+        loop_var = variables.get("ansible_loop_var", "item")
+        loop_item = variables.get(loop_var)
+        if isinstance(loop_item, dict):
+            variables = dict(variables)
+            variables.update(loop_item)
+
+        # Use templar to resolve nested variables if provided
+        if templar:
+            resolved_vars = {}
+            for key, value in variables.items():
+                # Only template string values; non-string types (dicts, lists,
+                # booleans, integers, etc.) cannot contain Jinja2 expressions
+                # and iterating over them with templar.template() is wasteful.
+                if isinstance(value, str):
+                    try:
+                        resolved_vars[key] = templar.template(value)
+                    except Exception as err:
+                        # Fall back to the original value when templating fails
+                        # (e.g. AnsibleUndefinedVariable, jinja2.TemplateError).
+                        # Log at vvvv via the caller-supplied display instance
+                        # so the user can diagnose with -vvvv.
+                        if display is not None:
+                            display.vvvv(
+                                "Failed to resolve variable "
+                                "'{0}' (value: {1!r}): {2}".format(key, value, to_native(err))
+                            )
+                        resolved_vars[key] = value
+                else:
+                    resolved_vars[key] = value
+            return resolved_vars
+
+        return variables
+
+    def render_file_template(self, file_path, variables, templar=None, display=None):
         """Loads a template from the templates directory and renders
         it using the Jinja2 environment configured in the object.
 
@@ -258,6 +342,10 @@ class TemplateRenderer:
         variables : dict
             Dictionary containing the variables and
             their values that will be substituted in the template.
+        templar : ansible.template.Templar, optional
+            Ansible's templar instance for resolving nested variables.
+            If provided, all variables will be templated before rendering
+            to ensure proper variable resolution.
 
         Returns
         -------
@@ -283,9 +371,11 @@ class TemplateRenderer:
         ValueError
             When there is an error writing the rendered template.
         """
+        # Prepare variables by resolving nested expressions with templar
+        prepared_vars = self._prepare_template_variables(variables, templar, display)
         try:
             template = self.templating_env.get_template(file_path)
-            rendered_contents = template.render(variables)
+            rendered_contents = template.render(prepared_vars)
         except jinja2.TemplateNotFound as err:
             raise jinja2.TemplateNotFound("Template {0} was not found: {1}".format(
                 file_path,
@@ -326,7 +416,7 @@ class TemplateRenderer:
 
         return temp_template_dir, template_file_path
 
-    def render_dir_template(self, variables):
+    def render_dir_template(self, variables, templar=None, display=None):
         """Loads all templates from a directory and renders
         them using the Jinja2 environment configured in the object.
 
@@ -335,6 +425,10 @@ class TemplateRenderer:
         variables : dict
             Dictionary containing the variables and
             their values that will be substituted in the template.
+        templar : ansible.template.Templar, optional
+            Ansible's templar instance for resolving nested variables.
+            If provided, all variables will be templated before rendering
+            to ensure proper variable resolution.
 
         Returns
         -------
@@ -363,6 +457,8 @@ class TemplateRenderer:
         ValueError
             When there is an error writing the rendered template.
         """
+        # Prepare variables by resolving nested expressions with templar
+        prepared_vars = self._prepare_template_variables(variables, templar, display)
         try:
             temp_parent_dir = tempfile.mkdtemp()
             last_dir = os.path.basename(self.template_dir)
@@ -395,7 +491,7 @@ class TemplateRenderer:
                 )
                 try:
                     template = self.templating_env.get_template(file_path)
-                    rendered_contents = template.render(variables)
+                    rendered_contents = template.render(prepared_vars)
                 except jinja2.TemplateNotFound as err:
                     raise jinja2.TemplateNotFound("Template {0} was not found: {1}".format(
                         file_path,

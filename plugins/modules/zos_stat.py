@@ -43,10 +43,10 @@ options:
   volumes:
     description:
         - Name(s) of the volume(s) where the data set will be searched on.
-        - If omitted, the module will look up the master catalog to find
+        - If omitted, the module looks up the master catalog to find
           all volumes where a data set is allocated.
         - When used, if the data set is not found in at least one volume
-          from the list, the module will fail with a "data set not found"
+          from the list, the module fails with a "data set not found"
           message.
     type: list
     elements: str
@@ -67,13 +67,13 @@ options:
   sms_managed:
     description:
         - Whether the data set is managed by the Storage Management Subsystem.
-        - It will cause the module to retrieve additional information, may
+        - It causes the module to retrieve additional information, may
           take longer to query all attributes of a data set.
         - If the data set is a PDSE and the Ansible user has RACF READ authority
-          on it, retrieving SMS information will update the last referenced
+          on it, retrieving SMS information updates the last referenced
           date of the data set.
         - If the system finds the data set is not actually managed by SMS, the
-          rest of the attributes will still be queried and this will be noted
+          rest of the attributes are still queried and this is noted
           in the output from the task.
     type: bool
     required: false
@@ -82,12 +82,12 @@ options:
     description:
       - Whether to recall a migrated data set to fully query its
         attributes.
-      - If set to C(false), the module will return a limited amount of
+      - If set to C(false), the module returns a limited amount of
         information for a migrated data set.
-      - Recalling a data set will make the module take longer to execute.
+      - Recalling a data set makes the module take longer to run.
       - Ignored when the data set is not found to be migrated.
-      - The data set will not be migrated again afterwards.
-      - The data set will not get recalled when running the module in
+      - The data set is not migrated again afterwards.
+      - The data set is not recalled when the module runs in
         check mode.
     type: bool
     required: false
@@ -96,9 +96,9 @@ options:
     description:
       - Override the default high level qualifier (HLQ) for temporary data
         sets.
-      - The default HLQ is the Ansible user used to execute the module and
-        if that is not available, then the environment variable value
-        C(TMPHLQ) is used.
+      - The default HLQ is the Ansible user used to run the module. If
+        that is not available, the value of the C(TMPHLQ) environment
+        variable is used.
     type: str
     required: false
   follow:
@@ -123,7 +123,7 @@ options:
   checksum_algorithm:
     description:
       - Algorithm used to compute a file's checksum.
-      - Will throw an error if the managed node is unable to use the
+      - Returns an error if the managed node is unable to use the
         specified algorithm.
     type: str
     required: false
@@ -148,17 +148,16 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - When querying data sets, the module will create two temporary data sets.
+  - When querying data sets, the module creates two temporary data sets.
     One requires around 4 kilobytes of available space on the managed node.
-    The second one, around 1 kilobyte of available space. Both data sets will
-    be removed before the module finishes execution.
-  - Sometimes, the system could be unable to properly determine the
-    organization or record format of the data set or the space units used
-    to represent its allocation. When this happens, the values for these
-    fields will be null.
+    The second one, around 1 kilobyte of available space. Both data sets are
+    removed before the module finishes execution.
+  - Sometimes the system cannot determine the organization, record format,
+    or space allocation units for the data set. When this happens, these
+    fields are reported as not available.
   - When querying a partitioned data set (PDS), if the Ansible user has
-    RACF READ authority on it, the last referenced date will be updated by
-    the query operation.
+    RACF READ authority on it, the query operation updates the last
+    referenced date.
   - If you need to filter the output from the module by resource type, you
     can use the zos_stat_by_type filter inside of a playbook.
 
@@ -235,7 +234,7 @@ stat:
     name:
       description:
         - Name of the resource queried.
-        - For Generation Data Sets (GDSs), this will be the absolute name.
+        - For Generation Data Sets (GDSs), this is the absolute name.
       returned: success
       type: str
       sample: USER.SEQ.DATA.SET
@@ -375,8 +374,8 @@ stat:
           sample: ["000000", "SCR03"]
         missing_volumes:
           description:
-            - When using the C(volumes) option, this field will contain every volume
-              specified in a task where the data set was missing. Will be an empty list
+            - When using the C(volumes) option, this field contains every volume
+              specified in a task where the data set was missing. It is an empty list
               in any other case.
           returned: success
           type: list
@@ -428,8 +427,8 @@ stat:
         extents_used:
           description:
             - Number of extents used by the data set.
-            - For PDSEs, this value will be null. See instead pages_used and
-              perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 1
@@ -498,16 +497,16 @@ stat:
         dir_blocks_allocated:
           description:
             - Number of directory blocks allocated for a PDS.
-            - For PDSEs, this value will be null. See instead pages_used
-              and perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 5
         dir_blocks_used:
           description:
             - Number of directory blocks used by a PDS.
-            - For PDSEs, this value will be null. See instead pages_used
-              and perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 2
@@ -854,7 +853,7 @@ stat:
           description:
             - Checksum of the file computed by the hashing algorithm specified
               in C(checksum_algorithm).
-            - Will be null if C(get_checksum=false).
+            - Not available when C(get_checksum=false).
           returned: success
           type: str
           sample: "2025-02-23T13:03:45"
@@ -974,7 +973,7 @@ stat:
           type: bool
           sample: true
         xoth:
-          description: Whether others have execute permission over the file.
+          description: Whether others have run permission over the file.
           returned: success
           type: bool
           sample: false
@@ -989,7 +988,7 @@ stat:
           type: bool
           sample: true
         executable:
-          description: Whether the Ansible user can execute the path.
+          description: Whether the Ansible user can run the path.
           returned: success
           type: bool
           sample: true
@@ -1026,7 +1025,7 @@ stat:
         mimetype:
           description:
             - Output from the file utility describing the content.
-            - Will be null if C(get_mime=false).
+            - Not available when C(get_mime=false).
           returned: success
           type: str
           sample: "commands text"

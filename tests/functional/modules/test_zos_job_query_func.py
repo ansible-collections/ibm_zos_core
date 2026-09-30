@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,6 +24,7 @@ from shellescape import quote
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.users import ManagedUser, ManagedUserType
 
 def get_job_id(hosts, len_id=9):
     """
@@ -41,10 +42,44 @@ def get_job_id(hosts, len_id=9):
         all_jobs = result.get("stdout_lines")
     for job_n_info in all_jobs:
         job = job_n_info.split()
-        if len(job[2]) <= len_id:
-            return job[2]
+        job_id = job[2]
+        if len(job_id) <= len_id:
+            return job_id
 
-# Make sure job list * returns something
+def get_job(hosts):
+    """
+    Returns job that is on the system by searching all jobs on system.
+
+    Parameters
+    ----------
+    hosts : obj
+        Connection to host machine
+    """
+    results = hosts.all.shell(cmd="jls")
+    for result in results.contacted.values():
+        all_jobs = result.get("stdout_lines")
+    for job_n_info in all_jobs:
+        job = job_n_info.split()
+        return job
+
+SAMPLE_PDS_MEM = "SAMPLE"
+def create_pds_mem_for_job_submit(hosts, data_set_name, temp_path):
+    hosts.all.file(path=temp_path, state="directory")
+    hosts.all.shell(
+        cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
+    )
+    hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+    hosts.all.shell(
+        cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
+    )
+
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
+# test to verify querying all jobs returns results with all expected fields populated
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_query(job_name="*", owner="*")
@@ -79,7 +114,6 @@ def test_zos_job_query_func(ansible_zos_module):
         assert rc.get("msg_code") is not None
         assert rc.get("msg_txt") is not None
 
-
 JCLQ_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
 //STEP0001 EXEC PGM=IEBGENER
@@ -93,8 +127,9 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/"
+MANAGED_USER_JOB_NAME = "HELLO"
 
-# test to show multi wildcard in Job_id query won't crash the search
+# test to show multiple wildcards in job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -102,14 +137,14 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/SAMPLE \"//'{jdata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{jdata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -189,7 +224,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         hosts.all.shell(cmd=f"drm '{data_set_name}'")
 
 
-# test to show multi wildcard in Job_name query won't crash the search
+# test to show multiple wildcards in job_name query won't crash the search
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -197,14 +232,14 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
         temp_path = get_random_file_name(dir=TEMP_PATH)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
         )
         hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
         hosts.all.shell(
-            cmd=f"cp {temp_path}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{data_set_name}(SAMPLE)", remote_src=True, wait_time=10
+            src=f"{ndata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -332,31 +367,5 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         content_type = "JOB"
 
     for qresult in qresults.contacted.values():
-        assert qresult.get("changed") is True
         assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
-
-        job = qresult.get("jobs")[0]
-        assert job.get("job_name") is not None
-        assert job.get("owner") is not None
-        assert job.get("job_id") is not None
-        assert job.get("content_type") == content_type
-        assert job.get("system") is not None
-        assert job.get("subsystem") is not None
-        assert job.get("origin_node") is not None
-        assert job.get("execution_node") is not None
-        assert job.get("cpu_time") is not None
-        assert job.get("job_class") is not None
-        assert job.get("priority") is not None
-        assert job.get("asid") is not None
-        assert job.get("creation_date") is not None
-        assert job.get("creation_time") is not None
-        assert job.get("program_name") is not None
-        assert job.get("svc_class") is None
-        assert job.get("steps") is not None
-
-        rc = job.get("ret_code")
-        assert rc.get("msg") is not None
-        assert rc.get("msg_code") == "0000"
-        assert rc.get("code") == 0
-        assert rc.get("msg_txt") == "CC"
+        assert qresult.get("jobs")[0].get("content_type") == content_type

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -554,6 +554,13 @@ def run_module():
     owner = module.params.get("owner")
     dd_name = module.params.get("dd_name")
     sysin = module.params.get("sysin_dd")
+
+    if owner:
+        owner = owner.upper()
+    if job_name:
+        job_name = job_name.upper()
+    if job_id:
+        job_id = job_id.upper()
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner", stderr="", **results)

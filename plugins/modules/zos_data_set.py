@@ -162,7 +162,9 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining primary and secondary space.
-      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
+      - If I(space_type=blk), I(average_block_length) must be specified. For all
+        other space types, I(average_block_length) should not be specified.
     type: str
     choices:
       - k
@@ -170,6 +172,7 @@ options:
       - g
       - cyl
       - trk
+      - blk
     required: false
     default: m
   record_format:
@@ -226,7 +229,20 @@ options:
     required: false
   block_size:
     description:
-      - The block size to use for the data set.
+      - The block size, in bytes, of each physical I/O block in the data set.
+      - I(block_size) is a persistent characteristic of the data set that determines
+        the size of the block written to or read from disk by DSCB (data set control block).
+    type: int
+    required: false
+  average_block_length:
+    description:
+      - The estimated average size, in bytes, of the data blocks to be stored
+        in the data set when I(state=present).
+      - I(average_block_length) must be specified when I(space_type=blk). For all other
+        space types, I(average_block_length) should not be specified.
+      - I(average_block_length) is used only during space allocation to calculate
+        how many primary and secondary blocks fit on a physical track so that the
+        correct amount of storage volume is reserved.
     type: int
     required: false
   directory_blocks:
@@ -245,7 +261,7 @@ options:
     description:
       - The key length to use when creating a KSDS data set.
       - I(key_length) is required when I(type=ksds).
-      - I(key_length) should only be provided when I(type=ksds)
+      - I(key_length) should only be provided when I(type=ksds).
     type: int
     required: false
   empty:
@@ -487,7 +503,9 @@ options:
       space_type:
         description:
           - The unit of measurement to use when defining primary and secondary space.
-          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
+          - If I(space_type=blk), I(average_block_length) must be specified. For all
+            other space types, I(average_block_length) should not be specified.
         type: str
         choices:
           - k
@@ -495,6 +513,7 @@ options:
           - g
           - cyl
           - trk
+          - blk
         required: false
         default: m
       record_format:
@@ -551,7 +570,20 @@ options:
         required: false
       block_size:
         description:
-          - The block size to use for the data set.
+          - The block size, in bytes, of each physical I/O block in the data set.
+          - I(block_size) is a persistent characteristic of the data set that determines
+            the size of the block written to or read from disk by DSCB (data set control block).
+        type: int
+        required: false
+      average_block_length:
+        description:
+          - The estimated average size, in bytes, of the data blocks to be stored
+            in the data set when I(state=present).
+          - I(average_block_length) must be specified when I(space_type=blk). For all other
+            space types, I(average_block_length) should not be specified.
+          - I(average_block_length) is used only during space allocation to calculate
+            how many primary and secondary blocks fit on a physical track so that the
+            correct amount of storage volume is reserved.
         type: int
         required: false
       directory_blocks:
@@ -822,6 +854,16 @@ EXAMPLES = r"""
     volumes:
       - "000000"
       - "222222"
+
+- name: Create a sequential data set with block space allocation
+  zos_data_set:
+    name: someds.name.here
+    state: present
+    type: seq
+    space_type: blk
+    space_primary: 25
+    space_secondary: 2
+    average_block_length: 240
 """
 RETURN = r"""
 data_sets:
@@ -883,6 +925,10 @@ data_sets:
       returned: always
     block_size:
       description: The block size used for the data set.
+      type: int
+      returned: always
+    average_block_length:
+      description: The estimated average size, in bytes, of the data blocks stored in the data set.
       type: int
       returned: always
     directory_blocks:
@@ -1144,10 +1190,10 @@ def space_type(contents, dependencies):
         return "m"
     if contents is None:
         return None
-    match = re.fullmatch(r"(m|g|k|trk|cyl)", contents, re.IGNORECASE)
+    match = re.fullmatch(r"(m|g|k|trk|cyl|blk)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk", "cyl" or "blk".'.format(
                 contents
             )
         )
@@ -1502,6 +1548,79 @@ def key_offset(contents, dependencies):
     return contents
 
 
+# * dependent on state
+# * dependent on space_type
+def average_block_length_required(contents, dependencies):
+    """When space_type is 'blk' and state is 'present', enforces that average_block_length
+        must be supplied or else error is raised.
+
+    Parameters
+    ----------
+    contents : int
+        average_block_length (may be None when not provided).
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    bool
+        Return False when average_block_length is not required or is correctly supplied
+        with other dependent parameters.
+
+    Raises
+    ------
+    ValueError
+        average_block_length was not provided when space_type is 'blk'.
+    """
+    if (
+        dependencies.get("state") == "present"
+        and dependencies.get("space_type") == "blk"
+        and contents is None
+    ):
+        raise ValueError("average_block_length is required when space_type is 'blk'.")
+    return False
+
+
+# * dependent on state
+# * dependent on space_type
+def average_block_length(contents, dependencies):
+    """Validates average block length is valid when space_type is 'blk'.
+    Returns average block length as integer.
+
+    Parameters
+    ----------
+    contents : int
+        average_block_length.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is None.
+    int
+        average_block_length.
+
+    Raises
+    ------
+    ValueError
+        average_block_length can not be provided when space_type is not 'blk'.
+    ValueError
+        average_block_length must be a positive integer greater than 0.
+    """
+    if dependencies.get("state") != "present":
+        return None
+    if dependencies.get("space_type") != "blk" and contents is not None:
+        raise ValueError("average_block_length is only valid when space_type is 'blk'.")
+    if contents is None:
+        return None
+    contents = int(contents)
+    if contents <= 0:
+        raise ValueError("Value {0} is invalid for average_block_length argument. "
+                         "average_block_length must be a positive integer greater than 0.".format(contents))
+    return int(contents)
+
+
 def get_data_set_handler(**params):
     """Get object initialized based on parameters.
     Parameters
@@ -1534,6 +1653,7 @@ def get_data_set_handler(**params):
             volumes=params.get("volumes", None),
             data_set_type=params.get("type", None),
             block_size=params.get("block_size", None),
+            average_block_length=params.get("average_block_length", None),
             record_length=params.get("record_length", None),
             space_primary=params.get("space_primary", None),
             space_secondary=params.get("space_secondary", None),
@@ -1633,7 +1753,7 @@ def parse_and_validate_args(params):
                     type=space_type,
                     required=False,
                     dependencies=["state"],
-                    choices=["k", "m", "g", "cyl", "trk"],
+                    choices=["k", "m", "g", "cyl", "trk", "blk"],
                     default="m",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
@@ -1667,6 +1787,11 @@ def parse_and_validate_args(params):
                     type=valid_when_state_present,
                     required=False,
                     dependencies=["state"],
+                ),
+                average_block_length=dict(
+                    type=average_block_length,
+                    required=average_block_length_required,
+                    dependencies=["state", "space_type"],
                 ),
                 directory_blocks=dict(
                     type=valid_when_state_present,
@@ -1750,7 +1875,7 @@ def parse_and_validate_args(params):
             type=space_type,
             required=False,
             dependencies=["state"],
-            choices=["k", "m", "g", "cyl", "trk"],
+            choices=["k", "m", "g", "cyl", "trk", "blk"],
             default="m",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
@@ -1780,6 +1905,11 @@ def parse_and_validate_args(params):
             type=valid_when_state_present,
             required=False,
             dependencies=["state"],
+        ),
+        average_block_length=dict(
+            type=average_block_length,
+            required=average_block_length_required,
+            dependencies=["state", "space_type"],
         ),
         directory_blocks=dict(
             type=valid_when_state_present,
@@ -1838,6 +1968,7 @@ def parse_and_validate_args(params):
             # ["batch", "replace"],
             ["batch", "volumes"],
             # ["batch", "force"],
+            ["batch", "average_block_length"]
         ],
     )
     parser = BetterArgParser(arg_defs)
@@ -1884,6 +2015,7 @@ def build_return_schema(data_set_list):
         "sms_management_class": "",
         "record_length": "",
         "block_size": "",
+        "average_block_length": "",
         "directory_blocks": "",
         "key_offset": "",
         "key_length": "",
@@ -1940,7 +2072,7 @@ def run_module():
                     type="str",
                     required=False,
                     default="m",
-                    choices=["k", "m", "g", "cyl", "trk"],
+                    choices=["k", "m", "g", "cyl", "trk", "blk"],
                 ),
                 space_primary=dict(type="int", required=False, default=5),
                 space_secondary=dict(type="int", required=False, default=3),
@@ -1960,6 +2092,10 @@ def run_module():
                 ),
                 sms_data_class=dict(type="str", required=False),
                 block_size=dict(
+                    type="int",
+                    required=False,
+                ),
+                average_block_length=dict(
                     type="int",
                     required=False,
                 ),
@@ -2012,7 +2148,7 @@ def run_module():
             type="str",
             required=False,
             default="m",
-            choices=["k", "m", "g", "cyl", "trk"],
+            choices=["k", "m", "g", "cyl", "trk", "blk"],
         ),
         space_primary=dict(type="int", required=False, default=5),
         space_secondary=dict(type="int", required=False, default=3),
@@ -2030,6 +2166,10 @@ def run_module():
         sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
         block_size=dict(
+            type="int",
+            required=False,
+        ),
+        average_block_length=dict(
             type="int",
             required=False,
         ),

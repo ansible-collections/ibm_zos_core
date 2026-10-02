@@ -94,6 +94,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg", False) is False
+        assert result.get("failed", False) is False
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]

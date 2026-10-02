@@ -119,7 +119,7 @@ filter-doc:
 	fi
 
 	@echo "Generating ReStructuredText for all ansible modules found at '../plugins/filter/' to 'source/filters'."
-	@ansible-doc-extractor --template templates/module.rst.j2 source/filters ../plugins/filter/*.py
+	@ansible-doc-extractor --template templates/module.rst.j2 source/filters $(ROOT_DIR)/../plugins/filter/*.py
 
 
 	@if test -e ../plugins/filter/__init__.py.skip; then \
@@ -154,7 +154,7 @@ role-doc:
 		echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
 		sed -i -e "s/^role:/module:/" ../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Generating RST doc for role ../roles/$$role_name"; \
-		ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
+		ansible-doc-extractor --template templates/role.rst.j2 source/roles $(ROOT_DIR)/../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
 		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
 		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py-e; \
@@ -189,7 +189,7 @@ module-doc:
 	scripts/pre-template.sh
 
 	@echo "Generating ReStructuredText for all ansible modules found at '../plugins/modules/' to 'source/modules'."
-	@ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
+	@ansible-doc-extractor --template templates/module.rst.j2 source/modules $(ROOT_DIR)/../plugins/modules/*.py
 
 	@echo "Updating zos_apf file."
 	scripts/post-zos_apf.sh

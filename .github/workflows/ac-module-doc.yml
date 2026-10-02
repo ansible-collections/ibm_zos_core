@@ -3,7 +3,7 @@ name: Module Doc Check
 on:
   pull_request:
     paths:
-      - 'plugins/modules/*'
+      - "plugins/modules/*"
     branches:
       - dev
       - staging*
@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          pip install ansible==11.9.0
+          pip install ansible==12.0.0
           pip install ansible-doc-extractor
 
       - name: Run ac-module-doc

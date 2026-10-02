@@ -251,7 +251,7 @@ class DataSet(object):
         return changed, data_set
 
     @staticmethod
-    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False):
+    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False, purge=False):
         """Deletes provided data set if it exists.
 
         Parameters
@@ -264,13 +264,15 @@ class DataSet(object):
             High Level Qualifier for temporary datasets.
         noscratch : bool
             If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
         bool
             Indicates if changes were made.
         """
-        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch)
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch, purge=purge)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -1107,7 +1109,7 @@ class DataSet(object):
         return present, changed
 
     @staticmethod
-    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False):
+    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False, purge=False):
         """Attempts to catalog a data set if not already cataloged, then deletes
            the data set.
            This is helpful when a data set currently cataloged is not the data
@@ -1125,6 +1127,8 @@ class DataSet(object):
             High Level Qualifier for temporary datasets.
         noscratch : bool
             If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
@@ -1145,7 +1149,7 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
                 else:
@@ -1180,7 +1184,7 @@ class DataSet(object):
 
                     if present:
                         try:
-                            DataSet.delete(name, noscratch=noscratch)
+                            DataSet.delete(name, noscratch=noscratch, purge=purge)
                         except DatasetDeleteError:
                             try:
                                 DataSet.uncatalog(name, tmphlq=tmphlq)
@@ -1207,14 +1211,14 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
         else:
             present = DataSet.data_set_cataloged(name, None, tmphlq=tmphlq)
             if present:
                 try:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
                 except DatasetDeleteError:
@@ -1529,7 +1533,7 @@ class DataSet(object):
         return changed, data_set
 
     @staticmethod
-    def delete(name, noscratch=False):
+    def delete(name, noscratch=False, purge=False):
         """A wrapper around zoautil_py
         datasets.delete() to raise exceptions on failure.
 
@@ -1537,13 +1541,17 @@ class DataSet(object):
         ----------
         name : str
             The name of the data set to delete.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Raises
         ------
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name, no_scratch=noscratch)
+        rc = datasets.delete(name, no_scratch=noscratch, purge=purge)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -2702,7 +2710,7 @@ class DataSetUtils(object):
 
 class MVSDataSet():
     """
-    This class represents a z/OS data set that can be yet to be created or
+    This class represents a z/OS data set that has yet to be created or
     already created in the system. It encapsulates the data set attributes
     to easy access and provides operations to perform in the same data set.
 
@@ -2862,20 +2870,24 @@ class MVSDataSet():
         self.set_state("present")
         return rc
 
-    def ensure_absent(self, tmp_hlq=None, noscratch=False):
+    def ensure_absent(self, tmp_hlq=None, noscratch=False, purge=False):
         """Removes the data set.
 
         Parameters
         ----------
         tmp_hlq : str
             High level qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
         int
             Indicates if changes were made.
         """
-        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch)
+        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch, purge=purge)
         if rc == 0:
             self.set_state("absent")
         return rc

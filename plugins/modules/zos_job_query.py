@@ -413,6 +413,14 @@ def run_module():
         name = module.params.get("job_name")
         id = module.params.get("job_id")
         owner = module.params.get("owner")
+
+        if owner:
+            owner = owner.upper()
+        if name:
+            name = name.upper()
+        if id:
+            id = id.upper()
+
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
@@ -455,17 +463,13 @@ def query_jobs(job_name, job_id, owner):
     except Exception as e:
         raise RuntimeError("Error querying jobs: " + str(e))
 
-    # When all three filters are provided as explicit (non-wildcard) values and
-    # the job_id lookup returned no real job (only the synthetic _job_not_found
+    # When the job_id lookup returned no real job (only the synthetic _job_not_found
     # sentinel), the combination is unresolvable — treat it as a failure so the
     # module surfaces an error consistent with v2.0.0 failure path.
-    explicit_job_name = job_name and job_name != "*"
-    if job_id and explicit_job_name and owner:
-        if jobs and jobs[0].get("job_not_found"):
-            raise RuntimeError(
-                "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
-            )
-
+    if jobs and jobs[0].get("job_not_found"):
+        raise RuntimeError(
+            "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
+        )
     return jobs
 
 

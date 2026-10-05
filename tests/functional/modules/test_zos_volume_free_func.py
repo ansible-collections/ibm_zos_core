@@ -110,12 +110,15 @@ def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
 
 
 def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
-    """A single non-existent VOLSER should return an empty list without failing."""
+    """A single non-existent VOLSER: succeeds (rc=0, changed=False), volumes=[], msg and skipped_volumes populated."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
     for result in results.contacted.values():
         assert result.get('failed') is not True, (
             "Expected module to succeed for non-existent single VOLSER 'XXXXXX' but it failed"
+        )
+        assert result.get('rc') == 0, (
+            "Expected rc=0 for nonexistent single VOLSER, got rc={0}".format(result.get('rc'))
         )
         assert result.get('changed') is False
         assert result.get('volumes') == [], (
@@ -203,7 +206,7 @@ def test_filter_online_only(ansible_zos_module):
     """All returned volumes should have status.online=True when filter is applied."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online']}
+        filter={'status_include_all': ['online']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -335,7 +338,7 @@ def test_filter_combined_status_and_percent(ansible_zos_module):
     hosts = ansible_zos_module
     max_pct = 80
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online'], 'percent_free_max': max_pct}
+        filter={'status_include_all': ['online'], 'percent_free_max': max_pct}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -552,14 +555,14 @@ def test_return_stderr_present(ansible_zos_module):
 
 
 # ---------------------------------------------------------------------------
-# Tests: filter.status (UCB flag filtering)
+# Tests: filter.status_include_all and filter.status_include_any (UCB flag filtering)
 # ---------------------------------------------------------------------------
 
 def test_filter_status_invalid_value_fails(ansible_zos_module):
     """An invalid status flag should cause the module to fail with a clear error."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['not_a_flag']}
+        filter={'status_include_all': ['not_a_flag']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is True, (
@@ -575,7 +578,7 @@ def test_filter_status_is_online(ansible_zos_module):
     """All returned volumes must have status.online=True."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online']}
+        filter={'status_include_all': ['online']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -586,10 +589,10 @@ def test_filter_status_is_online(ansible_zos_module):
 
 
 def test_filter_status_multiple_flags(ansible_zos_module):
-    """All returned volumes must satisfy every flag listed in the status filter."""
+    """All returned volumes must satisfy every flag listed in the status_include_all filter."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online', 'allocated']}
+        filter={'status_include_all': ['online', 'allocated']}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -603,22 +606,67 @@ def test_filter_status_multiple_flags(ansible_zos_module):
             )
 
 
-def test_filter_status_valid_choices_accepted(ansible_zos_module):
+@pytest.mark.parametrize('flag', [
+    'online',
+    'offline_pending',
+    'mount_reserved',
+    'unload_pending',
+    'allocated',
+    'permanently_resident',
+    'system_residence',
+    'status_indicator',
+])
+def test_filter_status_valid_choices_accepted(ansible_zos_module, flag):
     """Every valid status flag name should be accepted without failure."""
     hosts = ansible_zos_module
-    valid_flags = [
-        'online', 'offline_pending', 'mount_reserved',
-        'unload_pending', 'allocated', 'permanently_resident',
-        'system_residence', 'status_indicator',
-    ]
-    for flag in valid_flags:
-        results = hosts.all.zos_volume_free(
-            filter={'status': [flag]}
+    results = hosts.all.zos_volume_free(
+        filter={'status_include_all': [flag]}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True, (
+            "Module unexpectedly failed for valid status flag '{0}': {1}".format(
+                flag, result.get('msg', '')
+            )
         )
-        for result in results.contacted.values():
-            assert result.get('failed') is not True, (
-                "Module unexpectedly failed for valid status flag '{0}': {1}".format(
-                    flag, result.get('msg', '')
+
+
+def test_filter_status_include_any(ansible_zos_module):
+    """status_include_any: every returned volume must satisfy at least one of the listed flags."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(
+        filter={'status_include_any': ['online', 'allocated']}
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            st = vol['status']
+            assert st['online'] is True or st['allocated'] is True, (
+                "Volume {0} has neither online nor allocated set but passed status_include_any".format(
+                    vol['volser']
+                )
+            )
+
+
+def test_filter_status_include_all_and_any_combined(ansible_zos_module):
+    """status_include_all + status_include_any: volumes must satisfy ALL of include_all
+    AND at least ONE of include_any."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(
+        filter={
+            'status_include_all': ['online'],
+            'status_include_any': ['allocated', 'permanently_resident'],
+        }
+    )
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        for vol in result.get('volumes', []):
+            st = vol['status']
+            assert st['online'] is True, (
+                "Volume {0} failed status_include_all: online=False".format(vol['volser'])
+            )
+            assert st['allocated'] is True or st['permanently_resident'] is True, (
+                "Volume {0} failed status_include_any: neither allocated nor permanently_resident".format(
+                    vol['volser']
                 )
             )
 
@@ -647,16 +695,16 @@ def test_query_device_number_case_insensitive(ansible_zos_module, volumes_unit_o
 
 
 # ---------------------------------------------------------------------------
-# Gap 2: empty status list returns all volumes (no filter applied)
+# Gap 2: empty status_include_all list returns all volumes (no filter applied)
 # ---------------------------------------------------------------------------
 
 def test_filter_status_empty_list_returns_all(ansible_zos_module):
-    """An empty status list should apply no UCB filter — all volumes are returned."""
+    """An empty status_include_all list should apply no UCB filter — all volumes are returned."""
     hosts = ansible_zos_module
     # Baseline: total volumes with no filter.
     baseline_results = hosts.all.zos_volume_free()
-    # Filtered: empty status list.
-    filtered_results = hosts.all.zos_volume_free(filter={'status': []})
+    # Filtered: empty status_include_all list.
+    filtered_results = hosts.all.zos_volume_free(filter={'status_include_all': []})
 
     for host in baseline_results.contacted:
         baseline_count = len(baseline_results.contacted[host].get('volumes', []))
@@ -697,14 +745,14 @@ def test_filter_free_space_range(ansible_zos_module):
 
 
 # ---------------------------------------------------------------------------
-# Gap 4: status + vtoc_indexed combined filter
+# Gap 4: status_include_all + vtoc_indexed combined filter
 # ---------------------------------------------------------------------------
 
 def test_filter_combined_status_and_vtoc(ansible_zos_module):
-    """Combined status + vtoc_indexed filter: all results must satisfy both."""
+    """Combined status_include_all + vtoc_indexed filter: all results must satisfy both."""
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
-        filter={'status': ['online'], 'vtoc_indexed': True}
+        filter={'status_include_all': ['online'], 'vtoc_indexed': True}
     )
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -773,31 +821,6 @@ def test_msg_single_existing_volser(ansible_zos_module, volumes_on_systems):
         )
 
     vols.free_vol(vol_name)
-
-
-def test_msg_single_nonexistent_volser_no_fail(ansible_zos_module):
-    """Single nonexistent VOLSER: module succeeds, rc=0, volumes=[], msg lists unavailable."""
-    hosts = ansible_zos_module
-    results = hosts.all.zos_volume_free(volumes=["XXXXXX"])
-    for result in results.contacted.values():
-        assert result.get('failed') is not True
-        assert result.get('rc') == 0, (
-            "Expected rc=0 for nonexistent single VOLSER, got rc={0}".format(result.get('rc'))
-        )
-        assert result.get('volumes') == []
-        msg = result.get('msg', '')
-        assert 'No matching volumes found.' in msg, (
-            "Expected 'No matching volumes found.' in msg, got: {0!r}".format(msg)
-        )
-        assert 'XXXXXX' in msg, (
-            "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
-        )
-        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
-            "Expected skipped_volumes for missing volser, got: {0}".format(
-                result.get('skipped_volumes')
-            )
-        )
-        assert result.get('skipped_device_numbers') == []
 
 
 def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):

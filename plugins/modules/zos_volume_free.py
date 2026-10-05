@@ -75,27 +75,53 @@ options:
     type: dict
     required: false
     suboptions:
-      status:
+      status_include_all:
         description:
-          - Filter by one or more UCB device status flags.
-          - Only volumes where B(all) listed flags are C(true) in the
-            C(status) return field are included.
+          - Include only volumes where B(all) listed UCB device status flags are C(true).
+          - Use this for mandatory status conditions — every flag in this list must be
+            set on the volume.
+          - Can be combined with I(filter.status_include_any) to express
+            "must have ALL of these AND at least ONE of those".
           - C(online) - device is online (C(ucbonli)).
           - C(offline_pending) - device is transitioning from online to offline
             (C(ucbchgs)).
-          - C(mount_reserved) - mount status of the volume is reserved (C(ucbresv)).
+          - C(mount_reserved) - mount status of the volume is reserved, which prevents
+            the volume from unmounting when a job finishes (C(ucbresv)).
           - C(unload_pending) - unload command addressed but device not yet
             unloaded (C(ucbunld)).
-          - C(allocated) - device is allocated (C(ucbaloc)).
-          - C(permanently_resident) - mount status of the volume is permanently resident
-            (C(ucbpres)).
-          - C(system_residence) - system residence device, primary console,
+          - C(allocated) - an active job is assigned to the device (C(ucbaloc)).
+          - C(permanently_resident) - mount status of the volume is permanently resident,
+            which indicates that the volume cannot be physically demounted unless the device
+            is offline (C(ucbpres)).
+          - C(system_residence) - device is a system residence device, primary console,
             or active console (C(ucbsysr)).
-          - C(status_indicator) - for tape volumes, standard tape labels have
-            been verified; for console devices, secondary console or console
-            status is changing (C(ucbdadi)).
+          - C(status_indicator) - for tape volumes, standard tape labels have been verified
+            to ensure the correct volume is mounted; for console devices, secondary console
+            or console status is changing (C(ucbdadi)).
         type: list
         elements: str
+        required: false
+        choices:
+          - online
+          - offline_pending
+          - mount_reserved
+          - unload_pending
+          - allocated
+          - permanently_resident
+          - system_residence
+          - status_indicator
+      status_include_any:
+        description:
+          - Include only volumes where B(at least one) of the listed UCB device
+            status flags is C(true).
+          - Use this for optional status conditions — the volume must satisfy at
+            least one flag in this list.
+          - Can be combined with I(filter.status_include_all) to express
+            "must have ALL of these AND at least ONE of those".
+          - Accepts the same flag values as I(filter.status_include_all).
+        type: list
+        elements: str
+        required: false
         choices:
           - online
           - offline_pending
@@ -214,7 +240,7 @@ EXAMPLES = r"""
 - name: Get only online volumes.
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status:
+      status_include_all:
         - online
   register: online_volumes
 
@@ -222,7 +248,7 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       percent_free_max: 20
-      status:
+      status_include_all:
         - online
   register: low_space_volumes
 
@@ -231,7 +257,7 @@ EXAMPLES = r"""
     filter:
       free_space_min: 100
       unit: cylinders
-      status:
+      status_include_all:
         - online
   register: volumes_with_space
 
@@ -241,21 +267,31 @@ EXAMPLES = r"""
       vtoc_indexed: true
   register: indexed_volumes
 
-- name: Get volumes that are online and allocated.
+- name: Get volumes that are online and allocated (both flags mandatory).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status:
+      status_include_all:
         - online
         - allocated
   register: online_allocated_volumes
 
-- name: Get volumes that are online and permanently resident.
+- name: Get volumes that are online and permanently resident (both flags mandatory).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status:
+      status_include_all:
         - online
         - permanently_resident
   register: resident_volumes
+
+- name: Get volumes that are online and have at least one of allocated or permanently resident.
+  ibm.ibm_zos_core.zos_volume_free:
+    filter:
+      status_include_all:
+        - online
+      status_include_any:
+        - allocated
+        - permanently_resident
+  register: online_with_optional_status
 
 - name: Get cylinder-managed (EAV) volumes.
   ibm.ibm_zos_core.zos_volume_free:
@@ -267,7 +303,7 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       cylinder_managed: false
-      status:
+      status_include_all:
         - online
   register: track_managed_online_volumes
 """
@@ -635,14 +671,15 @@ def _apply_filters(volume_list, filter_params):
     if not filter_params:
         return volume_list
 
-    status_flags = filter_params.get('status') or []
+    status_include_all = filter_params.get('status_include_all') or []
+    status_include_any = filter_params.get('status_include_any') or []
     free_space_min = filter_params.get('free_space_min')
     free_space_max = filter_params.get('free_space_max')
     percent_free_min = filter_params.get('percent_free_min')
     percent_free_max = filter_params.get('percent_free_max')
     vtoc_indexed = filter_params.get('vtoc_indexed')
     cylinder_managed = filter_params.get('cylinder_managed')
-    unit = filter_params.get('unit', 'tracks')
+    unit = filter_params.get('unit')
 
     # Convert cylinder thresholds to tracks for comparison.
     if unit == 'cylinders':
@@ -653,8 +690,11 @@ def _apply_filters(volume_list, filter_params):
 
     result = []
     for vol in volume_list:
-        # All listed UCB flags must be True in status.
-        if any(not vol['status'].get(flag) for flag in status_flags):
+        # All listed flags in status_include_all must be True.
+        if status_include_all and not all(vol['status'].get(f) for f in status_include_all):
+            continue
+        # At least one flag in status_include_any must be True.
+        if status_include_any and not any(vol['status'].get(f) for f in status_include_any):
             continue
         if free_space_min is not None and vol['free_space'] < free_space_min:
             continue
@@ -824,7 +864,17 @@ def run_module():
                 'required': False,
                 'default': None,
                 'options': {
-                    'status': {
+                    'status_include_all': {
+                        'type': 'list',
+                        'elements': 'str',
+                        'choices': [
+                            'online', 'offline_pending', 'mount_reserved',
+                            'unload_pending', 'allocated', 'permanently_resident',
+                            'system_residence', 'status_indicator',
+                        ],
+                        'required': False,
+                    },
+                    'status_include_any': {
                         'type': 'list',
                         'elements': 'str',
                         'choices': [
@@ -861,7 +911,8 @@ def run_module():
             'type': 'dict',
             'required': False,
             'options': {
-                'status': {'type': 'list', 'elements': 'str', 'required': False},
+                'status_include_all': {'type': 'list', 'elements': 'str', 'required': False},
+                'status_include_any': {'type': 'list', 'elements': 'str', 'required': False},
                 'free_space_min': {'type': 'int', 'required': False},
                 'free_space_max': {'type': 'int', 'required': False},
                 'percent_free_min': {'type': 'int', 'required': False},
@@ -883,6 +934,8 @@ def run_module():
             volumes=[],
             rc=5,
             msg='Parameter verification failed.',
+            skipped_volumes=[],
+            skipped_device_numbers=[],
             stdout='',
             stderr=str(err),
         )

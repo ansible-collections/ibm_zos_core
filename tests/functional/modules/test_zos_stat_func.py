@@ -110,11 +110,15 @@ EXPECTED_ATTRS = {
         'nested': [
             ['data', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'spanned', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]],
             ['index', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]]
         ]
     },
@@ -128,6 +132,16 @@ EXPECTED_ATTRS = {
             'purge',
             'extended',
             'active_gens'
+        ],
+        'nested': []
+    },
+
+    # member_details is present on all data_set attributes dicts but is only
+    # populated (a list) for pds and pdse types; for all other types it must
+    # be None.
+    'member_details': {
+        'flat': [
+            'member_details'
         ],
         'nested': []
     }
@@ -147,6 +161,10 @@ def assert_invalid_attrs_are_none(attrs, resource_type):
             continue
         elif resource_type in ('seq', 'pds', 'pdse', 'vsam') and current_type == 'data_set':
             continue
+        # pds and pdse both populate member_details with a list, so skip the
+        # None check for those types.
+        elif resource_type in ('pds', 'pdse') and current_type == 'member_details':
+            continue
 
         for attr in EXPECTED_ATTRS[current_type]['flat']:
             assert attrs[attr] is None
@@ -154,6 +172,60 @@ def assert_invalid_attrs_are_none(attrs, resource_type):
         for nest in EXPECTED_ATTRS[current_type]['nested']:
             for sub_key in nest[1]:
                 assert attrs[nest[0]][sub_key] is None
+
+
+# Keys present inside every VsamComponent.fetch_statistics() sub-dict.
+VSAM_STATISTICS_KEYS = [
+    'total_records',
+    'deleted_records',
+    'inserted_records',
+    'updated_records',
+    'retrieved_records',
+    'control_interval_splits',
+    'control_area_splits',
+    'free_space_percentage_ci',
+    'free_space_percentage_ca',
+    'free_space',
+]
+
+
+def assert_vsam_component(component, *, has_key: bool = False, has_spanned: bool = True):
+    """Assert the shape and types of a VSAM component dict (data or index).
+
+    Arguments:
+        component (dict) -- attrs['data'] or attrs['index'].
+        has_key (bool) -- True when the component is expected to carry key
+            length / key offset (KSDS data component only).
+        has_spanned (bool) -- True for all component types (data and index both
+            expose spanned per the ZOAU VsamComponent API). Pass False only
+            when explicitly not asserting the field (e.g. future API change).
+    """
+    assert component is not None
+
+    # Structural keys are always present.
+    for key in ('name', 'avg_record_length', 'max_record_length',
+                'bufspace', 'control_interval_size',
+                'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed',
+                'volser', 'device_type', 'total_records'):
+        assert key in component, f"component missing key '{key}'"
+
+    if has_key:
+        assert isinstance(component.get('key_length'), int)
+        assert isinstance(component.get('key_offset'), int)
+
+    if has_spanned:
+        assert 'spanned' in component
+
+    # --- statistics sub-dict ---
+    stats = component.get('statistics')
+    assert isinstance(stats, dict), "statistics must be a dict"
+    for field in VSAM_STATISTICS_KEYS:
+        assert field in stats, f"statistics missing field '{field}'"
+        # Each field is either an int or None (when ZOAU could not fetch it).
+        assert stats[field] is None or isinstance(stats[field], int), (
+            f"statistics['{field}'] must be int or None, got {type(stats[field])}"
+        )
 
 
 def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
@@ -301,6 +373,244 @@ def test_query_data_set_pds_no_volume(ansible_zos_module, volumes_on_systems):
         )
 
 
+def test_query_data_set_pds_member_no_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pds'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('block_size') is not None
+            assert stat['attributes'].get('dir_blocks_allocated') is not None
+            assert stat['attributes'].get('dir_blocks_used') is not None
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('members') == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pds')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
+def test_query_data_set_pds_no_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is an empty list when PDS has no members."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat['attributes'].get('members') == 0
+            assert stat['attributes'].get('member_details') == []
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
+def test_query_data_set_pds_multiple_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details contains one entry per member when a PDS has
+    multiple members, and that every entry has the expected structure."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    member_names = ["MEMBERA", "MEMBERB", "MEMBERC"]
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for mem in member_names:
+            hosts.all.shell(cmd=f'decho "content of {mem}" "{escaped_name}({mem})"')
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+
+            assert stat['attributes'].get('members') == len(member_names)
+
+            member_details = stat['attributes'].get('member_details')
+            assert isinstance(member_details, list)
+            assert len(member_details) == len(member_names)
+
+            returned_names = {m.get('name') for m in member_details}
+            assert returned_names == set(member_names)
+
+            for member in member_details:
+                assert 'name' in member
+                assert 'extended_attributes' in member
+                assert 'ispf_statistics' in member
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_pdse_no_members(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is an empty list when PDSE has no members."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tpdse -V{available_vol} {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+            assert stat['attributes'].get('members') == 0
+            assert stat['attributes'].get('member_details') == []
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_seq_has_no_member_details(ansible_zos_module, volumes_on_systems):
+    """Verify member_details is None for a sequential dataset — the key is
+    always present but only populated for PDS and PDSE types."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tseq -V{available_vol} {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            stat = result['stat']
+            assert 'member_details' in stat.get('attributes', {}), (
+                "member_details key must always be present"
+            )
+            assert stat['attributes']['member_details'] is None, (
+                "member_details must be None for sequential datasets"
+            )
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
 def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
 
@@ -377,6 +687,274 @@ def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
         )
 
 
+def test_query_data_set_pdse_members_no_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpdse -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pdse'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('pages_allocated') is not None
+            assert stat['attributes'].get('pages_used') is not None
+            assert stat['attributes'].get('perc_pages_used') is not None
+            assert stat['attributes'].get('pdse_version') is not None
+            assert stat['attributes'].get('max_pdse_generation') is not None
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('members') == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pdse')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
+def test_query_data_set_pdse_members_with_alias(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpdse -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_alias_creation_result = hosts.all.shell(
+            cmd=f"tsocmd \"RENAME '{escaped_name}(TESTMEM)' '{escaped_name}(ALIAS1)' ALIAS\""
+        )
+
+        for result in data_set_member_alias_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pdse'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('pages_allocated') is not None
+            assert stat['attributes'].get('pages_used') is not None
+            assert stat['attributes'].get('perc_pages_used') is not None
+            assert stat['attributes'].get('pdse_version') is not None
+            assert stat['attributes'].get('max_pdse_generation') is not None
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('members') == 1
+            assert len(stat['attributes'].get('member_details')) == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is not None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pdse')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
+def test_query_data_set_pds_members_with_alias(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    name = f"{name}$#@"
+    escaped_name = name.replace('$', '\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tpds -V{available_vol} {escaped_name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_creation_result = hosts.all.shell(
+            cmd=f'decho "Sample text" "{escaped_name}(TESTMEM)"'
+        )
+
+        for result in data_set_member_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        data_set_member_alias_creation_result = hosts.all.shell(
+            cmd=f"tsocmd \"RENAME '{escaped_name}(TESTMEM)' '{escaped_name}(ALIAS1)' ALIAS\""
+        )
+
+        for result in data_set_member_alias_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('exists') is True
+            assert stat.get('isfile') is False
+            assert stat.get('isdataset') is True
+            assert stat.get('isaggregate') is False
+            assert stat.get('isgdg') is False
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'po'
+            assert stat['attributes'].get('type') == 'pds'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('members') == 2
+            assert len(stat['attributes'].get('member_details')) == 1
+            assert stat['attributes'].get('member_details')[0].get('name') == "TESTMEM"
+            assert stat['attributes'].get('member_details')[0].get('extended_attributes') is None
+            assert stat['attributes'].get('member_details')[0].get('ispf_statistics') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'pds')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {escaped_name}'
+        )
+
+
 def test_query_data_set_vsam_ksds(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -435,20 +1013,308 @@ def test_query_data_set_vsam_ksds(ansible_zos_module):
             assert stat['attributes']['data'].get('device_type') is not None
 
             assert stat['attributes'].get('index') is not None
-            assert stat['attributes']['data'].get('key_length') == key_length
-            assert stat['attributes']['data'].get('key_offset') == key_offset
-            assert stat['attributes']['data'].get('avg_record_length') is not None
-            assert stat['attributes']['data'].get('max_record_length') is not None
-            assert stat['attributes']['data'].get('bufspace') is not None
-            assert stat['attributes']['data'].get('name') is not None
-            assert stat['attributes']['data'].get('volser') is not None
-            assert stat['attributes']['data'].get('device_type') is not None
+            assert stat['attributes']['index'].get('avg_record_length') is not None
+            assert stat['attributes']['index'].get('max_record_length') is not None
+            assert stat['attributes']['index'].get('bufspace') is not None
+            assert stat['attributes']['index'].get('name') is not None
+            assert stat['attributes']['index'].get('volser') is not None
+            assert stat['attributes']['index'].get('device_type') is not None
 
             assert_invalid_attrs_are_none(stat['attributes'], 'vsam')
     finally:
         hosts.all.shell(
             cmd=f'drm {escaped_name}'
         )
+
+
+def test_query_data_set_vsam_ksds_statistics(ansible_zos_module):
+    """Verify the statistics sub-dict inside the DATA and INDEX components of a
+    freshly created KSDS is present, contains all expected keys, and each value
+    is either an int or None."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+
+    key_length = 4
+    key_offset = 0
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -k{key_length}:{key_offset} -tksds {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+
+            attrs = result['stat']['attributes']
+            assert attrs.get('dsorg') == 'vsam'
+            assert attrs.get('type') == 'ksds'
+
+            # DATA component — statistics sub-dict.
+            assert_vsam_component(attrs['data'], has_key=True, has_spanned=True)
+
+            # INDEX component — spanned is present (VsamComponent always has it).
+            assert_vsam_component(attrs['index'], has_key=False, has_spanned=True)
+
+            # For a brand-new, empty KSDS the counters should all be 0 or None.
+            data_stats = attrs['data']['statistics']
+            for field in ('deleted_records', 'inserted_records',
+                          'updated_records', 'retrieved_records',
+                          'control_interval_splits', 'control_area_splits'):
+                assert data_stats[field] in (0, None), (
+                    f"data.statistics['{field}'] expected 0 or None on empty KSDS, "
+                    f"got {data_stats[field]}"
+                )
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_vsam_ksds_index_present(ansible_zos_module):
+    """Verify that index is populated for a KSDS and that its statistics sub-dict
+    has the same shape as the data component statistics."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -k5:0 -tksds {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+
+            attrs = result['stat']['attributes']
+            assert attrs.get('type') == 'ksds'
+
+            # INDEX must be present for KSDS.
+            index = attrs.get('index')
+            assert index is not None, "index component must not be None for KSDS"
+
+            # INDEX statistics sub-dict.
+            index_stats = index.get('statistics')
+            assert isinstance(index_stats, dict), "index.statistics must be a dict"
+            for field in VSAM_STATISTICS_KEYS:
+                assert field in index_stats, (
+                    f"index.statistics missing field '{field}'"
+                )
+                assert index_stats[field] is None or isinstance(index_stats[field], int), (
+                    f"index.statistics['{field}'] must be int or None"
+                )
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_vsam_esds(ansible_zos_module):
+    """Verify ESDS attributes: index must be None, data component and its
+    statistics sub-dict must be present."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -tesds {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('exists') is True
+            assert stat.get('isdataset') is True
+
+            attrs = stat['attributes']
+            assert attrs.get('dsorg') == 'vsam'
+            assert attrs.get('type') == 'esds'
+            assert attrs.get('has_extended_attrs') is False
+            assert attrs.get('creation_date') == creation_date
+
+            # ESDS has no index component.
+            assert attrs.get('index') is None, (
+                "index must be None for ESDS"
+            )
+
+            # DATA component with statistics.
+            assert_vsam_component(attrs['data'], has_key=False, has_spanned=True)
+
+            assert_invalid_attrs_are_none(attrs, 'vsam')
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_vsam_rrds(ansible_zos_module):
+    """Verify RRDS attributes: index must be None, data component and its
+    statistics sub-dict must be present."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -trrds {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('exists') is True
+
+            attrs = stat['attributes']
+            assert attrs.get('dsorg') == 'vsam'
+            assert attrs.get('type') == 'rrds'
+            assert attrs.get('creation_date') == creation_date
+
+            # RRDS has no index component.
+            assert attrs.get('index') is None, (
+                "index must be None for RRDS"
+            )
+
+            # DATA component with statistics.
+            assert_vsam_component(attrs['data'], has_key=False, has_spanned=True)
+
+            assert_invalid_attrs_are_none(attrs, 'vsam')
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_vsam_lds(ansible_zos_module):
+    """Verify LDS attributes: index must be None, key_length and key_offset
+    in the data component must be None (LDS has no keys), statistics present."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -tlds {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('exists') is True
+
+            attrs = stat['attributes']
+            assert attrs.get('dsorg') == 'vsam'
+            assert attrs.get('type') == 'lds'
+            assert attrs.get('creation_date') == creation_date
+
+            # LDS has no index component.
+            assert attrs.get('index') is None, (
+                "index must be None for LDS"
+            )
+
+            data = attrs.get('data')
+            assert data is not None
+
+            # LDS records have no keys.
+            assert data.get('key_length') in (0, None), (
+                "LDS key_length must be 0 or None"
+            )
+            assert data.get('key_offset') in (0, None), (
+                "LDS key_offset must be 0 or None"
+            )
+
+            # Statistics sub-dict must still be present.
+            stats = data.get('statistics')
+            assert isinstance(stats, dict), "data.statistics must be a dict for LDS"
+            for field in VSAM_STATISTICS_KEYS:
+                assert field in stats, f"statistics missing field '{field}'"
+
+            assert_invalid_attrs_are_none(attrs, 'vsam')
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
+
+
+def test_query_data_set_vsam_non_vsam_has_null_vsam_attrs(ansible_zos_module, volumes_on_systems):
+    """Verify that a non-VSAM data set (sequential) has both 'data' and 'index'
+    keys present in its attributes dict, populated with all-None sub-keys
+    (null-fill behaviour from fill_return_json / fill_missing_attrs)."""
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(llq_size=4)
+    escaped_name = name.replace('$', r'\$')
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    try:
+        hosts.all.shell(
+            cmd=f'dtouch -e5T -l80 -rfb -s15T -tseq -V{available_vol} {escaped_name}'
+        )
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('failed', False) is False
+
+            attrs = result['stat']['attributes']
+            assert attrs.get('dsorg') == 'ps'
+
+            # fill_return_json runs fill_missing_attrs with VSAMDataSetHandler.expected_attrs
+            # for non-VSAM types, so 'data' and 'index' are dicts with all-None sub-keys
+            # (not None itself). Every sub-key must be None.
+            assert 'data' in attrs, "'data' key must always be present"
+            assert 'index' in attrs, "'index' key must always be present"
+            assert isinstance(attrs['data'], dict), (
+                "'data' must be a dict (with all-None values) for a sequential data set"
+            )
+            assert isinstance(attrs['index'], dict), (
+                "'index' must be a dict (with all-None values) for a sequential data set"
+            )
+            for sub_key in attrs['data']:
+                assert attrs['data'][sub_key] is None, (
+                    f"data['{sub_key}'] must be None for a sequential data set"
+                )
+            for sub_key in attrs['index']:
+                assert attrs['index'][sub_key] is None, (
+                    f"index['{sub_key}'] must be None for a sequential data set"
+                )
+    finally:
+        hosts.all.shell(cmd=f'drm {escaped_name}')
 
 
 def test_query_data_set_gds(ansible_zos_module, volumes_on_systems):

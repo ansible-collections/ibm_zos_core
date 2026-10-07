@@ -113,6 +113,7 @@ VALID_FIELDS = {
         'dir_blocks_used',
         'max_pdse_generation',
         'members',
+        'member_details',
         'pages_allocated',
         'pages_used',
         'pdse_version',

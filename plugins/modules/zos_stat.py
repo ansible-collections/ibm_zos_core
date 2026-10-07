@@ -43,10 +43,10 @@ options:
   volumes:
     description:
         - Name(s) of the volume(s) where the data set will be searched on.
-        - If omitted, the module will look up the master catalog to find
+        - If omitted, the module looks up the master catalog to find
           all volumes where a data set is allocated.
         - When used, if the data set is not found in at least one volume
-          from the list, the module will fail with a "data set not found"
+          from the list, the module fails with a "data set not found"
           message.
     type: list
     elements: str
@@ -67,13 +67,13 @@ options:
   sms_managed:
     description:
         - Whether the data set is managed by the Storage Management Subsystem.
-        - It will cause the module to retrieve additional information, may
+        - It causes the module to retrieve additional information, may
           take longer to query all attributes of a data set.
         - If the data set is a PDSE and the Ansible user has RACF READ authority
-          on it, retrieving SMS information will update the last referenced
+          on it, retrieving SMS information updates the last referenced
           date of the data set.
         - If the system finds the data set is not actually managed by SMS, the
-          rest of the attributes will still be queried and this will be noted
+          rest of the attributes are still queried and this is noted
           in the output from the task.
     type: bool
     required: false
@@ -82,12 +82,12 @@ options:
     description:
       - Whether to recall a migrated data set to fully query its
         attributes.
-      - If set to C(false), the module will return a limited amount of
+      - If set to C(false), the module returns a limited amount of
         information for a migrated data set.
-      - Recalling a data set will make the module take longer to execute.
+      - Recalling a data set makes the module take longer to run.
       - Ignored when the data set is not found to be migrated.
-      - The data set will not be migrated again afterwards.
-      - The data set will not get recalled when running the module in
+      - The data set is not migrated again afterwards.
+      - The data set is not recalled when the module runs in
         check mode.
     type: bool
     required: false
@@ -96,9 +96,9 @@ options:
     description:
       - Override the default high level qualifier (HLQ) for temporary data
         sets.
-      - The default HLQ is the Ansible user used to execute the module and
-        if that is not available, then the environment variable value
-        C(TMPHLQ) is used.
+      - The default HLQ is the Ansible user used to run the module. If
+        that is not available, the value of the C(TMPHLQ) environment
+        variable is used.
     type: str
     required: false
   follow:
@@ -123,7 +123,7 @@ options:
   checksum_algorithm:
     description:
       - Algorithm used to compute a file's checksum.
-      - Will throw an error if the managed node is unable to use the
+      - Returns an error if the managed node is unable to use the
         specified algorithm.
     type: str
     required: false
@@ -148,17 +148,16 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - When querying data sets, the module will create two temporary data sets.
+  - When querying data sets, the module creates two temporary data sets.
     One requires around 4 kilobytes of available space on the managed node.
-    The second one, around 1 kilobyte of available space. Both data sets will
-    be removed before the module finishes execution.
-  - Sometimes, the system could be unable to properly determine the
-    organization or record format of the data set or the space units used
-    to represent its allocation. When this happens, the values for these
-    fields will be null.
+    The second one, around 1 kilobyte of available space. Both data sets are
+    removed before the module finishes execution.
+  - Sometimes the system cannot determine the organization, record format,
+    or space allocation units for the data set. When this happens, these
+    fields are reported as not available.
   - When querying a partitioned data set (PDS), if the Ansible user has
-    RACF READ authority on it, the last referenced date will be updated by
-    the query operation.
+    RACF READ authority on it, the query operation updates the last
+    referenced date.
   - If you need to filter the output from the module by resource type, you
     can use the zos_stat_by_type filter inside of a playbook.
 
@@ -235,7 +234,7 @@ stat:
     name:
       description:
         - Name of the resource queried.
-        - For Generation Data Sets (GDSs), this will be the absolute name.
+        - For Generation Data Sets (GDSs), this is the absolute name.
       returned: success
       type: str
       sample: USER.SEQ.DATA.SET
@@ -375,8 +374,8 @@ stat:
           sample: ["000000", "SCR03"]
         missing_volumes:
           description:
-            - When using the C(volumes) option, this field will contain every volume
-              specified in a task where the data set was missing. Will be an empty list
+            - When using the C(volumes) option, this field contains every volume
+              specified in a task where the data set was missing. It is an empty list
               in any other case.
           returned: success
           type: list
@@ -428,8 +427,8 @@ stat:
         extents_used:
           description:
             - Number of extents used by the data set.
-            - For PDSEs, this value will be null. See instead pages_used and
-              perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 1
@@ -498,16 +497,16 @@ stat:
         dir_blocks_allocated:
           description:
             - Number of directory blocks allocated for a PDS.
-            - For PDSEs, this value will be null. See instead pages_used
-              and perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 5
         dir_blocks_used:
           description:
             - Number of directory blocks used by a PDS.
-            - For PDSEs, this value will be null. See instead pages_used
-              and perc_pages_used.
+            - For PDSEs, this value is not available. Refer to the C(pages_used)
+              and C(perc_pages_used) fields instead.
           returned: success
           type: int
           sample: 2
@@ -516,6 +515,63 @@ stat:
           returned: success
           type: int
           sample: 3
+        member_details:
+          description: >
+            Details for each member in a partitioned data set including extended
+            attributes and ISPF statistics. Set to null for non-PDS/PDSE types
+            (sequential, VSAM, GDG) where member details do not apply.
+          returned: success
+          type: raw
+          elements: dict
+          contains:
+            name:
+              description: Member name
+              type: str
+              sample: MEMBER1
+            extended_attributes:
+              description: SMDE extended attributes for the member
+              type: dict
+              contains:
+                user:
+                  description: Last user that modified the member
+                  type: str
+                  sample: USER01
+                codeset:
+                  description: Coded character set identifier (CCSID).
+                  type: int
+                  sample: 1047
+                modified_time:
+                  description: Last time the member was modified (YYYY/MM/DD HH:MM:SS).
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+            ispf_statistics:
+              description: ISPF member statistics
+              type: dict
+              contains:
+                version:
+                  description: Version and modification level (VV.MM format)
+                  type: str
+                  sample: "01.05"
+                created:
+                  description: Creation date (YYYY/MM/DD)
+                  type: str
+                  sample: "2024/01/15"
+                changed:
+                  description: Last change date and time (YYYY/MM/DD HH:MM:SS)
+                  type: str
+                  sample: "2024/01/15 10:30:45"
+                init:
+                  description: Initial size (number of lines)
+                  type: int
+                  sample: 95
+                mod:
+                  description: Number of lines modified since the last full save.
+                  type: int
+                  sample: 3
+                id:
+                  description: User ID who last modified the member
+                  type: str
+                  sample: USER01
         pages_allocated:
           description: Number of pages allocated to a PDSE.
           returned: success
@@ -593,6 +649,64 @@ stat:
               returned: success
               type: int
               sample: 50
+            statistics:
+              description:
+                - Runtime statistics for the DATA component.
+              returned: success
+              type: dict
+              contains:
+                total_records:
+                  description: Total number of records in the component.
+                  returned: success
+                  type: int
+                  sample: 50
+                deleted_records:
+                  description: Number of records deleted from the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                inserted_records:
+                  description:
+                    - For KSDS, number of records inserted before the last record.
+                    - For RRDS, number of records inserted into available slots.
+                  returned: success
+                  type: int
+                  sample: 0
+                updated_records:
+                  description: Number of records retrieved for update and rewritten.
+                  returned: success
+                  type: int
+                  sample: 0
+                retrieved_records:
+                  description: Number of records retrieved from the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                control_interval_splits:
+                  description: Number of control interval splits.
+                  returned: success
+                  type: int
+                  sample: 0
+                control_area_splits:
+                  description: Number of control area splits.
+                  returned: success
+                  type: int
+                  sample: 0
+                free_space_percentage_ci:
+                  description: Percentage of free space kept in each control interval.
+                  returned: success
+                  type: int
+                  sample: 10
+                free_space_percentage_ca:
+                  description: Percentage of free space kept in each control area.
+                  returned: success
+                  type: int
+                  sample: 20
+                free_space:
+                  description: Actual bytes of free space allocated to the component.
+                  returned: success
+                  type: int
+                  sample: 37376
             spanned:
               description:
                 - Whether the data set allows records to be spanned
@@ -610,9 +724,45 @@ stat:
               returned: success
               type: str
               sample: "3390"
+            control_interval_size:
+              description: Size of a control interval in bytes.
+              returned: success
+              type: int
+              sample: 4096
+            share_option_region:
+              description: Cross-region share option (1-4).
+              returned: success
+              type: int
+              sample: 1
+            share_option_system:
+              description: Cross-system share option (3 or 4).
+              returned: success
+              type: int
+              sample: 3
+            erase:
+              description: Whether the ERASE attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            reuse:
+              description: Whether the REUSE attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            recovery:
+              description: Whether the RECOVERY attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            speed:
+              description: Whether the SPEED attribute is set on the component.
+              returned: success
+              type: bool
+              sample: true
         index:
           description:
             - Dictionary containing attributes for the INDEX component of a VSAM.
+            - Only populated for KSDS clusters. Null for ESDS, RRDS and LDS.
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success
@@ -650,6 +800,69 @@ stat:
               returned: success
               type: int
               sample: 0
+            statistics:
+              description:
+                - Runtime statistics for the INDEX component.
+              returned: success
+              type: dict
+              contains:
+                total_records:
+                  description: Total number of records in the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                deleted_records:
+                  description: Number of records deleted from the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                inserted_records:
+                  description: Number of records inserted into the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                updated_records:
+                  description: Number of records retrieved for update and rewritten.
+                  returned: success
+                  type: int
+                  sample: 0
+                retrieved_records:
+                  description: Number of records retrieved from the component.
+                  returned: success
+                  type: int
+                  sample: 0
+                control_interval_splits:
+                  description: Number of control interval splits.
+                  returned: success
+                  type: int
+                  sample: 0
+                control_area_splits:
+                  description: Number of control area splits.
+                  returned: success
+                  type: int
+                  sample: 0
+                free_space_percentage_ci:
+                  description: Percentage of free space kept in each control interval.
+                  returned: success
+                  type: int
+                  sample: 0
+                free_space_percentage_ca:
+                  description: Percentage of free space kept in each control area.
+                  returned: success
+                  type: int
+                  sample: 0
+                free_space:
+                  description: Actual bytes of free space allocated to the component.
+                  returned: success
+                  type: int
+                  sample: 0
+            spanned:
+              description:
+                - Whether the index component allows records to be spanned
+                  across control intervals.
+              returned: success
+              type: bool
+              sample: false
             volser:
               description: Name of the volume containing the INDEX component.
               returned: success
@@ -660,6 +873,41 @@ stat:
               returned: success
               type: str
               sample: "3390"
+            control_interval_size:
+              description: Size of a control interval in bytes.
+              returned: success
+              type: int
+              sample: 512
+            share_option_region:
+              description: Cross-region share option (1-4).
+              returned: success
+              type: int
+              sample: 1
+            share_option_system:
+              description: Cross-system share option (3 or 4).
+              returned: success
+              type: int
+              sample: 3
+            erase:
+              description: Whether the ERASE attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            reuse:
+              description: Whether the REUSE attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            recovery:
+              description: Whether the RECOVERY attribute is set on the component.
+              returned: success
+              type: bool
+              sample: false
+            speed:
+              description: Whether the SPEED attribute is set on the component.
+              returned: success
+              type: bool
+              sample: true
         limit:
           description: Maximum amount of active generations allowed in a GDG.
           returned: success
@@ -797,7 +1045,7 @@ stat:
           description:
             - Checksum of the file computed by the hashing algorithm specified
               in C(checksum_algorithm).
-            - Will be null if C(get_checksum=false).
+            - Not available when C(get_checksum=false).
           returned: success
           type: str
           sample: "2025-02-23T13:03:45"
@@ -917,7 +1165,7 @@ stat:
           type: bool
           sample: true
         xoth:
-          description: Whether others have execute permission over the file.
+          description: Whether others have run permission over the file.
           returned: success
           type: bool
           sample: false
@@ -932,7 +1180,7 @@ stat:
           type: bool
           sample: true
         executable:
-          description: Whether the Ansible user can execute the path.
+          description: Whether the Ansible user can run the path.
           returned: success
           type: bool
           sample: true
@@ -969,7 +1217,7 @@ stat:
         mimetype:
           description:
             - Output from the file utility describing the content.
-            - Will be null if C(get_mime=false).
+            - Not available when C(get_mime=false).
           returned: success
           type: str
           sample: "commands text"
@@ -1034,6 +1282,11 @@ try:
     from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
+
+try:
+    from zoautil_py import vsam as zoau_vsam
+except Exception:
+    zoau_vsam = ZOAUImportError(traceback.format_exc())
 
 
 class FactsHandler():
@@ -1572,7 +1825,7 @@ class DataSetHandler(FactsHandler):
         for key in keys:
             try:
                 if key in attrs:
-                    attrs[key] = true_function(attrs[key]) if attrs[key] else None
+                    attrs[key] = true_function(attrs[key]) if attrs[key] is not None else None
             # If we fail to parse something, we just leave it be to avoid
             # losing information.
             except ValueError:
@@ -1641,7 +1894,7 @@ class NonVSAMDataSetHandler(DataSetHandler):
             'encrypted', 'key_status', 'racf', 'key_label',
             'dir_blocks_allocated', 'dir_blocks_used',
             'pages_allocated', 'pages_used', 'perc_pages_used',
-            'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
+            'members', 'member_details', 'pdse_version', 'max_pdse_generation', 'seq_type'
         ],
         'nested': [
             ['jcl_attrs', ['creation_job', 'creation_step']]
@@ -1865,6 +2118,23 @@ return 0"""
             self.expected_attrs
         )
 
+        # Populate member_details for PDS/PDSE; it is already None for all
+        # other types via fill_missing_attrs above.
+        if self.data_set_type in DataSet.MVS_PARTITIONED and not self.module.check_mode:
+            try:
+                data['attributes']['member_details'] = DataSet.get_member_details(self.name)
+            except zoau_exceptions.MemberFetchException as e:
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}.",
+                    rc=e.response.rc,
+                    stdout=e.response.stdout_response,
+                    stderr=e.response.stderr_response
+                )
+            except Exception as e:
+                raise QueryException(
+                    f"An error occurred while retrieving member details for {self.name}: {str(e)}."
+                )
+
         return data
 
     def _run_listdsi_command(self, temp_script_location):
@@ -1947,7 +2217,7 @@ return 0"""
 
 
 class VSAMDataSetHandler(DataSetHandler):
-    """Class that can query VSAM data sets using LISTCAT.
+    """Class that can query VSAM data sets using zoau_vsam.fetch_cluster and LISTCAT.
     """
 
     expected_attrs = {
@@ -1969,11 +2239,15 @@ class VSAMDataSetHandler(DataSetHandler):
         'nested': [
             ['data', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'spanned', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]],
             ['index', [
                 'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
-                'bufspace', 'total_records', 'volser', 'device_type'
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type',
+                'control_interval_size', 'share_option_region', 'share_option_system',
+                'erase', 'reuse', 'recovery', 'speed', 'statistics'
             ]]
         ]
     }
@@ -1984,7 +2258,25 @@ class VSAMDataSetHandler(DataSetHandler):
         'bufspace',
         'key_length',
         'key_offset',
-        'total_records'
+        'total_records',
+        'control_interval_size',
+        'share_option_region',
+        'share_option_system',
+    ]
+
+    # All fields inside the statistics sub-dict are integers from ZOAU;
+    # no further casting is needed for them.
+    statistics_fields = [
+        'total_records',
+        'deleted_records',
+        'inserted_records',
+        'updated_records',
+        'retrieved_records',
+        'control_interval_splits',
+        'control_area_splits',
+        'free_space_percentage_ci',
+        'free_space_percentage_ca',
+        'free_space',
     ]
 
     dev_type_translation_table = {
@@ -2009,9 +2301,7 @@ class VSAMDataSetHandler(DataSetHandler):
         Arguments
         ---------
             name (str) -- Name of the data set.
-            volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
-            sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
             alias (str, optional) -- Alias of the data set the user provided.
@@ -2026,41 +2316,67 @@ class VSAMDataSetHandler(DataSetHandler):
         )
 
     def query(self):
-        """Uses LISTCAT to query facts about a VSAM."""
+        """Uses zoautil_py.vsam.fetch_cluster() for component-level attributes and
+        a targeted LISTCAT call for cluster-level fields that ZOAU does not expose
+        (SMS classes, dates, encryption, RACF, EATTR, volser, device_type).
+        total_records is obtained from VsamComponent.fetch_statistics().
+        """
         data = super().query()
 
-        listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
+        # ------------------------------------------------------------------ #
+        # 1. Fetch component attributes via the ZOAU vsam API.                #
+        # ------------------------------------------------------------------ #
+        try:
+            cluster = zoau_vsam.fetch_cluster(self.name.upper())
+        except Exception as err:
+            raise QueryException(
+                'An error occurred while querying a VSAM data set.',
+                rc=getattr(err, 'rc', None),
+                stdout=getattr(err, 'stdout_response', ''),
+                stderr=str(err)
+            )
+
+        attributes = {
+            'dsorg': 'VSAM',
+            'type': self.data_set_type,
+        }
+
+        # Build DATA component dict; fetch_statistics() provides total_records.
+        attributes['data'] = self._component_to_dict(cluster.data)
+
+        # INDEX is None for ESDS / RRDS / LDS clusters
+        attributes['index'] = self._component_to_dict(cluster.index) if cluster.index is not None else None
+
+        # ------------------------------------------------------------------ #
+        # 2. Fetch cluster-level fields via LISTCAT (not in ZOAU API):        #
+        #    SMS classes, dates, encryption, RACF, EATTR, volser, device_type #
+        # ------------------------------------------------------------------ #
+        listcat_cmd = f" LISTCAT ENTRIES('{self.name.upper()}') ALL"
         mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
 
         rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
 
         if rc > 0:
             raise QueryException(
-                'An error ocurred while querying a VSAM data set.',
+                'An error occurred while querying VSAM cluster metadata.',
                 rc=rc,
                 stdout=stdout,
                 stderr=stderr
             )
 
+        # Partition output into: general (cluster), data component, index component.
         listcat_lines = stdout.split('\n')
-        gen_info_limit = data_info_limit = 0
-
-        for index in range(len(listcat_lines)):
-            if gen_info_limit == 0:
-                if 'DATA -' in listcat_lines[index]:
-                    gen_info_limit = index
-            else:
-                if data_info_limit == 0 and 'INDEX -' in listcat_lines[index]:
-                    data_info_limit = index
-                    break
-
+        gen_info_limit = next(
+            (i for i, line in enumerate(listcat_lines) if 'DATA -' in line),
+            len(listcat_lines)
+        )
+        data_info_limit = next(
+            (i for i, line in enumerate(listcat_lines) if i > gen_info_limit and 'INDEX -' in line),
+            len(listcat_lines)
+        )
         vsam_general_info = ' '.join(listcat_lines[0:gen_info_limit])
-        data_info = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
-        index_info = ' '.join(listcat_lines[data_info_limit:])
-        attributes = {
-            'dsorg': 'VSAM',
-            'type': self.data_set_type,
-        }
+        data_section = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
+        index_section = ' '.join(listcat_lines[data_info_limit:])
 
         general_info_regex_searches = [
             ('extended_attrs_bits', r'(EATTR-+\(?)([0-9a-zA-Z]+)'),
@@ -2075,90 +2391,107 @@ class VSAMDataSetHandler(DataSetHandler):
             ('racf', r'(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
-        attributes.update(
-            self._find_attributes_from_liscat(
-                vsam_general_info,
-                general_info_regex_searches
-            )
-        )
+        for key, pattern in general_info_regex_searches:
+            match = re.search(pattern, vsam_general_info)
+            attributes[key] = match.group(2) if match else ''
 
         if 'extended_attrs_bits' in attributes:
             attributes['has_extended_attrs'] = 'YES' if attributes['extended_attrs_bits'] != 'NULL' else 'NO'
             if attributes['extended_attrs_bits'] == 'NULL':
                 attributes['extended_attrs_bits'] = None
 
-        if attributes['key_status'] == 'NULL':
+        key_status = attributes.get('key_status', '')
+        if key_status == 'NULL':
             attributes['key_status'] = 'none'
-        elif attributes['key_status'] == 'SUPP':
+        elif key_status == 'SUPP':
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 
-        if 'ASSOCIATIONS' in vsam_general_info:
-            attributes['data'] = {
-                'name': re.search(r'(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
-                'spanned': True if re.search(r'\bSPANNED\b', data_info) else False,
-                'volser': re.search(r"(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", data_info).group(2),
-                'device_type': re.search(r"(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
-            }
-            attributes['data']['device_type'] = self.dev_type_translation_table[attributes['data']['device_type']]
+        # volser and device_type are not on VsamComponent — fill from LISTCAT.
+        volser_pattern = r'(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})'
+        devtype_pattern = r"(DEVTYPE-+X')(\d{7}[0-9A-F])"
 
-            attributes['index'] = {
-                'name': re.search(r'(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
-                'volser': re.search(r"(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", index_info).group(2),
-                'device_type': re.search(r"(DEVTYPE-+X')(\d{7}[0-9A-F])", index_info).group(2)
-            }
-            attributes['index']['device_type'] = self.dev_type_translation_table[attributes['index']['device_type']]
+        data_volser = re.search(volser_pattern, data_section)
+        data_devtype = re.search(devtype_pattern, data_section)
+        if data_volser:
+            attributes['data']['volser'] = data_volser.group(2)
+        if data_devtype:
+            hex_code = data_devtype.group(2)
+            attributes['data']['device_type'] = self.dev_type_translation_table.get(hex_code, hex_code)
 
-            assoc_regex_searches = [
-                ('key_length', r'(KEYLEN-+)(\d+)'),
-                ('key_offset', r'(RKP-+)(\d+)'),
-                ('max_record_length', r'(AVGLRECL-+)(\d+)'),
-                ('avg_record_length', r'(MAXLRECL-+)(\d+)'),
-                ('bufspace', r'(BUFSPACE-+)(\d+)'),
-                ('total_records', r'(REC-TOTAL-+)(\d+)')
-            ]
-
-            attributes['data'].update(self._find_attributes_from_liscat(
-                data_info,
-                assoc_regex_searches
-            ))
-            attributes['index'].update(self._find_attributes_from_liscat(
-                index_info,
-                assoc_regex_searches
-            ))
+        if attributes.get('index') is not None:
+            idx_volser = re.search(volser_pattern, index_section)
+            idx_devtype = re.search(devtype_pattern, index_section)
+            if idx_volser:
+                attributes['index']['volser'] = idx_volser.group(2)
+            if idx_devtype:
+                hex_code = idx_devtype.group(2)
+                attributes['index']['device_type'] = self.dev_type_translation_table.get(hex_code, hex_code)
 
         data['attributes'] = self._parse_attributes(attributes)
         return data
 
-    def _find_attributes_from_liscat(self, output, regex_list):
-        """Looks up attributes in the output of LISTCAT.
+    def _component_to_dict(self, component):
+        """Converts a VsamComponent object into a plain dictionary matching the
+        expected_attrs schema for the data/index sub-dicts.
+        total_records is fetched via fetch_statistics() since it is not a
+        member of VsamComponent itself.
 
         Arguments
         ---------
-            output (str) -- Output taken from LISTCAT.
-            regex_list (list) -- List of strings containing all the REGEX used for lookup.
+            component (VsamComponent) -- Object returned by zoautil_py.vsam.fetch_cluster().
 
         Returns
         -------
-            dict -- Dictionary containing all the attributes found.
+            dict -- Dictionary of component attributes ready for _parse_attributes().
         """
-        attributes = {}
+        try:
+            stats = component.fetch_statistics()
+            statistics = {
+                'total_records': stats.total_records,
+                'deleted_records': stats.deleted_records,
+                'inserted_records': stats.inserted_records,
+                'updated_records': stats.updated_records,
+                'retrieved_records': stats.retrieved_records,
+                'control_interval_splits': stats.control_interval_splits,
+                'control_area_splits': stats.control_area_splits,
+                'free_space_percentage_ci': stats.free_space_percentage_ci,
+                'free_space_percentage_ca': stats.free_space_percentage_ca,
+                'free_space': stats.free_space,
+            }
+        except Exception:
+            statistics = {field: None for field in self.statistics_fields}
 
-        for (key, search) in regex_list:
-            search_result = re.search(search, output)
-            if search_result:
-                attributes[key] = search_result.group(2)
-            else:
-                attributes[key] = ''
-
-        return attributes
+        return {
+            'name': component.name,
+            'avg_record_length': component.average_record_length,
+            'max_record_length': component.maximum_record_length,
+            'key_length': component.key_length,
+            'key_offset': component.key_position,
+            'bufspace': component.buffer_space,
+            'control_interval_size': component.control_interval_size,
+            'share_option_region': component.share_option_region,
+            'share_option_system': component.share_option_system,
+            'erase': component.erase,
+            'reuse': component.reuse,
+            'recovery': component.recovery,
+            'speed': component.speed,
+            'spanned': component.spanned,
+            # Kept at top level for backward compatibility; also present in statistics.
+            'total_records': statistics['total_records'],
+            'statistics': statistics,
+            # volser and device_type are not on VsamComponent;
+            # filled from LISTCAT in query() above.
+            'volser': '',
+            'device_type': '',
+        }
 
     def _parse_attributes(self, attrs):
-        """Calls the generic _parse_attributes method and then handles the data and
-        index attributes dictionaries.
+        """Calls the generic _parse_attributes method and then handles the data,
+        index, and their nested statistics dictionaries.
 
         Arguments
         ---------
-            attrs (dict) -- Raw dictionary processed from a LISTCAT call.
+            attrs (dict) -- Raw dictionary processed from a VSAM query.
 
         Returns
         -------
@@ -2166,10 +2499,18 @@ class VSAMDataSetHandler(DataSetHandler):
         """
         attrs = super()._parse_attributes(attrs)
 
-        if 'data' in attrs:
-            attrs['data'] = super()._parse_attributes(attrs['data'])
-        if 'index' in attrs:
-            attrs['index'] = super()._parse_attributes(attrs['index'])
+        for component_key in ('data', 'index'):
+            if component_key not in attrs or not isinstance(attrs[component_key], dict):
+                continue
+            component = attrs[component_key]
+            # statistics values are already ints from ZOAU — only apply the
+            # validity filter (replace empty string / '?' / 'N/A' with None).
+            if 'statistics' in component and isinstance(component['statistics'], dict):
+                component['statistics'] = {
+                    k: v if self._is_value_valid(v) else None
+                    for k, v in component['statistics'].items()
+                }
+            attrs[component_key] = super()._parse_attributes(component)
 
         return attrs
 
@@ -2678,13 +3019,13 @@ def run_module():
     except QueryException as err:
         module.fail_json(**err.json_args)
     except zoau_exceptions.ZOAUException as err:
-        result['msg'] = 'An error ocurred during removal of a temp data set.'
+        result['msg'] = 'An error occurred during removal of a temp data set.'
         result['rc'] = err.rc
         result['stdout'] = err.stdout_response
         result['stderr'] = err.stderr_response
         module.fail_json(**result)
     except Exception as err:
-        result['msg'] = f'An unexpected error ocurred while querying a resource: {str(err)}.'
+        result['msg'] = f'An unexpected error occurred while querying a resource: {str(err)}.'
         module.fail_json(**result)
 
     result['stat'] = fill_return_json(data)

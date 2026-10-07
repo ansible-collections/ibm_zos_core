@@ -37,6 +37,7 @@ except ImportError:
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
     from zoautil_py.exceptions import GenerationDataGroupCreateException
+    from zoautil_py.members import fetch_members
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -44,6 +45,7 @@ except ImportError:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
+    fetch_members = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -244,7 +246,7 @@ class DataSet(object):
         return changed, data_set
 
     @staticmethod
-    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False):
+    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False, purge=False):
         """Deletes provided data set if it exists.
 
         Parameters
@@ -257,13 +259,15 @@ class DataSet(object):
             High Level Qualifier for temporary datasets.
         noscratch : bool
             If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
         bool
             Indicates if changes were made.
         """
-        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch)
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch, purge=purge)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -937,6 +941,98 @@ class DataSet(object):
         return rc == 2
 
     @staticmethod
+    def get_member_details(dataset_name):
+        """Get extended attributes and ISPF statistics for all members in a PDS/PDSE.
+
+        Uses the zoautil_py.members.fetch_members() function which returns Member objects
+        with SmdeExtendedAttributes and IspfMemberStatistics.
+
+        Parameters
+        ----------
+        dataset_name : str
+            The name of the PDS/PDSE data set.
+
+        Returns
+        -------
+        list
+            List of dictionaries containing:
+            - name: Member name
+            - extended_attributes: Dict with SMDE extended attributes (or None if unavailable)
+                - user: Last user who modified, or None if not set
+                - codeset: CCSID as integer, or None if not set
+                - modified_time: Last modification timestamp, or None if not set
+            - ispf_statistics: Dict with ISPF member statistics (or None if unavailable)
+                - version: Version.Modification level (VV.MM format), or None if no ISPF stats
+                - created: Creation date, or None if not set
+                - changed: Last change date and time, or None if not set
+                - init: Initial number of lines, or None if no ISPF stats
+                - mod: Number of lines modified since the last full save, or None if no ISPF stats
+                - id: User ID who last modified, or None if not set
+
+        Raises
+        ------
+        MemberFetchException
+            If the data set is not found or the underlying ``mls`` call fails.
+            Raised by ``fetch_members`` before any member processing begins,
+            so no partial results are returned.
+        Exception
+            If ``Member.from_core_json`` fails for any single member during the
+            ZOAU list comprehension inside ``fetch_members``, the entire member
+            list is lost — not just the failing member. This is a ZOAU-level
+            constraint; the caller at ``zos_stat`` re-raises it as a
+            ``QueryException``, which causes the module to fail with an error.
+        """
+        # fetch_members calls mls once and constructs all Member objects in a
+        # single list comprehension. A parse failure on any one member aborts
+        # the whole list — partial results are not possible at this level.
+        members_list = fetch_members(dataset_name)
+
+        # Transform Member objects to structured format
+        result = []
+        for member in members_list:
+            # Skip if it is an alias information
+            if member.is_alias:
+                continue
+            member_info = {
+                'name': member.name,
+                'extended_attributes': None,
+                'ispf_statistics': None
+            }
+
+            try:
+                modified_time = member.time_modified
+                ccsid = member.ccsid
+                member_info['extended_attributes'] = {
+                    'user': member.user_modified,
+                    'codeset': ccsid,
+                    'modified_time': modified_time.strftime('%Y/%m/%d %H:%M:%S') if modified_time else None
+                }
+            except Exception:
+                member_info['extended_attributes'] = None
+
+            try:
+                ispf = member.ispf_statistics
+                if ispf:
+                    date_created = getattr(ispf, 'date_created', None)
+                    time_changed = getattr(ispf, 'time_changed', None)
+                    ver = getattr(ispf, 'version', None)
+                    mod_level = getattr(ispf, 'modification_level', None)
+                    member_info['ispf_statistics'] = {
+                        'version': f"{ver:02d}.{mod_level:02d}" if ver is not None and mod_level is not None else None,
+                        'created': date_created.strftime('%Y/%m/%d') if date_created else None,
+                        'changed': time_changed.strftime('%Y/%m/%d %H:%M:%S') if time_changed else None,
+                        'init': getattr(ispf, 'initial_lines', None),
+                        'mod': getattr(ispf, 'modified_lines', None),
+                        'id': getattr(ispf, 'modified_user', None)
+                    }
+            except Exception:
+                member_info['ispf_statistics'] = None
+
+            result.append(member_info)
+
+        return result
+
+    @staticmethod
     def _vsam_empty(name, tmphlq=None):
         """Determines if a VSAM data set is empty.
 
@@ -1008,7 +1104,7 @@ class DataSet(object):
         return present, changed
 
     @staticmethod
-    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False):
+    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False, purge=False):
         """Attempts to catalog a data set if not already cataloged, then deletes
            the data set.
            This is helpful when a data set currently cataloged is not the data
@@ -1026,6 +1122,8 @@ class DataSet(object):
             High Level Qualifier for temporary datasets.
         noscratch : bool
             If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
@@ -1046,7 +1144,7 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
                 else:
@@ -1081,7 +1179,7 @@ class DataSet(object):
 
                     if present:
                         try:
-                            DataSet.delete(name, noscratch=noscratch)
+                            DataSet.delete(name, noscratch=noscratch, purge=purge)
                         except DatasetDeleteError:
                             try:
                                 DataSet.uncatalog(name, tmphlq=tmphlq)
@@ -1108,14 +1206,14 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
         else:
             present = DataSet.data_set_cataloged(name, None, tmphlq=tmphlq)
             if present:
                 try:
-                    DataSet.delete(name, noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch, purge=purge)
                     changed = True
                     present = False
                 except DatasetDeleteError:
@@ -1422,7 +1520,7 @@ class DataSet(object):
         return changed, data_set
 
     @staticmethod
-    def delete(name, noscratch=False):
+    def delete(name, noscratch=False, purge=False):
         """A wrapper around zoautil_py
         datasets.delete() to raise exceptions on failure.
 
@@ -1430,13 +1528,17 @@ class DataSet(object):
         ----------
         name : str
             The name of the data set to delete.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Raises
         ------
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name, no_scratch=noscratch)
+        rc = datasets.delete(name, no_scratch=noscratch, purge=purge)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -2595,7 +2697,7 @@ class DataSetUtils(object):
 
 class MVSDataSet():
     """
-    This class represents a z/OS data set that can be yet to be created or
+    This class represents a z/OS data set that has yet to be created or
     already created in the system. It encapsulates the data set attributes
     to easy access and provides operations to perform in the same data set.
 
@@ -2751,20 +2853,24 @@ class MVSDataSet():
         self.set_state("present")
         return rc
 
-    def ensure_absent(self, tmp_hlq=None, noscratch=False):
+    def ensure_absent(self, tmp_hlq=None, noscratch=False, purge=False):
         """Removes the data set.
 
         Parameters
         ----------
         tmp_hlq : str
             High level qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
+        purge : bool
+            If True, deletes the data set regardless of if the retention period has not expired.
 
         Returns
         -------
         int
             Indicates if changes were made.
         """
-        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch)
+        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch, purge=purge)
         if rc == 0:
             self.set_state("absent")
         return rc

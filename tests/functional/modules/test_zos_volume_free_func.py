@@ -1047,9 +1047,9 @@ def _assert_vol_matches_vf(mod_vol, cli_vol):
         "vtoc_active: module={0}, vf={1}".format(
             mod_vol['vtoc_info']['vtoc_active'], cli_vol['vtoc_active'])
     )
-    assert mod_vol['cylinder_managed'] == bool(cli_vol['cylinder_managed']), (
+    assert mod_vol['cylinder_managed'] == bool(cli_vol['is_cylinder_managed']), (
         "cylinder_managed: module={0}, vf={1}".format(
-            mod_vol['cylinder_managed'], cli_vol['cylinder_managed'])
+            mod_vol['cylinder_managed'], cli_vol['is_cylinder_managed'])
     )
     cli_status = cli_vol['status']
     for flag, ucb_key in _UCB_MAP:

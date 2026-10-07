@@ -75,29 +75,30 @@ options:
     type: dict
     required: false
     suboptions:
-      status_include_all:
+      status:
         description:
-          - Include only volumes where B(all) listed UCB device status flags are C(true).
-          - Use this for mandatory status conditions — every flag in this list must be
-            set on the volume.
-          - Can be combined with I(filter.status_include_any) to express
-            "must have ALL of these AND at least ONE of those".
+          - List of UCB device status flags to filter by.
+          - The matching behaviour is controlled by I(filter.status_match).
+          - When I(filter.status_match) is C(all) (default), only volumes where
+            B(every) listed flag is C(true) are returned.
+          - When I(filter.status_match) is C(any), only volumes where B(at least
+            one) listed flag is C(true) are returned.
           - C(online) - device is online (C(ucbonli)).
           - C(offline_pending) - device is transitioning from online to offline
             (C(ucbchgs)).
-          - C(mount_reserved) - mount status of the volume is reserved, which prevents
-            the volume from unmounting when a job finishes (C(ucbresv)).
+          - C(mount_reserved) - mount status of the volume is reserved, which
+            prevents the volume from unmounting when a job finishes (C(ucbresv)).
           - C(unload_pending) - unload command addressed but device not yet
             unloaded (C(ucbunld)).
           - C(allocated) - an active job is assigned to the device (C(ucbaloc)).
-          - C(permanently_resident) - mount status of the volume is permanently resident,
-            which indicates that the volume cannot be physically demounted unless the device
-            is offline (C(ucbpres)).
-          - C(system_residence) - device is a system residence device, primary console,
-            or active console (C(ucbsysr)).
-          - C(status_indicator) - for tape volumes, standard tape labels have been verified
-            to ensure the correct volume is mounted; for console devices, secondary console
-            or console status is changing (C(ucbdadi)).
+          - C(permanently_resident) - mount status of the volume is permanently
+            resident, which indicates that the volume cannot be physically
+            demounted unless the device is offline (C(ucbpres)).
+          - C(system_residence) - device is a system residence device, primary
+            console, or active console (C(ucbsysr)).
+          - C(status_indicator) - for tape volumes, standard tape labels have
+            been verified to ensure the correct volume is mounted; for console
+            devices, secondary console or console status is changing (C(ucbdadi)).
         type: list
         elements: str
         required: false
@@ -110,27 +111,20 @@ options:
           - permanently_resident
           - system_residence
           - status_indicator
-      status_include_any:
+      status_match:
         description:
-          - Include only volumes where B(at least one) of the listed UCB device
-            status flags is C(true).
-          - Use this for optional status conditions — the volume must satisfy at
-            least one flag in this list.
-          - Can be combined with I(filter.status_include_all) to express
-            "must have ALL of these AND at least ONE of those".
-          - Accepts the same flag values as I(filter.status_include_all).
-        type: list
-        elements: str
+          - Controls how I(filter.status) flags are matched.
+          - C(all) — every flag listed in I(filter.status) must be C(true) on
+            the volume (AND logic). This is the default.
+          - C(any) — at least one flag listed in I(filter.status) must be
+            C(true) on the volume (OR logic).
+          - Has no effect when I(filter.status) is not specified or is empty.
+        type: str
         required: false
+        default: all
         choices:
-          - online
-          - offline_pending
-          - mount_reserved
-          - unload_pending
-          - allocated
-          - permanently_resident
-          - system_residence
-          - status_indicator
+          - all
+          - any
       free_space_min:
         description:
           - Minimum free space threshold.
@@ -237,10 +231,10 @@ EXAMPLES = r"""
       - "0A80"
   register: combined_results
 
-- name: Get only online volumes.
+- name: Get only online volumes (status_match defaults to all).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status_include_all:
+      status:
         - online
   register: online_volumes
 
@@ -248,7 +242,7 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       percent_free_max: 20
-      status_include_all:
+      status:
         - online
   register: low_space_volumes
 
@@ -257,7 +251,7 @@ EXAMPLES = r"""
     filter:
       free_space_min: 100
       unit: cylinders
-      status_include_all:
+      status:
         - online
   register: volumes_with_space
 
@@ -267,31 +261,32 @@ EXAMPLES = r"""
       vtoc_indexed: true
   register: indexed_volumes
 
-- name: Get volumes that are online and allocated (both flags mandatory).
+- name: Get volumes that are online and allocated (both flags must be true — status_match all).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status_include_all:
+      status:
         - online
         - allocated
+      status_match: all
   register: online_allocated_volumes
 
-- name: Get volumes that are online and permanently resident (both flags mandatory).
+- name: Get volumes that are online and permanently resident (both flags must be true).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status_include_all:
+      status:
         - online
         - permanently_resident
+      status_match: all
   register: resident_volumes
 
-- name: Get volumes that are online and have at least one of allocated or permanently resident.
+- name: Get volumes that are allocated or permanently resident (at least one — status_match any).
   ibm.ibm_zos_core.zos_volume_free:
     filter:
-      status_include_all:
-        - online
-      status_include_any:
+      status:
         - allocated
         - permanently_resident
-  register: online_with_optional_status
+      status_match: any
+  register: alloc_or_resident_volumes
 
 - name: Get cylinder-managed (EAV) volumes.
   ibm.ibm_zos_core.zos_volume_free:
@@ -303,7 +298,7 @@ EXAMPLES = r"""
   ibm.ibm_zos_core.zos_volume_free:
     filter:
       cylinder_managed: false
-      status_include_all:
+      status:
         - online
   register: track_managed_online_volumes
 """
@@ -424,7 +419,7 @@ volumes:
             - Derived from the z/OS UCB C(ucbdadi) flag.
           type: bool
           sample: false
-    is_cylinder_managed:
+    cylinder_managed:
       description:
         - Whether the volume uses cylinder-managed space allocation.
         - When C(true), space is allocated on cylinder boundaries rather than
@@ -608,7 +603,7 @@ def _volume_to_dict(vol):
       - ``vol.percentage_used``     -- float, volume space in use as a percentage
       - ``vol.free_tracks``         -- int, number of free tracks
       - ``vol.total_tracks``        -- int, total number of tracks
-      - ``vol.is_cylinder_managed`` -- bool, True for cylinder-managed space
+      - ``vol.cylinder_managed`` -- bool, True for cylinder-managed space
       - ``vol.index_vtoc``          -- bool, index exists for VTOC
       - ``vol.vtoc_active``         -- bool, index VTOC active
 
@@ -647,7 +642,7 @@ def _volume_to_dict(vol):
         'percent_used': percent_used,
         'total_kilobytes': total_kilobytes,
         'free_kilobytes': free_kilobytes,
-        'is_cylinder_managed': bool(getattr(vol, 'is_cylinder_managed', False)),
+        'cylinder_managed': bool(getattr(vol, 'cylinder_managed', False)),
         'status': status,
         'vtoc_info': vtoc_info,
     }
@@ -671,8 +666,8 @@ def _apply_filters(volume_list, filter_params):
     if not filter_params:
         return volume_list
 
-    status_include_all = filter_params.get('status_include_all') or []
-    status_include_any = filter_params.get('status_include_any') or []
+    status_flags = filter_params.get('status') or []
+    status_match = filter_params.get('status_match') or 'all'
     free_space_min = filter_params.get('free_space_min')
     free_space_max = filter_params.get('free_space_max')
     percent_free_min = filter_params.get('percent_free_min')
@@ -690,12 +685,13 @@ def _apply_filters(volume_list, filter_params):
 
     result = []
     for vol in volume_list:
-        # All listed flags in status_include_all must be True.
-        if status_include_all and not all(vol['status'].get(f) for f in status_include_all):
-            continue
-        # At least one flag in status_include_any must be True.
-        if status_include_any and not any(vol['status'].get(f) for f in status_include_any):
-            continue
+        # Apply status flag filter according to status_match mode.
+        if status_flags:
+            flags_true = [vol['status'].get(f) for f in status_flags]
+            if status_match == 'any' and not any(flags_true):
+                continue
+            elif status_match != 'any' and not all(flags_true):
+                continue
         if free_space_min is not None and vol['free_space'] < free_space_min:
             continue
         if free_space_max is not None and vol['free_space'] > free_space_max:
@@ -706,7 +702,7 @@ def _apply_filters(volume_list, filter_params):
             continue
         if vtoc_indexed is not None and vol['vtoc_info']['index_vtoc'] != vtoc_indexed:
             continue
-        if cylinder_managed is not None and vol['is_cylinder_managed'] != cylinder_managed:
+        if cylinder_managed is not None and vol['cylinder_managed'] != cylinder_managed:
             continue
         result.append(vol)
 
@@ -864,7 +860,7 @@ def run_module():
                 'required': False,
                 'default': None,
                 'options': {
-                    'status_include_all': {
+                    'status': {
                         'type': 'list',
                         'elements': 'str',
                         'choices': [
@@ -874,14 +870,10 @@ def run_module():
                         ],
                         'required': False,
                     },
-                    'status_include_any': {
-                        'type': 'list',
-                        'elements': 'str',
-                        'choices': [
-                            'online', 'offline_pending', 'mount_reserved',
-                            'unload_pending', 'allocated', 'permanently_resident',
-                            'system_residence', 'status_indicator',
-                        ],
+                    'status_match': {
+                        'type': 'str',
+                        'choices': ['all', 'any'],
+                        'default': 'all',
                         'required': False,
                     },
                     'free_space_min': {'type': 'int', 'required': False},
@@ -911,8 +903,8 @@ def run_module():
             'type': 'dict',
             'required': False,
             'options': {
-                'status_include_all': {'type': 'list', 'elements': 'str', 'required': False},
-                'status_include_any': {'type': 'list', 'elements': 'str', 'required': False},
+                'status': {'type': 'list', 'elements': 'str', 'required': False},
+                'status_match': {'type': 'str', 'required': False},
                 'free_space_min': {'type': 'int', 'required': False},
                 'free_space_max': {'type': 'int', 'required': False},
                 'percent_free_min': {'type': 'int', 'required': False},

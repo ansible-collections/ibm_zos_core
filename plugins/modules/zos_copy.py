@@ -3853,22 +3853,39 @@ def run_module(module, arg_def):
     # Verify the destination type is USS and the destination does not exist.
     # Verify one of the following:
     #    The source is a partitioned data set
-    #    The source ends with a trailing slash and is intended to be a directory
+    #    The destination ends with a trailing slash and is intended to be a directory
     #    The source is a GDG
     if (
         dest_ds_type == 'USS' and not os.path.isdir(dest)
         and (
             (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
-            or (raw_dest.endswith('/') and not is_src_dir and src_ds_type != "USS")
+            or (raw_dest.endswith('/') and src_ds_type != "USS")
             or src_ds_type == "GDG"
         )
     ):
-        # Scenario 1: Module fails if user attempts to write data set (not member) to
-        # USS file (i.e. a non-directory)
-        if os.path.isfile(dest):
-            module.fail_json(
-                msg="Cannot write a partitioned data set (PDS) to a USS file."
-            )
+        # Scenario 1: Module fails if user attempts to write a source that
+        # requires a USS directory as the destination to a USS file instead.
+        if os.path.isfile(dest.rstrip('/')):
+            if src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member:
+                fail_msg = (
+                    "Cannot copy partitioned data set '{0}' to "
+                    "existing USS file '{1}'. "
+                    "The destination must be a USS directory."
+                ).format(src, dest)
+            elif src_ds_type == "GDG":
+                fail_msg = (
+                    "Cannot copy Generation Data Group (GDG) '{0}' to "
+                    "existing USS file '{1}'. "
+                    "The destination must be a USS directory."
+                ).format(src, dest)
+            else:
+                fail_msg = (
+                    "Cannot copy source '{0}' to "
+                    "existing USS file '{1}'. "
+                    "The destination path ends with '/' indicating a USS directory, "
+                    "but '{1}' already exists as a file."
+                ).format(src, dest)
+            module.fail_json(msg=fail_msg)
         # Scenario 2: Destination directory is missing and needs to be created
         else:
             try:

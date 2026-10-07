@@ -8143,6 +8143,182 @@ def test_copy_pds_members_bulk_with_partial_failure_cleanup(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_pds, state="absent")
 
 
+@pytest.mark.uss
+@pytest.mark.pdse
+@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+def test_copy_pds_to_existing_uss_file_fails(ansible_zos_module, src_type):
+    """
+    Copying a PDS/PDSE to an existing USS file must fail.
+    """
+    hosts = ansible_zos_module
+    src_ds = get_tmp_ds_name()
+    dest_file = get_random_file_name(dir=TMP_DIRECTORY)
+
+    try:
+        hosts.all.zos_data_set(
+            name=src_ds,
+            type=src_type,
+            space_primary=5,
+            space_type="trk",
+            record_format="fb",
+            record_length=80,
+            block_size=800,
+            state="present",
+            replace=True,
+        )
+        hosts.all.zos_data_set(
+            name=f"{src_ds}(MEM1)",
+            state="present",
+            type="member",
+            replace=True,
+        )
+
+        # Create the destination as a plain USS file
+        hosts.all.shell(
+            cmd=f"echo 'This is a USS file' > {dest_file}",
+            executable=SHELL_EXECUTABLE,
+        )
+
+        # Attempt the copy — must fail
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest_file,
+            remote_src=True,
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("failed") is True, (
+                "Expected copy of {0} to existing USS file to fail, "
+                "but it succeeded.".format(src_type.upper())
+            )
+            msg = result.get("msg", "")
+            assert "Cannot copy partitioned data set" in msg, (
+                "Expected failure message about partitioned data set, got: {0}".format(msg)
+            )
+            assert "existing USS file" in msg, (
+                "Expected failure message to mention existing USS file, got: {0}".format(msg)
+            )
+            assert "must be a USS directory" in msg, (
+                "Expected failure message to mention USS directory requirement, got: {0}".format(msg)
+            )
+
+    finally:
+        hosts.all.zos_data_set(name=src_ds, state="absent")
+        hosts.all.file(path=dest_file, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.gdg
+def test_copy_gdg_to_existing_uss_file_fails(ansible_zos_module):
+    """
+    Copying a GDG to an existing USS file must fail.
+    """
+    hosts = ansible_zos_module
+    src_gdg = get_tmp_ds_name()
+    dest_file = get_random_file_name(dir=TMP_DIRECTORY)
+
+    try:
+        # Create GDG base with one active generation
+        hosts.all.shell(cmd=f"dtouch -tGDG -L5 {src_gdg}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_gdg}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_gdg}(0)" """)
+
+        # Create the destination as a plain USS file
+        hosts.all.shell(
+            cmd=f"echo 'This is a USS file' > {dest_file}",
+            executable=SHELL_EXECUTABLE,
+        )
+
+        # Attempt the copy — must fail
+        copy_res = hosts.all.zos_copy(
+            src=src_gdg,
+            dest=dest_file,
+            remote_src=True,
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("failed") is True, (
+                "Expected copy of GDG to existing USS file to fail, "
+                "but it succeeded."
+            )
+            msg = result.get("msg", "")
+            assert "Cannot copy Generation Data Group" in msg, (
+                "Expected failure message about GDG, got: {0}".format(msg)
+            )
+            assert "existing USS file" in msg, (
+                "Expected failure message to mention existing USS file, got: {0}".format(msg)
+            )
+            assert "must be a USS directory" in msg, (
+                "Expected failure message to mention USS directory requirement, got: {0}".format(msg)
+            )
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_gdg}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_gdg}")
+        hosts.all.file(path=dest_file, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_seq_trailing_slash_to_existing_uss_file_fails(ansible_zos_module):
+    """
+    Copying a sequential data set to a dest path that ends with '/' when that 
+    path already exists as a plain USS file must fail.
+    """
+    hosts = ansible_zos_module
+    src_ps = get_tmp_ds_name()
+    dest_file = get_random_file_name(dir=TMP_DIRECTORY)
+    dest_with_slash = dest_file + "/"
+
+    try:
+        # Create a sequential source data set
+        hosts.all.zos_data_set(
+            name=src_ps,
+            type="seq",
+            space_primary=5,
+            space_type="trk",
+            record_format="fb",
+            record_length=80,
+            state="present",
+            replace=True,
+        )
+
+        # Create the destination path as a plain USS file (no trailing slash)
+        hosts.all.shell(
+            cmd=f"echo 'This is a USS file' > {dest_file}",
+            executable=SHELL_EXECUTABLE,
+        )
+
+        # Attempt the copy with a trailing slash — must fail because the
+        # resolved path already exists as a file, not a directory.
+        copy_res = hosts.all.zos_copy(
+            src=src_ps,
+            dest=dest_with_slash,
+            remote_src=True,
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("failed") is True, (
+                "Expected copy of sequential DS to existing USS file (trailing "
+                "slash) to fail, but it succeeded."
+            )
+            msg = result.get("msg", "")
+            assert "Cannot copy source" in msg, (
+                "Expected failure message about source copy, got: {0}".format(msg)
+            )
+            assert "existing USS file" in msg, (
+                "Expected failure message to mention existing USS file, got: {0}".format(msg)
+            )
+            assert "already exists as a file" in msg, (
+                "Expected failure message to mention the path exists as a file, "
+                "got: {0}".format(msg)
+            )
+
+    finally:
+        hosts.all.zos_data_set(name=src_ps, state="absent")
+        hosts.all.file(path=dest_file, state="absent")
+
+
 PLAYBOOK_COPY_TEMPLATE_CUSTOM_LOOP_VAR = """- hosts: zvm
   collections:
     - ibm.ibm_zos_core

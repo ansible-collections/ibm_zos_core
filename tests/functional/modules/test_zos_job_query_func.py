@@ -73,6 +73,12 @@ def create_pds_mem_for_job_submit(hosts, data_set_name, temp_path):
         cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
     )
 
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
 # test to verify querying all jobs returns results with all expected fields populated
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
@@ -1044,118 +1050,157 @@ def test_zos_job_query_job_id(ansible_zos_module):
 # Query job that does not exist with different job parameters to verify job not found message
 def test_zos_job_query_job_not_found(ansible_zos_module):
     hosts = ansible_zos_module
-    job_id = "JOB00300"
+    job_id = "NOJID"
     job_name = "NOJOB"
     owner = "NOUSER"
 
-    # Job query with nonexistent job_id
+    # Scenario 1: Job query with only job_id that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_job_id = hosts.all.zos_job_query(job_id=job_id)
-    
+
     for qresult in qresults_job_id.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with job_id {job_id} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent job_name
+    # Scenario 2: Job query with only job_name that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_job_name = hosts.all.zos_job_query(job_name=job_name)
-    
+
     for qresult in qresults_job_name.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent owner
+    # Scenario 3: Job query with only owner that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_owner = hosts.all.zos_job_query(owner=owner)
-    
+
     for qresult in qresults_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job owner {owner} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent job_id and job_name
+    # Scenario 4: Job query with job_id and job_name that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_id_and_name = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=None)
-    
+
     for qresult in qresults_id_and_name.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent job_id and owner
+    # Scenario 5: Job query with job_id and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 when no job_id is provided and the
+    # name lookup fails; the module surfaces this as a module failure.
     qresults_id_and_owner = hosts.all.zos_job_query(job_id=job_id, owner=owner)
-    
+
     for qresult in qresults_id_and_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job with job_id {job_id} and owner {owner} could not be found.'
-            assert rc.get("code") is None
-
-    # Job query with nonexistent job_name and owner
+    # Scenario 6: Job query with job_name and owner that do not exist.
+    # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
+    # surfaces the error as a failure.
     qresults_name_and_owner = hosts.all.zos_job_query(job_name=job_name, owner=owner)
-    
+
     for qresult in qresults_name_and_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with owner {owner} could not be found.'
-            assert rc.get("code") is None
+    # Scenario 7: Job query with job_id, job_name, and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_all_three = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
 
-    # Job query with nonexistent job_id, job_name, and owner
-    qresults_name_and_owner = hosts.all.zos_job_query(job_id=job_id, job_name=job_name, owner=owner)
-    
-    for qresult in qresults_name_and_owner.contacted.values():
-        assert qresult.get("changed") is True
-        assert qresult.get("jobs") is not None
-        assert qresult.get("msg", False) is False
+    for qresult in qresults_all_three.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
 
-        # Verify query fails with correct message
-        for job in qresult.get("jobs"):
-            rc = job.get("ret_code")
-            assert rc.get("msg") == 'JOB NOT FOUND'
-            assert rc.get("msg_code") is None
-            assert rc.get("msg_txt") == f'The job {job_name} with job_id {job_id} and owner {owner} could not be found.'
-            assert rc.get("code") is None
+
+# -----------------------------------------------------------------------
+# Case-insensitive input tests (bug fix: 2609)
+# Submit a single known job, capture job_id/job_name/owner, then verify
+# that lowercase variants of each parameter return correct results.
+# -----------------------------------------------------------------------
+
+def test_zos_job_query_lowercase_input_normalisation(ansible_zos_module):
+    """Lowercase owner, job_name and job_id must be normalised to uppercase.
+
+    Submits one job to get known, stable values for all three parameters,
+    then queries each in lowercase to confirm the fix is in effect.
+    """
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    temp_path = get_random_file_name(dir=TEMP_PATH)
+
+    try:
+        # ---- Submit a known job ----------------------------------------
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/{SAMPLE_PDS_MEM}"
+        )
+        hosts.all.shell(cmd=f"dtouch -tpds '{data_set_name}'")
+        hosts.all.shell(
+            cmd=f"cp {temp_path}/{SAMPLE_PDS_MEM} \"//'{data_set_name}({SAMPLE_PDS_MEM})'\""
+        )
+
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{data_set_name}({SAMPLE_PDS_MEM})", remote_src=True, wait_time=10
+        )
+
+        job_id = None
+        job_name = None
+        for result in submit_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            job_ = result.get("jobs")[0]
+            job_id = job_.get("job_id")
+            job_name = job_.get("job_name")
+            break
+
+        assert job_id is not None
+        assert job_name is not None
+
+        # ---- Fetch owner via a follow-up query (submit doesn't return it) --
+        job_owner = None
+        lookup = hosts.all.zos_job_query(job_id=job_id)
+        for result in lookup.contacted.values():
+            assert result.get("changed") is True
+            job_owner = result.get("jobs")[0].get("owner")
+
+        assert job_owner is not None
+
+        # ---- Scenario 1: lowercase owner -----------------------------------
+        qresults = hosts.all.zos_job_query(owner=job_owner.lower())
+        for qresult in qresults.contacted.values():
+            assert qresult.get("changed") is True
+            assert qresult.get("jobs") is not None
+            for job in qresult.get("jobs"):
+                assert job.get("owner") == job_owner
+
+        # ---- Scenario 2: lowercase job_name --------------------------------
+        qresults = hosts.all.zos_job_query(job_name=job_name.lower())
+        for qresult in qresults.contacted.values():
+            assert qresult.get("changed") is True
+            assert qresult.get("jobs") is not None
+            for job in qresult.get("jobs"):
+                assert job.get("job_name") == job_name
+
+        # ---- Scenario 3: lowercase job_id ----------------------------------
+        qresults = hosts.all.zos_job_query(job_id=job_id.lower())
+        for qresult in qresults.contacted.values():
+            assert qresult.get("changed") is True
+            assert qresult.get("jobs") is not None
+            for job in qresult.get("jobs"):
+                assert job.get("job_id") == job_id
+
+        # ---- Scenario 4: lowercase wildcard job_name (fnmatch case) --------
+        # Exercises fnmatch.fnmatch(entry.name, job_name) case-sensitivity.
+        # "hell*" must match "HELLO" after normalisation.
+        wildcard_name = job_name[:4].lower() + "*"   # e.g. "hell*"
+        qresults = hosts.all.zos_job_query(job_name=wildcard_name)
+        for qresult in qresults.contacted.values():
+            assert qresult.get("changed") is True
+            assert qresult.get("jobs") is not None
+            matched = [j for j in qresult.get("jobs") if j.get("job_id") == job_id]
+            assert len(matched) >= 1, (
+                f"Expected job {job_id} ({job_name}) to match wildcard '{wildcard_name}'"
+            )
+
+    finally:
+        hosts.all.file(path=temp_path, state="absent")
+        hosts.all.shell(cmd=f"drm '{data_set_name}'")

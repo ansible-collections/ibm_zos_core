@@ -357,7 +357,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
@@ -413,6 +413,14 @@ def run_module():
         name = module.params.get("job_name")
         id = module.params.get("job_id")
         owner = module.params.get("owner")
+
+        if owner:
+            owner = owner.upper()
+        if name:
+            name = name.upper()
+        if id:
+            id = id.upper()
+
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
@@ -454,6 +462,14 @@ def query_jobs(job_name, job_id, owner):
         jobs = job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=False)
     except Exception as e:
         raise RuntimeError("Error querying jobs: " + str(e))
+
+    # When the job_id lookup returned no real job (only the synthetic _job_not_found
+    # sentinel), the combination is unresolvable — treat it as a failure so the
+    # module surfaces an error consistent with v2.0.0 failure path.
+    if jobs and jobs[0].get("job_not_found"):
+        raise RuntimeError(
+            "Error querying jobs: " + jobs[0]["ret_code"]["msg_txt"]
+        )
     return jobs
 
 

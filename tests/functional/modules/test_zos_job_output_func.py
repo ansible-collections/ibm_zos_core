@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,7 @@ __metaclass__ = type
 
 from shellescape import quote
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -45,6 +46,14 @@ JCL_FILE_CONTENTS_SYSIN = """//SYSINS  JOB (T043JM,JM00,1,0,0,0),'SYSINS - JRM',
 """
 
 TEMP_PATH = "/tmp/jcl"
+
+def assert_job_not_found_returns_fail(qresult):
+    assert qresult.get("changed") is False
+    assert qresult.get("failed") is True
+    assert qresult.get("stderr") is not None
+    assert qresult.get("msg") is not None
+    assert qresult.get("jobs") is None
+
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -85,14 +94,15 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg", False) is False
+        assert result.get("failed", False) is False
         assert result.get("jobs") is not None
 
         job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
+        assert job.get("job_id") is None
         assert job.get("job_name") is not None
         assert job.get("subsystem") is None
         assert job.get("system") is None
-        assert job.get("owner") is not None
+        assert job.get("owner") is None
         assert job.get("cpu_time") is None
         assert job.get("execution_node") is None
         assert job.get("origin_node") is None
@@ -117,7 +127,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
         assert rc.get("msg_txt") is not None
 
         dds = job.get("dds")[0]
-        assert dds.get("dd_name") == "unavailable"
+        assert dds.get("dd_name") is None
         assert dds.get("record_count") == 0
         assert dds.get("id") is None
         assert dds.get("stepname") is None
@@ -354,48 +364,170 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
         hosts.all.file(path=TEMP_PATH, state="absent")
 
 
-def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
+def test_zos_job_output_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("msg", False) is False
-        assert result.get("jobs") is not None
+        assert result.get("msg") == f"The job with job_id STC00* and owner MASTER could not be found."
+        assert result.get("jobs") is None
+        assert_job_not_found_returns_fail(result)
 
-        job = result.get("jobs")[0]
-        assert job.get("job_id") is not None
-        assert job.get("job_name") is not None
-        assert job.get("subsystem") is None
-        assert job.get("system") is None
-        assert job.get("owner") is not None
-        assert job.get("cpu_time") is None
-        assert job.get("execution_node") is None
-        assert job.get("origin_node") is None
-        assert job.get("content_type") is None
-        assert job.get("creation_date") is None
-        assert job.get("creation_time") is None
-        assert job.get("execution_time") is None
-        assert job.get("job_class") is None
-        assert job.get("svc_class") is None
-        assert job.get("priority") is None
-        assert job.get("asid") is None
-        assert job.get("queue_position") is None
-        assert job.get("program_name") is None
-        assert job.get("class") is None
-        assert job.get("steps") is not None
-        assert job.get("dds") is not None
 
-        rc = job.get("ret_code")
-        assert rc.get("msg") is None
-        assert rc.get("code") is None
-        assert rc.get("msg_code") is None
-        assert rc.get("msg_txt") is not None
+# Verify correct output for combinations of invalid job parameters returning job not found
+def test_zos_job_output_job_not_found(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_id = "JOB99999"
+    job_name = "NOJOB"
+    owner = "NOUSER"
 
-        dds = job.get("dds")[0]
-        assert dds.get("dd_name") == "unavailable"
-        assert dds.get("record_count") == 0
-        assert dds.get("id") is None
-        assert dds.get("stepname") is None
-        assert dds.get("procstep") is None
-        assert dds.get("byte_count") == 0
-        assert dds.get("content") is None
+    # Scenario 1: Job output with only job_id that does not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_job_id = hosts.all.zos_job_output(job_id=job_id)
+
+    for qresult in qresults_job_id.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 2: Job output with only job_name that does not exist.
+    # Expected: SUCCEEDED with a job not found message.
+    qresults_job_name = hosts.all.zos_job_output(job_name=job_name)
+
+    for qresult in qresults_job_name.contacted.values():
+        assert qresult.get("changed") is False
+        assert qresult.get("jobs") is not None
+        assert qresult.get("msg", False) is False
+
+        for job in qresult.get("jobs"):
+            rc = job.get("ret_code")
+            assert rc.get("msg") is None
+            assert rc.get("msg_code") is None
+            assert rc.get("msg_txt") == f'The job with name {job_name} could not be found.'
+            assert rc.get("code") is None
+
+    # Scenario 3: Job output with only owner that does not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_owner = hosts.all.zos_job_output(owner=owner)
+
+    for qresult in qresults_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 4: Job output with job_id and job_name that do not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_id_and_name = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=None)
+
+    for qresult in qresults_id_and_name.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 5: Job output with job_id and owner that do not exist.
+    # Expected: FAILED — — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_id_and_owner = hosts.all.zos_job_output(job_id=job_id, owner=owner)
+
+    for qresult in qresults_id_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 6: Job output with job_name and owner that do not exist.
+    # Expected: FAILED — no job_id provided; ZOAU returns rc 8 and the module
+    # surfaces the error as a failure.
+    qresults_name_and_owner = hosts.all.zos_job_output(job_name=job_name, owner=owner)
+
+    for qresult in qresults_name_and_owner.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+    # Scenario 7: Job output with job_id, job_name, and owner that do not exist.
+    # Expected: FAILED — ZOAU returns rc 8 and the module surfaces the error
+    # as a failure.
+    qresults_all_three = hosts.all.zos_job_output(job_id=job_id, job_name=job_name, owner=owner)
+
+    for qresult in qresults_all_three.contacted.values():
+        assert_job_not_found_returns_fail(qresult)
+
+
+# -----------------------------------------------------------------------
+# Case-insensitive input tests (bug fix: 2609)
+# Submit a single known job, capture job_id/job_name/owner, then verify
+# that lowercase variants of each parameter return correct results.
+# -----------------------------------------------------------------------
+
+def test_zos_job_output_lowercase_input_normalisation(ansible_zos_module):
+    """Lowercase owner, job_name and job_id must be normalised to uppercase.
+
+    Submits one job to get known, stable values for all three parameters,
+    then queries each in lowercase to confirm the fix is in effect.
+    """
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
+        )
+
+        # ---- Submit a known job --------------------------------------------
+        submit_results = hosts.all.zos_job_submit(
+            src=f"{TEMP_PATH}/SAMPLE", remote_src=True, volume=None
+        )
+
+        job_id = None
+        job_name = None
+        for result in submit_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            job_ = result.get("jobs")[0]
+            job_id = job_.get("job_id")
+            job_name = job_.get("job_name")
+            break
+
+        assert job_id is not None
+        assert job_name is not None
+
+        # ---- Fetch owner via follow-up (submit doesn't return it) ----------
+        job_owner = None
+        lookup = hosts.all.zos_job_output(job_id=job_id)
+        for result in lookup.contacted.values():
+            assert result.get("changed") is True
+            job_owner = result.get("jobs")[0].get("owner")
+
+        assert job_owner is not None
+
+        # ---- Scenario 1: lowercase owner -----------------------------------
+        results = hosts.all.zos_job_output(job_name=job_name, owner=job_owner.lower())
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            for job in result.get("jobs"):
+                assert job.get("owner") == job_owner
+
+        # ---- Scenario 2: lowercase job_name --------------------------------
+        results = hosts.all.zos_job_output(job_name=job_name.lower())
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            for job in result.get("jobs"):
+                assert job.get("job_name") == job_name
+
+        # ---- Scenario 3: lowercase job_id ----------------------------------
+        results = hosts.all.zos_job_output(job_id=job_id.lower())
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            for job in result.get("jobs"):
+                assert job.get("job_id") == job_id
+
+        # ---- Scenario 4: lowercase wildcard job_name (fnmatch case) --------
+        # Exercises fnmatch.fnmatch(entry.name, job_name) case-sensitivity.
+        # "hell*" must match "HELLO" after normalisation.
+        wildcard_name = job_name[:4].lower() + "*"   # e.g. "hell*"
+        results = hosts.all.zos_job_output(job_name=wildcard_name)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("jobs") is not None
+            matched = [j for j in result.get("jobs") if j.get("job_id") == job_id]
+            assert len(matched) >= 1, (
+                f"Expected job {job_id} ({job_name}) to match wildcard '{wildcard_name}'"
+            )
+
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")

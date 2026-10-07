@@ -103,9 +103,9 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, sysin=False
         "job_name": job_name,
         "dd_name": dd_name
     })
-    job_id = parsed_args.get("job_id") or "*"
-    job_name = parsed_args.get("job_name") or "*"
-    owner = parsed_args.get("owner") or "*"
+    job_id = parsed_args.get("job_id")
+    job_name = parsed_args.get("job_name")
+    owner = parsed_args.get("owner")
     dd_name = parsed_args.get("dd_name") or ""
 
     job_detail = _get_job_status(
@@ -191,11 +191,11 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job = {}
 
     job["job_not_found"] = True
-    job["job_id"] = job_id
-    job["job_name"] = job_name
+    job["job_id"] = job_id_not_found
+    job["job_name"] = job_name_not_found
     job["subsystem"] = None
     job["system"] = None
-    job["owner"] = owner
+    job["owner"] = owner_not_found
     job["cpu_time"] = None
     job["execution_node"] = None
     job["origin_node"] = None
@@ -361,19 +361,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
     final_entries = []
 
     # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    try:
-        entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
-    except exceptions.JobFetchException:
-        entries = []
+    entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        try:
-            entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
-        except exceptions.JobFetchException:
-            entries = []
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_name=job_name, job_owner=owner, include_extended=True)
 
     if entries:
         for entry in entries:
@@ -552,7 +546,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
 
             final_entries.append(job)
     if not final_entries:
-        final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
+        final_entries = _job_not_found(job_id, owner, job_name, None)
     return final_entries
 
 

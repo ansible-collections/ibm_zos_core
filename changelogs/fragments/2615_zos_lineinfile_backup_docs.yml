@@ -1,0 +1,4 @@
+minor_changes:
+   - zos_lineinfile - Expands the ``backup`` and ``backup_name`` parameter documentation to
+     clarify backup behaviour across all source types.
+     (https://github.com/ansible-collections/ibm_zos_core/issues/2554).

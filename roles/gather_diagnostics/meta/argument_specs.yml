@@ -13,6 +13,7 @@
 argument_specs:
   main:
     short_description: Gathers diagnostic data from z/OS managed nodes and the control node
+    version_added: "2.0.0"
     description:
       - >-
         The B(gather_diagnostics) role gathers a comprehensive set of diagnostic facts from both the z/OS managed node

@@ -164,7 +164,8 @@ options:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
       - If I(space_type=blk), I(average_block_length) must be specified. For all
-        other space types, I(average_block_length) should not be specified.
+        other space types, I(average_block_length) should not be specified. An
+        error will be raised if I(average_block_length) is inappropriately specified.
     type: str
     choices:
       - k
@@ -505,7 +506,8 @@ options:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(k), C(m), C(g), C(cyl), C(trk), and C(blk).
           - If I(space_type=blk), I(average_block_length) must be specified. For all
-            other space types, I(average_block_length) should not be specified.
+            other space types, I(average_block_length) should not be specified. An
+            error will be raised if I(average_block_length) is inappropriately specified.
         type: str
         choices:
           - k
@@ -928,7 +930,7 @@ data_sets:
       type: int
       returned: always
     average_block_length:
-      description: The estimated average size, in bytes, of the data blocks stored in the data set.
+      description: The block length, in bytes, used at allocation time to calculate the primary and secondary space.
       type: int
       returned: always
     directory_blocks:

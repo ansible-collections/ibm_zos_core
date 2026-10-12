@@ -2393,3 +2393,78 @@ def test_find_alias_contains_mixed_ps_and_pds(ansible_zos_module):
                 {"name": pds_name, "state": "absent"},
             ]
         )
+
+
+def test_find_alias_overlapping_patterns_no_duplicates(ansible_zos_module):
+    """Overlapping patterns must not return the same catalog alias twice.
+
+    Setup:
+      - Two sequential datasets: ``<hlq>.ONE`` and ``<hlq>.TWO``.
+      - One catalog alias per dataset: ``<hlq>.ONE.ALI`` and ``<hlq>.TWO.ALI``.
+      - Two overlapping patterns:
+          - ``<hlq>.*.*``  matches both aliases.
+          - ``<hlq>.ONE.*`` matches only ``ONE.ALI`` again.
+        So ``ONE.ALI`` is hit by both patterns; without the ``seen`` dedup
+        it would appear twice in the result.
+
+    Assertions:
+      - No duplicate alias names in ``data_sets``.
+      - Both aliases are present exactly once.
+      - Each entry has ``type == "ALIAS"`` and correct ``alias_of``.
+      - ``matched == 2``.
+    """
+    hosts    = ansible_zos_module
+    hlq      = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    one_name = f"{hlq}.ONE"
+    two_name = f"{hlq}.TWO"
+    one_ali  = f"{hlq}.ONE.ALI"
+    two_ali  = f"{hlq}.TWO.ALI"
+    # The first pattern matches both aliases; the second matches only one_ali,
+    # so one_ali is matched by both patterns.
+    pattern_all = f"{hlq}.*.*"
+    pattern_one = f"{hlq}.ONE.*"
+    try:
+        # --- Create the two target data sets ---
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": one_name, "type": "seq", "state": "present",
+                 "space_primary": 1, "space_type": "m",
+                 "record_format": "fb", "record_length": 80},
+                {"name": two_name, "type": "seq", "state": "present",
+                 "space_primary": 1, "space_type": "m",
+                 "record_format": "fb", "record_length": 80},
+            ]
+        )
+        # --- Define one catalog alias per data set ---
+        define_alias(hosts, one_ali, one_name)
+        define_alias(hosts, two_ali, two_name)
+        # --- Find with two overlapping patterns ---
+        find_res = hosts.all.zos_find(
+            patterns=[pattern_all, pattern_one],
+            resource_type=["alias"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get("msg") is None
+            data_sets = val.get("data_sets")
+            assert data_sets is not None
+            names = [ds["name"] for ds in data_sets]
+            assert len(names) == len(set(names)), (
+                f"duplicate aliases returned for overlapping patterns: {names}"
+            )
+            assert one_ali in names, f"alias {one_ali} missing"
+            assert two_ali in names, f"alias {two_ali} missing"
+            for ds in data_sets:
+                assert ds["type"] == "ALIAS"
+            by_name = {ds["name"]: ds for ds in data_sets}
+            assert by_name[one_ali]["alias_of"] == one_name
+            assert by_name[two_ali]["alias_of"] == two_name
+            assert val.get("matched") == 2
+    finally:
+        delete_alias(hosts, one_ali)
+        delete_alias(hosts, two_ali)
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": one_name, "state": "absent"},
+                {"name": two_name, "state": "absent"},
+            ]
+        )

@@ -1393,6 +1393,7 @@ def alias_filter(
     # Fetch member info whenever we need to either expose it or filter on it.
     need_members = include_member_aliases or bool(exclude_member_aliases)
     filtered = []
+    seen = set()
     for pattern in patterns:
         rc, out, err = _dls_wrapper(
             pattern,
@@ -1428,6 +1429,9 @@ def alias_filter(
                 ds_volume = ds.get("volume", "")
                 if ds_volume.upper() not in {v.upper() for v in volumes}:
                     continue
+            if alias_name in seen:
+                continue
+            seen.add(alias_name)
             entry = {
                 "name": alias_name,
                 "type": "ALIAS",

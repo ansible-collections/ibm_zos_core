@@ -97,13 +97,23 @@ content
 dest
   The remote absolute path or data set where the content should be copied to.
 
-  ``dest`` can be a USS file, directory or MVS data set name.
+  ``dest`` can be a USS file, USS directory, or MVS data set name.
 
-  ``dest`` can be a alias name of a PS, PDS or PDSE data set.
+  ``dest`` can be an alias name of a PS, PDS, or PDSE data set.
 
-  If ``dest`` has missing parent directories, they will be created.
+  If ``dest`` is a USS path with a trailing slash, it will always be interpreted as a USS directory.
 
-  If ``dest`` is a nonexistent USS file, it will be created.
+  If ``dest`` is a USS path with no trailing slash and the ``dest`` does not exist, it is interpreted as a USS file if the source is a PS, PDS member, GDS, or USS file, and it is interpreted as a USS directory if the source is a PDS, PDSE, GDG, or USS directory.
+
+  If ``dest`` is a USS directory with nonexistent parent directories, they will be created.
+
+  If ``dest`` is a USS file, the parent directories specified in the ``dest`` path must exist for copy to succeed. However, if both the ``src`` and ``dest`` is a USS file, nonexistent parent directories will be created.
+
+  If ``dest`` is a USS directory and ``src`` is a PS, PDS member, GDS, or USS file, a file with the name of the ``src`` will be copied into the ``dest``.
+
+  If ``dest`` is a USS directory and ``src`` is a PDS, PDSE, GDG, or USS directory, a directory with the name of the source will be copied into the ``dest``.
+
+  If ``dest`` is a USS file, the ``source`` contents will be copied into the ``dest``.
 
   If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the system's default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the module will fail.
 
@@ -681,8 +691,11 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \\n
-    | **choices**: \\n, \\r, \\r\\n
+    | **default**: 
+
+    | **choices**: 
+, , 
+
 
 
   auto_reload

@@ -114,7 +114,7 @@ options:
         will be created.
       - If C(dest) is a USS directory and C(src) is a PS, PDS member, GDS, or USS file, a file with the
         name of the C(src) will be copied into the C(dest).
-      - If C(dest) is a USS directory and C(src) is a PDSE, PDSE, GDG, or USS directory, a directory with
+      - If C(dest) is a USS directory and C(src) is a PDS, PDSE, GDG, or USS directory, a directory with
         the name of the source will be copied into the C(dest).
       - If C(dest) is a USS file, the C(source) contents will be copied into the C(dest).
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with

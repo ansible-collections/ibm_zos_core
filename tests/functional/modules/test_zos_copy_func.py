@@ -3037,6 +3037,7 @@ def test_copy_ps_to_uss_file_missing_parent_dirs(ansible_zos_module):
         for result in copy_res.contacted.values():
             assert result.get("msg") is not None
             assert result.get("changed") is False
+            assert result.get("failed") is True
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is False
 

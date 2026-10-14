@@ -988,11 +988,11 @@ def test_find_alias_for_ps(ansible_zos_module):
 
 
 def test_find_alias_for_pds(ansible_zos_module):
-    """Alias for a PDS dataset — without include_member_aliases.
+    """Alias for a PDS dataset.
     Creates a PDS with members MBR1 and MBR2, then creates a catalog ALIAS.
     Verifies:
     - Returned entry has type=ALIAS, correct name, and alias_of == PDS name.
-    - No 'members' key in result (include_member_aliases defaults to False).
+    - 'members' key is always present and lists MBR1 and MBR2.
     - matched == 1.
     """
     hosts = ansible_zos_module
@@ -1019,15 +1019,15 @@ def test_find_alias_for_pds(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == ali_name
             assert ds["alias_of"] == pds_name
-            assert "members" not in ds
+            assert sorted(m["name"] for m in ds["members"]) == ["MBR1", "MBR2"]
             assert val.get("matched") == 1
     finally:
         delete_alias(hosts, ali_name)
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
-def test_find_alias_for_pds_include_member_aliases(ansible_zos_module):
-    """Alias for a PDS dataset — with include_member_aliases=True.
+def test_find_alias_for_pds_member_aliases(ansible_zos_module):
+    """Alias for a PDS dataset with a member alias.
     Creates a PDS with members MBR1 and MBR2, creates a member alias MALIAS1
     pointing to MBR1, then creates a catalog ALIAS pointing to the PDS.
     Verifies:
@@ -1057,7 +1057,6 @@ def test_find_alias_for_pds_include_member_aliases(ansible_zos_module):
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
-            include_member_aliases=True,
         )
         for val in find_res.contacted.values():
             data_sets = val.get("data_sets")
@@ -1088,8 +1087,8 @@ def test_find_alias_for_pds_include_member_aliases(ansible_zos_module):
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
-def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
-    """Alias for a PDSE dataset that contains a member alias — with include_member_aliases=True.
+def test_find_alias_for_pdse_member_alias(ansible_zos_module):
+    """Alias for a PDSE dataset that contains a member alias.
     Creates a PDSE with members MEM1 and MEM2, creates member alias ALIAS1 → MEM1,
     then creates a catalog ALIAS for the PDSE itself.
     Verifies:
@@ -1118,7 +1117,6 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
-            include_member_aliases=True,
         )
         for val in find_res.contacted.values():
             data_sets = val.get("data_sets")
@@ -1128,7 +1126,7 @@ def test_find_alias_for_pdse_include_member_alias(ansible_zos_module):
             assert ds["name"]     == ali_name
             assert ds["alias_of"] == pdse_name
             # All members must appear; MEM1 has ALIAS1, MEM2 has none.
-            assert "members" in ds, "PDSE alias must carry 'members' when include_member_aliases=True"
+            assert "members" in ds, "PDSE alias must always carry 'members'"
             member_names = [m["name"] for m in ds["members"]]
             assert "MEM1" in member_names, "MEM1 must appear in members"
             assert "MEM2" in member_names, "MEM2 must appear in members"
@@ -1211,7 +1209,7 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
                  -- fullmatch regexes against the alias dataset name
     Expected: only <hlq>.SEQ.ALI returned; matched == 1.
     PDS and PDSE aliases are excluded; 'members' is not present on the PS result
-    (include_member_aliases defaults to False).
+    (sequential data sets have no members).
     """
     hosts = ansible_zos_module
     hlq       = get_tmp_ds_name()
@@ -1267,7 +1265,7 @@ def test_find_alias_excludes_pds_and_pdse(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == ps_ali
             assert ds["alias_of"] == ps_name
-            # include_member_aliases defaults to False — 'members' must not be present
+            # Sequential target — 'members' must not be present
             assert "members" not in ds
             assert val.get("matched") == 1
             # Confirm neither PDS nor PDSE alias is in the result
@@ -1308,8 +1306,7 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
     Expected:
       - Only ``<hlq>.PDSE.ALI`` is returned (matched == 1).
       - ``<hlq>.PDS.ALI`` is absent from data_sets.
-      - ``members`` key is absent (include_member_aliases defaults to False,
-        no parenthesised exclude either).
+      - ``members`` key is present (PDSE target) and lists MEM1 and MEM2.
     """
     hosts = ansible_zos_module
     hlq       = get_tmp_ds_name()
@@ -1327,9 +1324,12 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
             {"name": f"{pds_name}(MBR2)", "type": "member", "state": "present"},
         ])
         # --- Create PDSE with two members ---
-        hosts.all.shell(cmd=f"dtouch -tpdse -l80 -rFB -s5 -e5 {pdse_name}")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM1)'\"")
-        hosts.all.shell(cmd=f"dcp 'Test' \"//'{ pdse_name }(MEM2)'\"")
+        hosts.all.zos_data_set(name=pdse_name, type="pdse", state="present",
+                               space_primary=5, space_type="m")
+        hosts.all.zos_data_set(batch=[
+            {"name": f"{pdse_name}(MEM1)", "type": "member", "state": "present"},
+            {"name": f"{pdse_name}(MEM2)", "type": "member", "state": "present"},
+        ])
         # --- Define catalog aliases ---
         define_alias(hosts, pds_ali, pds_name)
         define_alias(hosts, pdse_ali, pdse_name)
@@ -1348,8 +1348,8 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == pdse_ali
             assert ds["alias_of"] == pdse_name
-            # No parenthesised exclude and include_member_aliases is False
-            assert "members" not in ds
+            # PDSE target always carries its members
+            assert sorted(m["name"] for m in ds["members"]) == ["MEM1", "MEM2"]
             # Confirm PDS alias is absent
             names = [d["name"] for d in data_sets]
             assert pds_ali not in names, "PDS alias should have been excluded"
@@ -1358,11 +1358,11 @@ def test_find_alias_excludes_alias_dataset_by_name(ansible_zos_module):
         for ali in (pds_ali, pdse_ali):
             delete_alias(hosts, ali)
         hosts.all.zos_data_set(name=pds_name, state="absent")
-        hosts.all.shell(cmd=f"drm {pdse_name}")
+        hosts.all.zos_data_set(name=pdse_name, state="absent")
 
 
 def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
-    """Exclude PDS members whose in-directory alias name matches a parenthesised pattern.
+    """Exclude PDS members whose member name matches a parenthesised pattern.
 
     Setup:
       - PDS ``<hlq>.PDS`` with:
@@ -1373,16 +1373,14 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
 
     zos_find is called with:
       patterns:  [``<hlq>.PDS.*``]
-      excludes:  ['(^ALIAS.*)']   -- parenthesised regex; matches any alias name
-                                     starting with "ALIAS"
+      excludes:  ['(^MBR[12]$)']   -- parenthesised regex; matches member names
+                                      MBR1 and MBR2
 
     Expected:
       - The catalog alias entry ``<hlq>.PDS.ALI`` is still returned (dataset-level
         exclude does not apply).
-      - ``members`` key IS present (forced on whenever a parenthesised exclude is used).
-      - MBR1 and MBR2 are absent from ``members`` (their alias names matched the pattern).
-      - MBR3 is present in ``members`` with an empty ``aliases`` list (it has no
-        member alias, so it could not have matched and is kept).
+      - MBR1 and MBR2 are absent from ``members`` (their member names matched).
+      - MBR3 is present in ``members`` with an empty ``aliases`` list.
       - matched == 1.
     """
     hosts = ansible_zos_module
@@ -1404,11 +1402,11 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
         hosts.all.shell(cmd=f"tso \"RENAME '{pds_name}(MBR2)' (ALIAS2) ALIAS\"")
         # --- Define catalog alias for the PDS ---
         define_alias(hosts, ali_name, pds_name)
-        # --- Find: parenthesised exclude removes members with alias names matching ALIAS.* ---
+        # --- Find: parenthesised exclude removes members named MBR1 / MBR2 ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
-            excludes=["(^ALIAS.*)"],
+            excludes=["(^MBR[12]$)"],
         )
         for val in find_res.contacted.values():
             data_sets = val.get("data_sets")
@@ -1419,16 +1417,13 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == ali_name
             assert ds["alias_of"] == pds_name
-            # members key is forced into output by the parenthesised exclude
-            assert "members" in ds, (
-                "parenthesised exclude must force 'members' into output"
-            )
+            assert "members" in ds
             member_names = [m["name"] for m in ds["members"]]
-            # MBR1 and MBR2 had alias names matching ^ALIAS.* → removed
-            assert "MBR1" not in member_names, "MBR1 should be excluded (its alias ALIAS1 matched)"
-            assert "MBR2" not in member_names, "MBR2 should be excluded (its alias ALIAS2 matched)"
-            # MBR3 has no alias → cannot match the alias-name exclude → kept
-            assert "MBR3" in member_names, "MBR3 has no alias name so it must survive"
+            # MBR1 and MBR2 names matched ^MBR[12]$ → removed
+            assert "MBR1" not in member_names, "MBR1 should be excluded by name"
+            assert "MBR2" not in member_names, "MBR2 should be excluded by name"
+            # MBR3 name does not match → kept
+            assert "MBR3" in member_names, "MBR3 must survive"
             mbr3 = next(m for m in ds["members"] if m["name"] == "MBR3")
             assert mbr3["aliases"] == [], "MBR3 has no member aliases"
             assert val.get("matched") == 1
@@ -1437,8 +1432,8 @@ def test_find_alias_excludes_member_aliases_by_pattern(ansible_zos_module):
         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
-def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
-    """Exclude ALL members that carry any alias using the catch-all pattern (^.*$).
+def test_find_alias_excludes_all_members(ansible_zos_module):
+    """Exclude ALL members using the catch-all pattern (^.*$).
 
     Setup:
       - PDS ``<hlq>.PDS`` with:
@@ -1450,18 +1445,13 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
     zos_find is called with:
       patterns:  [``<hlq>.PDS.*``]
       resource_type: [alias]
-      excludes:  ['(^.*$)']   -- parenthesised catch-all: matches any non-empty
-                                 alias name, so every member that has at least
-                                 one alias is removed.
+      excludes:  ['(^.*$)']   -- parenthesised catch-all: matches every member name.
 
     Expected:
       - The catalog alias entry ``<hlq>.PDS.ALI`` is still returned (dataset-level
         exclude does not apply — the pattern is fully parenthesised with nothing
         outside the parens).
-      - ``members`` key IS present (forced by the parenthesised exclude).
-      - MBR1 and MBR2 are absent (their alias names ALIAS1 / ALIAS2 matched ``^.*$``).
-      - MBR3 is present with ``aliases: []`` — it has no alias name so ``^.*$``
-        never runs against it; it cannot be excluded.
+      - ``members`` key is present and is an empty list.
       - matched == 1.
     """
     hosts = ansible_zos_module
@@ -1487,7 +1477,7 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
             assert v.get("rc") == 0, f"RENAME ALIAS2 failed: {v.get('stdout')} {v.get('stderr')}"
         # --- Define catalog alias ---
         define_alias(hosts, ali_name, pds_name)
-        # --- Find: catch-all exclude removes every member that has any alias ---
+        # --- Find: catch-all exclude removes every member ---
         find_res = hosts.all.zos_find(
             patterns=[ali_pattern],
             resource_type=["alias"],
@@ -1502,20 +1492,8 @@ def test_find_alias_excludes_all_member_aliases(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == ali_name
             assert ds["alias_of"] == pds_name
-            # members key is forced on by the parenthesised exclude
-            assert "members" in ds, (
-                "parenthesised exclude must force 'members' into output for a PDS target"
-            )
-            member_names = [m["name"] for m in ds["members"]]
-            # MBR1 and MBR2 had aliases → matched (^.*$) → excluded
-            assert "MBR1" not in member_names, "MBR1 should be excluded (ALIAS1 matched ^.*$)"
-            assert "MBR2" not in member_names, "MBR2 should be excluded (ALIAS2 matched ^.*$)"
-            # MBR3 has no alias → (^.*$) never tested against it → always survives
-            assert "MBR3" in member_names, (
-                "MBR3 has no alias so (^.*$) is never tested; it must survive"
-            )
-            mbr3 = next(m for m in ds["members"] if m["name"] == "MBR3")
-            assert mbr3["aliases"] == [], "MBR3 carries no in-directory aliases"
+            # members key stays present (empty) when every member is excluded
+            assert ds.get("members") == []
             assert val.get("matched") == 1
     finally:
         delete_alias(hosts, ali_name)
@@ -1948,8 +1926,8 @@ def test_find_alias_contains_filters_by_target_ps_content(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {nomatch_ps}")
 
 
-def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_zos_module):
-    """contains + include_member_aliases prunes members list to only those that matched.
+def test_find_alias_contains_prunes_members(ansible_zos_module):
+    """contains prunes members list to only those that matched.
 
     Both a PDS and a PDSE alias are exercised in one test, matching the two-entry
     output shape confirmed during manual testing:
@@ -1970,7 +1948,6 @@ def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_
       patterns:               [``<hlq>.*.*``]
       resource_type:          [alias]
       contains:               'find me'
-      include_member_aliases: true
 
     Expected:
       - Two alias entries returned (PDS + PDSE).
@@ -2021,7 +1998,6 @@ def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_
             patterns=[pattern],
             resource_type=["alias"],
             contains=search,
-            include_member_aliases=True,
         )
         for val in find_res.contacted.values():
             assert val.get("msg") is None
@@ -2056,14 +2032,12 @@ def test_find_alias_contains_with_include_member_aliases_prunes_members(ansible_
         )
 
 
-def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
-    """contains without include_member_aliases filters aliases correctly, no members key.
+def test_find_alias_contains_filters_aliases_by_target_members(ansible_zos_module):
+    """contains filters aliases by whether the target PDS/PDSE has a matching member.
 
-    include_member_aliases is NOT required for contains to work.  When omitted
-    (default False), dls is called without -a so no member data is fetched.
-    The alias entry is still correctly included or excluded based on whether
-    its target PDS/PDSE has any member containing the search string — but the
-    output entry has no 'members' key.
+    The alias entry is included or excluded based on whether its target
+    PDS/PDSE has any member containing the search string, and the returned
+    'members' list is pruned to the matching members.
 
     Setup:
       - PDS  ``<hlq>.PDS``  — MEM1 has "needle", MEM2 does not.
@@ -2075,12 +2049,11 @@ def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
       patterns:               [``<hlq>.*.*``]
       resource_type:          [alias]
       contains:               'needle'
-      (include_member_aliases omitted — defaults to false)
 
     Expected:
       - Only ``<hlq>.PDS.ALI`` is returned.
       - ``<hlq>.PDSE.ALI`` is absent.
-      - The returned entry has NO 'members' key.
+      - The returned entry's 'members' contains only MEM1.
       - matched == 1, msg is None.
     """
     hosts    = ansible_zos_module
@@ -2119,7 +2092,7 @@ def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
         # --- Define catalog aliases ---
         define_alias(hosts, pds_ali, pds_name)
         define_alias(hosts, pdse_ali, pdse_name)
-        # --- Find: include_member_aliases not set (defaults to False) ---
+        # --- Find ---
         find_res = hosts.all.zos_find(
             patterns=[pattern],
             resource_type=["alias"],
@@ -2135,10 +2108,8 @@ def test_find_alias_contains_without_include_member_aliases(ansible_zos_module):
             assert ds["type"]     == "ALIAS"
             assert ds["name"]     == pds_ali
             assert ds["alias_of"] == pds_name
-            # No members key — include_member_aliases was not set
-            assert "members" not in ds, (
-                "'members' key must be absent when include_member_aliases=False"
-            )
+            # members pruned to the matching member only
+            assert [m["name"] for m in ds["members"]] == ["MEM1"]
             names = [d["name"] for d in data_sets]
             assert pdse_ali not in names, (
                 "PDSE alias must be absent (no member contains the search string)"
@@ -2249,7 +2220,6 @@ def test_find_alias_contains_no_match_returns_empty(ansible_zos_module):
       patterns:               [``<hlq>.*.*``]
       resource_type:          [alias]
       contains:               'ghost string'
-      include_member_aliases: true
 
     Expected:
       - data_sets == [] (no alias returned).
@@ -2281,7 +2251,6 @@ def test_find_alias_contains_no_match_returns_empty(ansible_zos_module):
             patterns=[pattern],
             resource_type=["alias"],
             contains=search,
-            include_member_aliases=True,
         )
         for val in find_res.contacted.values():
             assert val.get("msg") is None
@@ -2309,7 +2278,6 @@ def test_find_alias_contains_mixed_ps_and_pds(ansible_zos_module):
       patterns:               [``<hlq>.*.*``]
       resource_type:          [alias]
       contains:               'search term'
-      include_member_aliases: true
 
     Expected:
       - Both aliases are returned (matched == 2).
@@ -2355,7 +2323,6 @@ def test_find_alias_contains_mixed_ps_and_pds(ansible_zos_module):
             patterns=[pattern],
             resource_type=["alias"],
             contains=search,
-            include_member_aliases=True,
         )
         for val in find_res.contacted.values():
             assert val.get("msg") is None

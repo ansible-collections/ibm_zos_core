@@ -1,10 +1,12 @@
 minor_changes:
   - zos_find - Added ``alias`` as a ``resource_type`` option to discover
     catalog alias entries. Returned aliases include an ``alias_of`` field that
-    identifies the associated target data set.
+    identifies the associated target data set. For PDS/PDSE targets, the
+    ``members`` list is returned with each member and its in-directory aliases.
     (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
-  - zos_find - Added the ``include_member_aliases`` option to return PDS/PDSE
-    member alias information when searching for catalog alias entries
+  - zos_find - PDS and PDSE results for ``nonvsam`` and ``alias`` resource
+    types now always include a ``members`` list, which is empty when the data
+    set has no members or all members were excluded.
     (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
 bugfixes:
   - zos_find - Updated the ``age`` parameter documentation for accuracy and

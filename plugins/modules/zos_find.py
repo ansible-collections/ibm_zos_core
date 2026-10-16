@@ -382,11 +382,11 @@ data_sets:
     sample: [
       {
         "name": "IMS.CICS13.USERLIB",
-        "members": {
+        "members": [
             "COBU",
             "MC2CNAM",
             "TINAD"
-        },
+        ],
         "type": "NONVSAM"
       },
       {

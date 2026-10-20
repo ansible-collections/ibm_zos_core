@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -48,8 +49,21 @@ options:
         - A unique system-generated identifier that represents a specific started task running in z/OS. This id starts with STC.
         - If a I(task_id) is specified, I(job_name) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
+        - If a I(task_id) is specified, I(identifier_name) should not be specified as the parameters
+          are mutually exclusive for querying started tasks.
     required: false
     type: str
+  identifier_name:
+    description:
+        - The name that identifies the task. It can be paired with I(job_name) to display information about a specific 
+          active started task.
+        - If I(identifier_name) is specified, I(task_id) should not be specified as the parameters
+          are mutually exclusive for querying started tasks.
+        - If I(identifier_name) is specified, I(job_name) must be specified as well.
+    required: false
+    type: str
+    aliases:
+        - identifier
 
 attributes:
   action:
@@ -61,12 +75,19 @@ attributes:
   check_mode:
     support: full
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+notes:
+  - Either C(job_name) or C(task_id) is mandatory to display started task status information.
 """
 
 EXAMPLES = r"""
 - name: Display a started task using a started task name.
   zos_started_task_info:
     job_name: "PROCAPP"
+
+- name: Display a started task using a started task name and identifier.
+  zos_started_task_info:
+    job_name: "PROCAPP.SAMPLE"
 
 - name: Display a started task using a started task id.
   zos_started_task_info:
@@ -105,7 +126,7 @@ rc:
     - The return code is 0 when command executed successfully.
     - The return code is 1 when opercmd throws any error.
     - The return code is 4 when task_id format is invalid.
-    - The return code is 5 when any parameter validation failed.
+    - The return code is 5 when no parameters are specified or any parameter validation failed.
     - The return code is 8 when started task is not found using task_id.
   returned: changed
   type: int
@@ -319,3 +340,425 @@ tasks:
       type: str
       sample: "SYSTEM"
 """
+
+from ansible.module_utils.basic import AnsibleModule
+import traceback
+import re
+import math
+import time
+from datetime import datetime, timedelta, timezone
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
+    validate_dependencies,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
+
+try:
+    from zoautil_py import opercmd, zsystem, jobs
+except ImportError:
+    opercmd = ZOAUImportError(traceback.format_exc())
+    zsystem = ZOAUImportError(traceback.format_exc())
+    jobs = ZOAUImportError(traceback.format_exc())
+
+
+def execute_command(operator_cmd):
+    """Execute operator command.
+
+    Parameters
+    ----------
+    operator_cmd : str
+        Operator command.
+
+    Returns
+    -------
+    tuple
+        Tuple containing the RC, standard out, standard err of the
+        query script and started task parameters.
+    """
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds
+    timeout_c = 0
+    response = opercmd.execute(operator_cmd, timeout_c)
+
+    rc = response.rc
+    stdout = response.stdout_response
+    stderr = response.stderr_response
+    return rc, stdout, stderr
+
+
+def fetch_task_name_and_asidx(module, task_id):
+    """Executes JLS command and fetches task name
+
+    Parameters
+    ----------
+    module : dict
+        The started task display command parameters.
+    task_id : str
+        The started task id starts with STC.
+
+    Returns
+    -------
+    task_name
+        The name of started task.
+    """
+    try:
+        task_details = jobs.fetch(task_id)
+        if not isinstance(task_details, jobs.Job):
+            module.fail_json(
+                rc=1,
+                msg=f"Fetching started task details using task_id: {task_id} is failed",
+                changed=False
+            )
+    except Exception as err:
+        module.fail_json(
+            rc=err.response.rc,
+            msg=f"Fetching started task details using task_id: {task_id} is failed with ZOAU error: {err.response.stderr_response}",
+            changed=False
+        )
+    task_name = task_details.name
+    asidx = f"{task_details.asid:04X}"
+    return task_name, asidx
+
+
+def prepare_display_command(module):
+    """Validates parameters and creates display command
+
+    Parameters
+    ----------
+    module : dict
+        The started task display command parameters.
+
+    Returns
+    -------
+    started_task_name
+        The name of started task.
+    asidx
+        The address space identifier value, in hexadecimal.
+    cmd
+        The display command in string format.
+    """
+    identifier = module.params.get('identifier_name')
+    job_name = module.params.get('job_name')
+    task_id = module.params.get('task_id')
+    started_task_name = ""
+    task_name = asidx = ""
+    if task_id:
+        task_name, asidx = fetch_task_name_and_asidx(module, task_id)
+    if task_name:
+        started_task_name = task_name
+    elif job_name:
+        if (job_name == "all"):
+            started_task_name = "STC"
+        else:
+            started_task_name = job_name
+        if identifier:
+            started_task_name = f"{started_task_name}.{identifier}"
+    else:
+        module.fail_json(
+            rc=5,
+            msg="either job_name or task_id is mandatory to display started task details.",
+            changed=False
+        )
+    cmd = f"D A,{started_task_name}"
+    return started_task_name, asidx, cmd
+
+
+def extract_keys(stdout, asidx=None, task_params_before=None):
+    """Extracts keys and values from the given stdout
+
+    Parameters
+    ----------
+    stdout : string
+        The started task display command output
+    asidx : string
+        The address space identifier value, in hexadecimal.
+    task_params_before: list
+        List of started task details which have same started task name.
+
+    Returns
+    -------
+    tasks
+        The list of task parameters.
+    """
+    keys = {
+        'A': 'asidx',
+        'CT': 'cpu_time',
+        'ET': 'elapsed_time',
+        'WUID': 'task_id'
+    }
+    lines = stdout.strip().split('\n')
+    tasks = []
+    current_task = {}
+    task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
+    kv_pattern = re.compile(r'(\S+)=(\S+)')
+    for line in lines[5:]:
+        line = line.strip()
+        match_firstline = task_header_regex.search(line)
+        if len(line.split()) >= 5 and match_firstline:
+            if current_task:
+                current_task['started_time'] = ""
+                el_time = current_task.get('elapsed_time')
+                if el_time:
+                    current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+                    current_task['started_time'] = calculate_start_time(el_time)
+                if asidx:
+                    if asidx == current_task.get('asidx'):
+                        tasks.append(current_task)
+                        current_task = {}
+                        break
+                elif task_params_before:
+                    current_asid = current_task.get('asidx')
+                    task_exists_before = False
+                    for task in task_params_before:
+                        if task.get('asidx') == current_asid:
+                            task_exists_before = True
+                            break
+                    if not task_exists_before:
+                        tasks.append(current_task)
+                else:
+                    tasks.append(current_task)
+                current_task = {}
+            current_task['task_name'] = match_firstline.group(1)
+            current_task['task_identifier'] = match_firstline.group(2)
+            for match in kv_pattern.finditer(line):
+                key, value = match.groups()
+                if key in keys:
+                    key = keys[key]
+                    current_task[key.lower()] = value
+        elif current_task:
+            for match in kv_pattern.finditer(line):
+                key, value = match.groups()
+                if key in keys:
+                    key = keys[key]
+                    current_task[key.lower()] = value
+    if current_task:
+        current_task['started_time'] = ""
+        el_time = current_task.get('elapsed_time')
+        if el_time:
+            current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+            current_task['started_time'] = calculate_start_time(el_time)
+        cpu_time = current_task.get('cpu_time')
+        if cpu_time:
+            current_task['cpu_time'] = convert_cpu_time(cpu_time) or current_task['cpu_time']
+        if asidx:
+            if asidx == current_task.get('asidx'):
+                tasks.append(current_task)
+        elif task_params_before:
+            current_asid = current_task.get('asidx')
+            task_exists_before = False
+            for task in task_params_before:
+                if task.get('asidx') == current_asid:
+                    task_exists_before = True
+                    break
+            if not task_exists_before:
+                tasks.append(current_task)
+        else:
+            tasks.append(current_task)
+    return tasks
+
+
+def parse_time(ts_str):
+    """Parse timestamp
+
+    Parameters
+    ----------
+    ts_str : string
+        The time stamp in string format
+
+    Returns
+    -------
+    timestamp
+        Transformed timestamp
+    """
+    try:
+        # Case 1: Duration like "000.005seconds"
+        sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
+        if sec_match:
+            return timedelta(seconds=float(sec_match.group(1)))
+        # Case 2: hh.mm.ss
+        hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
+        if hms_match:
+            h, m, s = map(int, hms_match.groups())
+            return timedelta(hours=h, minutes=m, seconds=s)
+        # Case 3: hhhhh.mm
+        hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
+        if hm_match:
+            h, m = map(int, hm_match.groups())
+            return timedelta(hours=h, minutes=m)
+    except Exception:
+        return ""
+    return ""
+
+
+def calculate_start_time(ts_str):
+    now = datetime.now().astimezone()
+    parsed = parse_time(ts_str)
+    if parsed is None:
+        return ""
+    # If it's a timedelta (duration), subtract from now → absolute datetime
+    if isinstance(parsed, timedelta):
+        return f"{now - parsed}"
+    return ""
+
+
+def convert_cpu_time(ts_str):
+    parsed = parse_time(ts_str)
+    if parsed is None:
+        return ""
+    # If it's a timedelta (duration), subtract from now → absolute datetime
+    if isinstance(parsed, timedelta):
+        total_seconds = int(parsed.total_seconds())
+        milliseconds = int(parsed.microseconds / 1000)
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        # Format: HHHHH.MM.SS.SSS
+        return f"{hours:05}.{minutes:02}.{seconds:02}.{milliseconds:03}"
+    return ""
+
+
+def run_module():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        z/OS started task operation failed.
+    """
+    module = AnsibleModule(
+        argument_spec={
+            'identifier_name': {
+                'type': 'str',
+                'required': False,
+                'aliases': ['identifier']
+            },
+            'job_name': {
+                'type': 'str',
+                'required': False,
+                'aliases': ['job', 'task_name', 'task']
+            },
+            'task_id': {
+                'type': 'str',
+                'required': False
+            }
+        },
+        mutually_exclusive=[
+            ['job_name', 'task_id'],
+            ['identifier_name', 'task_id']
+        ],
+        supports_check_mode=True
+    )
+
+    validate_dependencies(module)
+
+    args_def = {
+        'identifier_name': {
+            'arg_type': 'identifier_name',
+            'required': False,
+            'aliases': ['identifier']
+        },
+        'job_name': {
+            'arg_type': 'str',
+            'required': False,
+            'aliases': ['job', 'task_name', 'task']
+        },
+        'task_id': {
+            'type': 'str',
+            'required': False
+        }
+    }
+
+    # Validate input parameters
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
+
+    result = dict()
+    if module.check_mode:
+        module.exit_json(**result)
+
+    # Initialize logging module
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
+
+    """
+    Below error messages or error codes are used to determine if response has any error.
+    """
+    error_details = {
+            'IEE535I': 'A parameter on a command is not valid.',
+            'NOT FOUND': 'Started task is not active',
+            'IEE341I': 'Started task is not active',
+            'IEE708I': 'The value of a keyword specified on a command is incorrect.',
+        }
+    err_msg = ['IEE341I', 'IEE535I', 'NOT FOUND', 'IEE708I']
+
+    kwargs = {}
+    kwargs.update({"wait": True})
+
+    cmd = ""
+    started_task_name, asidx, cmd = prepare_display_command(module)
+
+    changed = False
+    stdout = ""
+    stderr = ""
+    rc, out, err = execute_command(cmd)
+
+    is_failed = False
+    msg = ""
+    task_params = []
+
+    # Validate the sysout of opercmd with the above listed error codes to find if any error occured
+    found_msg = next((msg for msg in err_msg if msg in out), None)
+    if err != "" or found_msg:
+        is_failed = True
+        msg = error_details.get(found_msg)
+
+    if is_failed:
+        if rc == 0:
+            rc = 1
+        changed = False
+        stdout = out
+        stderr = err
+        if err == "" or err is None:
+            stderr = out
+            stdout = ""
+    else:
+        task_params = extract_keys(out, asidx)
+        if not task_params:
+            module.fail_json(
+                rc=1,
+                msg="No started task is active with the given name.",
+                changed=False
+            )
+        changed = True
+        stdout = out
+        stderr = err
+
+    result = dict(
+        changed=changed,
+        cmd=cmd,
+        msg=msg,
+        tasks=task_params,
+        rc=rc,
+        stdout=stdout,
+        stderr=stderr,
+        stdout_lines=stdout.split('\n'),
+        stderr_lines=stderr.split('\n'),
+    )
+
+    module.exit_json(**result)
+
+if __name__ == '__main__':
+    run_module()

@@ -111,7 +111,7 @@ changed:
   sample: false
 cmd:
   description:
-    - Operator DISPLAY command executed via opercmd to query for started task information.
+    - Operator DISPLAY command executed via ZOAU C(opercmd) to query for started task information.
   returned: changed
   type: str
   sample: "D A,ICSF"
@@ -124,10 +124,10 @@ msg:
 rc:
   description:
     - The return code is 0 when command executed successfully.
-    - The return code is 1 when opercmd throws any error.
-    - The return code is 4 when task_id format is invalid.
+    - The return code is 1 when ZOAU C(opercmd) throws any error.
+    - The return code is 4 when I(task_id) format is invalid.
     - The return code is 5 when no parameters are specified or any parameter validation failed.
-    - The return code is 8 when started task is not found using task_id.
+    - The return code is 8 when started task is not found using I(task_id).
   returned: changed
   type: int
   sample: 0
@@ -366,6 +366,14 @@ except ImportError:
     jobs = ZOAUImportError(traceback.format_exc())
 
 
+ERROR_MESSAGES = {
+    'IEE341I': 'Started task is not active',
+    'IEE535I': 'A parameter on a command is not valid.',
+    'IEE708I': 'The value of a keyword specified on a command is incorrect.',
+    'NOT FOUND': 'Started task is not active',
+}
+
+
 def execute_command(operator_cmd):
     """Execute operator command.
 
@@ -451,10 +459,7 @@ def prepare_display_command(module):
     if task_name:
         started_task_name = task_name
     elif job_name:
-        if (job_name == "all"):
-            started_task_name = "STC"
-        else:
-            started_task_name = job_name
+        started_task_name = job_name
         if identifier:
             started_task_name = f"{started_task_name}.{identifier}"
     else:
@@ -623,6 +628,14 @@ def convert_cpu_time(ts_str):
     return ""
 
 
+def classify_err_response(rc, out, err):
+    """Return (rc, msg, stdout, stderr, is_error)."""
+    code = next((c for c in ERROR_MESSAGES if c in out), None)
+    if err or code:
+        return (rc or 1), ERROR_MESSAGES.get(code), "", (err or out), True
+    return rc, "", out, err, False
+
+
 def run_module():
     """Initialize the module.
 
@@ -669,7 +682,7 @@ def run_module():
             'aliases': ['job', 'task_name', 'task']
         },
         'task_id': {
-            'type': 'str',
+            'arg_type': 'str',
             'required': False
         }
     }
@@ -685,80 +698,48 @@ def run_module():
             stderr=str(err)
         )
 
-    result = dict()
-    if module.check_mode:
-        module.exit_json(**result)
-
     # Initialize logging module
     module_verbosity_level = module._verbosity
     SingletonLogger().get_logger(module_verbosity_level)
 
-    """
-    Below error messages or error codes are used to determine if response has any error.
-    """
-    error_details = {
-            'IEE535I': 'A parameter on a command is not valid.',
-            'NOT FOUND': 'Started task is not active',
-            'IEE341I': 'Started task is not active',
-            'IEE708I': 'The value of a keyword specified on a command is incorrect.',
-        }
-    err_msg = ['IEE341I', 'IEE535I', 'NOT FOUND', 'IEE708I']
-
-    kwargs = {}
-    kwargs.update({"wait": True})
-
-    cmd = ""
+    # Create DISPLAY command
     started_task_name, asidx, cmd = prepare_display_command(module)
 
-    changed = False
-    stdout = ""
-    stderr = ""
+    # Initialize variables and execute DISPLAY command
     rc, out, err = execute_command(cmd)
-
-    is_failed = False
-    msg = ""
-    task_params = []
+    out, err = out or "", err or ""
 
     # Validate the sysout of opercmd with the above listed error codes to find if any error occured
-    found_msg = next((msg for msg in err_msg if msg in out), None)
-    if err != "" or found_msg:
-        is_failed = True
-        msg = error_details.get(found_msg)
-
-    if is_failed:
-        if rc == 0:
-            rc = 1
-        changed = False
-        stdout = out
-        stderr = err
-        if err == "" or err is None:
-            stderr = out
-            stdout = ""
-    else:
-        task_params = extract_keys(out, asidx)
-        if not task_params:
-            module.fail_json(
-                rc=1,
-                msg="No started task is active with the given name.",
-                changed=False
-            )
-        changed = True
-        stdout = out
-        stderr = err
+    rc, msg, stdout, stderr, is_error = classify_err_response(rc, out, err)
 
     result = dict(
-        changed=changed,
-        cmd=cmd,
-        msg=msg,
-        tasks=task_params,
-        rc=rc,
-        stdout=stdout,
-        stderr=stderr,
-        stdout_lines=stdout.split('\n'),
-        stderr_lines=stderr.split('\n'),
+      changed=False,
+      cmd=cmd,
+      tasks=[],
+      rc=rc,
+      msg=msg,
+      stdout=stdout,
+      stderr=stderr,
+      stdout_lines=stdout.splitlines(),
+      stderr_lines=stderr.splitlines()
     )
 
+    if is_error:
+        module.fail_json(**result)
+
+    # Extract return fields from STDOUT
+    task_params = extract_keys(out, asidx)
+    if not task_params:
+        result.update(
+          rc=1,
+          msg="No started task is active with the given name."
+        )
+        module.fail_json(**result)
+    else:
+      result["tasks"] = task_params
+
     module.exit_json(**result)
+
 
 if __name__ == '__main__':
     run_module()

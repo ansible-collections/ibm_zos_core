@@ -112,13 +112,14 @@ changed:
 cmd:
   description:
     - Operator DISPLAY command executed via ZOAU C(opercmd) to query for started task information.
-  returned: changed
+  returned: success
   type: str
   sample: "D A,ICSF"
 msg:
   description:
-    - Failure or skip message returned by the module.
-  returned: failure or skipped
+    - Failure or skip message returned by the module. An empty string will be returned when no
+      error occurs.
+  returned: always
   type: str
   sample: "No started task is active with the given name."
 rc:
@@ -128,7 +129,7 @@ rc:
     - The return code is 4 when I(task_id) format is invalid.
     - The return code is 5 when no parameters are specified or any parameter validation failed.
     - The return code is 8 when started task is not found using I(task_id).
-  returned: changed
+  returned: always
   type: int
   sample: 0
 stderr:
@@ -159,7 +160,8 @@ stdout_lines:
   sample: ["EC00000A   2026287  12:14:28.00             ISF031I CONSOLE OMVS0000 ACTIVATED"]
 tasks:
   description:
-    - The status information for a list of started tasks matching the specified criteria.
+    - A list containing the status information for each started tasks matching the specified criteria. An empty
+      list will be returned if no started tasks can be found that match the specified criteria.
   returned: success
   type: list
   elements: dict
@@ -384,9 +386,12 @@ def execute_command(operator_cmd):
 
     Returns
     -------
-    tuple
-        Tuple containing the RC, standard out, standard err of the
-        query script and started task parameters.
+    rc : str
+        The return code.
+    stdout : str
+        The stardard output of the query.
+    stderr : str
+        The standard error of the query.
     """
     # as of ZOAU v1.3.0, timeout is measured in centiseconds
     timeout_c = 0
@@ -399,75 +404,79 @@ def execute_command(operator_cmd):
 
 
 def fetch_task_name_and_asidx(module, task_id):
-    """Executes JLS command and fetches task name
+    """Executes ZOAU python API jobs.fetch command to fetch task name and ASID.
 
     Parameters
     ----------
-    module : dict
-        The started task display command parameters.
+    module : AnsibleModule
+        The Ansible module object, used to report failures.
     task_id : str
-        The started task id starts with STC.
+        The started task id.
 
     Returns
     -------
-    task_name
+    task_name : str
         The name of started task.
+    asidx : str
+        The address space identifier, as a 4-digit uppercase hex string.
     """
+    msg = f"Fetching started task details using task_id: {task_id} is failed"
     try:
         task_details = jobs.fetch(task_id)
-        if not isinstance(task_details, jobs.Job):
-            module.fail_json(
-                rc=1,
-                msg=f"Fetching started task details using task_id: {task_id} is failed",
-                changed=False
-            )
     except Exception as err:
+        response = getattr(err, "response", None)
+        stderr = getattr(response, "stderr_response", None) or str(err)
         module.fail_json(
-            rc=err.response.rc,
-            msg=f"Fetching started task details using task_id: {task_id} is failed with ZOAU error: {err.response.stderr_response}",
-            changed=False
+            changed=False,
+            rc=getattr(response, "rc", 1),
+            msg=msg,
+            stderr=stderr,
+            stderr_lines=stderr.splitlines()
         )
+
+    if not isinstance(task_details, jobs.Job):
+        module.fail_json(changed=False, rc=1, msg=msg, stderr="", stderr_lines=[])
+
     task_name = task_details.name
     asidx = f"{task_details.asid:04X}"
     return task_name, asidx
 
 
 def prepare_display_command(module):
-    """Validates parameters and creates display command
+    """Validates parameters and creates display command.
 
     Parameters
     ----------
-    module : dict
-        The started task display command parameters.
+    module : AnsibleModule
+        The Ansible module instance.
 
     Returns
     -------
-    started_task_name
-        The name of started task.
-    asidx
-        The address space identifier value, in hexadecimal.
-    cmd
+    started_task_name : str
+        The name of the started task.
+    asidx : str
+        The address space identifier value in hexadecimal.
+    cmd : str
         The display command in string format.
     """
-    identifier = module.params.get('identifier_name')
     job_name = module.params.get('job_name')
     task_id = module.params.get('task_id')
-    started_task_name = ""
-    task_name = asidx = ""
+    identifier = module.params.get('identifier_name')
+
     if task_id:
-        task_name, asidx = fetch_task_name_and_asidx(module, task_id)
-    if task_name:
-        started_task_name = task_name
+        started_task_name, asidx = fetch_task_name_and_asidx(module, task_id)
     elif job_name:
-        started_task_name = job_name
-        if identifier:
-            started_task_name = f"{started_task_name}.{identifier}"
+        asidx = ""
+        started_task_name = f"{job_name}.{identifier}" if identifier else job_name
     else:
         module.fail_json(
             rc=5,
-            msg="either job_name or task_id is mandatory to display started task details.",
-            changed=False
+            msg="Either 'job_name' or 'task_id' is mandatory to display started task details.",
+            changed=False,
+            stderr="", 
+            stderr_lines=[]
         )
+
     cmd = f"D A,{started_task_name}"
     return started_task_name, asidx, cmd
 
@@ -508,7 +517,7 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
                 current_task['started_time'] = ""
                 el_time = current_task.get('elapsed_time')
                 if el_time:
-                    current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+                    current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
                     current_task['started_time'] = calculate_start_time(el_time)
                 if asidx:
                     if asidx == current_task.get('asidx'):
@@ -544,11 +553,11 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
         current_task['started_time'] = ""
         el_time = current_task.get('elapsed_time')
         if el_time:
-            current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+            current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
             current_task['started_time'] = calculate_start_time(el_time)
         cpu_time = current_task.get('cpu_time')
         if cpu_time:
-            current_task['cpu_time'] = convert_cpu_time(cpu_time) or current_task['cpu_time']
+            current_task['cpu_time'] = convert_time(cpu_time) or current_task['cpu_time']
         if asidx:
             if asidx == current_task.get('asidx'):
                 tasks.append(current_task)
@@ -567,54 +576,73 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
 
 
 def parse_time(ts_str):
-    """Parse timestamp
+    """Parse timestamp.
 
     Parameters
     ----------
     ts_str : string
-        The time stamp in string format
+        The time stamp in string format.
 
     Returns
     -------
-    timestamp
-        Transformed timestamp
+    timedelta or None
+        Parsed duration as a timedelta, or None if the input cannot be parsed.
     """
     try:
-        # Case 1: Duration like "000.005seconds"
-        sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
+        # Case 1: sss.tttS
+        sec_match = re.match(r"^(\d+\.?\d*)\s*S$", ts_str, re.IGNORECASE)
         if sec_match:
             return timedelta(seconds=float(sec_match.group(1)))
         # Case 2: hh.mm.ss
-        hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
+        hms_match = re.match(r"^(\d+)\.(\d{2})\.(\d{2})$", ts_str)
         if hms_match:
             h, m, s = map(int, hms_match.groups())
             return timedelta(hours=h, minutes=m, seconds=s)
         # Case 3: hhhhh.mm
-        hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
+        hm_match = re.match(r"^(\d{1,5})\.(\d{2})$", ts_str)
         if hm_match:
             h, m = map(int, hm_match.groups())
             return timedelta(hours=h, minutes=m)
     except Exception:
-        return ""
-    return ""
+        return None
+    return None
 
 
 def calculate_start_time(ts_str):
+    """Calculate start time.
+
+    Parameters
+    ----------
+    ts_str : string
+        The time stamp in string format.
+
+    Returns
+    -------
+    str
+        The calculated start time.
+    """
     now = datetime.now().astimezone()
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
-        return f"{now - parsed}"
+        return (now - parsed).isoformat(sep=" ", timespec="microseconds")
     return ""
 
 
-def convert_cpu_time(ts_str):
+def convert_time(ts_str):
+    """Convert timedelta to hhhhh.mm.ss.SSS format.
+
+    Parameters
+    ----------
+    ts_str : string
+        The time stamp in string format.
+
+    Returns
+    -------
+    str
+        The converted time.
+    """
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
-    # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         total_seconds = int(parsed.total_seconds())
         milliseconds = int(parsed.microseconds / 1000)
@@ -629,6 +657,31 @@ def convert_cpu_time(ts_str):
 
 
 def classify_err_response(rc, out, err):
+    """Identify whether STDOUT contains error message or code.
+
+    Parameters
+    ----------
+    rc : string
+        The return code.
+    out : string
+        The standard output.
+    err : string
+        The standard error.
+
+    Returns
+    -------
+    rc : str
+        The return code.
+    str
+        The return message.
+    out : str
+        The standard output.
+    err : str
+        The standard error.
+    bool
+        Whether the STDOUT contains an error message or code.
+    """
+
     """Return (rc, msg, stdout, stderr, is_error)."""
     code = next((c for c in ERROR_MESSAGES if c in out), None)
     if err or code:
@@ -712,20 +765,16 @@ def run_module():
     # Validate the sysout of opercmd with the above listed error codes to find if any error occured
     rc, msg, stdout, stderr, is_error = classify_err_response(rc, out, err)
 
-    result = dict(
+    fail_result = dict(
       changed=False,
-      cmd=cmd,
-      tasks=[],
       rc=rc,
       msg=msg,
-      stdout=stdout,
       stderr=stderr,
-      stdout_lines=stdout.splitlines(),
       stderr_lines=stderr.splitlines()
     )
 
     if is_error:
-        module.fail_json(**result)
+        module.fail_json(**fail_result)
 
     # Extract return fields from STDOUT
     task_params = extract_keys(out, asidx)
@@ -734,11 +783,21 @@ def run_module():
           rc=1,
           msg="No started task is active with the given name."
         )
-        module.fail_json(**result)
-    else:
-      result["tasks"] = task_params
+        module.fail_json(**fail_result)
 
-    module.exit_json(**result)
+    success_result = dict(
+      changed=False,
+      cmd=cmd,
+      tasks=task_params,
+      rc=rc,
+      msg=msg,
+      stdout=stdout,
+      stderr=stderr,
+      stdout_lines=stdout.splitlines(),
+      stderr_lines=stderr.splitlines()
+    )
+
+    module.exit_json(**success_result)
 
 
 if __name__ == '__main__':

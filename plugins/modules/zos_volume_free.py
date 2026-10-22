@@ -78,7 +78,7 @@ options:
       status:
         description:
           - List of UCB device status flags to filter by.
-          - The matching behaviour is controlled by I(filter.status_match).
+          - The matching behavior is controlled by I(filter.status_match).
           - When I(filter.status_match) is C(all) (default), only volumes where
             B(every) listed flag is C(true) are returned.
           - When I(filter.status_match) is C(any), only volumes where B(at least
@@ -185,13 +185,16 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - This module is read-only and always returns C(changed) as false.
+  - This module is read-only and always returns C(changed) as C(false).
   - When a single VOLSER is specified with no I(device_numbers), the module
     performs an efficient direct lookup for that volume.
   - When a single VOLSER is not found or not active, the module returns an
-    empty C(volumes) list with C(rc=0) and the missing VOLSER listed in C(msg).
+    empty C(volumes) list with C(rc=0). The missing VOLSER is listed in both
+    C(msg) and C(skipped_volumes).
   - When multiple VOLSERs or any I(device_numbers) are specified, all active
-    volumes are retrieved first and then filtered.
+    volumes are retrieved first and then filtered. Any VOLSERs not found are
+    listed in C(skipped_volumes); any device numbers not found are listed in
+    C(skipped_device_numbers).
   - The I(filter.unit) parameter only affects how I(filter.free_space_min)
     and I(filter.free_space_max) are interpreted. All output space values are
     always in tracks.
@@ -367,6 +370,7 @@ volumes:
             - Device is online.
             - Derived from the z/OS UCB C(ucbonli) flag.
           type: bool
+          returned: always
           sample: true
         offline_pending:
           description:
@@ -375,12 +379,14 @@ volumes:
               allocated (C(ucbonli) bit is also set).
             - Derived from the z/OS UCB C(ucbchgs) flag.
           type: bool
+          returned: always
           sample: false
         mount_reserved:
           description:
             - The mount status of the volume on this device is reserved.
             - Derived from the z/OS UCB C(ucbresv) flag.
           type: bool
+          returned: always
           sample: false
         unload_pending:
           description:
@@ -388,6 +394,7 @@ volumes:
               The device has not yet been unloaded.
             - Derived from the z/OS UCB C(ucbunld) flag.
           type: bool
+          returned: always
           sample: false
         allocated:
           description:
@@ -396,6 +403,7 @@ volumes:
               at the time allocation last obtained the SYSPLEX allocation status.
             - Derived from the z/OS UCB C(ucbaloc) flag.
           type: bool
+          returned: always
           sample: false
         permanently_resident:
           description:
@@ -403,6 +411,7 @@ volumes:
               resident.
             - Derived from the z/OS UCB C(ucbpres) flag.
           type: bool
+          returned: always
           sample: true
         system_residence:
           description:
@@ -410,6 +419,7 @@ volumes:
               console.
             - Derived from the z/OS UCB C(ucbsysr) flag.
           type: bool
+          returned: always
           sample: false
         status_indicator:
           description:
@@ -418,6 +428,7 @@ volumes:
               that console status is changing.
             - Derived from the z/OS UCB C(ucbdadi) flag.
           type: bool
+          returned: always
           sample: false
     cylinder_managed:
       description:
@@ -436,27 +447,29 @@ volumes:
         index_vtoc:
           description: Whether the VTOC has an index.
           type: bool
+          returned: always
           sample: true
         vtoc_active:
           description: Whether the VTOC index is active.
           type: bool
+          returned: always
           sample: true
 skipped_volumes:
   description:
-    - Requested volumes that were not found or were inaccessible.
+    - VOLSERs that were requested but not found or inaccessible on the system.
   returned: always
   type: list
-  elements: dict
+  elements: str
   sample:
-    - "222224": "not found or inaccessible"
+    - "222224"
 skipped_device_numbers:
   description:
-    - Requested device numbers that were not found or were inaccessible.
+    - Device numbers that were requested but not found or inaccessible on the system.
   returned: always
   type: list
-  elements: dict
+  elements: str
   sample:
-    - "0A80": "not found or inaccessible"
+    - "0A80"
 changed:
   description: Indicates whether any changes were made. Always false for this module.
   returned: always
@@ -603,7 +616,7 @@ def _volume_to_dict(vol):
       - ``vol.percentage_used``     -- float, volume space in use as a percentage
       - ``vol.free_tracks``         -- int, number of free tracks
       - ``vol.total_tracks``        -- int, total number of tracks
-      - ``vol.cylinder_managed`` -- bool, True for cylinder-managed space
+      - ``vol.cylinder_managed``    -- bool, True for cylinder-managed space
       - ``vol.index_vtoc``          -- bool, index exists for VTOC
       - ``vol.vtoc_active``         -- bool, index VTOC active
 
@@ -642,7 +655,7 @@ def _volume_to_dict(vol):
         'percent_used': percent_used,
         'total_kilobytes': total_kilobytes,
         'free_kilobytes': free_kilobytes,
-        'cylinder_managed': bool(getattr(vol, 'cylinder_managed', False)),
+        'cylinder_managed': bool(getattr(vol, 'is_cylinder_managed', False)),
         'status': status,
         'vtoc_info': vtoc_info,
     }
@@ -840,10 +853,8 @@ def get_volume_info(module):
             ", ".join(unavailable_devices)
         )
 
-    skipped_volumes = [{volser: 'not found or inaccessible'} for volser in unavailable_volsers]
-    skipped_device_numbers = [
-        {device_number: 'not found or inaccessible'} for device_number in unavailable_devices
-    ]
+    skipped_volumes = list(unavailable_volsers)
+    skipped_device_numbers = list(unavailable_devices)
 
     return filtered, skipped_volumes, skipped_device_numbers, msg
 
@@ -952,7 +963,7 @@ def run_module():
             result['skipped_device_numbers'],
             result['msg'],
         ) = get_volume_info(module)
-    except zoau_exceptions.ZOAUException as err:
+    except zoau_exceptions._ZOAUExtendableException as err:
         result['rc'] = err.response.rc
         result['msg'] = str(err)
         result['stdout'] = err.response.stdout_response

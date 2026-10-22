@@ -133,7 +133,7 @@ def test_query_nonexistent_volume_returns_empty(ansible_zos_module):
         assert 'XXXXXX' in msg, (
             "Expected unavailable volser 'XXXXXX' listed in msg, got: {0!r}".format(msg)
         )
-        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
+        assert result.get('skipped_volumes') == ['XXXXXX'], (
             "Expected skipped_volumes for missing volser, got: {0}".format(
                 result.get('skipped_volumes')
             )
@@ -853,7 +853,7 @@ def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
         assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
-        assert result.get('skipped_volumes') == [{'XXXXXX': 'not found or inaccessible'}], (
+        assert result.get('skipped_volumes') == ['XXXXXX'], (
             "Expected skipped_volumes for missing volser, got: {0}".format(
                 result.get('skipped_volumes')
             )
@@ -886,10 +886,7 @@ def test_msg_multi_volser_both_missing(ansible_zos_module):
         assert 'Volumes not found or inaccessible' in msg, (
             "Expected unavailability notice in msg, got: {0!r}".format(msg)
         )
-        assert result.get('skipped_volumes') == [
-            {'XXXXXX': 'not found or inaccessible'},
-            {'YYYYYY': 'not found or inaccessible'},
-        ], (
+        assert result.get('skipped_volumes') == ['XXXXXX', 'YYYYYY'], (
             "Expected skipped_volumes for missing volsers, got: {0}".format(
                 result.get('skipped_volumes')
             )
@@ -969,11 +966,66 @@ def test_skipped_device_numbers_for_missing_device(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get('failed') is not True
         assert result.get('skipped_volumes') == []
-        assert result.get('skipped_device_numbers') == [
-            {'FFFF': 'not found or inaccessible'}
-        ], (
+        assert result.get('skipped_device_numbers') == ['FFFF'], (
             "Expected skipped_device_numbers for missing device, got: {0}".format(
                 result.get('skipped_device_numbers')
+            )
+        )
+
+
+def test_skipped_volumes_is_list_of_strings(ansible_zos_module):
+    """skipped_volumes must always be a list of strings — never dicts."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(volumes=['XXXXXX'])
+    for result in results.contacted.values():
+        skipped = result.get('skipped_volumes', [])
+        assert isinstance(skipped, list), (
+            "Expected skipped_volumes to be a list, got: {0}".format(type(skipped))
+        )
+        for item in skipped:
+            assert isinstance(item, str), (
+                "Expected each skipped_volumes entry to be a str, got: {0}".format(type(item))
+            )
+
+
+def test_skipped_device_numbers_is_list_of_strings(ansible_zos_module):
+    """skipped_device_numbers must always be a list of strings — never dicts."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free(device_numbers=['FFFF'])
+    for result in results.contacted.values():
+        skipped = result.get('skipped_device_numbers', [])
+        assert isinstance(skipped, list), (
+            "Expected skipped_device_numbers to be a list, got: {0}".format(type(skipped))
+        )
+        for item in skipped:
+            assert isinstance(item, str), (
+                "Expected each skipped_device_numbers entry to be a str, got: {0}".format(type(item))
+            )
+
+
+def test_skipped_fields_always_present_on_success(ansible_zos_module):
+    """skipped_volumes and skipped_device_numbers must always be present even when empty."""
+    hosts = ansible_zos_module
+    results = hosts.all.zos_volume_free()
+    for result in results.contacted.values():
+        assert result.get('failed') is not True
+        assert 'skipped_volumes' in result, (
+            "Expected 'skipped_volumes' key always present in result"
+        )
+        assert 'skipped_device_numbers' in result, (
+            "Expected 'skipped_device_numbers' key always present in result"
+        )
+        assert isinstance(result['skipped_volumes'], list)
+        assert isinstance(result['skipped_device_numbers'], list)
+        # query-all never skips anything
+        assert result['skipped_volumes'] == [], (
+            "Expected empty skipped_volumes for query-all, got: {0}".format(
+                result['skipped_volumes']
+            )
+        )
+        assert result['skipped_device_numbers'] == [], (
+            "Expected empty skipped_device_numbers for query-all, got: {0}".format(
+                result['skipped_device_numbers']
             )
         )
 

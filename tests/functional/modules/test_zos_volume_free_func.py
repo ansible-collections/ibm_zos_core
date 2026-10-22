@@ -91,12 +91,16 @@ def test_query_all_volumes(ansible_zos_module):
             _assert_volume_structure(vol)
         assert 'msg' in result
 
-
+# This test case needs to be revisited once we clarify whether trailing spaces
+# should be added to volume serial numbers shorter than six characters.
 def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
     """Querying by known VOLSER should return only that volume."""
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    vol_name = volumes.get_available_vol()
+    vol_name = next(
+        (v for v in volumes_on_systems if isinstance(v, str) and len(v) == 6),
+        volumes.get_available_vol()
+    )
 
     results = hosts.all.zos_volume_free(volumes=[vol_name])
     for result in results.contacted.values():

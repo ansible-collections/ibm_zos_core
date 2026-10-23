@@ -64,6 +64,13 @@ options:
     type: str
     aliases:
         - identifier
+  verbose:
+    description:
+        - When C(verbose=true), the module will return the started task execution logs. Only started tasks with an associated task ID
+          are able to return execution logs.
+    required: false
+    type: bool
+    default: false
 
 attributes:
   action:
@@ -132,6 +139,12 @@ rc:
   returned: always
   type: int
   sample: 0
+verbose_output:
+  description:
+     - If C(verbose=true), the the started task system logs will be shown.
+  returned: success
+  type: str
+  sample:  04.33.04 STC00077 ---- SUNDAY,    12 OCT 2025 ----....
 stderr:
   description:
     - The standard error (STDERR) from command execution. An empty string will be returned when no
@@ -178,6 +191,13 @@ tasks:
            space is not dispatchable due to failure; C(PR) - address space has a PER trap active."
       type: str
       sample: "LW"
+    address_space_type:
+      description:
+         - "The type of work that owns the address space, which will be one of the following: C(A) - attached
+           APPC transaction program; C(I) - initiator address space; C(J) - job; C(M) - mount; C(S) - started
+           task, C(*) - system address space"
+      type: str
+      sample: "S"
     asidx:
       description:
          - Address space identifier (ASID), in hexadecimal.
@@ -210,12 +230,6 @@ tasks:
                 - The central address space of the data space address space second table entry (ASTE).
             type: str
             sample: "0594D600"
-    dmn:
-      description:
-         - The domain number (DMN) of the started task address space.
-         - The DMN is not applicable for modern z/OS systems operating in goal mode.
-      type: str
-      sample: "N/A"
     elapsed_time:
       description:
          - For address spaces other than system address spaces, this value represents the elapsed time since the task
@@ -234,12 +248,6 @@ tasks:
          - Whether a program event recording (PER) trap is active in the address space.
       type: bool
       sample: false
-    pgn:
-      description:
-         - The performance group number (PGN) of the started task address space.
-         - The PGN is not applicable for modern z/OS systems operating in goal mode.
-      type: str
-      sample: "N/A"
     processor_id:
       description:
          - The identifier of the processor, for up to any four processors, if the started task requires
@@ -320,12 +328,6 @@ tasks:
            C(IN*) - in process of being swapped in; C(NSW) - non-swappable"
       type: str
       sample: "NSW"
-    type:
-      description:
-         - "The type of information retrieved, which will be one of the following: C(A) - attached APPC transaction program;
-           C(I) - initiator address space; C(J) - job; C(M) - mount; C(S) - started task, C(*) - system address space"
-      type: str
-      sample: "S"
     unix_address_space:
       description:
          - Whether the address space is a z/OS Unix System Services dubbed address space.
@@ -500,9 +502,22 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
     """
     keys = {
         'A': 'asidx',
+        'PER': 'per_trap',
+        'SMC': 'smc_requests',
+        'AFF': 'processor_id',
         'CT': 'cpu_time',
         'ET': 'elapsed_time',
-        'WUID': 'task_id'
+        'WUID': 'task_id',
+        'USERID': 'user_id',
+        'WKL': 'workload_name',
+        'SCL': 'service_class',
+        'P': 'service_class_period',
+        'RGP': 'resource_group',
+        'SRVR': 'server',
+        'QSC': 'quiesced',
+        'ADDR SPACE ASTE': 'address_space_aste',
+        'DSPNAME1': 'data_space_name',
+        'ASTE': 'data_space_aste'
     }
     lines = stdout.strip().split('\n')
     tasks = []
@@ -689,6 +704,26 @@ def classify_err_response(rc, out, err):
     return rc, "", out, err, False
 
 
+def get_task_logs(task_id):
+    """Get job output logs.
+
+    Parameters
+    ----------
+    task_id : string
+        The started task ID.
+
+    Returns
+    -------
+    task_logs : str
+        The job output logs.
+    """
+    try:
+      task_logs = jobs.read_output(task_id)
+    except Exception:
+      return ""
+    return task_logs
+
+
 def run_module():
     """Initialize the module.
 
@@ -712,7 +747,12 @@ def run_module():
             'task_id': {
                 'type': 'str',
                 'required': False
-            }
+            },
+            'verbose': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
         },
         mutually_exclusive=[
             ['job_name', 'task_id'],
@@ -737,7 +777,11 @@ def run_module():
         'task_id': {
             'arg_type': 'str',
             'required': False
-        }
+        },
+        'verbose': {
+            'arg_type': 'bool',
+            'required': False
+        },
     }
 
     # Validate input parameters
@@ -779,11 +823,15 @@ def run_module():
     # Extract return fields from STDOUT
     task_params = extract_keys(out, asidx)
     if not task_params:
-        result.update(
+        fail_result.update(
           rc=1,
-          msg="No started task is active with the given name."
+          msg="No started task is active with the given name {0}.".format(started_task_name)
         )
         module.fail_json(**fail_result)
+
+    task_output_logs = ""
+    if module.params.get('verbose'):
+      task_output_logs = get_task_logs(task_params[0].get('task_id'))
 
     success_result = dict(
       changed=False,
@@ -794,7 +842,8 @@ def run_module():
       stdout=stdout,
       stderr=stderr,
       stdout_lines=stdout.splitlines(),
-      stderr_lines=stderr.splitlines()
+      stderr_lines=stderr.splitlines(),
+      verbose_output=task_output_logs
     )
 
     module.exit_json(**success_result)

@@ -377,6 +377,33 @@ ERROR_MESSAGES = {
     'NOT FOUND': 'Started task is not active',
 }
 
+# Mapping of display command keys to returned field names
+TASK_KEYS = {
+    'A': 'asidx',
+    'PER': 'per_trap',
+    'SMC': 'smc_requests',
+    'AFF': 'processor_id',
+    'CT': 'cpu_time',
+    'ET': 'elapsed_time',
+    'WUID': 'task_id',
+    'USERID': 'user_id',
+    'WKL': 'workload_name',
+    'SCL': 'service_class',
+    'P': 'service_class_period',
+    'RGP': 'resource_group',
+    'SRVR': 'server',
+    'QSC': 'quiesced',
+    'ADDR_SPACE_ASTE': 'address_space_aste',
+    'DSPNAME': 'data_space_name',
+    'ASTE': 'data_space_aste'
+}
+
+# Fields reported as YES/NO that are returned as booleans
+BOOL_KEYS = {'per_trap', 'quiesced', 'server'}
+
+# Matches KEY=VALUE parameters
+KV_PATTERN = re.compile(r'(\S+)=(\S+)')
+
 
 def execute_command(operator_cmd):
     """Execute operator command.
@@ -483,7 +510,52 @@ def prepare_display_command(module):
     return started_task_name, asidx, cmd
 
 
-def extract_keys(stdout, asidx=None, task_params_before=None):
+def convert_to_bool(value):
+    """Converts a YES/NO string to a boolean.
+
+    Parameters
+    ----------
+    value : str
+        The value returned by the display command.
+
+    Returns
+    -------
+    bool or str
+        True for YES, False for NO, otherwise the original value unchanged.
+    """
+    upper = value.upper()
+    if upper == "YES":
+        return True
+    if upper == "NO":
+        return False
+    return value
+
+
+def extract_kv_pairs(line, current_task):
+    """Extract any KEY=VALUE pairs present in the line
+
+    Parameters
+    ----------
+    line : string
+        The STDOUT line
+    current_task : dict
+        Dictionary of current task key value pairs
+
+    Returns
+    -------
+    current_task
+        The updated current_task dictionary
+    """
+    line_normalized = line.replace('ADDR SPACE ASTE=', 'ADDR_SPACE_ASTE=')
+    for match in KV_PATTERN.finditer(line_normalized):
+        key, value = match.groups()
+        if key in TASK_KEYS:
+            key = TASK_KEYS[key]
+            current_task[key] = convert_to_bool(value) if key in BOOL_KEYS else value
+    return current_task
+
+
+def extract_keys(stdout, asidx=None):
     """Extracts keys and values from the given stdout
 
     Parameters
@@ -492,78 +564,69 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
         The started task display command output
     asidx : string
         The address space identifier value, in hexadecimal.
-    task_params_before: list
-        List of started task details which have same started task name.
 
     Returns
     -------
     tasks
         The list of task parameters.
     """
-    keys = {
-        'A': 'asidx',
-        'PER': 'per_trap',
-        'SMC': 'smc_requests',
-        'AFF': 'processor_id',
-        'CT': 'cpu_time',
-        'ET': 'elapsed_time',
-        'WUID': 'task_id',
-        'USERID': 'user_id',
-        'WKL': 'workload_name',
-        'SCL': 'service_class',
-        'P': 'service_class_period',
-        'RGP': 'resource_group',
-        'SRVR': 'server',
-        'QSC': 'quiesced',
-        'ADDR SPACE ASTE': 'address_space_aste',
-        'DSPNAME1': 'data_space_name',
-        'ASTE': 'data_space_aste'
-    }
     lines = stdout.strip().split('\n')
     tasks = []
     current_task = {}
-    task_header_regex = re.compile(r'^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)')
-    kv_pattern = re.compile(r'(\S+)=(\S+)')
+
+    # task_status is always one of a fixed set of z/OS address space status codes.
+    # Anchoring on this set disambiguates the optional step_name column:
+    #
+    # With step:    task_name task_identifier step_name  task_status addr_space KEY=...
+    # Without step: task_name task_identifier            task_status addr_space KEY=...
+    _STATUS_CODES = r'(?:NSW|OWT|IN|OUT|SWPOUT|INSWAP|OUTSWAP)'
+    task_header_regex = re.compile(
+        r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
+        r'(?:(?P<step_name>\S+)\s+)?'
+        r'(?P<task_status>' + _STATUS_CODES + r')\s+(?P<address_space_type>\S+)\s+\w+=')
+
+    # Skip first five lines of stdout (command echo and system header banners)
     for line in lines[5:]:
         line = line.strip()
         match_firstline = task_header_regex.search(line)
-        if len(line.split()) >= 5 and match_firstline:
+
+        # Detect the start of a new task header block
+        if match_firstline:
+            # Finalize and append the previous task before starting a new one
             if current_task:
                 current_task['started_time'] = ""
                 el_time = current_task.get('elapsed_time')
                 if el_time:
                     current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
                     current_task['started_time'] = calculate_start_time(el_time)
+
+                # Filter by ASID if specified, or append the task
                 if asidx:
                     if asidx == current_task.get('asidx'):
                         tasks.append(current_task)
                         current_task = {}
                         break
-                elif task_params_before:
-                    current_asid = current_task.get('asidx')
-                    task_exists_before = False
-                    for task in task_params_before:
-                        if task.get('asidx') == current_asid:
-                            task_exists_before = True
-                            break
-                    if not task_exists_before:
-                        tasks.append(current_task)
                 else:
                     tasks.append(current_task)
                 current_task = {}
-            current_task['task_name'] = match_firstline.group(1)
-            current_task['task_identifier'] = match_firstline.group(2)
-            for match in kv_pattern.finditer(line):
-                key, value = match.groups()
-                if key in keys:
-                    key = keys[key]
-                    current_task[key.lower()] = value
+
+            # Initialize the new task record using named groups
+            current_task['task_name'] = match_firstline.group('task_name')
+            current_task['task_identifier'] = match_firstline.group('task_identifier')
+            current_task['task_status'] = match_firstline.group('task_status')
+            current_task['address_space_type'] = match_firstline.group('address_space_type')
+            step_name = match_firstline.group('step_name')
+            if step_name:
+                current_task['step_name'] = step_name
+
+            # Extract any KEY=VALUE pairs present on the header line
+            current_task = extract_kv_pairs(line, current_task)
+
+        # Parse continuation lines belonging to the current task
         elif current_task:
-            for match in kv_pattern.finditer(line):
-                key, value = match.groups()
-                if key in keys:
-                    key = keys[key]
-                    current_task[key.lower()] = value
+            current_task = extract_kv_pairs(line, current_task)
+
+    # Process and append the final task in the output
     if current_task:
         current_task['started_time'] = ""
         el_time = current_task.get('elapsed_time')
@@ -573,20 +636,14 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
         cpu_time = current_task.get('cpu_time')
         if cpu_time:
             current_task['cpu_time'] = convert_time(cpu_time) or current_task['cpu_time']
+
+        # Filter by ASID if specified, or append the final task
         if asidx:
             if asidx == current_task.get('asidx'):
                 tasks.append(current_task)
-        elif task_params_before:
-            current_asid = current_task.get('asidx')
-            task_exists_before = False
-            for task in task_params_before:
-                if task.get('asidx') == current_asid:
-                    task_exists_before = True
-                    break
-            if not task_exists_before:
-                tasks.append(current_task)
         else:
             tasks.append(current_task)
+
     return tasks
 
 

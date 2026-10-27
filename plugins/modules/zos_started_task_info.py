@@ -30,11 +30,14 @@ options:
         - The started task name used to query the system.
         - The name must be a single continuous string with no spaces or blank characters.
         - An asterisk wildcard pattern can be used to query multiple started tasks.
-        - A trailing asterisk (\*) wildcard pattern can be used to query multiple started tasks. The pattern
+        - A trailing asterisk (`*`) wildcard pattern can be used to query multiple started tasks. The pattern
           will apply to all started tasks matching the leading character string in I(job_name).
-        - An asterisk (\*) wildcard cannot be specified in any other character positions in the
+        - An asterisk (`*`) wildcard cannot be specified in any other character positions in the
           I(job_name) besides a trailing asterisk.
-        - Specify I(all) to query all active started tasks.
+        - Specify (`*`) to query all active started tasks. Note that if (`*`) is specified, all system activity
+          status information will be displayed. This may include batch jobs, started tasks, mounted tasks,
+          attached APPC transaction programs, system address spaces, active TSO/E users, and initiator address
+          spaces.
         - The name is case-insensitive and is normalized to uppercase before execution.
         - If a I(job_name) is specified, I(task_id) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
@@ -51,6 +54,7 @@ options:
           are mutually exclusive for querying started tasks.
         - If a I(task_id) is specified, I(identifier_name) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
+        - Asterisk (`*`) wildcards cannot be specified for the I(task_id) parameter.
     required: false
     type: str
   identifier_name:
@@ -106,7 +110,7 @@ EXAMPLES = r"""
 
 - name: Display all started tasks.
   zos_started_task_info:
-    job_name: "all"
+    job_name: "*"
 """
 
 RETURN = r"""
@@ -184,7 +188,7 @@ tasks:
          - The central address space of the address space second table entry (ASTE).
       type: str
       sample: "03E99440"
-    address_space_status:
+    address_space_flag:
       description:
          - The status of the address space. The address space may have no status indicator.
          - "The status may be one of the following: C(LW) - address space is in long wait; C(NF) - address
@@ -394,6 +398,10 @@ TASK_KEYS = {
     'SRVR': 'server',
     'QSC': 'quiesced',
     'ADDR_SPACE_ASTE': 'address_space_aste',
+}
+
+# Mapping of display command keys to fields of each entry in the data_spaces list
+DATA_SPACE_KEYS = {
     'DSPNAME': 'data_space_name',
     'ASTE': 'data_space_aste'
 }
@@ -403,6 +411,16 @@ BOOL_KEYS = {'per_trap', 'quiesced', 'server'}
 
 # Matches KEY=VALUE parameters
 KV_PATTERN = re.compile(r'(\S+)=(\S+)')
+
+# Matches task header
+STATUS_CODES = r'(?:NSW|OWT|IN|OUT|SWPOUT|INSWAP|OUTSWAP)'
+ADDRESS_SPACE_FLAGS = r'(?:LW|NF|PR)'
+TASK_HEADER_REGEX = re.compile(
+    r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
+    r'(?:(?P<step_name>\S+)\s+)?'
+    r'(?P<task_status>' + STATUS_CODES + r')\s+'
+    r'(?:(?P<address_space_flag>' + ADDRESS_SPACE_FLAGS + r')\s+)?'
+    r'(?P<address_space_type>\S+)\s+\w+=')
 
 
 def execute_command(operator_cmd):
@@ -547,11 +565,43 @@ def extract_kv_pairs(line, current_task):
         The updated current_task dictionary
     """
     line_normalized = line.replace('ADDR SPACE ASTE=', 'ADDR_SPACE_ASTE=')
+    data_spaces = current_task.setdefault('data_spaces', [])
     for match in KV_PATTERN.finditer(line_normalized):
         key, value = match.groups()
-        if key in TASK_KEYS:
+        if key in DATA_SPACE_KEYS:
+            # Each DSPNAME starts a new data space entry; its ASTE follows it.
+            if key == 'DSPNAME':
+                data_spaces.append({'data_space_name': value, 'data_space_aste': ""})
+            elif data_spaces:
+                data_spaces[-1][DATA_SPACE_KEYS[key]] = value
+        elif key in TASK_KEYS:
             key = TASK_KEYS[key]
             current_task[key] = convert_to_bool(value) if key in BOOL_KEYS else value
+    return current_task
+
+
+def finalize_task(current_task):
+    """Finalize the task by formatting the time-related variables
+
+    Parameters
+    ----------
+    current_task : dict
+        Dictionary of current task key value pairs
+
+    Returns
+    -------
+    current_task
+        The updated current_task dictionary with formatted elapsed_time,
+        cpu_time and a calculated started_time.
+    """
+    current_task['started_time'] = ""
+    el_time = current_task.get('elapsed_time')
+    if el_time:
+        current_task['elapsed_time'] = convert_time(el_time) or el_time
+        current_task['started_time'] = calculate_start_time(el_time)
+    cpu_time = current_task.get('cpu_time')
+    if cpu_time:
+        current_task['cpu_time'] = convert_time(cpu_time) or cpu_time
     return current_task
 
 
@@ -574,31 +624,16 @@ def extract_keys(stdout, asidx=None):
     tasks = []
     current_task = {}
 
-    # task_status is always one of a fixed set of z/OS address space status codes.
-    # Anchoring on this set disambiguates the optional step_name column:
-    #
-    # With step:    task_name task_identifier step_name  task_status addr_space KEY=...
-    # Without step: task_name task_identifier            task_status addr_space KEY=...
-    _STATUS_CODES = r'(?:NSW|OWT|IN|OUT|SWPOUT|INSWAP|OUTSWAP)'
-    task_header_regex = re.compile(
-        r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
-        r'(?:(?P<step_name>\S+)\s+)?'
-        r'(?P<task_status>' + _STATUS_CODES + r')\s+(?P<address_space_type>\S+)\s+\w+=')
-
     # Skip first five lines of stdout (command echo and system header banners)
     for line in lines[5:]:
         line = line.strip()
-        match_firstline = task_header_regex.search(line)
+        match_firstline = TASK_HEADER_REGEX.search(line)
 
         # Detect the start of a new task header block
         if match_firstline:
             # Finalize and append the previous task before starting a new one
             if current_task:
-                current_task['started_time'] = ""
-                el_time = current_task.get('elapsed_time')
-                if el_time:
-                    current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
-                    current_task['started_time'] = calculate_start_time(el_time)
+                current_task = finalize_task(current_task)
 
                 # Filter by ASID if specified, or append the task
                 if asidx:
@@ -615,9 +650,14 @@ def extract_keys(stdout, asidx=None):
             current_task['task_identifier'] = match_firstline.group('task_identifier')
             current_task['task_status'] = match_firstline.group('task_status')
             current_task['address_space_type'] = match_firstline.group('address_space_type')
+            current_task['unix_address_space'] = 'O' in current_task['address_space_type']
+            current_task['address_space_type'] = current_task['address_space_type'].replace('O', '')
             step_name = match_firstline.group('step_name')
             if step_name:
                 current_task['step_name'] = step_name
+            address_space_flag = match_firstline.group('address_space_flag')
+            if address_space_flag:
+                current_task['address_space_flag'] = address_space_flag
 
             # Extract any KEY=VALUE pairs present on the header line
             current_task = extract_kv_pairs(line, current_task)
@@ -628,14 +668,7 @@ def extract_keys(stdout, asidx=None):
 
     # Process and append the final task in the output
     if current_task:
-        current_task['started_time'] = ""
-        el_time = current_task.get('elapsed_time')
-        if el_time:
-            current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
-            current_task['started_time'] = calculate_start_time(el_time)
-        cpu_time = current_task.get('cpu_time')
-        if cpu_time:
-            current_task['cpu_time'] = convert_time(cpu_time) or current_task['cpu_time']
+        current_task = finalize_task(current_task)
 
         # Filter by ASID if specified, or append the final task
         if asidx:

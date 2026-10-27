@@ -41,19 +41,6 @@ STATUS_KEYS = {
 VTOC_INFO_KEYS = {'index_vtoc', 'vtoc_active'}
 
 
-def _get_six_char_vol(handler):
-    """Return the first available 6-character VOLSER from the handler.
-
-    ZOAU direct volume lookup requires exactly 6-character VOLSERs.
-    Falls back to '000000' if no 6-character VOLSER is available —
-    '000000' is always 6 characters and is the handler's own fallback.
-    """
-    for volume in handler.volumes:
-        if not volume.in_use and len(volume.name) == 6:
-            volume.use()
-            return volume.name
-    return "000000"
-
 
 def _assert_volume_structure(vol):
     """Assert that a single volume entry has all expected keys and valid types."""
@@ -105,12 +92,11 @@ def test_query_all_volumes(ansible_zos_module):
             _assert_volume_structure(vol)
         assert 'msg' in result
 
-# This test case needs to be revisited once we clarify whether trailing spaces
 def test_query_specific_volumes(ansible_zos_module, volumes_on_systems):
     """Querying by known VOLSER should return only that volume."""
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    vol_name = _get_six_char_vol(volumes)
+    vol_name = volumes.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name])
     for result in results.contacted.values():
@@ -423,8 +409,8 @@ def test_query_multiple_volsers(ansible_zos_module, volumes_on_systems):
     """Querying with a list of VOLSERs should return all matching volumes."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
-    vol_name_1 = _get_six_char_vol(vols)
-    vol_name_2 = _get_six_char_vol(vols)
+    vol_name_1 = vols.get_available_vol()
+    vol_name_2 = vols.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name_1, vol_name_2])
     for result in results.contacted.values():
@@ -465,7 +451,7 @@ def test_volser_input_is_case_insensitive(ansible_zos_module, volumes_on_systems
     """VOLSER matching should be case-insensitive — lowercase input must match."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
-    vol_name = _get_six_char_vol(vols)
+    vol_name = vols.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name.lower()])
     for result in results.contacted.values():
@@ -794,7 +780,7 @@ def test_return_msg_volume_count(ansible_zos_module, volumes_on_systems):
 
     # Case 1: query returning exactly one volume — expect singular.
     vols = Volume_Handler(volumes_on_systems)
-    vol_name = _get_six_char_vol(vols)
+    vol_name = vols.get_available_vol()
     results = hosts.all.zos_volume_free(volumes=[vol_name])
     for result in results.contacted.values():
         assert result.get('failed') is not True
@@ -824,7 +810,7 @@ def test_msg_single_existing_volser(ansible_zos_module, volumes_on_systems):
     """Single existing VOLSER: msg should say 'Found 1 matching volume.'"""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
-    vol_name = _get_six_char_vol(vols)
+    vol_name = vols.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name])
     for result in results.contacted.values():
@@ -844,7 +830,7 @@ def test_msg_multi_volser_one_missing(ansible_zos_module, volumes_on_systems):
     """Two VOLSERs, one exists, one does not: msg says 'Found 1 matching volume.' and lists missing."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
-    vol_name = _get_six_char_vol(vols)
+    vol_name = vols.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name, "XXXXXX"])
     for result in results.contacted.values():
@@ -912,8 +898,8 @@ def test_msg_multi_volser_all_found(ansible_zos_module, volumes_on_systems):
     """Two existing VOLSERs: msg says 'Found 2 matching volumes.' with no unavailability notice."""
     hosts = ansible_zos_module
     vols = Volume_Handler(volumes_on_systems)
-    vol_name_1 = _get_six_char_vol(vols)
-    vol_name_2 = _get_six_char_vol(vols)
+    vol_name_1 = vols.get_available_vol()
+    vol_name_2 = vols.get_available_vol()
 
     results = hosts.all.zos_volume_free(volumes=[vol_name_1, vol_name_2])
     for result in results.contacted.values():
@@ -1148,7 +1134,7 @@ def test_volume_info_matches_vf_command(ansible_zos_module, volumes_on_systems):
         for _ in range(len(volumes_on_systems)):
             if validated >= 5:
                 break
-            vol_name = _get_six_char_vol(vol_handler)
+            vol_name = vol_handler.get_available_vol()
             acquired.append(vol_name)
 
             # ── Step 1: vf CLI — skip volumes vf cannot query ─────────────────

@@ -771,9 +771,14 @@ def get_volume_info(module):
             # Older ZOAU builds may surface a raw json.JSONDecodeError instead.
             # Only those two cases are treated as "not found" — any other
             # exception is re-raised so run_module can fail with a proper error.
-            logger.debug("Calling volumes.list_volumes(volume_serial=%r).", requested_volsers[0])
+            # ZOAU's single-volume lookup (vf -j -- <VOLSER>) requires exactly
+            # 6 characters; shorter VOLSERs (e.g. "SCR03") return BGYSC6606E
+            # even when the volume is online.  Pad to 6 with trailing spaces so
+            # ZOAU can match the entry, then strip during result comparison.
+            volser_for_lookup = requested_volsers[0].ljust(6)
+            logger.debug("Calling volumes.list_volumes(volume_serial=%r).", volser_for_lookup)
             try:
-                raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0], **list_volumes_kwargs)
+                raw_volumes = volumes.list_volumes(volume_serial=volser_for_lookup, **list_volumes_kwargs)
                 matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
             except json.JSONDecodeError:
                 # This exception is being handled here because of ZOAU issue NAZARE-11323

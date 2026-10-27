@@ -732,7 +732,7 @@ def get_volume_info(module):
 
     Returns
     -------
-    tuple[list[dict], list[dict], list[dict], str]
+    tuple[list[dict], list[str], list[str], str]
         A tuple of (volume_list, skipped_volumes, skipped_device_numbers, message).
 
     Raises
@@ -765,23 +765,14 @@ def get_volume_info(module):
         matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
     elif not requested_devices:
         # One or more VOLSERs, no devices.
-        if len(requested_volsers) == 1:
-            # For a single VOLSER, ZOAU raises a ZOAUException whose message
-            # contains BGYSC6606E when the volume is not found / not active.
-            # Older ZOAU builds may surface a raw json.JSONDecodeError instead.
-            # Only those two cases are treated as "not found" — any other
-            # exception is re-raised so run_module can fail with a proper error.
-            # ZOAU's single-volume lookup (vf -j -- <VOLSER>) requires exactly
-            # 6 characters; shorter VOLSERs (e.g. "SCR03") return BGYSC6606E
-            # even when the volume is online.  Pad to 6 with trailing spaces so
-            # ZOAU can match the entry, then strip during result comparison.
-            volser_for_lookup = requested_volsers[0].ljust(6)
-            logger.debug("Calling volumes.list_volumes(volume_serial=%r).", volser_for_lookup)
+        if len(requested_volsers) == 1 and len(requested_volsers[0]) == 6:
+            # Single 6-character VOLSER: use ZOAU's direct lookup.
+            logger.debug("Calling volumes.list_volumes(volume_serial=%r).", requested_volsers[0])
             try:
-                raw_volumes = volumes.list_volumes(volume_serial=volser_for_lookup, **list_volumes_kwargs)
+                raw_volumes = volumes.list_volumes(volume_serial=requested_volsers[0], **list_volumes_kwargs)
                 matched = [_volume_to_dict(v) for v in (raw_volumes or [])]
             except json.JSONDecodeError:
-                # This exception is being handled here because of ZOAU issue NAZARE-11323
+                # ZOAU issue NAZARE-11323
                 logger.debug(
                     "Volume %r not found or not accessible (BGYSC6606E).",
                     requested_volsers[0],
@@ -789,11 +780,6 @@ def get_volume_info(module):
                 matched = []
                 unavailable_volsers = list(requested_volsers)
             except Exception as err:
-                # ZOAUException and VolumeInfoException are siblings
-                # (_ZOAUExtendableException subclasses), so catching
-                # zoau_exceptions.ZOAUException alone misses VolumeInfoException.
-                # Catch all exceptions and treat only BGYSC6606E as "not found";
-                # re-raise anything else so run_module can fail properly.
                 if 'BGYSC6606E' in str(err):
                     logger.debug(
                         "Volume %r not found or not accessible (BGYSC6606E).",
@@ -804,8 +790,8 @@ def get_volume_info(module):
                 else:
                     raise
         else:
-            # Multiple VOLSERs: fetch all and filter by requested set.
-            logger.debug("Calling volumes.list_volumes() for multi-VOLSER query.")
+            # Multiple VOLSERs or a single VOLSER shorter than 6 characters.
+            logger.debug("Calling volumes.list_volumes() for VOLSER query.")
             raw_volumes = volumes.list_volumes(**list_volumes_kwargs)
             requested_set = set(requested_volsers)
             all_dicts = [_volume_to_dict(v) for v in (raw_volumes or [])]
@@ -824,7 +810,7 @@ def get_volume_info(module):
         matched = []
         for vol in all_dicts:
             volser_hit = vol['volser'] in requested_volser_set
-            device_hit = vol['device_number'].upper() in requested_device_set
+            device_hit = vol['device_number'] in requested_device_set
             if volser_hit or device_hit:
                 if vol['volser'] not in seen_volsers:
                     seen_volsers.add(vol['volser'])

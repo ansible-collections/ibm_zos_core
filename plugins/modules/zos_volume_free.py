@@ -918,34 +918,28 @@ def run_module():
         },
     }
 
-    try:
-        parser = better_arg_parser.BetterArgParser(args_def)
-        parsed_args = parser.parse_args(module.params)
-        module.params = parsed_args
-    except ValueError as err:
-        module.fail_json(
-            changed=False,
-            volumes=[],
-            rc=5,
-            msg='Parameter verification failed.',
-            skipped_volumes=[],
-            skipped_device_numbers=[],
-            stdout='',
-            stderr=str(err),
-        )
-    module_verbosity_level = module._verbosity
-    SingletonLogger().get_logger(module_verbosity_level)
-
     result = dict(
         changed=False,
         volumes=[],
         skipped_volumes=[],
         skipped_device_numbers=[],
         msg='',
-        rc=0,
+        rc=None,
         stdout='',
         stderr='',
     )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        result['msg'] = 'Parameter verification failed.'
+        result['stderr'] = str(err)
+        module.fail_json(**result)
+
+    module_verbosity_level = module._verbosity
+    SingletonLogger().get_logger(module_verbosity_level)
 
     try:
         (
@@ -954,6 +948,7 @@ def run_module():
             result['skipped_device_numbers'],
             result['msg'],
         ) = get_volume_info(module)
+        result['rc'] = 0
     except zoau_exceptions._ZOAUExtendableException as err:
         result['rc'] = err.response.rc
         result['msg'] = str(err)
@@ -961,7 +956,7 @@ def run_module():
         result['stderr'] = err.response.stderr_response
         module.fail_json(**result)
     except Exception as err:
-        result['rc'] = getattr(err, 'rc', 1)
+        result['rc'] = getattr(err, 'rc', None)
         result['msg'] = 'An unexpected error occurred while querying volume information: {0}'.format(str(err))
         result['stderr'] = str(err)
         module.fail_json(**result)

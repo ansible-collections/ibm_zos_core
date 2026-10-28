@@ -61,6 +61,10 @@ options:
     description:
         - The name that identifies the task. It can be paired with I(job_name) to display information about a specific 
           active started task.
+        - A trailing asterisk (`*`) wildcard pattern can be used to query multiple identifiers. The pattern
+          will apply to all identifiers matching the leading character string in I(identifier_name).
+        - An asterisk (`*`) wildcard cannot be specified in any other character positions in the
+          I(identifier_name) besides a trailing asterisk.
         - If I(identifier_name) is specified, I(task_id) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
         - If I(identifier_name) is specified, I(job_name) must be specified as well.
@@ -137,7 +141,7 @@ rc:
   description:
     - The return code is 0 when command executed successfully.
     - The return code is 1 when ZOAU C(opercmd) throws any error.
-    - The return code is 4 when I(task_id) format is invalid.
+    - The return code is 4 when parameter format is invalid.
     - The return code is 5 when no parameters are specified or any parameter validation failed.
     - The return code is 8 when started task is not found using I(task_id).
   returned: always
@@ -186,6 +190,7 @@ tasks:
     address_space_aste:
       description:
          - The central address space of the address space second table entry (ASTE).
+      returned: always
       type: str
       sample: "03E99440"
     address_space_flag:
@@ -193,6 +198,7 @@ tasks:
          - The status of the address space. The address space may have no status indicator.
          - "The status may be one of the following: C(LW) - address space is in long wait; C(NF) - address
            space is not dispatchable due to failure; C(PR) - address space has a PER trap active."
+      returned: always
       type: str
       sample: "LW"
     address_space_type:
@@ -200,11 +206,13 @@ tasks:
          - "The type of work that owns the address space, which will be one of the following: C(A) - attached
            APPC transaction program; C(I) - initiator address space; C(J) - job; C(M) - mount; C(S) - started
            task, C(*) - system address space"
+      returned: always
       type: str
       sample: "S"
     asidx:
       description:
          - Address space identifier (ASID), in hexadecimal.
+      returned: always
       type: str
       sample: "0054"
     cpu_time:
@@ -214,6 +222,7 @@ tasks:
          - The I(cpu_time) format is hhhhh.mm.ss.SSS(hours.minutes.seconds.milliseconds).
          - The I(cpu_time) will be C(********) when time exceeds 100000 hours.
          - The I(cpu_time) will be C(NOTAVAIL) when the TOD clock is not working.
+      returned: always
       type: str
       sample: "00000.00.00.003"
     data_spaces:
@@ -221,6 +230,7 @@ tasks:
          - The data spaces associated with the address space.
          - The I(data_spaces) list will be empty if there are no data spaces for the address space
            or if the system could not return the data space information.
+      returned: always
       type: list
       elements: dict
       contains:
@@ -245,11 +255,13 @@ tasks:
          - The I(elapsed_time) format is hhhhh.mm.ss.SSS(hours.minutes.seconds.milliseconds).
          - The I(elapsed_time) will be C(********) when time exceeds 100000 hours.
          - The I(elapsed_time) will be C(NOTAVAIL) when the TOD clock is not working.
+      returned: always
       type: str
       sample: "00003.20.23.013"
     per_trap:
       description:
          - Whether a program event recording (PER) trap is active in the address space.
+      returned: always
       type: bool
       sample: false
     processor_id:
@@ -257,37 +269,44 @@ tasks:
          - The identifier of the processor, for up to any four processors, if the started task requires
            the services of specific processors.
          - If C(NONE) is specified, the job can run on any processor.
+      returned: always
       type: str
       sample: "NONE"
     quiesced:
       description:
          - Whether the address space has be quiesced.
+      returned: always
       type: bool
       sample: false
     resource_group:
       description:
          - The resource group associated with the address space.
          - May be C(N/A) if there is no resource group associated with the address space.
+      returned: always
       type: str
       sample: "N/A"
     server:
       description:
          - Whether the address space is a server.
+      returned: always
       type: bool
       sample: false
     service_class:
       description:
          - The service class currently associated with the address space.
+      returned: always
       type: str
       sample: "SYSSTC"
     service_class_period:
       description:
          - The service class period currently associated with the address space.
+      returned: always
       type: str
       sample: "1"
     smc_requests:
       description:
          - The number of outstanding step-must-complete requests.
+      returned: always
       type: str
       sample: "000"
     started_time:
@@ -296,6 +315,7 @@ tasks:
          - The I(started_time) format is YYYY-MM-DD hh:mm:ss.SSSSSS±hh:mm (year-month-day
            hours.minutes.seconds.milliseconds±hours:minutes).
          - The started time will return an empty string if the value is unable to be calculated.
+      returned: always
       type: str
       sample: "2025-09-11 18:21:50.293644+00:00"
     step_name:
@@ -303,11 +323,13 @@ tasks:
          - If a step is specified in I(task_identifier), I(step_name) is the name of a step within
            the cataloged procedure that was called by the I(task_identifier) step.
          - I(step_name) will return an empty string if there is no catalog procedure.
+      returned: always
       type: str
       sample: "IEFPROC"
     task_id:
       description:
          - The started task id, also known as the work unit identifier (WUID).
+      returned: always
       type: str
       sample: "STC00018"
     task_identifier:
@@ -316,6 +338,7 @@ tasks:
            of a step that called a cataloged procedure, or the name of a system or initiator address space.
          - The task identifier will be C(STARTING) if initiation of a started job or system task is incomplete.
          - The task identifier will be C(*MASTER*) for the master address space.
+      returned: always
       type: str
       sample: "SPROC"
     task_name:
@@ -323,6 +346,7 @@ tasks:
          - The task name can be the name of a started task or the name of a system or initiator address space.
          - The task identifier will be C(STARTING) if initiation of a started job or system task is incomplete.
          - The task identifier will be C(*MASTER*) for the master address space.
+      returned: always
       type: str
       sample: "SAMPLE"
     task_status:
@@ -330,21 +354,25 @@ tasks:
          - "The status of the started task, which will be one of the following: C(IN) - swapped in; C(OUT) - swapped out;
            ready to run; C(OWT) - swapped out, waiting, not ready to run; C(OU*) - in process of being swapped out;
            C(IN*) - in process of being swapped in; C(NSW) - non-swappable"
+      returned: always
       type: str
       sample: "NSW"
     unix_address_space:
       description:
          - Whether the address space is a z/OS Unix System Services dubbed address space.
+      returned: always
       type: bool
       sample: true
     user_id:
       description:
          - The user ID associated with the unit of work.
+      returned: always
       type: str
       sample: "USRT001"
     workload_name:
       description:
          - The name of the workload currently associated with the address space.
+      returned: always
       type: str
       sample: "SYSTEM"
 """
@@ -408,6 +436,15 @@ DATA_SPACE_KEYS = {
 
 # Fields reported as YES/NO that are returned as booleans
 BOOL_KEYS = {'per_trap', 'quiesced', 'server'}
+
+# Default values for fields that may be absent from the display command output
+TASK_FIELD_DEFAULTS = {
+    **{field: "" for field in TASK_KEYS.values() if field not in BOOL_KEYS},
+    **{field: False for field in BOOL_KEYS},
+    'address_space_flag': "",
+    'step_name': "",
+    'data_spaces': [],
+}
 
 # Matches KEY=VALUE parameters
 KV_PATTERN = re.compile(r'(\S+)=(\S+)')
@@ -514,6 +551,9 @@ def prepare_display_command(module):
         started_task_name, asidx = fetch_task_name_and_asidx(module, task_id)
     elif job_name:
         asidx = ""
+        # Convert asterisk wildcard to "all"
+        if job_name == "*":
+          job_name = "all"
         started_task_name = f"{job_name}.{identifier}" if identifier else job_name
     else:
         module.fail_json(
@@ -594,6 +634,10 @@ def finalize_task(current_task):
         The updated current_task dictionary with formatted elapsed_time,
         cpu_time and a calculated started_time.
     """
+    # Ensure every documented field is always returned, even when the display
+    # command output did not include it.
+    for key in TASK_FIELD_DEFAULTS:
+        current_task.setdefault(key, TASK_FIELD_DEFAULTS[key])
     current_task['started_time'] = ""
     el_time = current_task.get('elapsed_time')
     if el_time:
@@ -880,9 +924,13 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
         module.params = parsed_args
     except ValueError as err:
+        stderr = str(err)
         module.fail_json(
+            changed=False,
+            rc=4,
             msg='Parameter verification failed.',
-            stderr=str(err)
+            stderr=stderr,
+            stderr_lines=stderr.splitlines()
         )
 
     # Initialize logging module

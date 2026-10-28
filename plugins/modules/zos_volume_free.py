@@ -477,14 +477,12 @@ changed:
   sample: false
 rc:
   description:
-    - C(0) when the command executes successfully, including when a requested
-      VOLSER is not found — that case returns C(rc=0) with an empty C(volumes) list.
-    - C(5) when parameter validation fails.
-    - The return code from ZOAU when a ZOAU exception is raised; this can be
-      any non-zero value returned by the underlying ZOAU utility (for example
-      C(8), C(12), C(16)).
-    - C(1) when any other unexpected error occurs and the exception carries no
-      C(rc) attribute.
+    - The return code from the ZOAU C(vf) utility execution.
+    - C(0) when the query executes successfully, including when a requested
+      VOLSER is not found (which returns C(rc=0) with an empty C(volumes) list).
+    - Non-zero integer (such as C(8), C(12), C(16)) when the underlying ZOAU
+      C(vf) utility encounters an error.
+    - Otherwise C(null) (None).
   returned: always
   type: int
   sample: 0

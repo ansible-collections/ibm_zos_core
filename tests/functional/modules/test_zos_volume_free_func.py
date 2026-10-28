@@ -491,13 +491,13 @@ def test_return_rc_present(ansible_zos_module):
         )
 
 
-def test_return_rc_5_on_param_validation_failure(ansible_zos_module):
-    """rc=5 when BetterArgParser rejects an invalid VOLSER.
+def test_return_rc_none_on_param_validation_failure(ansible_zos_module):
+    """rc is None when BetterArgParser rejects an invalid VOLSER prior to execution.
 
     Ansible's argument_spec accepts any string for 'volumes', but
     BetterArgParser's 'volume' element type rejects names that violate
     z/OS VOLSER rules (e.g. longer than 6 characters), raising ValueError
-    which maps to rc=5.
+    before any ZOAU command is executed, resulting in rc=None.
     """
     hosts = ansible_zos_module
     results = hosts.all.zos_volume_free(
@@ -507,12 +507,11 @@ def test_return_rc_5_on_param_validation_failure(ansible_zos_module):
         assert result.get('failed') is True, (
             "Expected module to fail for invalid VOLSER but it succeeded"
         )
-        assert result.get('rc') == 5, (
-            "Expected rc=5 for BetterArgParser validation failure, got rc={0}".format(
+        assert result.get('rc') is None, (
+            "Expected rc=None for pre-execution validation failure, got rc={0}".format(
                 result.get('rc')
             )
         )
-
 
 def test_return_msg_present(ansible_zos_module):
     """The 'msg' key should always be present in the result."""

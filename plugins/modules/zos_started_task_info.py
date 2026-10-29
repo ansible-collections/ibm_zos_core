@@ -193,14 +193,6 @@ tasks:
       returned: always
       type: str
       sample: "03E99440"
-    address_space_flag:
-      description:
-         - The status of the address space. The address space may have no status indicator.
-         - "The status may be one of the following: C(LW) - address space is in long wait; C(NF) - address
-           space is not dispatchable due to failure; C(PR) - address space has a PER trap active."
-      returned: always
-      type: str
-      sample: "LW"
     address_space_type:
       description:
          - "The type of work that owns the address space, which will be one of the following: C(A) - attached
@@ -403,10 +395,10 @@ except ImportError:
 
 
 ERROR_MESSAGES = {
-    'IEE341I': 'Started task is not active',
-    'IEE535I': 'A parameter on a command is not valid.',
-    'IEE708I': 'The value of a keyword specified on a command is incorrect.',
-    'NOT FOUND': 'Started task is not active',
+    'IEE341I': 'Started task is not active.',
+    'IEE535I': 'A parameter is not valid.',
+    'IEE708I': 'The value of a keyword specified in a command is incorrect.',
+    'NOT FOUND': 'Started task could not be found.',
 }
 
 # Mapping of display command keys to returned field names
@@ -441,7 +433,6 @@ BOOL_KEYS = {'per_trap', 'quiesced', 'server'}
 TASK_FIELD_DEFAULTS = {
     **{field: "" for field in TASK_KEYS.values() if field not in BOOL_KEYS},
     **{field: False for field in BOOL_KEYS},
-    'address_space_flag': "",
     'step_name': "",
     'data_spaces': [],
 }
@@ -450,13 +441,13 @@ TASK_FIELD_DEFAULTS = {
 KV_PATTERN = re.compile(r'(\S+)=(\S+)')
 
 # Matches task header
-STATUS_CODES = r'(?:NSW|OWT|IN|OUT|SWPOUT|INSWAP|OUTSWAP)'
+STATUS_CODES = r'(?:SWPOUT|INSWAP|OUTSWAP|NSW|OWT|OUT|IN)'
 ADDRESS_SPACE_FLAGS = r'(?:LW|NF|PR)'
 TASK_HEADER_REGEX = re.compile(
     r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
     r'(?:(?P<step_name>\S+)\s+)?'
-    r'(?P<task_status>' + STATUS_CODES + r')\s+'
-    r'(?:(?P<address_space_flag>' + ADDRESS_SPACE_FLAGS + r')\s+)?'
+    r'(?P<task_status>' + STATUS_CODES + r')\s*'
+    r'(?:' + ADDRESS_SPACE_FLAGS + r')?\s*'
     r'(?P<address_space_type>\S+)\s+\w+=')
 
 
@@ -504,7 +495,7 @@ def fetch_task_name_and_asidx(module, task_id):
     asidx : str
         The address space identifier, as a 4-digit uppercase hex string.
     """
-    msg = f"Fetching started task details using task_id: {task_id} is failed"
+    msg = f"Fetching started task details using task_id {task_id} failed."
     try:
         task_details = jobs.fetch(task_id)
     except Exception as err:
@@ -553,7 +544,7 @@ def prepare_display_command(module):
         asidx = ""
         # Convert asterisk wildcard to "all"
         if job_name == "*":
-          job_name = "all"
+          job_name = "ALL"
         started_task_name = f"{job_name}.{identifier}" if identifier else job_name
     else:
         module.fail_json(
@@ -699,9 +690,6 @@ def extract_keys(stdout, asidx=None):
             step_name = match_firstline.group('step_name')
             if step_name:
                 current_task['step_name'] = step_name
-            address_space_flag = match_firstline.group('address_space_flag')
-            if address_space_flag:
-                current_task['address_space_flag'] = address_space_flag
 
             # Extract any KEY=VALUE pairs present on the header line
             current_task = extract_kv_pairs(line, current_task)

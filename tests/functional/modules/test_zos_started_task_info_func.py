@@ -38,7 +38,7 @@ PARAM_JCL_CONTENT="""//MSLEEP  PROC SECS=10
 EXPECTED_KEYS = {
     "address_space_aste", "address_space_type", "asidx",
     "cpu_time", "data_spaces", "elapsed_time", "per_trap",
-    "processor_id", "quiesced", "resource_group", "server",
+    "quiesced", "resource_group", "server",
     "service_class", "service_class_period", "smc_requests",
     "started_time", "step_name", "task_id", "task_identifier",
     "task_name", "task_status", "unix_address_space",
@@ -411,7 +411,7 @@ def test_get_started_task_info_without_parameters(ansible_zos_module):
 
     for result in info_results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("rc") == 5
+        assert result.get("rc") is None
         assert result.get("tasks") is None
         assert result.get("stderr") == ""
         assert result.get("msg") == "Either 'job_name' or 'task_id' is mandatory to display started task details."
@@ -427,7 +427,44 @@ def test_get_started_task_info_using_identifier_only(ansible_zos_module):
 
     for result in info_results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("rc") == 5
+        assert result.get("rc") is None
         assert result.get("tasks") is None
         assert result.get("stderr") == ""
         assert result.get("msg") == "Either 'job_name' or 'task_id' is mandatory to display started task details."
+
+# Get info for started task using invalid wildcard in identifier (failure case)
+def test_get_started_task_info_using_identifier_name_with_invalid_wildcard(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_name = "JES2"
+    identifier_name = "*ES2"
+
+    info_results = hosts.all.zos_started_task_info(
+        job_name=job_name,
+        identifier_name=identifier_name
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") is None
+        assert result.get("tasks") is None
+        assert f'Invalid argument "{identifier_name}" for type "identifier_name".' in result.get("stderr")
+        assert result.get("msg") == f"Parameter verification failed."
+
+# Get info for stated task using identifier that does not match with job name (failure case)
+def test_get_started_task_info_using_invalid_job_name_and_identifier_name_pairing(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_name = "JES2"
+    identifier_name = "ICSF"
+
+    info_results = hosts.all.zos_started_task_info(
+        job_name=job_name,
+        identifier_name=identifier_name
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 1
+        assert result.get("tasks") is None
+        assert f"{job_name}.{identifier_name} NOT FOUND" in result.get("stderr")
+        assert result.get("msg") == f"Started task could not be found."
+        

@@ -30,7 +30,7 @@ options:
         - The started task name used to query the system.
         - The name must be a single continuous string with no spaces or blank characters.
         - An asterisk wildcard pattern can be used to query multiple started tasks.
-        - A trailing asterisk (`*`) wildcard pattern can be used to query multiple started tasks. The pattern
+        - A trailing asterisk (`*`) wildcard pattern can be used to filter for multiple started tasks. The pattern
           will apply to all started tasks matching the leading character string in I(job_name).
         - An asterisk (`*`) wildcard cannot be specified in any other character positions in the
           I(job_name) besides a trailing asterisk.
@@ -40,7 +40,7 @@ options:
           spaces.
         - The name is case-insensitive and is normalized to uppercase before execution.
         - If a I(job_name) is specified, I(task_id) should not be specified as the parameters
-          are mutually exclusive for querying started tasks.
+          are mutually exclusive for retrieving started task information.
     required: false
     type: str
     aliases:
@@ -49,23 +49,24 @@ options:
         - task_name
   task_id:
     description:
-        - A unique system-generated identifier that represents a specific started task running in z/OS. This id starts with STC.
+        - A unique system-generated identifier that represents a specific started task running in the z/OS system.
+        - The C(task_id) for a started task typically starts with the 'STC' job ID prefix.
         - If a I(task_id) is specified, I(job_name) should not be specified as the parameters
-          are mutually exclusive for querying started tasks.
+          are mutually exclusive for retrieving started task information.
         - If a I(task_id) is specified, I(identifier_name) should not be specified as the parameters
-          are mutually exclusive for querying started tasks.
-        - Asterisk (`*`) wildcards cannot be specified for the I(task_id) parameter.
+          are mutually exclusive for retrieving started task information.
+        - Asterisk (`*`) wildcards cannot be used in the I(task_id) parameter.
     required: false
     type: str
   identifier_name:
     description:
         - The name that identifies the task. It can be paired with I(job_name) to display information about a specific 
-          active started task.
+          active started task if multiple started tasks have the same I(job_name).
         - A trailing asterisk (`*`) wildcard pattern can be used to query multiple identifiers. The pattern
           will apply to all identifiers matching the leading character string in I(identifier_name).
         - An asterisk (`*`) wildcard cannot be specified in any other character positions in the
           I(identifier_name) besides a trailing asterisk.
-        - If I(identifier_name) is specified, I(task_id) should not be specified as the parameters
+        - If a I(identifier_name) is specified, I(task_id) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
         - If I(identifier_name) is specified, I(job_name) must be specified as well.
     required: false
@@ -126,7 +127,7 @@ changed:
   sample: false
 cmd:
   description:
-    - Operator DISPLAY command executed via ZOAU C(opercmd) to query for started task information.
+    - Operator DISPLAY command executed via ZOAU C(opercmd) utility to retrieve started task information.
   returned: success
   type: str
   sample: "D A,ICSF"
@@ -139,11 +140,10 @@ msg:
   sample: "No started task is active with the given name."
 rc:
   description:
-    - The return code is 0 when command executed successfully.
-    - The return code is 1 when ZOAU C(opercmd) throws any error.
-    - The return code is 4 when parameter format is invalid.
-    - The return code is 5 when no parameters are specified or any parameter validation failed.
-    - The return code is 8 when started task is not found using I(task_id).
+    - The return code from running the underlying ZOAU utilities in the module.
+    - The return code is C(0) when command executed successfully.
+    - The return code is a non-zero integer when an underlying ZOAU utility encounters an error.
+    - The return code is C(null) when parameter validation fails prior to the execution of a ZOAU utility. 
   returned: always
   type: int
   sample: 0
@@ -155,7 +155,7 @@ verbose_output:
   sample:  04.33.04 STC00077 ---- SUNDAY,    12 OCT 2025 ----....
 stderr:
   description:
-    - The standard error (STDERR) from command execution. An empty string will be returned when no
+    - The standard error from command execution. An empty string will be returned when no
       error occurs.
   returned: always
   type: str
@@ -168,7 +168,7 @@ stderr_lines:
   sample: ["An error has occurred"]
 stdout:
   description:
-    - The standard output (STDOUT) from command execution. This return field may be empty when an
+    - The standard output from command execution. This return field may be empty when an
       error occurs.
   returned: success
   type: str
@@ -220,7 +220,7 @@ tasks:
     data_spaces:
       description:
          - The data spaces associated with the address space.
-         - The I(data_spaces) list will be empty if there are no data spaces for the address space
+         - The I(data_spaces) list will be empty if there are no data spaces associated with the address space
            or if the system could not return the data space information.
       returned: always
       type: list
@@ -256,14 +256,6 @@ tasks:
       returned: always
       type: bool
       sample: false
-    processor_id:
-      description:
-         - The identifier of the processor, for up to any four processors, if the started task requires
-           the services of specific processors.
-         - If C(NONE) is specified, the job can run on any processor.
-      returned: always
-      type: str
-      sample: "NONE"
     quiesced:
       description:
          - Whether the address space has be quiesced.
@@ -312,22 +304,25 @@ tasks:
       sample: "2025-09-11 18:21:50.293644+00:00"
     step_name:
       description:
-         - If a step is specified in I(task_identifier), I(step_name) is the name of a step within
-           the cataloged procedure that was called by the I(task_identifier) step.
-         - I(step_name) will return an empty string if there is no catalog procedure.
+         - For started tasks, the name of the active step within a cataloged procedure that was called
+           by the I(task_identifier).
+         - I(step_name) will return an empty string if there is no cataloged procedure called by the I(task_identifier).
+         - For APPC-initiated transactions, the user ID requesting the transaction.
       returned: always
       type: str
       sample: "IEFPROC"
     task_id:
       description:
          - The started task id, also known as the work unit identifier (WUID).
+         - An empty string will be returned if the started task has no I(task_id).
       returned: always
       type: str
       sample: "STC00018"
     task_identifier:
       description:
-         - The task identifier can be the identifier of a task created by the START command, the name
-           of a step that called a cataloged procedure, or the name of a system or initiator address space.
+         - For a started task, the identifier of a task created by the START command.
+         - The I(task_identifier) may also be the name of a step that called a cataloged procedure, the name of
+            a step for a job or attached APPC transaction program, or the name of a system or initiator address space.
          - The task identifier will be C(STARTING) if initiation of a started job or system task is incomplete.
          - The task identifier will be C(*MASTER*) for the master address space.
       returned: always
@@ -335,9 +330,11 @@ tasks:
       sample: "SPROC"
     task_name:
       description:
-         - The task name can be the name of a started task or the name of a system or initiator address space.
-         - The task identifier will be C(STARTING) if initiation of a started job or system task is incomplete.
-         - The task identifier will be C(*MASTER*) for the master address space.
+         - For a task created by the START or MOUNT command, the procedure name of the task.
+         - The I(task_name) may also be the name of a system address space, job, attached APPC transaction program,
+            or initiator address space.
+         - The I(task_name) will be C(STARTING) if initiation of a started job or system task is incomplete.
+         - The I(task_name) will be C(*MASTER*) for the master address space.
       returned: always
       type: str
       sample: "SAMPLE"
@@ -406,7 +403,6 @@ TASK_KEYS = {
     'A': 'asidx',
     'PER': 'per_trap',
     'SMC': 'smc_requests',
-    'AFF': 'processor_id',
     'CT': 'cpu_time',
     'ET': 'elapsed_time',
     'WUID': 'task_id',
@@ -548,7 +544,7 @@ def prepare_display_command(module):
         started_task_name = f"{job_name}.{identifier}" if identifier else job_name
     else:
         module.fail_json(
-            rc=5,
+            rc=None,
             msg="Either 'job_name' or 'task_id' is mandatory to display started task details.",
             changed=False,
             stderr="", 
@@ -915,7 +911,7 @@ def run_module():
         stderr = str(err)
         module.fail_json(
             changed=False,
-            rc=4,
+            rc=None,
             msg='Parameter verification failed.',
             stderr=stderr,
             stderr_lines=stderr.splitlines()

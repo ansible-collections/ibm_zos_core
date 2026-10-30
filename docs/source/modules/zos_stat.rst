@@ -827,6 +827,79 @@ stat
         | **type**: int
         | **sample**: 50
 
+      statistics
+        Runtime statistics for the DATA component.
+
+        | **returned**: success
+        | **type**: dict
+
+        total_records
+          Total number of records in the component.
+
+          | **returned**: success
+          | **type**: int
+          | **sample**: 50
+
+        deleted_records
+          Number of records deleted from the component.
+
+          | **returned**: success
+          | **type**: int
+
+        inserted_records
+          For KSDS, number of records inserted before the last record.
+
+          For RRDS, number of records inserted into available slots.
+
+          | **returned**: success
+          | **type**: int
+
+        updated_records
+          Number of records retrieved for update and rewritten.
+
+          | **returned**: success
+          | **type**: int
+
+        retrieved_records
+          Number of records retrieved from the component.
+
+          | **returned**: success
+          | **type**: int
+
+        control_interval_splits
+          Number of control interval splits.
+
+          | **returned**: success
+          | **type**: int
+
+        control_area_splits
+          Number of control area splits.
+
+          | **returned**: success
+          | **type**: int
+
+        free_space_percentage_ci
+          Percentage of free space kept in each control interval.
+
+          | **returned**: success
+          | **type**: int
+          | **sample**: 10
+
+        free_space_percentage_ca
+          Percentage of free space kept in each control area.
+
+          | **returned**: success
+          | **type**: int
+          | **sample**: 20
+
+        free_space
+          Actual bytes of free space allocated to the component.
+
+          | **returned**: success
+          | **type**: int
+          | **sample**: 37376
+
+
       spanned
         Whether the data set allows records to be spanned across control intervals.
 
@@ -847,9 +920,61 @@ stat
         | **type**: str
         | **sample**: 3390
 
+      control_interval_size
+        Size of a control interval in bytes.
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 4096
+
+      share_option_region
+        Cross-region share option (1-4).
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 1
+
+      share_option_system
+        Cross-system share option (3 or 4).
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 3
+
+      erase
+        Whether the ERASE attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      reuse
+        Whether the REUSE attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      recovery
+        Whether the RECOVERY attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      speed
+        Whether the SPEED attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+        | **sample**:
+
+          .. code-block:: json
+
+              true
+
 
     index
       Dictionary containing attributes for the INDEX component of a VSAM.
+
+      Only populated for KSDS clusters. Null for ESDS, RRDS and LDS.
 
       For the rest of the attributes of this data set, query it directly with this module.
 
@@ -895,6 +1020,79 @@ stat
         | **returned**: success
         | **type**: int
 
+      statistics
+        Runtime statistics for the INDEX component.
+
+        | **returned**: success
+        | **type**: dict
+
+        total_records
+          Total number of records in the component.
+
+          | **returned**: success
+          | **type**: int
+
+        deleted_records
+          Number of records deleted from the component.
+
+          | **returned**: success
+          | **type**: int
+
+        inserted_records
+          Number of records inserted into the component.
+
+          | **returned**: success
+          | **type**: int
+
+        updated_records
+          Number of records retrieved for update and rewritten.
+
+          | **returned**: success
+          | **type**: int
+
+        retrieved_records
+          Number of records retrieved from the component.
+
+          | **returned**: success
+          | **type**: int
+
+        control_interval_splits
+          Number of control interval splits.
+
+          | **returned**: success
+          | **type**: int
+
+        control_area_splits
+          Number of control area splits.
+
+          | **returned**: success
+          | **type**: int
+
+        free_space_percentage_ci
+          Percentage of free space kept in each control interval.
+
+          | **returned**: success
+          | **type**: int
+
+        free_space_percentage_ca
+          Percentage of free space kept in each control area.
+
+          | **returned**: success
+          | **type**: int
+
+        free_space
+          Actual bytes of free space allocated to the component.
+
+          | **returned**: success
+          | **type**: int
+
+
+      spanned
+        Whether the index component allows records to be spanned across control intervals.
+
+        | **returned**: success
+        | **type**: bool
+
       volser
         Name of the volume containing the INDEX component.
 
@@ -908,6 +1106,56 @@ stat
         | **returned**: success
         | **type**: str
         | **sample**: 3390
+
+      control_interval_size
+        Size of a control interval in bytes.
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 512
+
+      share_option_region
+        Cross-region share option (1-4).
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 1
+
+      share_option_system
+        Cross-system share option (3 or 4).
+
+        | **returned**: success
+        | **type**: int
+        | **sample**: 3
+
+      erase
+        Whether the ERASE attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      reuse
+        Whether the REUSE attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      recovery
+        Whether the RECOVERY attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+
+      speed
+        Whether the SPEED attribute is set on the component.
+
+        | **returned**: success
+        | **type**: bool
+        | **sample**:
+
+          .. code-block:: json
+
+              true
 
 
     limit

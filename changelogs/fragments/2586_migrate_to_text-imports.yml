@@ -1,4 +1,0 @@
-minor_changes:
-  - Resolve runtime deprecation warnings that appeared in playbook output ahead
-    of their removal in ansible-core 2.24.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2555).

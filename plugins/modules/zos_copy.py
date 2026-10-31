@@ -3435,11 +3435,11 @@ def _src_produces_uss_file(src_ds_type, is_src_dir, src_member, is_src_gds, cont
     - inline content supplied via the *content* parameter.
     """
     return bool(
-        (src_ds_type == "USS" and not is_src_dir)     # USS file
-        or (src_ds_type in data_set.DataSet.MVS_SEQ)  # PS / SEQ
-        or src_member                                 # PDS member
-        or is_src_gds                                 # GDS
-        or content                                    # inline content
+        (src_ds_type == "USS" and not is_src_dir) or  # USS file
+        (src_ds_type in data_set.DataSet.MVS_SEQ) or  # PS / SEQ
+        src_member or                                 # PDS member
+        is_src_gds or                                 # GDS
+        content                                       # inline content
     )
 
 
@@ -3856,11 +3856,11 @@ def run_module(module, arg_def):
     #    The destination ends with a trailing slash and is intended to be a directory
     #    The source is a GDG
     if (
-        dest_ds_type == 'USS' and not os.path.isdir(dest)
-        and (
-            (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member)
-            or (raw_dest.endswith('/') and src_ds_type != "USS")
-            or src_ds_type == "GDG"
+        dest_ds_type == 'USS' and not os.path.isdir(dest) and
+        (
+            (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or
+            (raw_dest.endswith('/') and src_ds_type != "USS") or
+            src_ds_type == "GDG"
         )
     ):
         # Scenario 1: Module fails if user attempts to write a source that
@@ -3951,10 +3951,10 @@ def run_module(module, arg_def):
         # Set destination data set type
         if not dest_ds_type:
             if (
-                is_pds
-                or copy_member
-                or (src_ds_type in data_set.DataSet.MVS_PARTITIONED and (not src_member) and is_mvs_dest)
-                or (src and os.path.isdir(src) and is_mvs_dest)
+                is_pds or
+                copy_member or
+                (src_ds_type in data_set.DataSet.MVS_PARTITIONED and (not src_member) and is_mvs_dest) or
+                (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
             elif src_ds_type in data_set.DataSet.MVS_VSAM or src_ds_type == "GDG":
@@ -4378,10 +4378,10 @@ def main():
     )
 
     if (
-        not module.params.get("encoding").get("to")
-        and not module.params.get("remote_src")
-        and not module.params.get("binary")
-        and not module.params.get("executable")
+        not module.params.get("encoding").get("to") and
+        not module.params.get("remote_src") and
+        not module.params.get("binary") and
+        not module.params.get("executable")
     ):
         module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
     elif (

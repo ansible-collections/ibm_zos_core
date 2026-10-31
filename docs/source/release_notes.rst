@@ -6,6 +6,46 @@
 Releases
 ========
 
+Version 2.2.0-beta.1
+====================
+
+Minor Changes
+-------------
+
+- ``zos_data_set`` - Add additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion.
+- ``zos_find`` - Added ``alias`` as a ``resource_type`` option to discover catalog alias entries. Returned aliases include an ``alias_of`` field that identifies the associated target data set. For PDS/PDSE targets, the ``members`` list is returned with each member and its in-directory aliases.
+- ``zos_find`` - PDS and PDSE results for ``nonvsam`` and ``alias`` resource types now always include a ``members`` list, which is empty when the data set has no members or all members were excluded.
+- ``zos_lineinfile`` - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behaviour across all source types.
+- ``zos_stat`` - Adds support for retrieving and exposing VSAM data set statistics and extended listing attributes.
+- Resolve runtime deprecation warnings that appeared in playbook output ahead of their removal in ansible-core 2.24.
+
+Bugfixes
+--------
+
+- ``zos_copy`` - Added fix to enable sequential data sets, partitioned data sets and members, generation data sets, and generation data groups to successfully copy to a non-existent USS directory.
+- ``zos_find`` - Corrected the ``creation_date`` parsing and calculation logic to properly handle Julian-date-to-calendar-date conversion when retrieving data set age from IDCAMS LISTCAT output.
+- ``zos_find`` - Resolved a ``year 0 is out of range`` module failure that occurred when a data set's ``creation_date`` was reported as year zero by the catalog; such entries are now safely handled and excluded from age comparisons.
+- ``zos_find`` - Updated the ``age`` parameter documentation for accuracy and clarity to correctly describe how positive and negative values select data sets older than or younger than the specified threshold.
+- ``zos_job_output`` - Fixed an issue where job output was not returned when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case.
+- ``zos_job_query`` - Fixed an issue where jobs were not found when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``.
+- ``zos_ping`` - Fixed a failure when running against z/OS targets with ansible-core 2.19 or later, where the module would error with ``not enough values to unpack``. The module now works correctly across all supported ansible-core versions.
+
+New Modules
+-----------
+
+- ``zos_volume_free`` - Free one or more z/OS volumes from a data set.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+
+* None.
+
 Version 2.1.0-beta.1
 ====================
 

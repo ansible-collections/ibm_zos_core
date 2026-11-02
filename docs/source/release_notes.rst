@@ -33,7 +33,7 @@ Bugfixes
 New Modules
 -----------
 
-- ``zos_volume_free`` - Free one or more z/OS volumes from a data set.
+- ``zos_volume_free`` - Query space and status information for z/OS DASD volumes.
 
 Availability
 ------------

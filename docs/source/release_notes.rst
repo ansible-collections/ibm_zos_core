@@ -27,6 +27,8 @@ Bugfixes
 - ``zos_find`` - Resolved a ``year 0 is out of range`` module failure that occurred when a data set's ``creation_date`` was reported as year zero by the catalog; such entries are now safely handled and excluded from age comparisons.
 - ``zos_find`` - Updated the ``age`` parameter documentation for accuracy and clarity to correctly describe how positive and negative values select data sets older than or younger than the specified threshold.
 - ``zos_job_output`` - Fixed an issue where job output was not returned when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case.
+- ``zos_job_output`` - The ``job_id``, ``job_name`` and ``owner`` options now default to ``null`` instead of an internal ``*`` wildcard, so a job that is not found reports only the values supplied by the user. This also handles ZOAU 1.4.3.0, where ``jls`` returns an empty job list instead of raising an exception when a job is not found.
+- ``zos_job_query`` - Fixed an issue where a query that matched no jobs was reported as successful with ZOAU 1.4.3.0, because ``jls`` now returns an empty job list instead of raising an exception. The module now fails with an error when no job is found, as it did with earlier ZOAU versions.
 - ``zos_job_query`` - Fixed an issue where jobs were not found when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``.
 - ``zos_ping`` - Fixed a failure when running against z/OS targets with ansible-core 2.19 or later, where the module would error with ``not enough values to unpack``. The module now works correctly across all supported ansible-core versions.
 

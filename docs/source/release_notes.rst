@@ -46,8 +46,8 @@ Known Issues
 
 * None.
 
-Version 2.1.0-beta.1
-====================
+Version 2.1.0
+=============
 
 Minor Changes
 -------------

@@ -2683,15 +2683,13 @@ releases:
       - zos_job_output - Fixed an issue where job output was not returned when owner,
         job_name, or job_id were provided in lowercase or mixed case. Parameters are
         now accepted in any case. (https://github.com/ansible-collections/ibm_zos_core/issues/2609).
-      - zos_job_output - The ``job_id``, ``job_name`` and ``owner`` options now default
-        to ``null`` instead of an internal ``*`` wildcard, so a job that is not found
-        reports only the values supplied by the user. This also handles ZOAU 1.4.3.0,
-        where ``jls`` returns an empty job list instead of raising an exception when
-        a job is not found. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
+      - zos_job_output - When a job is not found, the module no longer reports a ``*``
+        wildcard for the ``job_id``, ``job_name`` or ``owner`` options that were not
+        supplied. These options now default to ``null`` so the results show only the
+        values provided. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
       - zos_job_query - Fixed an issue where a query that matched no jobs was reported
-        as successful with ZOAU 1.4.3.0, because ``jls`` now returns an empty job
-        list instead of raising an exception. The module now fails with an error when
-        no job is found, as it did with earlier ZOAU versions. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
+        as successful. The module now fails with an error stating that the job could
+        not be found. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
       - zos_job_query - Fixed an issue where jobs were not found when owner, job_name,
         or job_id were provided in lowercase or mixed case. Parameters are now accepted
         in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``.
@@ -2735,7 +2733,7 @@ releases:
     - 2586_migrate_to_text-imports.yml
     - 2590_zos_data_set_purge.yml
     - 2613_job_modules_lowercase_input.yml
-    - 2614_job_modules_zoau_jls_not_found.yml
+    - 2614_job_modules_not_found.yml
     - 2615_zos_lineinfile_backup_docs.yml
     - v2.2.0-beta.1_summary.yml
     modules:

@@ -62,11 +62,8 @@ options:
     description:
         - The name that identifies the task. It can be paired with I(job_name) to display information about a specific 
           active started task if multiple started tasks have the same I(job_name).
-        - A trailing asterisk (`*`) wildcard pattern can be used to query multiple identifiers. The pattern
-          will apply to all identifiers matching the leading character string in I(identifier_name).
-        - An asterisk (`*`) wildcard cannot be specified in any other character positions in the
-          I(identifier_name) besides a trailing asterisk.
-        - If a I(identifier_name) is specified, I(task_id) should not be specified as the parameters
+        - An asterisk (`*`) wildcard cannot be specified in the I(identifier_name).
+        - If an I(identifier_name) is specified, I(task_id) should not be specified as the parameters
           are mutually exclusive for querying started tasks.
         - If I(identifier_name) is specified, I(job_name) must be specified as well.
     required: false
@@ -149,7 +146,9 @@ rc:
   sample: 0
 verbose_output:
   description:
-     - If C(verbose=true), the the started task system logs will be shown.
+     - If C(verbose=true), the the started task system logs will be shown if the matched started task has a I(task_id).
+     - When querying all jobs or querying with wildcards, only the system logs for the first matched task will be displayed. If the
+       first matched task does not have a I(task_id) no logs will be displayed.
   returned: success
   type: str
   sample:  04.33.04 STC00077 ---- SUNDAY,    12 OCT 2025 ----....
@@ -195,9 +194,9 @@ tasks:
       sample: "03E99440"
     address_space_type:
       description:
-         - "The type of work that owns the address space, which will be one of the following: C(A) - attached
-           APPC transaction program; C(I) - initiator address space; C(J) - job; C(M) - mount; C(S) - started
-           task, C(*) - system address space"
+         - The type of work that owns the address space, which will be one of the following: C(A) (attached
+           APPC transaction program), C(I) (initiator address space), C(J) (job), C(M) (mount), C(S) (started
+           task), or C(*) (system address space)
       returned: always
       type: str
       sample: "S"
@@ -229,11 +228,13 @@ tasks:
         data_space_name:
             description:
                 - The data space name associated with the address space.
+            returned: always
             type: str
             sample: "00000IEF"
         data_space_aste:
             description:
                 - The central address space of the data space address space second table entry (ASTE).
+            returned: always
             type: str
             sample: "0594D600"
     elapsed_time:
@@ -340,9 +341,9 @@ tasks:
       sample: "SAMPLE"
     task_status:
       description:
-         - "The status of the started task, which will be one of the following: C(IN) - swapped in; C(OUT) - swapped out;
-           ready to run; C(OWT) - swapped out, waiting, not ready to run; C(OU*) - in process of being swapped out;
-           C(IN*) - in process of being swapped in; C(NSW) - non-swappable"
+         - The status of the started task, which will be one of the following: C(IN) (swapped in), C(OUT) (swapped out,
+           ready to run), C(OWT) (swapped out, waiting, not ready to run), C(OU*) (in process of being swapped out),
+           C(IN*) (in process of being swapped in), or C(NSW) (non-swappable)
       returned: always
       type: str
       sample: "NSW"
@@ -369,9 +370,6 @@ tasks:
 from ansible.module_utils.basic import AnsibleModule
 import traceback
 import re
-import math
-import time
-from datetime import datetime, timedelta, timezone
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
@@ -382,13 +380,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checke
     validate_dependencies,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
-
-try:
-    from zoautil_py import opercmd, zsystem, jobs
-except ImportError:
-    opercmd = ZOAUImportError(traceback.format_exc())
-    zsystem = ZOAUImportError(traceback.format_exc())
-    jobs = ZOAUImportError(traceback.format_exc())
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.started_task import (
+    execute_command, convert_time, calculate_start_time, get_task_logs, fetch_task_name_and_asidx
+)
 
 
 ERROR_MESSAGES = {
@@ -437,7 +431,7 @@ TASK_FIELD_DEFAULTS = {
 KV_PATTERN = re.compile(r'(\S+)=(\S+)')
 
 # Matches task header
-STATUS_CODES = r'(?:SWPOUT|INSWAP|OUTSWAP|NSW|OWT|OUT|IN)'
+STATUS_CODES = r'(?:SWPOUT|INSWAP|OUTSWAP|NSW|OWT|OUT|IN|OU\*|IN\*)'
 ADDRESS_SPACE_FLAGS = r'(?:LW|NF|PR)'
 TASK_HEADER_REGEX = re.compile(
     r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
@@ -445,72 +439,6 @@ TASK_HEADER_REGEX = re.compile(
     r'(?P<task_status>' + STATUS_CODES + r')\s*'
     r'(?:' + ADDRESS_SPACE_FLAGS + r')?\s*'
     r'(?P<address_space_type>\S+)\s+\w+=')
-
-
-def execute_command(operator_cmd):
-    """Execute operator command.
-
-    Parameters
-    ----------
-    operator_cmd : str
-        Operator command.
-
-    Returns
-    -------
-    rc : str
-        The return code.
-    stdout : str
-        The stardard output of the query.
-    stderr : str
-        The standard error of the query.
-    """
-    # as of ZOAU v1.3.0, timeout is measured in centiseconds
-    timeout_c = 0
-    response = opercmd.execute(operator_cmd, timeout_c)
-
-    rc = response.rc
-    stdout = response.stdout_response
-    stderr = response.stderr_response
-    return rc, stdout, stderr
-
-
-def fetch_task_name_and_asidx(module, task_id):
-    """Executes ZOAU python API jobs.fetch command to fetch task name and ASID.
-
-    Parameters
-    ----------
-    module : AnsibleModule
-        The Ansible module object, used to report failures.
-    task_id : str
-        The started task id.
-
-    Returns
-    -------
-    task_name : str
-        The name of started task.
-    asidx : str
-        The address space identifier, as a 4-digit uppercase hex string.
-    """
-    msg = f"Fetching started task details using task_id {task_id} failed."
-    try:
-        task_details = jobs.fetch(task_id)
-    except Exception as err:
-        response = getattr(err, "response", None)
-        stderr = getattr(response, "stderr_response", None) or str(err)
-        module.fail_json(
-            changed=False,
-            rc=getattr(response, "rc", 1),
-            msg=msg,
-            stderr=stderr,
-            stderr_lines=stderr.splitlines()
-        )
-
-    if not isinstance(task_details, jobs.Job):
-        module.fail_json(changed=False, rc=1, msg=msg, stderr="", stderr_lines=[])
-
-    task_name = task_details.name
-    asidx = f"{task_details.asid:04X}"
-    return task_name, asidx
 
 
 def prepare_display_command(module):
@@ -538,6 +466,9 @@ def prepare_display_command(module):
         started_task_name, asidx = fetch_task_name_and_asidx(module, task_id)
     elif job_name:
         asidx = ""
+        job_name = job_name.upper()
+        if identifier:
+            identifier = identifier.upper()
         # Convert asterisk wildcard to "all"
         if job_name == "*":
           job_name = "ALL"
@@ -655,8 +586,7 @@ def extract_keys(stdout, asidx=None):
     tasks = []
     current_task = {}
 
-    # Skip first five lines of stdout (command echo and system header banners)
-    for line in lines[5:]:
+    for line in lines:
         line = line.strip()
         match_firstline = TASK_HEADER_REGEX.search(line)
 
@@ -708,87 +638,6 @@ def extract_keys(stdout, asidx=None):
     return tasks
 
 
-def parse_time(ts_str):
-    """Parse timestamp.
-
-    Parameters
-    ----------
-    ts_str : string
-        The time stamp in string format.
-
-    Returns
-    -------
-    timedelta or None
-        Parsed duration as a timedelta, or None if the input cannot be parsed.
-    """
-    try:
-        # Case 1: sss.tttS
-        sec_match = re.match(r"^(\d+\.?\d*)\s*S$", ts_str, re.IGNORECASE)
-        if sec_match:
-            return timedelta(seconds=float(sec_match.group(1)))
-        # Case 2: hh.mm.ss
-        hms_match = re.match(r"^(\d+)\.(\d{2})\.(\d{2})$", ts_str)
-        if hms_match:
-            h, m, s = map(int, hms_match.groups())
-            return timedelta(hours=h, minutes=m, seconds=s)
-        # Case 3: hhhhh.mm
-        hm_match = re.match(r"^(\d{1,5})\.(\d{2})$", ts_str)
-        if hm_match:
-            h, m = map(int, hm_match.groups())
-            return timedelta(hours=h, minutes=m)
-    except Exception:
-        return None
-    return None
-
-
-def calculate_start_time(ts_str):
-    """Calculate start time.
-
-    Parameters
-    ----------
-    ts_str : string
-        The time stamp in string format.
-
-    Returns
-    -------
-    str
-        The calculated start time.
-    """
-    now = datetime.now().astimezone()
-    parsed = parse_time(ts_str)
-    # If it's a timedelta (duration), subtract from now → absolute datetime
-    if isinstance(parsed, timedelta):
-        return (now - parsed).isoformat(sep=" ", timespec="microseconds")
-    return ""
-
-
-def convert_time(ts_str):
-    """Convert timedelta to hhhhh.mm.ss.SSS format.
-
-    Parameters
-    ----------
-    ts_str : string
-        The time stamp in string format.
-
-    Returns
-    -------
-    str
-        The converted time.
-    """
-    parsed = parse_time(ts_str)
-    if isinstance(parsed, timedelta):
-        total_seconds = int(parsed.total_seconds())
-        milliseconds = int(parsed.microseconds / 1000)
-
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-
-        # Format: HHHHH.MM.SS.SSS
-        return f"{hours:05}.{minutes:02}.{seconds:02}.{milliseconds:03}"
-    return ""
-
-
 def classify_err_response(rc, out, err):
     """Identify whether STDOUT contains error message or code.
 
@@ -820,26 +669,6 @@ def classify_err_response(rc, out, err):
     if err or code:
         return (rc or 1), ERROR_MESSAGES.get(code), "", (err or out), True
     return rc, "", out, err, False
-
-
-def get_task_logs(task_id):
-    """Get job output logs.
-
-    Parameters
-    ----------
-    task_id : string
-        The started task ID.
-
-    Returns
-    -------
-    task_logs : str
-        The job output logs.
-    """
-    try:
-      task_logs = jobs.read_output(task_id)
-    except Exception:
-      return ""
-    return task_logs
 
 
 def run_module():
@@ -876,7 +705,10 @@ def run_module():
             ['job_name', 'task_id'],
             ['identifier_name', 'task_id']
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
+        required_by={
+            'identifier_name': 'job_name'
+        }
     )
 
     validate_dependencies(module)

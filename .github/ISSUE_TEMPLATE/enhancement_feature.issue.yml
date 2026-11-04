@@ -55,6 +55,7 @@ body:
         - zos_unarchive
         - zos_user
         - zos_user_info
+        - zos_volume_free
         - zos_volume_init
         - zos_zfs_resize
         - filter_generate_data_set_name

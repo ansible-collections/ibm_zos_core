@@ -61,6 +61,7 @@ body:
       description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
+        - v1.4.3
         - v1.4.2
         - v1.4.1
         - v1.4.0
@@ -71,7 +72,7 @@ body:
         - v1.3.2
         - v1.3.1
         - v1.3.0
-      default: 2
+      default: 3
     validations:
       required: true
   - type: dropdown

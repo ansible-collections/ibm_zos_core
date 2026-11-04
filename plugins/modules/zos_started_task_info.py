@@ -60,7 +60,7 @@ options:
     type: str
   identifier_name:
     description:
-        - The name that identifies the task. It can be paired with I(job_name) to display information about a specific 
+        - The name that identifies the task. It can be paired with I(job_name) to display information about a specific
           active started task if multiple started tasks have the same I(job_name).
         - An asterisk (`*`) wildcard cannot be specified in the I(identifier_name).
         - If an I(identifier_name) is specified, I(task_id) should not be specified as the parameters
@@ -137,7 +137,7 @@ rc:
     - The return code from running the underlying ZOAU utilities in the module.
     - The return code is C(0) when command executed successfully.
     - The return code is a non-zero integer when an underlying ZOAU utility encounters an error.
-    - The return code is C(null) when parameter validation fails prior to the execution of a ZOAU utility. 
+    - The return code is C(null) when parameter validation fails prior to the execution of a ZOAU utility.
   returned: always
   type: int
   sample: 0
@@ -183,9 +183,8 @@ tasks:
       sample: "03E99440"
     address_space_type:
       description:
-         - The type of work that owns the address space, which will be one of the following: C(A) (attached
-           APPC transaction program), C(I) (initiator address space), C(J) (job), C(M) (mount), C(S) (started
-           task), or C(*) (system address space)
+         - The type of work that owns the address space, which will be either C(A) (attached APPC transaction program),
+           C(I) (initiator address space), C(J) (job), C(M) (mount), C(S) (started task), or C(*) (system address space)
       returned: always
       type: str
       sample: "S"
@@ -330,8 +329,8 @@ tasks:
       sample: "SAMPLE"
     task_status:
       description:
-         - The status of the started task, which will be one of the following: C(IN) (swapped in), C(OUT) (swapped out,
-           ready to run), C(OWT) (swapped out, waiting, not ready to run), C(OU*) (in process of being swapped out),
+         - The status of the started task, which will be either C(IN) (swapped in), C(OUT) (swapped out, ready to run),
+           C(OWT) (swapped out, waiting, not ready to run), C(OU*) (in process of being swapped out),
            C(IN*) (in process of being swapped in), or C(NSW) (non-swappable)
       returned: always
       type: str
@@ -365,13 +364,9 @@ verbose_output:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-import traceback
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
@@ -468,14 +463,14 @@ def prepare_display_command(module):
             identifier = identifier.upper()
         # Convert asterisk wildcard to "all"
         if job_name == "*":
-          job_name = "ALL"
+            job_name = "ALL"
         started_task_name = f"{job_name}.{identifier}" if identifier else job_name
     else:
         module.fail_json(
             rc=None,
             msg="Either 'job_name' or 'task_id' is mandatory to display started task details.",
             changed=False,
-            stderr="", 
+            stderr="",
             stderr_lines=[]
         )
 
@@ -761,11 +756,11 @@ def run_module():
     rc, msg, stdout, stderr, is_error = classify_err_response(rc, out, err)
 
     fail_result = dict(
-      changed=False,
-      rc=rc,
-      msg=msg,
-      stderr=stderr,
-      stderr_lines=stderr.splitlines()
+        changed=False,
+        rc=rc,
+        msg=msg,
+        stderr=stderr,
+        stderr_lines=stderr.splitlines()
     )
 
     if is_error:
@@ -775,26 +770,26 @@ def run_module():
     task_params = extract_keys(out, asidx)
     if not task_params:
         fail_result.update(
-          rc=1,
-          msg="No started task is active with the given name {0}.".format(started_task_name)
+            rc=1,
+            msg="No started task is active with the given name {0}.".format(started_task_name)
         )
         module.fail_json(**fail_result)
 
     task_output_logs = ""
     if module.params.get('verbose'):
-      task_output_logs = get_task_logs(task_params[0].get('task_id'))
+        task_output_logs = get_task_logs(task_params[0].get('task_id'))
 
     success_result = dict(
-      changed=False,
-      cmd=cmd,
-      tasks=task_params,
-      rc=rc,
-      msg=msg,
-      stdout=stdout,
-      stderr=stderr,
-      stdout_lines=stdout.splitlines(),
-      stderr_lines=stderr.splitlines(),
-      verbose_output=task_output_logs
+        changed=False,
+        cmd=cmd,
+        tasks=task_params,
+        rc=rc,
+        msg=msg,
+        stdout=stdout,
+        stderr=stderr,
+        stdout_lines=stdout.splitlines(),
+        stderr_lines=stderr.splitlines(),
+        verbose_output=task_output_logs
     )
 
     module.exit_json(**success_result)

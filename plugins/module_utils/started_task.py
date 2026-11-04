@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 # Copyright (c) IBM Corporation 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -108,9 +105,9 @@ def get_task_logs(task_id):
         The job output logs.
     """
     try:
-      task_logs = jobs.read_output(task_id)
+        task_logs = jobs.read_output(task_id)
     except Exception:
-      return ""
+        return ""
     return task_logs
 
 

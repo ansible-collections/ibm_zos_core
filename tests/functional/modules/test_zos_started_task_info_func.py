@@ -429,8 +429,7 @@ def test_get_started_task_info_using_identifier_only(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") is None
         assert result.get("tasks") is None
-        assert result.get("stderr") == ""
-        assert result.get("msg") == "Either 'job_name' or 'task_id' is mandatory to display started task details."
+        assert result.get("msg") == "missing parameter(s) required by 'identifier_name': job_name"
 
 # Get info for started task using invalid wildcard in identifier (failure case)
 def test_get_started_task_info_using_identifier_name_with_invalid_wildcard(ansible_zos_module):
@@ -467,4 +466,22 @@ def test_get_started_task_info_using_invalid_job_name_and_identifier_name_pairin
         assert result.get("tasks") is None
         assert f"{job_name}.{identifier_name} NOT FOUND" in result.get("stderr")
         assert result.get("msg") == f"Started task could not be found."
-        
+
+# Verbose output is returned when verbose is set to true
+def test_get_started_task_info_verbose_output(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_name = "ICSF"
+
+    info_results = hosts.all.zos_started_task_info(
+        job_name=job_name,
+        verbose=True
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 0
+        assert len(result.get("tasks")) > 0
+        assert result.get("stderr") == ""
+        assert result.get("cmd") == f"D A,{job_name}"
+        assert result.get("stdout") != ""
+        assert result.get("verbose_output") != ""

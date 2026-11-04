@@ -82,9 +82,6 @@ attributes:
   action:
     support: none
     description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
-  async:
-    support: full
-    description: Supports being used with the ``async`` keyword.
   check_mode:
     support: full
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
@@ -144,14 +141,6 @@ rc:
   returned: always
   type: int
   sample: 0
-verbose_output:
-  description:
-     - If C(verbose=true), the the started task system logs will be shown if the matched started task has a I(task_id).
-     - When querying all jobs or querying with wildcards, only the system logs for the first matched task will be displayed. If the
-       first matched task does not have a I(task_id) no logs will be displayed.
-  returned: success
-  type: str
-  sample:  04.33.04 STC00077 ---- SUNDAY,    12 OCT 2025 ----....
 stderr:
   description:
     - The standard error from command execution. An empty string will be returned when no
@@ -365,6 +354,14 @@ tasks:
       returned: always
       type: str
       sample: "SYSTEM"
+verbose_output:
+  description:
+     - If C(verbose=true), the the started task system logs will be shown if the matched started task has a I(task_id).
+     - When querying all started tasks or querying with wildcards, only the system logs for the first matched task will be displayed. If the
+       first matched task does not have a I(task_id), no logs will be displayed.
+  returned: success
+  type: str
+  sample:  04.33.04 STC00077 ---- SUNDAY,    12 OCT 2025 ----....
 """
 
 from ansible.module_utils.basic import AnsibleModule

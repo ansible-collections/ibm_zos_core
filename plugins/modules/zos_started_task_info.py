@@ -181,6 +181,15 @@ tasks:
       returned: always
       type: str
       sample: "03E99440"
+    address_space_flag:
+      description:
+         - The status of the address space. The address space may have no status indicator, in which case
+           an empty string is returned.
+         - The status may be C(LW) (address space is in long wait), C(NF) (address space is not dispatchable due to failure),
+           or C(PR) (address space has a PER trap active).
+      returned: always
+      type: str
+      sample: "LW"
     address_space_type:
       description:
          - The type of work that owns the address space, which will be either C(A) (attached APPC transaction program),
@@ -429,7 +438,7 @@ TASK_HEADER_REGEX = re.compile(
     r'^\s*(?P<task_name>\S+)\s+(?P<task_identifier>\S+)\s+'
     r'(?:(?P<step_name>\S+)\s+)?'
     r'(?P<task_status>' + STATUS_CODES + r')\s*'
-    r'(?:' + ADDRESS_SPACE_FLAGS + r')?\s*'
+    r'(?P<address_space_flag>' + ADDRESS_SPACE_FLAGS + r')?\s*'
     r'(?P<address_space_type>\S+)\s+\w+=')
 
 
@@ -602,6 +611,7 @@ def extract_keys(stdout, asidx=None):
             current_task['task_name'] = match_firstline.group('task_name')
             current_task['task_identifier'] = match_firstline.group('task_identifier')
             current_task['task_status'] = match_firstline.group('task_status')
+            current_task['address_space_flag'] = match_firstline.group('address_space_flag') or ""
             current_task['address_space_type'] = match_firstline.group('address_space_type')
             current_task['unix_address_space'] = 'O' in current_task['address_space_type']
             current_task['address_space_type'] = current_task['address_space_type'].replace('O', '')

@@ -29,14 +29,8 @@ TASK_JCL_CONTENT="""//STEP1    EXEC PGM=BPXBATCH
 //STDPARM  DD *
 SH sleep 600
 /*"""
-PARAM_JCL_CONTENT="""//MSLEEP  PROC SECS=10
-//STEP1    EXEC PGM=BPXBATCH,
-//         PARM='SH sleep &SECS'
-//STDOUT   DD SYSOUT=*
-//STDERR   DD SYSOUT=*
-//"""
 EXPECTED_KEYS = {
-    "address_space_aste", "address_space_type", "asidx",
+    "address_space_aste", "address_space_flag", "address_space_type", "asidx",
     "cpu_time", "data_spaces", "elapsed_time", "per_trap",
     "quiesced", "resource_group", "server",
     "service_class", "service_class_period", "smc_requests",
@@ -124,18 +118,99 @@ def test_get_started_task_info_using_job_name(ansible_zos_module):
                 )
                 assert task.get("task_name", "").upper() == job_name.upper()
 
+    finally:
         # Cancel the started task
         stop_results = hosts.all.zos_started_task(
             state="cancelled",
             task=job_name
         )
+        # Remove USS temp directory containing the USS file
+        hosts.all.file(path=temp_path, state="absent")
+        # Remove the temp sequential data set
+        hosts.all.shell(
+            cmd="drm {0}".format(data_set_name)
+        )
+        # Remove the SAMPLE member from the PDS
+        hosts.all.shell(
+            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+        )
 
-        for result in stop_results.contacted.values():
+# Display address space flag
+def test_get_started_task_info_address_space_flag(ansible_zos_module):
+    job_name = "SPROC"
+    per_trap_id = "PER1"
+
+    try:
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name()
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.file(path=temp_path, state="directory")
+
+        # Write JCL to USS file
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(TASK_JCL_CONTENT), temp_path)
+        )
+
+        # USS file is copied to a sequential data set
+        hosts.all.shell(
+            cmd="dcp {0}/SAMPLE {1}".format(temp_path, data_set_name)
+        )
+
+        # The data set is copied to the PDS member
+        # SAMPLE becomes a procedure the system can start with START SAMPLE
+        hosts.all.shell(
+            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
+        )
+
+        # Start a started task
+        start_results = hosts.all.zos_started_task(
+            state="started",
+            member="SAMPLE",
+            job_name=job_name
+        )
+
+        for result in start_results.contacted.values():
+            assert result.get("changed") is True
             assert result.get("rc") == 0
             assert len(result.get("tasks")) > 0
             assert result.get("stderr") == ""
-        
+
+        # Set PER trap
+        per_trap_results = hosts.all.zos_operator(
+            cmd=f"SLIP SET,IF,ID={per_trap_id},JOBNAME={job_name},RANGE=1B0000,ACTION=SVCD,MATCHLIM=5,END"
+        )
+
+        for result in per_trap_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("rc") == 0
+            assert f"SLIP TRAP ID={per_trap_id} SET" in result.get("stdout")
+
+        # Get started task info using job name
+        info_results = hosts.all.zos_started_task_info(
+            job_name=job_name
+        )
+
+        for result in info_results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("rc") == 0
+            assert len(result.get("tasks")) > 0
+            assert result.get("stderr") == ""
+            assert result.get("cmd") == f"D A,{job_name}"
+            assert result.get("stdout") != ""
+            for task in result.get("tasks"):
+                assert EXPECTED_KEYS.issubset(task.keys())
+                assert task.get("address_space_flag") == "PR"
+
     finally:
+        # Delete PER trap
+        del_trap_results = hosts.all.zos_operator(
+            cmd=f"SLIP DEL,ID={per_trap_id}"
+        )
+        # Stop started task
+        stop_results = hosts.all.zos_started_task(
+            state="cancelled",
+            task=job_name
+        )
         # Remove USS temp directory containing the USS file
         hosts.all.file(path=temp_path, state="absent")
         # Remove the temp sequential data set
@@ -269,6 +344,7 @@ def test_get_started_task_info_using_invalid_job_name(ansible_zos_module):
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") == 1
         assert result.get("tasks") is None
@@ -410,6 +486,7 @@ def test_get_started_task_info_without_parameters(ansible_zos_module):
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") is None
         assert result.get("tasks") is None
@@ -426,6 +503,7 @@ def test_get_started_task_info_using_identifier_only(ansible_zos_module):
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") is None
         assert result.get("tasks") is None

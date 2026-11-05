@@ -693,7 +693,7 @@ Step 7: Run a playbook
 .. _Z Open Automation Utilities:
    https://www.ibm.com/docs/en/zoau/latest
 .. _inventory:
-   https://ibm.github.io/z_ansible_collections_doc/welcome/basic-concepts.html#term-Inventory
+   https://docs.ansible.com/projects/ansible/latest/getting_started/basic_concepts.html#inventory
 .. _Building Ansible inventories:
    https://docs.ansible.com/ansible/latest/inventory_guide/index.html#
 .. _RACF command syntax:

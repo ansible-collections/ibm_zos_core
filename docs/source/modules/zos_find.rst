@@ -35,7 +35,7 @@ age
 
   You can choose days, weeks, months or years by specifying the first letter of any of those words (e.g., "1w"). The default is days.
 
-  Age is determined by using the 'referenced date' of the data set.
+  Age is determined by the date selected with ``age_stamp`` (default ``creation_date``).
 
   | **required**: False
   | **type**: str
@@ -69,6 +69,8 @@ excludes
   If the pattern is a regular expression, it must match the full data set name.
 
   To exclude members, the regular expression or pattern must be enclosed in parentheses. This expression can be used alongside a pattern to exclude data set names.
+
+  When using ``resource_type=alias``, non-parenthesised patterns match against the ALIAS data set name itself and remove the entire alias entry from the results. Parenthesised patterns match against the PDS/PDSE member names of the data set the alias points to; matching members are removed from the returned ``members`` list. The actual alias entries on the z/OS system are not deleted; only the result set is filtered.
 
   | **required**: False
   | **type**: list
@@ -113,11 +115,15 @@ resource_type
 
   ``migrated`` refers to listing migrated datasets. Only ``excludes`` and ``migrated_type`` options can be used along with this option. The module only searches based on dataset patterns.
 
+  ``alias`` refers to MVS catalog alias entries. The module returns the alias name and the real dataset name it points to (returned as ``alias_of`` in each result).
+
+  The ``patterns``, ``excludes``, ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` options are applicable when using ``alias`` resource type. The ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` filters are applied against the target dataset (``alias_of``), not the alias entry itself.
+
   | **required**: False
   | **type**: list
   | **elements**: str
   | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index, gdg, migrated
+  | **choices**: nonvsam, cluster, data, index, gdg, migrated, alias
 
 
 migrated_type
@@ -286,6 +292,65 @@ Examples
        migrated_type:
          - 'nonvsam'
 
+   - name: Find all data set aliases starting with 'USER'
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - alias
+
+   - name: Find aliases matching a pattern but excluding specific entries
+     zos_find:
+       patterns:
+         - MYHLQ.*
+       resource_type:
+         - alias
+       excludes:
+         - '.*TEMP.*'
+
+   - name: Find all PDS/PDSE aliases excluding members whose name starts with 'TMP'
+     zos_find:
+       patterns:
+         - ANSIBLE.ALIAS.TEST.*
+       resource_type:
+         - alias
+       excludes: '(^TMP.*)'
+
+   - name: Find aliases whose target dataset resides on specific volumes
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - alias
+       volumes:
+         - VOL001
+         - VOL002
+
+   - name: Find aliases whose target dataset was created within the last 30 days
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - alias
+       age: -30d
+       age_stamp: creation_date
+
+   - name: Find aliases whose target dataset is larger than 1MB
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - alias
+       size: 1m
+
+   - name: Find aliases whose target dataset contains the string 'hello'
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type:
+         - alias
+       contains: 'hello'
+
 
 
 
@@ -304,6 +369,12 @@ Notes
    When searching for content within data sets, only non-binary content is considered.
 
    As a migrated data set's information can't be retrieved without recalling it first, other options besides ``excludes`` and ``migrated_type`` are not supported.
+
+   When using ``resource_type=alias``, the ``contains`` option searches the content of the target dataset (``alias_of``). Only alias entries whose target dataset contains the specified string are returned. The ``age``, ``age_stamp``, ``size``, and ``volume`` options are also supported and are applied against the target dataset.
+
+   Parenthesised exclude patterns (e.g. ``(^MEM1$``)) match against PDS/PDSE member names. Members whose name matches the pattern are removed from the ``members`` list of the matched data set or alias entry. The data set or alias entry itself is kept, even if all its members are removed.
+
+   PDS/PDSE entries always include a ``members`` key, which is an empty list when the data set has no members (or all of them were excluded). For ``alias`` entries, ``members`` is a list of dicts with the member name and its in-directory alias names, whereas for ``nonvsam`` entries ``members`` is a list of member name strings.
 
 
 
@@ -324,6 +395,10 @@ Return Values
 data_sets
   All matches found with the specified criteria.
 
+  For ``alias`` resource types, each entry includes an ``alias_of`` field containing the real dataset name the alias points to.
+
+  PDS/PDSE entries always include a ``members`` list, which is empty when the data set has no members. For ``alias`` entries pointing to a PDS/PDSE, each item is a dict with a ``name`` key (the member name) and an ``aliases`` key (a list of alias names for that member, empty when the member has none). Note that for ``alias`` entries ``members`` is a list of dicts, whereas for ``nonvsam`` entries ``members`` is a list of member name strings.
+
   | **returned**: success
   | **type**: list
   | **sample**:
@@ -332,11 +407,11 @@ data_sets
 
         [
             {
-                "members": {
-                    "COBU": null,
-                    "MC2CNAM": null,
-                    "TINAD": null
-                },
+                "members": [
+                    "COBU",
+                    "MC2CNAM",
+                    "TINAD"
+                ],
                 "name": "IMS.CICS13.USERLIB",
                 "type": "NONVSAM"
             },
@@ -347,6 +422,35 @@ data_sets
             {
                 "name": "SAMPLE.VSAM.DATA",
                 "type": "DATA"
+            },
+            {
+                "alias_of": "USER.REAL.DATASET",
+                "name": "USER.ALIAS.NAME",
+                "type": "ALIAS"
+            },
+            {
+                "alias_of": "USER.REAL.PDS",
+                "members": [
+                    {
+                        "aliases": [
+                            "ALIAS1",
+                            "ALIAS2"
+                        ],
+                        "name": "MEM1"
+                    },
+                    {
+                        "aliases": [
+                            "ALIAS3"
+                        ],
+                        "name": "MEM2"
+                    },
+                    {
+                        "aliases": [],
+                        "name": "MEM3"
+                    }
+                ],
+                "name": "USER.PDS.ALIAS",
+                "type": "ALIAS"
             }
         ]
 

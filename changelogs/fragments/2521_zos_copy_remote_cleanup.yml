@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_copy - Added remote cleanup fix to properly handle resource cleanup
-    so pre-existing data sets are not deleted on copy operation failures.
-    (https://github.com/ansible-collections/ibm_zos_core/issues/2510)

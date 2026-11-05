@@ -1,22 +1,60 @@
-==============================
-ibm.ibm_zos_core Release Notes
-==============================
+================================
+ibm.ibm\_zos\_core Release Notes
+================================
 
 .. contents:: Topics
 
-
-v2.1.0-beta.1
+v2.2.0-beta.1
 =============
 
 Release Summary
 ---------------
 
-Release Date: '2026-08-17'
+Release Date: '2026-11-02'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
+Minor Changes
+-------------
+
+- Resolve runtime deprecation warnings that appeared in playbook output ahead of their removal in ansible-core 2.24. (https://github.com/ansible-collections/ibm_zos_core/issues/2555).
+- zos_data_set - Add additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion. (https://github.com/ansible-collections/ibm_zos_core/issues/2246).
+- zos_find - Added ``alias`` as a ``resource_type`` option to discover catalog alias entries. Returned aliases include an ``alias_of`` field that identifies the associated target data set. For PDS/PDSE targets, the ``members`` list is returned with each member and its in-directory aliases. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+- zos_find - PDS and PDSE results for ``nonvsam`` and ``alias`` resource types now always include a ``members`` list, which is empty when the data set has no members or all members were excluded. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+- zos_lineinfile - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behaviour across all source types. (https://github.com/ansible-collections/ibm_zos_core/issues/2554).
+- zos_stat - Adds support for retrieving and exposing VSAM data set statistics and extended listing attributes. (https://github.com/ansible-collections/ibm_zos_core/issues/2344).
+
+Bugfixes
+--------
+
+- zos_copy - Added fix to enable sequential data sets, partitioned data sets and members, generation data sets, and generation data groups to successfully copy to a non-existent USS directory. (https://github.com/ansible-collections/ibm_zos_core/issues/2525).
+- zos_find - Corrected the ``creation_date`` parsing and calculation logic to properly handle Julian-date-to-calendar-date conversion when retrieving data set age from IDCAMS LISTCAT output. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+- zos_find - Resolved a ``year 0 is out of range`` module failure that occurred when a data set's ``creation_date`` was reported as year zero by the catalog; such entries are now safely handled and excluded from age comparisons. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+- zos_find - Updated the ``age`` parameter documentation for accuracy and clarity to correctly describe how positive and negative values select data sets older than or younger than the specified threshold. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
+- zos_job_output - Fixed an issue where job output was not returned when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case. (https://github.com/ansible-collections/ibm_zos_core/issues/2609).
+- zos_job_output - When a job is not found, the module no longer reports a ``*`` wildcard for the ``job_id``, ``job_name`` or ``owner`` options that were not supplied. These options now default to ``null`` so the results show only the values provided. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
+- zos_job_query - Fixed an issue where a query that matched no jobs was reported as successful. The module now fails with an error stating that the job could not be found. (https://github.com/ansible-collections/ibm_zos_core/pull/2614).
+- zos_job_query - Fixed an issue where jobs were not found when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``. (https://github.com/ansible-collections/ibm_zos_core/issues/2609).
+- zos_ping - Fixed a failure when running against z/OS targets with ansible-core 2.19 or later, where the module would error with ``not enough values to unpack``. The module now works correctly across all supported ansible-core versions. (https://github.com/ansible-collections/ibm_zos_core/issues/2356).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_volume_free - Query space and status information for z/OS DASD volumes
+
+v2.1.0
+======
+
+Release Summary
+---------------
+
+Release Date: '2026-09-23'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
 Minor Changes
 -------------
@@ -28,16 +66,16 @@ Bugfixes
 --------
 
 - zos_copy - Added remote cleanup fix to properly handle resource cleanup so pre-existing data sets are not deleted on copy operation failures (https://github.com/ansible-collections/ibm_zos_core/issues/2510).
-- zos_copy - Fixed template rendering with ``use_template`` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1499) (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
+- zos_copy - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1499) (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
 - zos_encode - Updated error messaging to explicitly identify when a generation data set (GDS) does not exist or is not cataloged, which was not clear in previous error messages (https://github.com/ansible-collections/ibm_zos_core/issues/2284).
-- zos_job_query - Users would see RACF violations when job_id or owner were not set and the user lacked authority to view all jobs, as job_id and owner defaulted to ``*``. The fix now sets both defaults to None, preventing overly broad job queries (https://github.com/ansible-collections/ibm_zos_core/issues/2367).
-- zos_job_submit - Fixed template rendering with ``use_template`` so that dict loop item keys resolve as flat variable names and nested variable references are fully evaluated before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1071) (https://github.com/ansible-collections/ibm_zos_core/issues/1499).
-- zos_script - Fixed template rendering with ``use_template`` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1499) (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
+- zos_job_query - Users would see RACF violations when job_id or owner were not set and the user lacked authority to view all jobs, as job_id and owner defaulted to `*`. The fix now sets both defaults to None, preventing overly broad job queries (https://github.com/ansible-collections/ibm_zos_core/issues/2367).
+- zos_job_submit - Fixed template rendering with `use_template` so that dict loop item keys resolve as flat variable names and nested variable references are fully evaluated before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1071) (https://github.com/ansible-collections/ibm_zos_core/issues/1499).
+- zos_script - Fixed template rendering with `use_template` so that loop variables, indices, dict keys, and nested references are correctly resolved before Jinja2 rendering (https://github.com/ansible-collections/ibm_zos_core/issues/1499) (https://github.com/ansible-collections/ibm_zos_core/issues/1071).
 
 New Modules
 -----------
 
-- ibm.ibm_zos_core.zos_user_info - Retrieve user and group profile information from RACF.
+- ibm.ibm_zos_core.zos_user_info - Retrieve user and group profile information from RACF
 
 v2.0.0
 ======
@@ -368,7 +406,6 @@ This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Minor Changes
 -------------
@@ -848,7 +885,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
-
 Bugfixes
 --------
 
@@ -871,7 +907,6 @@ This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Major Changes
 -------------
@@ -944,7 +979,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Minor Changes
 -------------
 
@@ -973,7 +1007,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -998,7 +1031,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -1016,7 +1048,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
-
 
 Bugfixes
 --------
@@ -1051,7 +1082,6 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
     **z/OS** target to find the latest supported configuration and generate
     inventory and a variables configuration.
   - Automate software management with SMP/E Playbooks
-
 
 Minor Changes
 -------------
@@ -1130,7 +1160,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Minor Changes
 -------------

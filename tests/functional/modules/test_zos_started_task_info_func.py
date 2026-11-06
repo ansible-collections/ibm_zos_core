@@ -20,6 +20,7 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 from ibm_zos_core.tests.helpers.dataset import get_tmp_member
 from shellescape import quote
 import re
+import pytest
 
 TMP_DIRECTORY = "/tmp/"
 PROC_PDS = "USER.PRIVATE.PROCLIB"
@@ -39,6 +40,12 @@ EXPECTED_KEYS = {
     "user_id", "workload_name"
 }
 
+def _skip_if_task_not_running(hosts, job_name):
+    query_results = hosts.all.zos_job_query(job_name=job_name)
+    has_tasks = any(result.get("jobs") for result in query_results.contacted.values())
+    if not has_tasks:
+        pytest.skip(f"Started task '{job_name}' is not active on target LPAR")
+
 # Get info for started task using job_name
 def test_get_started_task_info_using_job_name(ansible_zos_module):
     job_name = "TESTTSK"
@@ -47,6 +54,7 @@ def test_get_started_task_info_using_job_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
+        member_name = "S" + get_tmp_member()
         temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
 
@@ -61,15 +69,14 @@ def test_get_started_task_info_using_job_name(ansible_zos_module):
         )
 
         # The data set is copied to the PDS member
-        # SAMPLE becomes a procedure the system can start with START SAMPLE
         hosts.all.shell(
-            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
+            cmd="dcp {0} \"//'{1}({2})'\"".format(data_set_name, PROC_PDS, member_name)
         )
 
         # Start a started task
         start_results = hosts.all.zos_started_task(
             state="started",
-            member="SAMPLE",
+            member=member_name,
             job_name=job_name
         )
 
@@ -130,9 +137,9 @@ def test_get_started_task_info_using_job_name(ansible_zos_module):
         hosts.all.shell(
             cmd="drm {0}".format(data_set_name)
         )
-        # Remove the SAMPLE member from the PDS
+        # Remove the member from the PDS
         hosts.all.shell(
-            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+            cmd="mrm '{0}({1})'".format(PROC_PDS, member_name)
         )
 
 # Display address space flag
@@ -143,6 +150,7 @@ def test_get_started_task_info_address_space_flag(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
+        member_name = "S" + get_tmp_member()
         temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
 
@@ -157,15 +165,14 @@ def test_get_started_task_info_address_space_flag(ansible_zos_module):
         )
 
         # The data set is copied to the PDS member
-        # SAMPLE becomes a procedure the system can start with START SAMPLE
         hosts.all.shell(
-            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
+            cmd="dcp {0} \"//'{1}({2})'\"".format(data_set_name, PROC_PDS, member_name)
         )
 
         # Start a started task
         start_results = hosts.all.zos_started_task(
             state="started",
-            member="SAMPLE",
+            member=member_name,
             job_name=job_name
         )
 
@@ -217,15 +224,17 @@ def test_get_started_task_info_address_space_flag(ansible_zos_module):
         hosts.all.shell(
             cmd="drm {0}".format(data_set_name)
         )
-        # Remove the SAMPLE member from the PDS
+        # Remove the member from the PDS
         hosts.all.shell(
-            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+            cmd="mrm '{0}({1})'".format(PROC_PDS, member_name)
         )
 
 # Get info for started task using job_name with wildcard
 def test_get_started_task_info_using_job_name_with_wildcard(ansible_zos_module):
     hosts = ansible_zos_module
     job_name = "I*"
+
+    _skip_if_task_not_running(hosts, job_name)
 
     info_results = hosts.all.zos_started_task_info(
         job_name=job_name
@@ -247,6 +256,8 @@ def test_get_started_task_info_using_job_name_and_identifier(ansible_zos_module)
     hosts = ansible_zos_module
     job_name = "ICSF"
     identifier_name = "ICSF"
+
+    _skip_if_task_not_running(hosts, job_name)
 
     info_results = hosts.all.zos_started_task_info(
         job_name=job_name,
@@ -295,7 +306,8 @@ def test_get_started_task_info_using_task_id(ansible_zos_module):
     for result in query_results.contacted.values():
         for job in result.get("jobs", []):
             task_id = job.get("job_id")
-    assert task_id is not None, f"No active started task found for {job_name}"
+    if task_id is None:
+        pytest.skip(f"No active started task found for {job_name}")
 
     info_results = hosts.all.zos_started_task_info(
         task_id=task_id
@@ -316,6 +328,8 @@ def test_get_info_for_started_task_with_multiple_data_spaces(ansible_zos_module)
     hosts = ansible_zos_module
     job_name = "IMSVTAM"
 
+    _skip_if_task_not_running(hosts, job_name)
+
     info_results = hosts.all.zos_started_task_info(
         job_name=job_name
     )
@@ -333,6 +347,50 @@ def test_get_info_for_started_task_with_multiple_data_spaces(ansible_zos_module)
             for data_space in task.get("data_spaces"):
                 assert data_space.get("data_space_aste") is not None
                 assert data_space.get("data_space_name") is not None
+
+# Verbose output is returned when verbose is set to true
+def test_get_started_task_info_verbose_output(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_name = "ICSF"
+
+    _skip_if_task_not_running(hosts, job_name)
+
+    info_results = hosts.all.zos_started_task_info(
+        job_name=job_name,
+        verbose=True
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 0
+        assert len(result.get("tasks")) > 0
+        assert result.get("stderr") == ""
+        assert result.get("cmd") == f"D A,{job_name}"
+        assert result.get("stdout") != ""
+        assert result.get("verbose_output") != ""
+
+# Get info for started task with lower case job name
+def test_get_started_task_info_using_lowercase_job_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    job_name = "icsf"
+    job_name_uppercase = job_name.upper()
+
+    _skip_if_task_not_running(hosts, job_name)
+
+    info_results = hosts.all.zos_started_task_info(
+        job_name=job_name
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("rc") == 0
+        assert len(result.get("tasks")) > 0
+        assert result.get("stderr") == ""
+        assert result.get("cmd") == f"D A,{job_name_uppercase}"
+        assert result.get("stdout") != ""
+        for task in result.get("tasks"):
+            assert EXPECTED_KEYS.issubset(task.keys())
+            assert task.get("task_name") == job_name_uppercase
 
 # Get info for started task using invalid job_name (failure case)
 def test_get_started_task_info_using_invalid_job_name(ansible_zos_module):
@@ -361,6 +419,7 @@ def test_get_started_task_info_using_job_name_with_invalid_wildcard(ansible_zos_
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") == 1
         assert result.get("tasks") is None
@@ -377,6 +436,7 @@ def test_get_started_task_info_job_name_not_found(ansible_zos_module):
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") == 1
         assert result.get("tasks") is None
@@ -386,6 +446,23 @@ def test_get_started_task_info_job_name_not_found(ansible_zos_module):
 # Get info for started task using invalid task_id (failure case)
 def test_get_started_task_info_using_invalid_task_id(ansible_zos_module):
     hosts = ansible_zos_module
+    task_id="STC99999"
+
+    info_results = hosts.all.zos_started_task_info(
+        task_id=task_id
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("changed") is False
+        assert result.get("rc") == 8
+        assert result.get("tasks") is None
+        assert f"BGYSC3503E Failed to retrieve job list." in result.get("stderr")
+        assert result.get("msg") == f"Fetching started task details using task_id {task_id} failed."
+
+# Get info for a started using task_id that does not exist (failure case)
+def test_get_started_task_info_using_nonexistent_task_id(ansible_zos_module):
+    hosts = ansible_zos_module
     task_id="STC0012345"
 
     info_results = hosts.all.zos_started_task_info(
@@ -393,19 +470,21 @@ def test_get_started_task_info_using_invalid_task_id(ansible_zos_module):
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") == 4
         assert result.get("tasks") is None
         assert f"BGYSC3506E Invalid job id format {task_id}" in result.get("stderr")
         assert result.get("msg") == f"Fetching started task details using task_id {task_id} failed."
 
-# Get info for started task using task_id that cannot be found (failure case)
-def test_get_started_task_info_task_id_not_found(ansible_zos_module):
+# Get info for started task using task_id that is not active (failure case)
+def test_get_started_task_info_task_id_not_active(ansible_zos_module):
     job_name = "NTASKID"
 
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
+        member_name = "S" + get_tmp_member()
         temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
 
@@ -420,15 +499,14 @@ def test_get_started_task_info_task_id_not_found(ansible_zos_module):
         )
 
         # The data set is copied to the PDS member
-        # SAMPLE becomes a procedure the system can start with START SAMPLE
         hosts.all.shell(
-            cmd="dcp {0} \"//'{1}(SAMPLE)'\"".format(data_set_name, PROC_PDS)
+            cmd="dcp {0} \"//'{1}({2})'\"".format(data_set_name, PROC_PDS, member_name)
         )
 
         # Start a started task
         start_results = hosts.all.zos_started_task(
             state="started",
-            member="SAMPLE",
+            member=member_name,
             job_name=job_name
         )
         
@@ -458,12 +536,15 @@ def test_get_started_task_info_task_id_not_found(ansible_zos_module):
             task_id=task_id
         )
 
+        # The cancelled task is still known to JES, so the task_id lookup succeeds,
+        # but the task is no longer active so the display command cannot find it.
         for result in info_results.contacted.values():
+            assert result.get("failed") is True
             assert result.get("changed") is False
-            assert result.get("rc") == 8
+            assert result.get("rc") == 1
             assert result.get("tasks") is None
-            assert f"BGYSC3503E Failed to retrieve job list." in result.get("stderr")
-            assert result.get("msg") == f"Fetching started task details using task_id {task_id} failed."
+            assert f"{job_name} NOT FOUND" in result.get("stderr")
+            assert result.get("msg") == "Started task could not be found."
         
     finally:
         # Remove USS temp directory containing the USS file
@@ -472,9 +553,9 @@ def test_get_started_task_info_task_id_not_found(ansible_zos_module):
         hosts.all.shell(
             cmd="drm {0}".format(data_set_name)
         )
-        # Remove the SAMPLE member from the PDS
+        # Remove the member from the PDS
         hosts.all.shell(
-            cmd="mrm '{0}(SAMPLE)'".format(PROC_PDS)
+            cmd="mrm '{0}({1})'".format(PROC_PDS, member_name)
         )
 
 # Get info for started task without specifying parameters (failure case)
@@ -521,13 +602,14 @@ def test_get_started_task_info_using_identifier_name_with_invalid_wildcard(ansib
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") is None
         assert result.get("tasks") is None
         assert f'Invalid argument "{identifier_name}" for type "identifier_name".' in result.get("stderr")
         assert result.get("msg") == f"Parameter verification failed."
 
-# Get info for stated task using identifier that does not match with job name (failure case)
+# Get info for started task using identifier that does not match with job name (failure case)
 def test_get_started_task_info_using_invalid_job_name_and_identifier_name_pairing(ansible_zos_module):
     hosts = ansible_zos_module
     job_name = "JES2"
@@ -539,27 +621,45 @@ def test_get_started_task_info_using_invalid_job_name_and_identifier_name_pairin
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
         assert result.get("rc") == 1
         assert result.get("tasks") is None
         assert f"{job_name}.{identifier_name} NOT FOUND" in result.get("stderr")
         assert result.get("msg") == f"Started task could not be found."
 
-# Verbose output is returned when verbose is set to true
-def test_get_started_task_info_verbose_output(ansible_zos_module):
+# Get info for started task with job_name and task_id (failure case)
+def test_get_started_task_info_using_job_name_and_task_id(ansible_zos_module):
     hosts = ansible_zos_module
+    task_id = "STC00010"
     job_name = "ICSF"
 
     info_results = hosts.all.zos_started_task_info(
         job_name=job_name,
-        verbose=True
+        task_id=task_id
     )
 
     for result in info_results.contacted.values():
+        assert result.get("failed") is True
         assert result.get("changed") is False
-        assert result.get("rc") == 0
-        assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
-        assert result.get("cmd") == f"D A,{job_name}"
-        assert result.get("stdout") != ""
-        assert result.get("verbose_output") != ""
+        assert result.get("rc") is None
+        assert result.get("tasks") is None
+        assert result.get("msg") == "parameters are mutually exclusive: job_name|task_id"
+
+# Get info for started task with task_id and identifier_name (failure case)
+def test_get_started_task_info_using_task_id_and_identifier(ansible_zos_module):
+    hosts = ansible_zos_module
+    task_id = "STC00010"
+    identifier_name = "ICSF"
+
+    info_results = hosts.all.zos_started_task_info(
+        identifier_name=identifier_name,
+        task_id=task_id
+    )
+
+    for result in info_results.contacted.values():
+        assert result.get("failed") is True
+        assert result.get("changed") is False
+        assert result.get("rc") is None
+        assert result.get("tasks") is None
+        assert result.get("msg") == "parameters are mutually exclusive: identifier_name|task_id"

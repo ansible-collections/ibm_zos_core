@@ -3008,7 +3008,7 @@ def allocate_destination_data_set(
         space_type, type.
     """
     src_name = data_set.extract_dsname(src)
-    is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
+    is_dest_empty = data_set.DataSet.is_empty(dest, tmphlq=tmphlq) if dest_exists else True
 
     # Replace in datasets.
     # Reuse empty datasets when replace is not true. We don't know whether that

@@ -17,4 +17,4 @@
 # COMPATIBILITY_MATRIX in dependency_checker.py; the beta label is only
 # relevant to the published artifact version in galaxy.yml.
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"

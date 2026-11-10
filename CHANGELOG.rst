@@ -23,7 +23,7 @@ Minor Changes
 - zos_data_set - Add additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion. (https://github.com/ansible-collections/ibm_zos_core/issues/2246).
 - zos_find - Added ``alias`` as a ``resource_type`` option to discover catalog alias entries. Returned aliases include an ``alias_of`` field that identifies the associated target data set. For PDS/PDSE targets, the ``members`` list is returned with each member and its in-directory aliases. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
 - zos_find - PDS and PDSE results for ``nonvsam`` and ``alias`` resource types now always include a ``members`` list, which is empty when the data set has no members or all members were excluded. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
-- zos_lineinfile - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behaviour across all source types. (https://github.com/ansible-collections/ibm_zos_core/issues/2554).
+- zos_lineinfile - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behavior across all source types. (https://github.com/ansible-collections/ibm_zos_core/issues/2554).
 - zos_stat - Adds support for retrieving and exposing VSAM data set statistics and extended listing attributes. (https://github.com/ansible-collections/ibm_zos_core/issues/2344).
 
 Bugfixes

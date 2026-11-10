@@ -2704,7 +2704,7 @@ releases:
         now always include a ``members`` list, which is empty when the data set has
         no members or all members were excluded. (https://github.com/ansible-collections/ibm_zos_core/issues/2446).
       - zos_lineinfile - Expands the ``backup`` and ``backup_name`` parameter documentation
-        to clarify backup behaviour across all source types. (https://github.com/ansible-collections/ibm_zos_core/issues/2554).
+        to clarify backup behavior across all source types. (https://github.com/ansible-collections/ibm_zos_core/issues/2554).
       - zos_stat - Adds support for retrieving and exposing VSAM data set statistics
         and extended listing attributes. (https://github.com/ansible-collections/ibm_zos_core/issues/2344).
       release_summary: 'Release Date: ''2026-11-02''

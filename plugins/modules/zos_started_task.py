@@ -492,6 +492,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.started_task import (
+    execute_command, convert_time, calculate_start_time, get_task_logs, fetch_task_name_and_asidx
+)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
@@ -501,30 +504,6 @@ except ImportError:
     opercmd = ZOAUImportError(traceback.format_exc())
     zsystem = ZOAUImportError(traceback.format_exc())
     jobs = ZOAUImportError(traceback.format_exc())
-
-
-def execute_command(operator_cmd):
-    """Execute operator command.
-
-    Parameters
-    ----------
-    operator_cmd : str
-        Operator command.
-
-    Returns
-    -------
-    tuple
-        Tuple containing the RC, standard out, standard err of the
-        query script and started task parameters.
-    """
-    # as of ZOAU v1.3.0, timeout is measured in centiseconds
-    timeout_c = 0
-    response = opercmd.execute(operator_cmd, timeout_c)
-
-    rc = response.rc
-    stdout = response.stdout_response
-    stderr = response.stderr_response
-    return rc, stdout, stderr
 
 
 def fetch_current_time():
@@ -726,40 +705,6 @@ def validate_and_prepare_start_command(module):
     if keyword_parameters_string:
         cmd = f"{cmd},{keyword_parameters_string}"
     return started_task_name, cmd
-
-
-def fetch_task_name_and_asidx(module, task_id):
-    """Executes JLS command and fetches task name
-
-    Parameters
-    ----------
-    module : dict
-        The started task display command parameters.
-    task_id : str
-        The started task id starts with STC.
-
-    Returns
-    -------
-    task_name
-        The name of started task.
-    """
-    try:
-        task_details = jobs.fetch(task_id)
-        if not isinstance(task_details, jobs.Job):
-            module.fail_json(
-                rc=1,
-                msg=f"Fetching started task details using task_id: {task_id} is failed",
-                changed=False
-            )
-    except Exception as err:
-        module.fail_json(
-            rc=err.response.rc,
-            msg=f"Fetching started task details using task_id: {task_id} is failed with ZOAU error: {err.response.stderr_response}",
-            changed=False
-        )
-    task_name = task_details.name
-    asidx = f"{task_details.asid:04X}"
-    return task_name, asidx
 
 
 def prepare_display_command(module):
@@ -1069,7 +1014,7 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
                 current_task['started_time'] = ""
                 el_time = current_task.get('elapsed_time')
                 if el_time:
-                    current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+                    current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
                     current_task['started_time'] = calculate_start_time(el_time)
                 if asidx:
                     if asidx == current_task.get('asidx'):
@@ -1105,11 +1050,11 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
         current_task['started_time'] = ""
         el_time = current_task.get('elapsed_time')
         if el_time:
-            current_task['elapsed_time'] = convert_cpu_time(el_time) or current_task['elapsed_time']
+            current_task['elapsed_time'] = convert_time(el_time) or current_task['elapsed_time']
             current_task['started_time'] = calculate_start_time(el_time)
         cpu_time = current_task.get('cpu_time')
         if cpu_time:
-            current_task['cpu_time'] = convert_cpu_time(cpu_time) or current_task['cpu_time']
+            current_task['cpu_time'] = convert_time(cpu_time) or current_task['cpu_time']
         if asidx:
             if asidx == current_task.get('asidx'):
                 tasks.append(current_task)
@@ -1125,68 +1070,6 @@ def extract_keys(stdout, asidx=None, task_params_before=None):
         else:
             tasks.append(current_task)
     return tasks
-
-
-def parse_time(ts_str):
-    """Parse timestamp
-
-    Parameters
-    ----------
-    ts_str : string
-        The time stamp in string format
-
-    Returns
-    -------
-    timestamp
-        Transformed timestamp
-    """
-    try:
-        # Case 1: Duration like "000.005seconds"
-        sec_match = re.match(r"^(\d+\.?\d*)\s*S?$", ts_str, re.IGNORECASE)
-        if sec_match:
-            return timedelta(seconds=float(sec_match.group(1)))
-        # Case 2: hh.mm.ss
-        hms_match = re.match(r"^(\d+).(\d{2}).(\d{2})$", ts_str)
-        if hms_match:
-            h, m, s = map(int, hms_match.groups())
-            return timedelta(hours=h, minutes=m, seconds=s)
-        # Case 3: hhhhh.mm
-        hm_match = re.match(r"^(\d{1,5}).(\d{2})$", ts_str)
-        if hm_match:
-            h, m = map(int, hm_match.groups())
-            return timedelta(hours=h, minutes=m)
-    except Exception:
-        return ""
-    return ""
-
-
-def calculate_start_time(ts_str):
-    now = datetime.now().astimezone()
-    parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
-    # If it's a timedelta (duration), subtract from now → absolute datetime
-    if isinstance(parsed, timedelta):
-        return f"{now - parsed}"
-    return ""
-
-
-def convert_cpu_time(ts_str):
-    parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
-    # If it's a timedelta (duration), subtract from now → absolute datetime
-    if isinstance(parsed, timedelta):
-        total_seconds = int(parsed.total_seconds())
-        milliseconds = int(parsed.microseconds / 1000)
-
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-
-        # Format: HHHHH.MM.SS.SSS
-        return f"{hours:05}.{minutes:02}.{seconds:02}.{milliseconds:03}"
-    return ""
 
 
 def fetch_logs(command, before_time):

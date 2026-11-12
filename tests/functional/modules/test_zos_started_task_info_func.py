@@ -95,7 +95,6 @@ def test_get_started_task_info_using_job_name(ansible_zos_module):
             assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) > 0
-            assert result.get("stderr") == ""
             assert result.get("cmd") == f"D A,{job_name}"
             assert result.get("stdout") != ""
             for task in result.get("tasks"):
@@ -201,7 +200,6 @@ def test_get_started_task_info_address_space_flag(ansible_zos_module):
             assert result.get("changed") is False
             assert result.get("rc") == 0
             assert len(result.get("tasks")) > 0
-            assert result.get("stderr") == ""
             assert result.get("cmd") == f"D A,{job_name}"
             assert result.get("stdout") != ""
             for task in result.get("tasks"):
@@ -244,7 +242,6 @@ def test_get_started_task_info_using_job_name_with_wildcard(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name}"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):
@@ -268,7 +265,6 @@ def test_get_started_task_info_using_job_name_and_identifier(ansible_zos_module)
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name}.{identifier_name}"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):
@@ -289,7 +285,6 @@ def test_get_info_for_all_started_tasks(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == "D A,ALL"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):
@@ -317,7 +312,6 @@ def test_get_started_task_info_using_task_id(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name}"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):
@@ -338,7 +332,6 @@ def test_get_info_for_started_task_with_multiple_data_spaces(ansible_zos_module)
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name}"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):
@@ -364,7 +357,6 @@ def test_get_started_task_info_verbose_output(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name}"
         assert result.get("stdout") != ""
         assert result.get("verbose_output") != ""
@@ -385,7 +377,6 @@ def test_get_started_task_info_using_lowercase_job_name(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("rc") == 0
         assert len(result.get("tasks")) > 0
-        assert result.get("stderr") == ""
         assert result.get("cmd") == f"D A,{job_name_uppercase}"
         assert result.get("stdout") != ""
         for task in result.get("tasks"):

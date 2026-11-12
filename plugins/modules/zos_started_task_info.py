@@ -143,15 +143,15 @@ rc:
   sample: 0
 stderr:
   description:
-    - The standard error from command execution. An empty string will be returned when no
-      error occurs.
-  returned: always
+    - The standard error from command execution. When an error code is found in the operator
+      command output, the output is returned in this field.
+  returned: failure
   type: str
   sample: "An error has occurred."
 stderr_lines:
   description:
     - List of strings containing individual lines from STDERR.
-  returned: always
+  returned: failure
   type: list
   sample: ["An error has occurred"]
 stdout:
@@ -796,9 +796,7 @@ def run_module():
         rc=rc,
         msg=msg,
         stdout=stdout,
-        stderr=stderr,
         stdout_lines=stdout.splitlines(),
-        stderr_lines=stderr.splitlines(),
         verbose_output=task_output_logs
     )
 

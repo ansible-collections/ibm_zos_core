@@ -137,7 +137,7 @@ insertbefore
 backup
   Specifies whether to create a backup file or backup data set for *src* before making modifications.
 
-  If *backup=true*, the backup file or data set name is returned in the module result under ``backup_name`` regardless of whether execution succeeded or failed.
+  If *backup=true*, the backup file or data set name is returned in the module result under ``backup_name`` regardless of whether the run has succeeded or failed.
 
   When *src* is an MVS data set, the backup inherits the source data set attributes such as record format, logical record length, and space allocation.
 

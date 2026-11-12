@@ -292,13 +292,13 @@ limit
 
 
 purge
-  If ``state=present``, the *purge* attribute only applies to Generation Data Groups.
+  If ``state=present``, the *purge* attribute applies only to Generation Data Groups.
 
   If ``state=present`` and ``type=gdg``, the *purge* attribute specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
 
-  If ``state=absent``, the *purge* attribute only applies to sequential, PDS, and PDSE data sets.
+  If ``state=absent``, the *purge* attribute applies only to sequential, PDS, and PDSE data sets.
 
-  If ``state=absent``, the *purge* attribute specifies whether to override a non-VSAM dataset expiration date to physically delete the data set from the volume.
+  If ``state=absent``, the *purge* attribute specifies whether to override a non-VSAM data set expiration date to physically delete the data set from the volume.
 
   | **required**: False
   | **type**: bool

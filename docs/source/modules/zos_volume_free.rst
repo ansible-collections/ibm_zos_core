@@ -35,7 +35,7 @@ volumes
 
   Can be a single volume or a list of volumes.
 
-  When combined with *device_numbers*, returns volumes matching **either** criterion.
+  When combined with *device_numbers*, returns volumes that match **either** criterion.
 
   If neither *volumes* nor *device_numbers* is specified, all active DASD volumes are queried.
 

@@ -113,11 +113,11 @@ resource_type
 
   ``gdg`` refers to Generation Data Groups. The module searches based on the GDG base name.
 
-  ``migrated`` refers to listing migrated datasets. Only ``excludes`` and ``migrated_type`` options can be used along with this option. The module only searches based on dataset patterns.
+  ``migrated`` refers to listing migrated data sets. Only ``excludes`` and ``migrated_type`` options can be used along with this option. The module searches based on data set patterns only.
 
-  ``alias`` refers to MVS catalog alias entries. The module returns the alias name and the real dataset name it points to (returned as ``alias_of`` in each result).
+  ``alias`` refers to MVS catalog alias entries. The module returns the alias name and the real data set name it points to (returned as ``alias_of`` in each result).
 
-  The ``patterns``, ``excludes``, ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` options are applicable when using ``alias`` resource type. The ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` filters are applied against the target dataset (``alias_of``), not the alias entry itself.
+  The ``patterns``, ``excludes``, ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` options are applicable when using ``alias`` resource type. The ``volume``, ``age``, ``age_stamp``, ``size``, and ``contains`` filters are applied against the target data set (``alias_of``), not the alias entry itself.
 
   | **required**: False
   | **type**: list
@@ -368,13 +368,13 @@ Notes
 
    When searching for content within data sets, only non-binary content is considered.
 
-   As a migrated data set's information can't be retrieved without recalling it first, other options besides ``excludes`` and ``migrated_type`` are not supported.
+   Because information about a migrated data set cannot be retrieved without recalling it first, options other than ``excludes`` and ``migrated_type`` are not supported.
 
-   When using ``resource_type=alias``, the ``contains`` option searches the content of the target dataset (``alias_of``). Only alias entries whose target dataset contains the specified string are returned. The ``age``, ``age_stamp``, ``size``, and ``volume`` options are also supported and are applied against the target dataset.
+   When using ``resource_type=alias``, the ``contains`` option searches the content of the target data set (``alias_of``). Only alias entries whose target data set contains the specified string are returned. The ``age``, ``age_stamp``, ``size``, and ``volume`` options are also supported and are applied against the target data set.
 
    Parenthesised exclude patterns (e.g. ``(^MEM1$``)) match against PDS/PDSE member names. Members whose name matches the pattern are removed from the ``members`` list of the matched data set or alias entry. The data set or alias entry itself is kept, even if all its members are removed.
 
-   PDS/PDSE entries always include a ``members`` key, which is an empty list when the data set has no members (or all of them were excluded). For ``alias`` entries, ``members`` is a list of dicts with the member name and its in-directory alias names, whereas for ``nonvsam`` entries ``members`` is a list of member name strings.
+   PDS/PDSE entries always include a ``members`` list, which is empty when the data set contains no members or when all members are excluded. For ``alias`` entries, ``members`` is a list of dictionaries where each dictionary contains the member name and its directory aliases. For ``nonvsam`` entries, ``members`` is a list of member name strings.
 
 
 
@@ -395,9 +395,9 @@ Return Values
 data_sets
   All matches found with the specified criteria.
 
-  For ``alias`` resource types, each entry includes an ``alias_of`` field containing the real dataset name the alias points to.
+  For ``alias`` resource types, each entry includes an ``alias_of`` field containing the real data set name the alias points to.
 
-  PDS/PDSE entries always include a ``members`` list, which is empty when the data set has no members. For ``alias`` entries pointing to a PDS/PDSE, each item is a dict with a ``name`` key (the member name) and an ``aliases`` key (a list of alias names for that member, empty when the member has none). Note that for ``alias`` entries ``members`` is a list of dicts, whereas for ``nonvsam`` entries ``members`` is a list of member name strings.
+  PDS/PDSE entries always include a ``members`` list, which is empty when the data set has no members. For ``alias`` entries pointing to a PDS/PDSE, each item is a dictionary containing a ``name`` key (the member name) and an ``aliases`` key (a list of alias names for that member). For ``alias`` entries, ``members`` is a list of dictionaries, whereas for ``nonvsam`` entries, ``members`` is a list of member name strings.
 
   | **returned**: success
   | **type**: list

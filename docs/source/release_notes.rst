@@ -12,7 +12,7 @@ Version 2.2.0-beta.1
 Minor Changes
 -------------
 
-- ``zos_data_set`` - Add additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion.
+- ``zos_data_set`` - Adds additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion.
 - ``zos_find`` - Added ``alias`` as a ``resource_type`` option to discover catalog alias entries. Returned aliases include an ``alias_of`` field that identifies the associated target data set. For PDS/PDSE targets, the ``members`` list is returned with each member and its in-directory aliases.
 - ``zos_find`` - PDS and PDSE results for ``nonvsam`` and ``alias`` resource types now always include a ``members`` list, which is empty when the data set has no members or all members were excluded.
 - ``zos_lineinfile`` - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behavior across all source types.

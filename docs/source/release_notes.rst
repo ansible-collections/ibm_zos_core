@@ -15,7 +15,7 @@ Minor Changes
 - ``zos_data_set`` - Add additional behavior to purge parameter that enables user to override expiration dates for non-VSAM data set deletion.
 - ``zos_find`` - Added ``alias`` as a ``resource_type`` option to discover catalog alias entries. Returned aliases include an ``alias_of`` field that identifies the associated target data set. For PDS/PDSE targets, the ``members`` list is returned with each member and its in-directory aliases.
 - ``zos_find`` - PDS and PDSE results for ``nonvsam`` and ``alias`` resource types now always include a ``members`` list, which is empty when the data set has no members or all members were excluded.
-- ``zos_lineinfile`` - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behaviour across all source types.
+- ``zos_lineinfile`` - Expands the ``backup`` and ``backup_name`` parameter documentation to clarify backup behavior across all source types.
 - ``zos_stat`` - Adds support for retrieving and exposing VSAM data set statistics and extended listing attributes.
 - Resolve runtime deprecation warnings that appeared in playbook output ahead of their removal in ansible-core 2.24.
 
@@ -27,8 +27,6 @@ Bugfixes
 - ``zos_find`` - Resolved a ``year 0 is out of range`` module failure that occurred when a data set's ``creation_date`` was reported as year zero by the catalog; such entries are now safely handled and excluded from age comparisons.
 - ``zos_find`` - Updated the ``age`` parameter documentation for accuracy and clarity to correctly describe how positive and negative values select data sets older than or younger than the specified threshold.
 - ``zos_job_output`` - Fixed an issue where job output was not returned when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case.
-- ``zos_job_output`` - When a job is not found, the module no longer reports a ``*`` wildcard for the ``job_id``, ``job_name`` or ``owner`` options that were not supplied. These options now default to ``null`` so the results show only the values provided.
-- ``zos_job_query`` - Fixed an issue where a query that matched no jobs was reported as successful. The module now fails with an error stating that the job could not be found.
 - ``zos_job_query`` - Fixed an issue where jobs were not found when owner, job_name, or job_id were provided in lowercase or mixed case. Parameters are now accepted in any case, including wildcard patterns such as ``Job12*`` matching ``JOB12345``.
 - ``zos_ping`` - Fixed a failure when running against z/OS targets with ansible-core 2.19 or later, where the module would error with ``not enough values to unpack``. The module now works correctly across all supported ansible-core versions.
 

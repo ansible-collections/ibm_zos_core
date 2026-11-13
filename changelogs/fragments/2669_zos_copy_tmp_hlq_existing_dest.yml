@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_copy - Fixed an issue where the ``tmp_hlq`` option was ignored when
+    copying to a data set that already existed.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2569).

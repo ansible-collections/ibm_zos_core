@@ -41,7 +41,7 @@ options:
     description:
       - List of volume serial numbers (VOLSERs) to query.
       - Can be a single volume or a list of volumes.
-      - When combined with I(device_numbers), returns volumes matching
+      - When combined with I(device_numbers), returns volumes that match
         B(either) criterion.
       - If neither I(volumes) nor I(device_numbers) is specified, all active
         DASD volumes are queried.

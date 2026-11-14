@@ -107,14 +107,14 @@ options:
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
-      - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
-        with this option. The module only searches based on dataset patterns.
+      - C(migrated) refers to listing migrated data sets. Only C(excludes) and C(migrated_type) options can be used along
+        with this option. The module searches based on data set patterns only.
       - C(alias) refers to MVS catalog alias entries. The module returns the alias name and the
-        real dataset name it points to (returned as C(alias_of) in each result).
+        real data set name it points to (returned as C(alias_of) in each result).
       - The C(patterns), C(excludes), C(volume), C(age), C(age_stamp), C(size), and C(contains)
         options are applicable when using C(alias) resource type.
         The C(volume), C(age), C(age_stamp), C(size), and C(contains) filters are applied against
-        the target dataset (C(alias_of)), not the alias entry itself.
+        the target data set (C(alias_of)), not the alias entry itself.
     aliases:
       - resource_types
     choices:
@@ -214,20 +214,20 @@ notes:
   - The time taken to execute the module is proportional to the number of data
     sets present on the system and how large the data sets are.
   - When searching for content within data sets, only non-binary content is considered.
-  - As a migrated data set's information can't be retrieved without recalling it first, other options
-    besides C(excludes) and C(migrated_type) are not supported.
+  - Because information about a migrated data set cannot be retrieved without recalling it first, options
+    other than C(excludes) and C(migrated_type) are not supported.
   - When using C(resource_type=alias), the C(contains) option searches the content of the
-    target dataset (C(alias_of)). Only alias entries whose target dataset contains the
+    target data set (C(alias_of)). Only alias entries whose target data set contains the
     specified string are returned. The C(age), C(age_stamp), C(size), and C(volume) options
-    are also supported and are applied against the target dataset.
+    are also supported and are applied against the target data set.
   - Parenthesised exclude patterns (e.g. C((^MEM1$))) match against PDS/PDSE member names.
     Members whose name matches the pattern are removed from the C(members) list of the
     matched data set or alias entry. The data set or alias entry itself is kept, even if
     all its members are removed.
-  - PDS/PDSE entries always include a C(members) key, which is an empty list when the data
-    set has no members (or all of them were excluded). For C(alias) entries, C(members) is
-    a list of dicts with the member name and its in-directory alias names, whereas for
-    C(nonvsam) entries C(members) is a list of member name strings.
+  - PDS/PDSE entries always include a C(members) list, which is empty when the data set
+    contains no members or when all members are excluded. For C(alias) entries, C(members) is
+    a list of dictionaries where each dictionary contains the member name and its directory aliases.
+    For C(nonvsam) entries, C(members) is a list of member name strings.
 seealso:
 - module: ibm.ibm_zos_core.zos_data_set
 """
@@ -370,13 +370,12 @@ data_sets:
     description:
       - All matches found with the specified criteria.
       - For C(alias) resource types, each entry includes an C(alias_of) field
-        containing the real dataset name the alias points to.
+        containing the real data set name the alias points to.
       - PDS/PDSE entries always include a C(members) list, which is empty when the
         data set has no members. For C(alias) entries pointing to a PDS/PDSE, each item
-        is a dict with a C(name) key (the member name) and an C(aliases) key (a list
-        of alias names for that member, empty when the member has none).
-        Note that for C(alias) entries C(members) is a list of dicts, whereas for
-        C(nonvsam) entries C(members) is a list of member name strings.
+        is a dictionary containing a C(name) key (the member name) and an C(aliases) key (a list
+        of alias names for that member). For C(alias) entries, C(members) is a list of dictionaries,
+        whereas for C(nonvsam) entries, C(members) is a list of member name strings.
     returned: success
     type: list
     sample: [

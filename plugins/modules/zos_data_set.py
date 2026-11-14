@@ -283,11 +283,11 @@ options:
     required: false
   purge:
     description:
-      - If C(state=present), the I(purge) attribute only applies to Generation Data Groups.
+      - If C(state=present), the I(purge) attribute applies only to Generation Data Groups.
       - If C(state=present) and C(type=gdg), the I(purge) attribute specifies whether to override expiration
         dates when a generation data set (GDS) is rolled off and the C(scratch) option is set.
-      - If C(state=absent), the I(purge) attribute only applies to sequential, PDS, and PDSE data sets.
-      - If C(state=absent), the I(purge) attribute specifies whether to override a non-VSAM dataset expiration
+      - If C(state=absent), the I(purge) attribute applies only to sequential, PDS, and PDSE data sets.
+      - If C(state=absent), the I(purge) attribute specifies whether to override a non-VSAM data set expiration
         date to physically delete the data set from the volume.
     type: bool
     required: false

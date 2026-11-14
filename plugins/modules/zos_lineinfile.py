@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2025
+# Copyright (c) IBM Corporation 2020, 2026
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -127,7 +127,7 @@ options:
     description:
       - Specifies whether to create a backup file or backup data set for I(src) before making modifications.
       - If I(backup=true), the backup file or data set name is returned in the module result
-        under C(backup_name) regardless of whether execution succeeded or failed.
+        under C(backup_name) regardless of whether the run has succeeded or failed.
       - When I(src) is an MVS data set, the backup inherits the source data set attributes
         such as record format, logical record length, and space allocation.
       - When I(src) is a USS file, the backup preserves the original file permissions.

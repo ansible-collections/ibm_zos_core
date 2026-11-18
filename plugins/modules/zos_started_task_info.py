@@ -17,7 +17,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_started_task_info
-version_added: 2.2.0
+version_added: 2.3.0
 author:
   - "Sarah Miller (@hmillersarah)"
 short_description: Retrieve information on started tasks.
@@ -28,7 +28,8 @@ options:
   job_name:
     description:
         - The started task name used to query the system.
-        - The name must be a single continuous string with no spaces or blank characters.
+        - The name can be up to 8 characters and must be a single continuous string with no spaces
+          or blank characters.
         - An asterisk wildcard pattern can be used to query multiple started tasks.
         - A trailing asterisk (`*`) wildcard pattern can be used to filter for multiple started tasks. The pattern
           will apply to all started tasks matching the leading character string in I(job_name).

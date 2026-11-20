@@ -271,7 +271,7 @@ EXAMPLES = r"""
     state: "started"
     member_name: "PROCAPP"
     subsystem: "MSTR"
-    reusable_asid: "YES"
+    reusable_asid: true
 
 - name: Display a started task using a started task name.
   zos_started_task:
@@ -945,7 +945,7 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
     if started_task_name:
         cmd = f"C {started_task_name}"
     else:
-        cmd = f"FORCE U={user_id}"
+        cmd = f"C U={user_id}"
     if asidx or duplicate_tasks:
         cmd = f"{cmd},A={asidx}"
     if dump:
@@ -1164,8 +1164,6 @@ def parse_time(ts_str):
 def calculate_start_time(ts_str):
     now = datetime.now().astimezone()
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         return f"{now - parsed}"
@@ -1174,8 +1172,6 @@ def calculate_start_time(ts_str):
 
 def convert_cpu_time(ts_str):
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         total_seconds = int(parsed.total_seconds())
@@ -1216,7 +1212,7 @@ def fetch_logs(command, before_time):
     for i, line in enumerate(stdout_lines):
         if re.search(pattern, line, re.IGNORECASE):
             first = i
-    if not first:
+    if first is None:
         return ""
     logs = "\n".join(stdout_lines[first:])
     return logs
@@ -1441,7 +1437,7 @@ def run_module():
             'required': False
         },
         'task_id': {
-            'type': 'str',
+            'arg_type': 'str',
             'required': False
         },
         # 'tcb_address': {

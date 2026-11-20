@@ -271,7 +271,7 @@ EXAMPLES = r"""
     state: "started"
     member_name: "PROCAPP"
     subsystem: "MSTR"
-    reusable_asid: "YES"
+    reusable_asid: true
 
 - name: Display a started task using a started task name.
   zos_started_task:
@@ -588,7 +588,8 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
     for i in range(iteration_count):
         time.sleep(wait_interval)
         display_response = opercmd.execute(cmd)
-        if display_response.rc == 0 and display_response.stderr_response == "":
+        # opercmd may set stderr (e.g. BGYSC0807I) with rc=0 and full stdout, so parse stdout on rc alone.
+        if display_response.rc == 0:
             if state == "started":
                 task_params = extract_keys(display_response.stdout_response, asidx, task_params_before)
             else:
@@ -944,7 +945,7 @@ def prepare_cancel_command(module, started_task=None, asidx=None, duplicate_task
     if started_task_name:
         cmd = f"C {started_task_name}"
     else:
-        cmd = f"FORCE U={user_id}"
+        cmd = f"C U={user_id}"
     if asidx or duplicate_tasks:
         cmd = f"{cmd},A={asidx}"
     if dump:
@@ -1163,8 +1164,6 @@ def parse_time(ts_str):
 def calculate_start_time(ts_str):
     now = datetime.now().astimezone()
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         return f"{now - parsed}"
@@ -1173,8 +1172,6 @@ def calculate_start_time(ts_str):
 
 def convert_cpu_time(ts_str):
     parsed = parse_time(ts_str)
-    if parsed is None:
-        return ""
     # If it's a timedelta (duration), subtract from now → absolute datetime
     if isinstance(parsed, timedelta):
         total_seconds = int(parsed.total_seconds())
@@ -1215,7 +1212,7 @@ def fetch_logs(command, before_time):
     for i, line in enumerate(stdout_lines):
         if re.search(pattern, line, re.IGNORECASE):
             first = i
-    if not first:
+    if first is None:
         return ""
     logs = "\n".join(stdout_lines[first:])
     return logs
@@ -1440,7 +1437,7 @@ def run_module():
             'required': False
         },
         'task_id': {
-            'type': 'str',
+            'arg_type': 'str',
             'required': False
         },
         # 'tcb_address': {
@@ -1610,7 +1607,8 @@ def run_module():
     task_params = []
     # Validate the sysout of opercmd with the above listed error codes to find if any error occured
     found_msg = next((msg for msg in err_msg if msg in out), None)
-    if err != "" or found_msg:
+    # stderr alone is not a failure; judge by the message ids above and the display that follows.
+    if found_msg:
         is_failed = True
         msg = error_details.get(found_msg)
     # If error did not find in previous step then run display command again and validate operation result

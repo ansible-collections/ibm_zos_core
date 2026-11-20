@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_started_task - Fixed an issue where a running started task was reported as not active, and a stop
+    was reported as done without stopping it, when the operator command returned an informational message
+    on stderr. The module now decides the outcome from the command output, not from stderr.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2679)

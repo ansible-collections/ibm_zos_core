@@ -588,7 +588,8 @@ def execute_display_command(started_task_name, asidx=None, task_params_before=No
     for i in range(iteration_count):
         time.sleep(wait_interval)
         display_response = opercmd.execute(cmd)
-        if display_response.rc == 0 and display_response.stderr_response == "":
+        # opercmd may set stderr (e.g. BGYSC0807I) with rc=0 and full stdout, so parse stdout on rc alone.
+        if display_response.rc == 0:
             if state == "started":
                 task_params = extract_keys(display_response.stdout_response, asidx, task_params_before)
             else:
@@ -1610,7 +1611,8 @@ def run_module():
     task_params = []
     # Validate the sysout of opercmd with the above listed error codes to find if any error occured
     found_msg = next((msg for msg in err_msg if msg in out), None)
-    if err != "" or found_msg:
+    # stderr alone is not a failure; judge by the message ids above and the display that follows.
+    if found_msg:
         is_failed = True
         msg = error_details.get(found_msg)
     # If error did not find in previous step then run display command again and validate operation result

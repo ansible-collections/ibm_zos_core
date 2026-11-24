@@ -1486,9 +1486,13 @@ def run_module():
     state = module.params.get('state')
     if state == "displayed" and get_version_tuple(version.__version__) >= (2, 3, 0):
         module.deprecate(
-            msg="The zos_started_task module 'state: displayed' capability has been deprecated, use the 'zos_started_task_info' module with ibm_zos_core version 2.x.x (minimum 2.3.0) instead.",
+            msg=(
+                "The zos_started_task module 'state: displayed' capability has been deprecated, "
+                "use the 'zos_started_task_info' module with ibm_zos_core version 2.3.0 onward "
+                "instead."
+            ),
             version="3.0.0",
-            collection_name="ibm_zos_core"
+            collection_name="ibm.ibm_zos_core"
         )
 
     result = dict()

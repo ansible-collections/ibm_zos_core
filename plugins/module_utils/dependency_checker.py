@@ -16,7 +16,7 @@ import sys
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
-logger = SingletonLogger().get_logger(verbosity=3)
+logger = SingletonLogger().get_logger(verbosity=0)
 
 __metaclass__ = type
 

@@ -491,7 +491,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dependency_checker import (
     validate_dependencies,
+    get_version_tuple,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import version
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.log import SingletonLogger
 
@@ -1480,6 +1482,15 @@ def run_module():
             stderr=str(err)
         )
 
+    # Deprecation warning for state: displayed
+    state = module.params.get('state')
+    if state == "displayed" and get_version_tuple(version.__version__) >= (2, 3, 0):
+        module.deprecate(
+            msg="The zos_started_task module 'state: displayed' capability has been deprecated, use the 'zos_started_task_info' module with ibm_zos_core version 2.x.x (minimum 2.3.0) instead.",
+            version="3.0.0",
+            collection_name="ibm_zos_core"
+        )
+
     result = dict()
     if module.check_mode:
         module.exit_json(**result)
@@ -1489,7 +1500,6 @@ def run_module():
     SingletonLogger().get_logger(module_verbosity_level)
 
     before_time = ""
-    state = module.params.get('state')
     wait_time_s = module.params.get('wait_time')
     if wait_time_s < 10:
         wait_time_s = 10

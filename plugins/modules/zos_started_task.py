@@ -147,6 +147,7 @@ options:
   state:
     description:
         - I(state) is the desired state of the started task after the module is executed.
+        - Option C(displayed) is deprecated and will be removed in version 3.0.0. Use the I(zos_started_task_info) module available with version 2.3.0 instead.
         - If I(state) is C(started) and the respective member is not present on the managed node, then error will be thrown with C(rc=1),
           C(changed=false) and I(stderr) which contains error details.
         - If I(state) is C(cancelled), C(modified), C(displayed), C(stopped) or C(forced) and the started task is not running on the managed node,

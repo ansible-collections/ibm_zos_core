@@ -532,10 +532,10 @@ def test_get_started_task_info_task_id_not_active(ansible_zos_module):
         for result in info_results.contacted.values():
             assert result.get("failed") is True
             assert result.get("changed") is False
-            assert result.get("rc") == 1
+            assert result.get("rc") == 8
             assert result.get("tasks") is None
-            assert f"{job_name} NOT FOUND" in result.get("stderr")
-            assert result.get("msg") == "Started task could not be found."
+            assert f"BGYSC3503E Failed to retrieve job list." in result.get("stderr")
+            assert result.get("msg") == f"Fetching started task details using task_id {task_id} failed."
         
     finally:
         # Remove USS temp directory containing the USS file

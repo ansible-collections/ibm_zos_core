@@ -669,8 +669,8 @@ def classify_err_response(rc, out, err):
 
     """Return (rc, msg, stdout, stderr, is_error)."""
     code = next((c for c in ERROR_MESSAGES if c in out), None)
-    if err or code:
-        return (rc or 1), ERROR_MESSAGES.get(code), "", (err or out), True
+    if rc or code:
+        return (rc or 1), ERROR_MESSAGES.get(code), "", (out if code else err), True
     return rc, "", out, err, False
 
 

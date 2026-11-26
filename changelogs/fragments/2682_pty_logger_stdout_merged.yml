@@ -1,0 +1,6 @@
+bugfixes:
+  - zos_job_submit - Fixed ``MODULE FAILURE`` caused by ``SingletonLogger`` output 
+    interleaving with module JSON responses when SSH forces pseudo-TTY allocation.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2607).
+  - zos_job_submit - Debug log messages no longer appear in module output unless -vvv is used.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/2608).

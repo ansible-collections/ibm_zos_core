@@ -12,6 +12,26 @@
 import logging
 
 
+class SingleLineFormatter(logging.Formatter):
+    """
+    Formatter that guarantees every log record is emitted on a single line.
+
+    Log messages from ZOAU can contain embedded newlines, and a continuation
+    line can start with '{' (for example a printed dict). When stderr is merged
+    into stdout, as it is on a forced pseudo-TTY (ssh -tt), Ansible's
+    _filter_non_json_lines treats the first line starting with '{' as the start
+    of the module JSON result, and deserialization fails. Joining the output of
+    str.splitlines() (the same splitting Ansible uses) with a literal "\\n"
+    keeps every record on one line that starts with the formatter header.
+
+    This only covers records emitted through this formatter. Output written
+    directly to stderr or stdout is not affected.
+    """
+
+    def format(self, record):
+        return "\\n".join(super().format(record).splitlines())
+
+
 class SingletonLogger:
     _instance = None
 
@@ -43,7 +63,7 @@ class SingletonLogger:
 
         if not self.logger.handlers:
             stream_handler = logging.StreamHandler()
-            formatter = logging.Formatter("ibm_zos_core %(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
+            formatter = SingleLineFormatter("ibm_zos_core %(asctime)s - %(levelname)s - %(module)s - %(funcName)s - line %(lineno)d - %(message)s")
             stream_handler.setFormatter(formatter)
             self.logger.addHandler(stream_handler)
 
